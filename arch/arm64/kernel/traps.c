@@ -279,6 +279,8 @@ void die(const char *str, struct pt_regs *regs, int err)
 	struct thread_info *thread = current_thread_info();
 	int ret;
 	int cpu = -1;
+	unsigned long flags;
+	bool locked;
 	static int die_owner = -1;
 
 	if (ESR_ELx_EC(err) == ESR_ELx_EC_DABT_CUR)
@@ -290,12 +292,19 @@ void die(const char *str, struct pt_regs *regs, int err)
 	oops_enter();
 
 	cpu = get_cpu();
-	if (!raw_spin_trylock_irq(&die_lock)) {
+	/* linux-stable "arm64: traps: disable irq in die()": keep the caller's IRQ state (irqsave) and unlock after
+	 * the panic() calls; MediaTek's trylock and die_owner kept, unlock only when this call took the lock
+	 */
+	local_irq_save(flags);
+	locked = raw_spin_trylock(&die_lock);
+	if (!locked) {
 		if (cpu != die_owner) {
 			pr_notice("die_lock:cpu:%d trylock failed(owner:%d)\n",
 				cpu, die_owner);
 			dump_stack();
 			put_cpu();
+			/* as raw_spin_trylock_irq: spin with IRQs on, to take the panic stop IPI */
+			local_irq_restore(flags);
 			while (1)
 				cpu_relax();
 		} else {
@@ -314,13 +323,17 @@ void die(const char *str, struct pt_regs *regs, int err)
 
 	bust_spinlocks(0);
 	add_taint(TAINT_DIE, LOCKDEP_NOW_UNRELIABLE);
-	raw_spin_unlock_irq(&die_lock);
 	oops_exit();
 
 	if (in_interrupt())
 		panic("Fatal exception in interrupt");
 	if (panic_on_oops)
 		panic("Fatal exception");
+
+	if (locked)
+		raw_spin_unlock(&die_lock);
+	local_irq_restore(flags);
+
 	if (ret != NOTIFY_STOP)
 		do_exit(SIGSEGV);
 }
