@@ -489,4 +489,7 @@ int ion_query_heaps(struct ion_client *client, struct ion_heap_query *query);
 
 extern struct ion_device *g_ion_device;
 
+int ion_share_dma_buf_fd_nolock(struct ion_client *client,
+				struct ion_handle *handle);
+
 #endif /* _ION_PRIV_H */
