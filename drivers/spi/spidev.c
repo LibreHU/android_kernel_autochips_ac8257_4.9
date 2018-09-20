@@ -879,7 +879,8 @@ static int spidev_probe(struct spi_device *spi)
 	 * compatible string, it is a Linux implementation thing
 	 * rather than a description of the hardware.
 	 */
-	if (spi->dev.of_node && !of_match_device(spidev_dt_ids, &spi->dev))
+	if (spi->dev.of_node &&
+	    of_device_is_compatible(spi->dev.of_node, "spidev"))
 		dev_err(&spi->dev, "buggy DT: spidev listed directly in DT\n");
 
 	spidev_probe_acpi(spi);
