@@ -1287,10 +1287,10 @@ static int __maybe_unused xhci_mtk_resume(struct device *dev)
 #ifndef CONFIG_ATC_AOSP_ENHANCEMENT
 	xhci_mtk_host_enable(mtk);
 	xhci_dbg(xhci, "%s: restart port polling\n", __func__);
-	set_bit(HCD_FLAG_POLL_RH, &hcd->flags);
-	usb_hcd_poll_rh_status(hcd);
 	set_bit(HCD_FLAG_POLL_RH, &xhci->shared_hcd->flags);
 	usb_hcd_poll_rh_status(xhci->shared_hcd);
+	set_bit(HCD_FLAG_POLL_RH, &hcd->flags);
+	usb_hcd_poll_rh_status(hcd);
 	return 0;
 #else
 	xhci_mtk_ssusb_config(mtk);
