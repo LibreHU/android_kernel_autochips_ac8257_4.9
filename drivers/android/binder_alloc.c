@@ -220,6 +220,14 @@ static int binder_update_page_range(struct binder_alloc *alloc, int allocate,
 
 	if (mm) {
 		down_read(&mm->mmap_sem);
+		/* linux-stable "coredump: fix race condition between mmget_not_zero()/get_task_mm() and core
+		 * dumping" (binder.c upstream, binder_alloc.c here)
+		 */
+		if (!mmget_still_valid(mm)) {
+			if (allocate == 0)
+				goto free_range;
+			goto err_no_vma;
+		}
 		vma = alloc->vma;
 	}
 
