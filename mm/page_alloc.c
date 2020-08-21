@@ -6912,7 +6912,7 @@ int __meminit init_per_zone_wmark_min(void)
 
 	return 0;
 }
-core_initcall(init_per_zone_wmark_min)
+postcore_initcall(init_per_zone_wmark_min)
 
 #if defined(CONFIG_MEMBLK_RELEASE_POLICY)
 
