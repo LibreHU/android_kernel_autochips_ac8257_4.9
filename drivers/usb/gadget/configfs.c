@@ -1313,9 +1313,9 @@ static void purge_configs_funcs(struct gadget_info *gi)
 
 		cfg = container_of(c, struct config_usb_cfg, c);
 
-		list_for_each_entry_safe(f, tmp, &c->functions, list) {
+		list_for_each_entry_safe_reverse(f, tmp, &c->functions, list) {
 
-			list_move_tail(&f->list, &cfg->func_list);
+			list_move(&f->list, &cfg->func_list);
 			if (f->unbind) {
 				printk("carplay %s %s %d unbind(%s)\n", __FILE__, __func__, __LINE__,f->name);
 				dev_dbg(&gi->cdev.gadget->dev,
