@@ -113,6 +113,7 @@ timed panic, userspace reboots turned into a panic (with the recovery command cl
 | 1h-1j | Android init and services run; GPU clients fail ("Driver already in bad state") | GPU memory below 4 GiB (stock: gfp `0x24302c3` / `0x24000c1`) |
 | 1k, 1l | GPU OK, Trusty apps OK, `system_server` up; `hwcomposer` aborts in a loop, Rescue Party asks for recovery | AutoChips display ABI, below |
 | 1m | native services stable, backlight dims (power manager runs), black screen, no USB; SystemUI crash-loops: `Failed to find provider com.jancar.settings.provider`, `com.jancar.services` (`/vendor/app/ivi-services`, persistent) "not found"; same package installed and enabled on the stock kernel, `/data` unencrypted | USB: below; Jancar packages: under investigation (needs the full boot log, now possible over adb) |
+| 1n | **USB/adb work**. `/data` does not mount: `fs_stat userdata 0x103` (ext4, full mount failed), so init takes the `defaultcrypto` path (`ro.crypto.state=encrypted`, `Cryptfs: Bad magic`), `vold.decrypt=trigger_restart_min_framework`, "only parsing core apps": the Jancar packages missing in 1m come from this | ext4/quota/crypto options identical to the stock config: the kernel error is needed (`log_buf_len=8M`, read-only test mount) |
 
 USB (stock `musb_probe` / `musb_gadget_pullup`): the board has no charger detection, so nothing calls
 `mt_usb_connect()`; the stock kernel calls it on the first gadget pull-up (adbd binding the UDC), which this
@@ -140,8 +141,7 @@ headers). Converging on these CRCs is the measure of how close the tree is to th
 
 ### Next
 
-1. Android up to the launcher: USB/adb on the test kernel, then why the Jancar packages under `/vendor/app` are
-   not found (full logcat over adb).
+1. Android up to the launcher: find why `/data` (ext4) does not mount with this kernel.
 2. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone, touch, UART2/3 pins, video chain.
 3. Display: real `lcm_driver_common` (panel text parser from metazone/logo).
 4. Module ABI: clang build, then find the type differences behind the CRC mismatches.
