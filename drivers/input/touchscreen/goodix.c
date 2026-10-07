@@ -232,6 +232,17 @@ static int goodix_ts_read_input_report(struct goodix_ts_data *ts, u8 *data)
 	return touch_num;
 }
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * Orientation of the reported coordinates, after the X/Y swap (landscape controller, portrait
+ * panel): writable at run time in /sys/module/goodix/parameters/ to find the right one on the unit.
+ */
+static bool ac8257_invert_x;
+module_param_named(invert_x, ac8257_invert_x, bool, 0644);
+static bool ac8257_invert_y;
+module_param_named(invert_y, ac8257_invert_y, bool, 0644);
+#endif
+
 static void goodix_ts_report_touch(struct goodix_ts_data *ts, u8 *coor_data)
 {
 	int id = coor_data[0] & 0x0F;
@@ -239,6 +250,16 @@ static void goodix_ts_report_touch(struct goodix_ts_data *ts, u8 *coor_data)
 	int input_y = get_unaligned_le16(&coor_data[3]);
 	int input_w = get_unaligned_le16(&coor_data[5]);
 
+#ifdef CONFIG_MACH_AC8257
+	/* abs_x_max/abs_y_max are already swapped: invert in the reported space */
+	if (ts->swapped_x_y)
+		swap(input_x, input_y);
+	if (ac8257_invert_x)
+		input_x = ts->abs_x_max - input_x;
+	if (ac8257_invert_y)
+		input_y = ts->abs_y_max - input_y;
+	goto report;
+#endif
 	/* Inversions have to happen before axis swapping */
 	if (ts->inverted_x)
 		input_x = ts->abs_x_max - input_x;
@@ -247,6 +268,9 @@ static void goodix_ts_report_touch(struct goodix_ts_data *ts, u8 *coor_data)
 	if (ts->swapped_x_y)
 		swap(input_x, input_y);
 
+#ifdef CONFIG_MACH_AC8257
+report:
+#endif
 	input_mt_slot(ts->input_dev, id);
 	input_mt_report_slot_state(ts->input_dev, MT_TOOL_FINGER, true);
 	input_report_abs(ts->input_dev, ABS_MT_POSITION_X, input_x);

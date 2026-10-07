@@ -141,6 +141,12 @@ Stage 1p findings:
   (`drivers/misc/autochips/jancar_gpios.c`): the ioctl argument is the index N of an `ac8227l_pin_N` GPIO
   of the `mediatek,ac8227l-gpio-ioctl` node of the stock DTB; 0x6b00 high, 0x6b01 low, 0x6b02 input,
   0x6b03 read, as the stock driver.
+- Stage 1t: **touch works** (polling, events in `getevent`), inverted on the panel; `/dev/gpios_ioctl` is there.
+  The display is rotated by 90 degrees and shows glitches. The stock kernel reports the same panel (720x1280
+  from the metazone, MIPI 4 lanes) and the same display caps (`lcm_degree` 0, 2 layers): the landscape UI
+  comes from userspace (`persist.sf.hwrotation=90` on the stock unit), to be checked under this kernel.
+  Stage 1u: `invert_x`/`invert_y` in `/sys/module/goodix/parameters/` set the touch orientation at run time
+  (after the X/Y swap), to find the right one on the unit.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
