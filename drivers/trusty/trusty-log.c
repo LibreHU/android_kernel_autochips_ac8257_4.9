@@ -179,7 +179,8 @@ static int trusty_log_probe(struct platform_device *pdev)
 	s->dev = &pdev->dev;
 	s->trusty_dev = s->dev->parent;
 	s->get = 0;
-	s->log_pages = alloc_pages(GFP_KERNEL | __GFP_ZERO,
+	/* Below 4 GiB, as the stock kernel does: the 32-bit Trusty of the UJC201 drops the high bits. */
+	s->log_pages = alloc_pages(GFP_KERNEL | __GFP_ZERO | GFP_DMA,
 				   get_order(TRUSTY_LOG_SIZE));
 	if (!s->log_pages) {
 		result = -ENOMEM;

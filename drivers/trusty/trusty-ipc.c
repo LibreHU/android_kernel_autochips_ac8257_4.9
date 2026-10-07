@@ -172,9 +172,14 @@ static int _match_data(int id, void *p, void *data)
 	return (p == data);
 }
 
+/*
+ * Shared with the secure world: below 4 GiB (ZONE_DMA). The UJC201 has 6 GiB of RAM and runs a
+ * 32-bit Trusty, which only takes the low 32 bits of the address; the stock kernel allocates these
+ * buffers with GFP_DMA too.
+ */
 static void *_alloc_shareable_mem(size_t sz, phys_addr_t *ppa, gfp_t gfp)
 {
-	return alloc_pages_exact(sz, gfp);
+	return alloc_pages_exact(sz, gfp | GFP_DMA);
 }
 
 static void _free_shareable_mem(size_t sz, void *va, phys_addr_t pa)
