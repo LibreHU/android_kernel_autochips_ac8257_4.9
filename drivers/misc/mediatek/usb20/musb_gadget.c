@@ -2402,8 +2402,11 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	if (!musb->is_ready && is_on) {
 		musb->is_ready = true;
 		set_usb_rdy();
-		/* direct issue connection work if usb is forced on */
-		if (musb_force_on) {
+		/* direct issue connection work if usb is forced on; the AC8257
+		 * has no charger detection to do it, so the stock AutoChips
+		 * kernel always connects on the first pull-up
+		 */
+		if (musb_force_on || IS_ENABLED(CONFIG_MACH_AC8257)) {
 			DBG(0, "mt_usb_connect() on is_ready begin\n");
 			mt_usb_connect();
 		}

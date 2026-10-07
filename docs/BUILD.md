@@ -73,7 +73,8 @@ Outputs:
    bootloader message in `para` (the misc partition of this unit). The MTK exception reboot then starts
    the normal boot partition, with the log kept. Read it from Android with
    `cat /sys/fs/pstore/console-ramoops*`, `cat /proc/last_kmsg` and `logcat -L` (userspace log, only the
-   last 64 KiB). Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
+   last 64 KiB). `ac8257_panic_secs=N` on the command line (`--cmdline-append`) overrides the delay
+   (0: no timed panic), e.g. a longer window for a live `adb` session. Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
 
 ## Stock references
 

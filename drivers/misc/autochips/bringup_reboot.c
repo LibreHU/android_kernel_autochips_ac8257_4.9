@@ -15,7 +15,11 @@
  *
  * Reboots requested by userspace are turned into the same panic: Android rebooting itself into
  * recovery (Rescue Party, init after a critical service crash) would otherwise start the test kernel
- * again and again, before the timed panic ever fires. This program is free software; GPL v2.
+ * again and again, before the timed panic ever fires.
+ *
+ * "ac8257_panic_secs=N" on the kernel command line overrides the delay (0 disables the timed panic,
+ * the reboot interception stays), so a test image can be given a longer window for a live adb session
+ * without rebuilding the kernel. This program is free software; GPL v2.
  */
 #include <linux/blkdev.h>
 #include <linux/buffer_head.h>
@@ -70,11 +74,19 @@ static void ac8257_clear_bcb(void)
 	blkdev_put(bdev, FMODE_READ | FMODE_WRITE);
 }
 
+static int ac8257_panic_secs = CONFIG_AC8257_BRINGUP_PANIC_SECS;
+
+static int __init ac8257_panic_secs_setup(char *str)
+{
+	return kstrtoint(str, 0, &ac8257_panic_secs) == 0;
+}
+__setup("ac8257_panic_secs=", ac8257_panic_secs_setup);
+
 static void ac8257_bringup_panic(struct work_struct *work)
 {
 	ac8257_clear_bcb();
 	panic("ac8257 bring-up: timed panic after %d s, to keep the log in pstore",
-	      CONFIG_AC8257_BRINGUP_PANIC_SECS);
+	      ac8257_panic_secs);
 }
 
 static DECLARE_DELAYED_WORK(ac8257_bringup_work, ac8257_bringup_panic);
@@ -102,8 +114,12 @@ static struct notifier_block ac8257_bringup_reboot_nb = {
 
 static int __init ac8257_bringup_panic_init(void)
 {
-	pr_info("ac8257 bring-up: timed panic in %d s\n", CONFIG_AC8257_BRINGUP_PANIC_SECS);
-	schedule_delayed_work(&ac8257_bringup_work, CONFIG_AC8257_BRINGUP_PANIC_SECS * HZ);
+	if (ac8257_panic_secs > 0) {
+		pr_info("ac8257 bring-up: timed panic in %d s\n", ac8257_panic_secs);
+		schedule_delayed_work(&ac8257_bringup_work, ac8257_panic_secs * HZ);
+	} else {
+		pr_info("ac8257 bring-up: timed panic disabled\n");
+	}
 	schedule_delayed_work(&ac8257_bringup_clear_work, 10 * HZ);
 	register_reboot_notifier(&ac8257_bringup_reboot_nb);
 	return 0;
