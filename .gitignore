@@ -118,3 +118,7 @@ all.config
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+# AC8257: CI workflow and the stock vbmeta blobs used to pack test images
+!/.github/
+!tools/ac8257/stock/*.bin

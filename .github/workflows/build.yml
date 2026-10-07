@@ -1,0 +1,91 @@
+name: Build AC8257 kernel
+
+# Builds Image.gz-dtb with the AOSP GCC 4.9 toolchain and packs it into the
+# stock UJC201 boot image layout (tools/ac8257/stock/boot_template_250718.img:
+# stock header, cmdline and boot vbmeta, without the stock kernel):
+#  - recovery_test_ac8257.img: 32 MiB, recovery vbmeta, for the recovery test
+#    method of docs/BUILD.md (fastboot flash recovery + fastboot oem reboot-recovery)
+#  - boot_ac8257.img: 10 MiB, boot vbmeta (normal boot partition)
+# Both carry the bring-up options of the defconfig (early pstore console, timed panic).
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      cmdline_append:
+        description: 'Appended to the recovery test image command line'
+        required: false
+        default: 'init=/init ac8257_panic_secs=600 log_buf_len=8M'
+
+env:
+  # LineageOS mirror of AOSP prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 (GCC 4.9.x 20150123)
+  TOOLCHAIN_REPO: https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9
+  TOOLCHAIN_SHA: a61b4b9ea2a5098dbf113999526978aec683753b
+  DEFCONFIG: ac8257_demo_defconfig
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Host packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bc bison flex libssl-dev libelf-dev cpio
+
+      - name: Toolchain (AOSP GCC 4.9)
+        run: |
+          git init -q "$RUNNER_TEMP/gcc49"
+          cd "$RUNNER_TEMP/gcc49"
+          git remote add origin "$TOOLCHAIN_REPO"
+          git fetch -q --depth 1 origin "$TOOLCHAIN_SHA"
+          git checkout -q FETCH_HEAD
+          echo "$RUNNER_TEMP/gcc49/bin" >> "$GITHUB_PATH"
+
+      - name: Configure
+        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- "$DEFCONFIG"
+
+      - name: Build Image.gz-dtb
+        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- -j"$(nproc)" Image.gz-dtb 2>&1 | tee build.log
+
+      - name: Pack images
+        env:
+          CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init ac8257_panic_secs=600 log_buf_len=8M' }}
+        run: |
+          mkdir -p dist
+          K=out/arch/arm64/boot/Image.gz-dtb
+          T=tools/ac8257/stock/boot_template_250718.img
+          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/recovery_test_ac8257.img \
+            --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
+            --cmdline-append "$CMDLINE_APPEND"
+          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257.img --size 10485760
+          cp "$K" dist/
+          cp out/.config dist/config
+          echo "commit ${GITHUB_SHA}" > dist/BUILD_INFO.txt
+          echo "recovery cmdline append: $CMDLINE_APPEND" >> dist/BUILD_INFO.txt
+          sha256sum dist/* | tee -a dist/BUILD_INFO.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ac8257-kernel-${{ github.sha }}
+          path: dist/
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log-${{ github.sha }}
+          path: build.log
+          retention-days: 7
