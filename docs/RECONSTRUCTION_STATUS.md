@@ -115,7 +115,20 @@ timed panic, userspace reboots turned into a panic (with the recovery command cl
 | 1m | native services stable, backlight dims (power manager runs), black screen, no USB; SystemUI crash-loops: `Failed to find provider com.jancar.settings.provider`, `com.jancar.services` (`/vendor/app/ivi-services`, persistent) "not found"; same package installed and enabled on the stock kernel, `/data` unencrypted | USB: below; Jancar packages: under investigation (needs the full boot log, now possible over adb) |
 | 1n | **USB/adb work**. `/data` does not mount: `fs_stat userdata 0x103` (ext4, full mount failed), so init takes the `defaultcrypto` path (`ro.crypto.state=encrypted`, `Cryptfs: Bad magic`), `vold.decrypt=trigger_restart_min_framework`, "only parsing core apps": the Jancar packages missing in 1m come from this | ext4/quota/crypto options identical to the stock config: the kernel error is needed (`log_buf_len=8M`, read-only test mount) |
 | 1o | kernel log: `EXT4-fs (mmcblk0p39): Unrecognized mount option "autoformat"`; a mount without it works | AutoChips ext4 options, below |
-| 1p | **`/data` mounts, Android shows its UI on the panel** with this kernel | (next: check each function: touch, audio, Wi-Fi, BT, GPS, camera, CAN/MCU) |
+| 1p | **`/data` mounts, Android shows its UI on the panel** with this kernel; no touch, backlight not working, some artefacts, slow `scrcpy` | below |
+
+Stage 1p findings:
+- Touch: the stock driver is an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
+  i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
+  `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
+  `check_serializer_link_ready`, `init_ti_link` in the stock image): the touch controller is only reachable once
+  the serializer/deserializer I2C pass-through is set up. The mainline `goodix.c` here does none of it.
+- Missing `/dev` nodes against the stock unit: `dualarm-dev`, `tvd`, `di`, `nr`, `wch`, `rdi0`, `mtz`,
+  `backcardrv`, `gpios_ioctl`, `video10`, `camera-isp`, `camera-fdvt`, `scp`, `spidev0.0`-`5.0`, and the
+  connectivity nodes created by the vendor modules (`wmtdetect`, `stpwmt`, `stpbt`, `stpgps`, `fm`, `wmtWifi`,
+  `fw_log_*`, `gps_emi`): no vendor module is loaded (`lsmod` empty; `wmt_loader` waits for `/dev/wmtdetect`).
+- `jancar.services` polls I2C 0x40 on i2c6 every 20 ms and gets no ACK (none on the stock kernel): the kernel log
+  fills up with it.
 
 AutoChips ext4 mount options (stock `fs/ext4/super.c` token table and `parse_options`): `autoformat` (token 70,
 sets a super block flag; `ext4_clear_journal_err` prints "please add autoformat mount option."),
@@ -149,11 +162,11 @@ headers). Converging on these CRCs is the measure of how close the tree is to th
 
 ### Next
 
-1. Android UI shows (stage 1p): go through each function (touch, audio, Wi-Fi, BT, GPS, cameras, MCU/CAN)
-   and the missing AutoChips devices.
-2. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone, touch, UART2/3 pins, video chain.
-3. Display: real `lcm_driver_common` (panel text parser from metazone/logo).
-4. Module ABI: clang build, then find the type differences behind the CRC mismatches.
+1. Touch: AutoChips goodix with the TI FPD-Link III set-up; backlight path; the i2c6 0x40 device.
+2. Vendor modules (Wi-Fi, BT, GPS, FM): symbol CRCs (see Module ABI).
+3. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone, touch, UART2/3 pins, video chain.
+4. Display: real `lcm_driver_common` (panel text parser from metazone/logo).
+5. Module ABI: clang build, then find the type differences behind the CRC mismatches.
 
 ## Rule
 
