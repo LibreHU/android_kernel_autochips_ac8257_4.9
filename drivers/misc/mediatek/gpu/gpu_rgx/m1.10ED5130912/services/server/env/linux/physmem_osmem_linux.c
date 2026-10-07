@@ -1238,7 +1238,17 @@ _GetGFPFlags(IMG_BOOL bZero,
 	struct device *psDev = psDevNode->psDevConfig->pvOSDevice;
 	gfp_t gfp_flags = GFP_USER | __GFP_NOWARN | __GFP_NOMEMALLOC;
 
-#if defined(PVR_LINUX_PHYSMEM_USE_HIGHMEM_ONLY)
+#if defined(CONFIG_MACH_AC8257)
+	/*
+	 * AC8257 (UJC201, 6 GiB of RAM): GPU pages below 4 GiB, as the stock kernel allocates them
+	 * (gfp 0x24302c3 in its _AllocOSPages: __GFP_HIGHMEM | __GFP_DMA, which the zone table
+	 * resolves to ZONE_DMA). Above 4 GiB the GPU driver ends up in a bad state at the first
+	 * device open (firmware initialisation) and SurfaceFlinger never starts.
+	 */
+	gfp_flags |= __GFP_DMA;
+
+	PVR_UNREFERENCED_PARAMETER(psDev);
+#elif defined(PVR_LINUX_PHYSMEM_USE_HIGHMEM_ONLY)
 	/* Force use of HIGHMEM */
 	gfp_flags |= __GFP_HIGHMEM;
 

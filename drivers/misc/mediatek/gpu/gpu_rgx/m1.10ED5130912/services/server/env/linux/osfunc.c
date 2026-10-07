@@ -222,6 +222,10 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 #else
 	PVR_UNREFERENCED_PARAMETER(psDev);
 #endif
+#if defined(CONFIG_MACH_AC8257)
+	/* Below 4 GiB, as the stock kernel does (GFP_KERNEL | __GFP_DMA): 6 GiB of RAM. */
+	gfp_flags |= __GFP_DMA;
+#endif
 
 	/*allocate the pages */
 	psPage = alloc_pages(gfp_flags, ui32Order);
