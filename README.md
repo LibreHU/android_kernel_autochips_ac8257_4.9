@@ -51,7 +51,7 @@ driver loads but nobody has checked the function yet.
    - [x] Touch (GT928, polling, orientation)
    - [x] Jancar `/dev/gpios_ioctl`
    - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel): crashes, glitches
-   - [ ] Display rotation (stock: `persist.sf.hwrotation=90`)
+   - [ ] Display rotation: metazone driver (`/dev/mtz`), read by `rotationd` to set `persist.sf.hwrotation`
    - [ ] Backlight control: real `lcm_driver_common` with the DS90UB947/941 bridge (`CONFIG_LCM_TRANSFER_IC_SUPPORT`)
    - [ ] Wi-Fi / BT / GPS / FM: build with clang, converge on the stock symbol CRCs so the vendor modules load
    - [ ] Audio, keys, IR: check on the unit
