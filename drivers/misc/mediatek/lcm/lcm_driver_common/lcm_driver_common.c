@@ -6,17 +6,18 @@
  * (lcm_params_info_init, get_specific_part_extended_panel_info, lvds_push_table in the stock kernel).
  * Neither is reconstructed yet.
  *
- * This placeholder only reports a 1024x600 DSI video-mode panel and never touches the panel or the
- * bridge: LK already powered and initialised them, so the picture may survive as long as these
- * timings are close to LK's. Suspend / resume do nothing (the screen stays on). Replace with the
+ * This placeholder only reports a 720x1280 DSI video-mode panel (the frame buffer the UJC201 LK sets
+ * up: "primary resolution(width:720, height:1280)", UI rotated by 90 degrees) and never touches the
+ * panel or the bridge: LK and ARM2 already powered and initialised them, so the picture may survive
+ * as long as these timings are close to LK's. Suspend / resume do nothing (the screen stays on). Replace with the
  * reconstructed driver (see docs/RECONSTRUCTION_STATUS.md, display).
  *
- * Timings from the KR070IA4T 1024x600 DSI panel of the same BSP: reference values, not the stock ones.
+ * Porches and clock: generic reference values, not the stock ones.
  */
 #include "lcm_drv.h"
 
-#define FRAME_WIDTH 1024
-#define FRAME_HEIGHT 600
+#define FRAME_WIDTH 720
+#define FRAME_HEIGHT 1280
 
 static struct LCM_UTIL_FUNCS lcm_util;
 

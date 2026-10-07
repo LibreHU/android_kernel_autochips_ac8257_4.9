@@ -2330,6 +2330,59 @@ int __init __parse_tag_ext_videolfb(unsigned long node)
 }
 #endif
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * AutoChips: the frame buffer set up by the LK and the ARM2 core is the reserved-memory node
+ * "autochips,framebuffer" (normal RAM, mapped by the kernel). It starts with a 0x6000-byte header
+ * (panel information at +0x100, LCM-initialised magic at +0x5ff4), then the frame buffer. Layout
+ * and values taken from the stock kernel's _parse_tag_videolfb() and mtkfb_probe().
+ */
+#define AC8257_FB_HEADER_SIZE		0x6000
+#define AC8257_FB_LCM_INITED_OFFSET	0x5ff4
+#define AC8257_FB_LCM_INITED_MAGIC	0x5a5a5a5a
+
+static phys_addr_t ac8257_fb_rsv_base;
+static unsigned int ac8257_fb_rsv_size;
+
+static int __parse_ac8257_framebuffer(void)
+{
+	struct device_node *node;
+	u32 reg[4];
+
+	node = of_find_compatible_node(NULL, NULL, "autochips,framebuffer");
+	if (!node || of_property_read_u32_array(node, "reg", reg, 4))
+		return -1;
+	ac8257_fb_rsv_base = reg[1];
+	ac8257_fb_rsv_size = reg[3];
+	islcmconnected = 1;
+	fb_base = ac8257_fb_rsv_base + AC8257_FB_HEADER_SIZE;
+	vramsize = ac8257_fb_rsv_size - AC8257_FB_HEADER_SIZE;
+	lcd_fps = 6000;
+	strncpy(mtkfb_lcm_name, "lcm_driver_common", sizeof(mtkfb_lcm_name) - 1);
+	return 0;
+}
+
+/* Maps the whole region (it is RAM: ioremap refuses it), returns the frame buffer address. */
+static void *ac8257_map_framebuffer(void)
+{
+	unsigned int i, n = PAGE_ALIGN(ac8257_fb_rsv_size) >> PAGE_SHIFT;
+	struct page **pages;
+	void *va;
+
+	pages = kmalloc_array(n, sizeof(*pages), GFP_KERNEL);
+	if (!pages)
+		return NULL;
+	for (i = 0; i < n; i++)
+		pages[i] = phys_to_page(ac8257_fb_rsv_base + ((phys_addr_t)i << PAGE_SHIFT));
+	va = vmap(pages, n, VM_MAP, pgprot_noncached(PAGE_KERNEL));
+	kfree(pages);
+	if (!va)
+		return NULL;
+	is_lcm_inited = readl(va + AC8257_FB_LCM_INITED_OFFSET) == AC8257_FB_LCM_INITED_MAGIC;
+	return va + AC8257_FB_HEADER_SIZE;
+}
+#endif
+
 static int _parse_tag_videolfb(void)
 {
 	int ret;
@@ -2341,6 +2394,10 @@ static int _parse_tag_videolfb(void)
 	if (is_videofb_parse_done)
 		return 0;
 
+#ifdef CONFIG_MACH_AC8257
+	if (!__parse_ac8257_framebuffer())
+		goto found;
+#endif
 	chosen_node = of_find_node_by_path("/chosen");
 	if (!chosen_node)
 		chosen_node = of_find_node_by_path("/chosen@0");
@@ -2576,9 +2633,19 @@ static int mtkfb_probe(struct platform_device *pdev)
 	DISPMSG("mtkfb_probe: fb_pa = %pa\n", &fb_base);
 
 #ifdef CONFIG_MTK_IOMMU_V2
+#ifdef CONFIG_MACH_AC8257
+	if (ac8257_fb_rsv_size)
+		temp_va = (size_t)ac8257_map_framebuffer();
+	else
+#endif
 	temp_va = (size_t)ioremap_nocache(fb_base,
 		(fb_base + vramsize - fb_base));
 	fbdev->fb_va_base = (void *)temp_va;
+	if (!temp_va) {
+		DISPERR("mtkfb_probe: cannot map the frame buffer\n");
+		r = -ENOMEM;
+		goto cleanup;
+	}
 	ion_display_client = disp_ion_create("disp_fb0");
 	if (ion_display_client == NULL) {
 		DISPERR("mtkfb_probe: fail to create ion\n");
@@ -2589,7 +2656,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 	ion_display_handle = disp_ion_alloc(ion_display_client,
 		ION_HEAP_MULTIMEDIA_MAP_MVA_MASK, temp_va,
 		(fb_base + vramsize - fb_base));
-	if (r != 0) {
+	if (!ion_display_handle) {
 		DISPERR("mtkfb_probe: fail to allocate buffer\n");
 		r = -1;
 		goto cleanup;
