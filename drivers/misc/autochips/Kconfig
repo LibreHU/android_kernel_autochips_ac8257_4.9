@@ -27,4 +27,16 @@ config AC8257_EARLY_PSTORE_CONSOLE
 	  /sys/fs/pstore/console-ramoops or /proc/last_kmsg. Only for bringing up a new kernel: once
 	  it boots, say N.
 
+config AC8257_BRINGUP_PANIC
+	bool "Timed panic after boot (bring-up)"
+	help
+	  Panics a fixed time after boot, so that a test kernel stuck in userspace (no display, no
+	  USB) reboots through the exception path with its log, init's messages included, kept in
+	  pstore, instead of hanging until the unit is reflashed. Only for bringing up a new kernel.
+
+config AC8257_BRINGUP_PANIC_SECS
+	int "Seconds before the timed panic"
+	depends on AC8257_BRINGUP_PANIC
+	default 90
+
 endmenu
