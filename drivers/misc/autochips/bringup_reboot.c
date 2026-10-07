@@ -11,7 +11,11 @@
  * (the misc partition of this unit, see the TWRP fstab of the device tree): when Android crash-loops
  * with a test kernel, Rescue Party writes "boot-recovery" there and the LK then boots the recovery
  * partition at every start, which, with the test kernel in recovery, is a loop only SP Flash Tool
- * gets out of. This program is free software; GPL v2.
+ * gets out of.
+ *
+ * Reboots requested by userspace are turned into the same panic: Android rebooting itself into
+ * recovery (Rescue Party, init after a critical service crash) would otherwise start the test kernel
+ * again and again, before the timed panic ever fires. This program is free software; GPL v2.
  */
 #include <linux/blkdev.h>
 #include <linux/buffer_head.h>
@@ -19,6 +23,8 @@
 #include <linux/genhd.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
+#include <linux/notifier.h>
+#include <linux/reboot.h>
 #include <linux/workqueue.h>
 
 #define AC8257_MMC_DEVT		MKDEV(MMC_BLOCK_MAJOR, 0)	/* mmcblk0, the eMMC */
@@ -73,10 +79,33 @@ static void ac8257_bringup_panic(struct work_struct *work)
 
 static DECLARE_DELAYED_WORK(ac8257_bringup_work, ac8257_bringup_panic);
 
+static int ac8257_bringup_reboot_notify(struct notifier_block *nb, unsigned long code, void *cmd)
+{
+	ac8257_clear_bcb();
+	panic("ac8257 bring-up: reboot requested (event %lu, \"%s\"), turned into a panic",
+	      code, cmd ? (char *)cmd : "");
+	return NOTIFY_DONE;
+}
+
+/* Also once early (the eMMC is up by then): a crash later on then ends in a normal boot as well. */
+static void ac8257_bringup_early_clear(struct work_struct *work)
+{
+	ac8257_clear_bcb();
+}
+
+static DECLARE_DELAYED_WORK(ac8257_bringup_clear_work, ac8257_bringup_early_clear);
+
+static struct notifier_block ac8257_bringup_reboot_nb = {
+	.notifier_call = ac8257_bringup_reboot_notify,
+	.priority = INT_MAX,
+};
+
 static int __init ac8257_bringup_panic_init(void)
 {
 	pr_info("ac8257 bring-up: timed panic in %d s\n", CONFIG_AC8257_BRINGUP_PANIC_SECS);
 	schedule_delayed_work(&ac8257_bringup_work, CONFIG_AC8257_BRINGUP_PANIC_SECS * HZ);
+	schedule_delayed_work(&ac8257_bringup_clear_work, 10 * HZ);
+	register_reboot_notifier(&ac8257_bringup_reboot_nb);
 	return 0;
 }
 late_initcall(ac8257_bringup_panic_init);
