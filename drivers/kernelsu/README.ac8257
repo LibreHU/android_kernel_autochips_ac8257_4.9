@@ -1,0 +1,6 @@
+KernelSU-Next kernel driver, https://github.com/KernelSU-Next/KernelSU-Next
+tag v3.4.0-legacy, commit 8af3d4fec33be32fa5d3f8dae4f380fac45bf2cd (kernel/ directory; setup/build scripts removed).
+Manual hook mode (CONFIG_KSU_MANUAL_HOOK, no kprobes on this 4.9 kernel); the hooks are in
+fs/exec.c, fs/open.c, fs/read_write.c, fs/stat.c, drivers/input/input.c, kernel/reboot.c and
+security/selinux/avc.c, under CONFIG_KSU. Manager: the KernelSU-Next app matching this version.
+(include/uapi is the top-level uapi/ directory of the repository, copied instead of the symlink.)

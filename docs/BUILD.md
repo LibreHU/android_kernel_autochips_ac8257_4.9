@@ -114,6 +114,35 @@ Other tweaks (kept to what is measurable and leaves the vendor module ABI alone)
 - Not needed: `slub_debug=OFZPU page_owner=on` given by the LK are no-ops (`CONFIG_SLUB_DEBUG`,
   `CONFIG_PAGE_OWNER` off). Config/debug cleanup that changes structure layouts waits for the module ABI work.
 
+## KernelSU Next
+
+`drivers/kernelsu` is the KernelSU-Next kernel driver, tag `v3.4.0-legacy` (the branch for non-GKI
+kernels), vendored without its git history (`drivers/kernelsu/README.ac8257`); version pinned to 33294 /
+`v3.4.0-legacy` in its Kbuild, the value upstream derives from its git history, so the manager recognises it.
+`CONFIG_KSU=y`, `CONFIG_KSU_MANUAL_HOOK=y` (no kprobes on this 4.9 kernel). Manual hooks, under `CONFIG_KSU`:
+
+| Hook | Where |
+|---|---|
+| `ksu_handle_execveat` / `ksu_handle_execveat_sucompat` | `do_execveat_common`, `fs/exec.c` |
+| `ksu_handle_faccessat` | `faccessat`, `fs/open.c` |
+| `ksu_handle_sys_read` | `read`, `fs/read_write.c` |
+| `ksu_handle_stat`, `ksu_handle_newfstat_ret`, `ksu_handle_fstat64_ret` | `vfs_fstatat`, `newfstat`, `fstat64`, `fs/stat.c` |
+| `ksu_handle_input_handle_event` | `input_handle_event`, `drivers/input/input.c` (safe mode: volume down) |
+| `ksu_handle_sys_reboot` | `reboot`, `kernel/reboot.c` (supercalls, before the capability check) |
+| `ksu_handle_slow_avc_audit` | `slow_avc_audit`, `security/selinux/avc.c` |
+
+Linux 4.9 adaptations, all inside `drivers/kernelsu`: `compat/k49/` (newer headers: `linux/sched/*.h`,
+`linux/overflow.h`, `linux/compiler_types.h`; `kvmalloc`/`kvcalloc`, `strscpy_pad`, 4.14-style
+`kernel_read`/`kernel_write` mapped to the driver's compat helpers), `ns_get_path()` returning a pointer,
+no clang-only warning flags, `-Wno-error` for this directory (its pointer/integer conversions are warnings
+upstream). The backports its Kbuild applies to the kernel (`can_umount`/`path_umount` in
+`fs/namespace.c`, `selinux_inode()`/`selinux_cred()` in `security/selinux`) are committed, so builds do not
+rewrite the tree; its `struct seccomp` change is dropped (only used on 5.9+, and it would change
+`task_struct`, hence the symbol CRCs of the vendor modules).
+
+Manager: the KernelSU Next app of the same release
+(https://github.com/KernelSU-Next/KernelSU-Next/releases, `v3.4.0-legacy`). Remove with `CONFIG_KSU=n`.
+
 ## GitHub Actions
 
 `.github/workflows/build.yml` builds `Image.gz-dtb` at each push on master (changes outside `docs/` and

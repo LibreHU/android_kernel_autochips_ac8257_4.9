@@ -65,6 +65,7 @@ driver loads but nobody has checked the function yet.
    - [x] CPU governors (schedutil, conservative added); CPU/GPU overclock tables loaded, capped at 2.0 GHz /
      660 MHz by default, raised as root (`docs/BUILD.md`)
    - [x] Touch input boost, zram lz4, deadline I/O scheduler
+   - [x] KernelSU Next (v3.4.0-legacy, manual hooks), to be tested with its manager
 4. **Later**: real panel driver from the metazone description, touch interrupt, cleanup of the AutoChips code
    for review.
 
