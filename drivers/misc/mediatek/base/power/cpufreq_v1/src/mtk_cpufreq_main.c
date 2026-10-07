@@ -1306,6 +1306,10 @@ static void ac8257_apply_soft_max(unsigned int i)
 		p->idx_opp_ppm_limit = soft;
 	if (p->idx_opp_ppm_base != -1 && p->idx_opp_ppm_base < soft)
 		p->idx_opp_ppm_base = soft;
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	/* the SSPM applies the limits: give it the capped indexes */
+	cpuhvfs_set_min_max(i, p->idx_opp_ppm_base, p->idx_opp_ppm_limit);
+#endif
 }
 
 static int ac8257_cpu_max_set(const char *val, const struct kernel_param *kp)
@@ -1320,7 +1324,9 @@ static int ac8257_cpu_max_set(const char *val, const struct kernel_param *kp)
 	for (i = 0; i < ac8257_ppm_clusters; i++)
 		ac8257_apply_soft_max(i);
 	cpufreq_para_unlock(flags);
+#ifndef CONFIG_HYBRID_CPU_DVFS
 	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
+#endif
 	return 0;
 }
 
@@ -1339,6 +1345,25 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	unsigned int i;
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
+#ifdef CONFIG_MACH_AC8257
+	unsigned long flags;
+
+	cpufreq_para_lock(flags);
+	for (i = 0; i < ppm->cluster_num && i < NR_MT_CPU_DVFS; i++) {
+		if (ppm->cpu_limit[i].has_advise_freq) {
+			ac8257_ppm_base[i] = ppm->cpu_limit[i].advise_cpufreq_idx;
+			ac8257_ppm_limit[i] = ppm->cpu_limit[i].advise_cpufreq_idx;
+		} else {
+			ac8257_ppm_base[i] = ppm->cpu_limit[i].min_cpufreq_idx;
+			ac8257_ppm_limit[i] = ppm->cpu_limit[i].max_cpufreq_idx;
+		}
+		ac8257_apply_soft_max(i);	/* calls cpuhvfs_set_min_max() */
+		ac8257_ppm_seen = true;
+		if (i + 1 > ac8257_ppm_clusters)
+			ac8257_ppm_clusters = i + 1;
+	}
+	cpufreq_para_unlock(flags);
+#else
 	for (i = 0; i < ppm->cluster_num; i++) {
 		if (ppm->cpu_limit[i].has_advise_freq)
 			cpuhvfs_set_min_max(i,
@@ -1349,6 +1374,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 				ppm->cpu_limit[i].min_cpufreq_idx,
 				ppm->cpu_limit[i].max_cpufreq_idx);
 	}
+#endif
 #else
 	unsigned long flags;
 	struct mt_cpu_dvfs *p;
