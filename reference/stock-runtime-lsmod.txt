@@ -1,0 +1,8 @@
+Module                  Size  Used by
+wlan_drv_gen4m       1646592  0 
+wmt_chrdev_wifi        28672  1 wlan_drv_gen4m
+gps_drv                61440  1 
+fmradio_drv           176128  0 
+bt_drv                 32768  1 
+wmt_drv              1191936  6 wlan_drv_gen4m,wmt_chrdev_wifi,gps_drv,fmradio_drv,bt_drv
+fpsgo                  16384  0 
