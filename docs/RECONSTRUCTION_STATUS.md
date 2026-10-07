@@ -164,6 +164,13 @@ Stage 1p findings:
   open))` and the `persist.sf.hwrotation` property; `/dev/mtz` (stock `CONFIG_ATC_METAZONE`: `MTZ_IOControl`,
   `MetaZone_Read`, reserved memory `autochips,metazone` at 0x60700000 and the `metazone` partition) is missing
   here. The LK reads the same value (`char ui rotation:90`). Next: reconstruct the metazone driver.
+- Stage 2b (overclock table with its SSPM record table, KernelSU Next): the 1.3 s crash is gone and
+  KernelSU Next initialises, but `eem_init01` then spins 16 s waiting for Vproc to reach VBOOT (0.80 V): the
+  PTPOD policy fixes the CPU at OPP index 8, the 0.80 V / 1400 MHz entry of the stock tables but 1533 MHz /
+  0.85 V in the overclock table. Stage 2c uses index 10 (1400 MHz / 0.80 V) for the overclock level. During
+  that wait a display interrupt read `MMSYS_CG_CON0` (0x14000100) through the stage 1w guard (`__clk_is_enabled`
+  reads the gate register) while the MM bus was not clocked: Systracker read timeout, exception reboot at
+  18.5 s. The guard now uses the software clock enable counts only, with no register read.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,

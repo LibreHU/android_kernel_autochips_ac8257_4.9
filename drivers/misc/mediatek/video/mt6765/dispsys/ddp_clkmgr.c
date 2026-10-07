@@ -449,12 +449,18 @@ bool ddp_module_clk_is_on(enum DISP_MODULE_ENUM module_id)
 {
 	enum DDP_CLK_ID id = ddp_get_module_clk_id(module_id);
 
+	/*
+	 * Software enable counts only: reading the gate registers (MMSYS_CG_CON0) from the interrupt
+	 * hangs the bus when the MM clocks are off (Systracker read timeout at 0x14000100, stage2b).
+	 * Interrupts arriving before dpmgr_path_init enables the clocks are masked, then unmasked by
+	 * ddp_irq_ac8257_clk_on() when the module clock is enabled.
+	 */
 	if (ddp_clks[CLK_MM_MTCMOS].pclk &&
-	    !__clk_is_enabled(ddp_clks[CLK_MM_MTCMOS].pclk))
+	    !__clk_get_enable_count(ddp_clks[CLK_MM_MTCMOS].pclk))
 		return false;
 	if (id >= MAX_DISP_CLK_CNT || !ddp_clks[id].pclk)
 		return true;
-	return __clk_is_enabled(ddp_clks[id].pclk);
+	return __clk_get_enable_count(ddp_clks[id].pclk) > 0;
 }
 #endif
 

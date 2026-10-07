@@ -60,6 +60,7 @@ extern "C" {
 /* other policy settings */
 #define PTPOD_FREQ_IDX_FY		(8UL)
 #define PTPOD_FREQ_IDX_SB		(9UL)
+#define PTPOD_FREQ_IDX_AC8257_OC	(10UL)
 #define PWRTHRO_BAT_PER_MW	(600)
 #define PWRTHRO_BAT_OC_MW	(600)
 #define PWRTHRO_LOW_BAT_LV1_MW	(600)
