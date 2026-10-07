@@ -138,6 +138,7 @@ GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 2),
 };
 static const struct of_device_id g_gpufreq_of_match[] = {
 	{ .compatible = "mediatek,mt6761-gpufreq" },
+	{ .compatible = "mediatek,ac8257-gpufreq" },
 	{ /* sentinel */ }
 };
 static struct platform_driver g_gpufreq_pdrv = {

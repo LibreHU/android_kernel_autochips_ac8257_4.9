@@ -91,6 +91,12 @@ config MTK_COMBO_CHIP_CONSYS_6765
 	  is
 	  MT6765(BT/WIFI/GPS/FM combo chip)
 
+config MTK_COMBO_CHIP_CONSYS_8257
+	bool "AutoChips AC8257 combo chip support"
+	help
+	  AC8257 CONSYS (Wi-Fi/BT/GPS/FM in the SoC, the MT6761 one). Name of the stock configuration; the
+	  drivers themselves are the stock vendor modules (wmt_drv.ko...).
+
 config MTK_COMBO_CHIP_CONSYS_6761
 	bool "MTK MT6761 combo chip support"
 	help
@@ -138,6 +144,7 @@ config MTK_COMBO_CHIP
 	default "CONSYS_6759" if MTK_COMBO_CHIP_CONSYS_6759
 	default "CONSYS_6765" if MTK_COMBO_CHIP_CONSYS_6765
 	default "CONSYS_6761" if MTK_COMBO_CHIP_CONSYS_6761
+	default "CONSYS_8257" if MTK_COMBO_CHIP_CONSYS_8257
 	default "CONSYS_8163" if MTK_COMBO_CHIP_CONSYS_8163
 	default "CONSYS_8167" if MTK_COMBO_CHIP_CONSYS_8167
 	default "CONSYS_3967" if MTK_COMBO_CHIP_CONSYS_3967

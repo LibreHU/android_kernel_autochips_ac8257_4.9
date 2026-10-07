@@ -17,7 +17,11 @@
 #include <mtk_mcdi_governor.h>
 #include <mtk_mcdi_plat.h>
 
+#ifdef CONFIG_MACH_AC8257
+static const char mcdi_node_name[] = "mediatek,ac8257-mcdi";
+#else
 static const char mcdi_node_name[] = "mediatek,mt6761-mcdi";
+#endif
 
 static unsigned int cpu_cluster_pwr_stat_map[NF_PWR_STAT_MAP_TYPE][NF_CPU] = {
 	[ALL_CPU_IN_CLUSTER] = {

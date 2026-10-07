@@ -166,6 +166,8 @@ int usb2jtag_usb_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6765-usb20");
 #elif defined(CONFIG_MACH_MT6761)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6761-usb20");
+	if (!node)
+		node = of_find_compatible_node(NULL, NULL, "mediatek,ac8257-usb20");
 #endif
 
 	if (!node) {

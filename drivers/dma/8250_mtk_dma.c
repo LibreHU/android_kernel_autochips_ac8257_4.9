@@ -805,6 +805,7 @@ static void mtk_dma_free(struct mtk_dmadev *mtkd)
 
 static const struct of_device_id mtk_uart_dma_match[] = {
 	{ .compatible = "mediatek,mt6577-uart-dma", },
+	{ .compatible = "mediatek,ac8x-uart-dma", },	/* AC8257 (stock ac8x_dma.c) */
 	{ /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(of, mtk_uart_dma_match);

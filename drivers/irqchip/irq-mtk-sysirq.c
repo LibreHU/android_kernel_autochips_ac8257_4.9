@@ -242,4 +242,6 @@ out_free_chip:
 	return ret;
 }
 IRQCHIP_DECLARE(mtk_sysirq, "mediatek,mt6577-sysirq", mtk_sysirq_of_init);
+/* AutoChips AC8257: same controller, root interrupt parent of the stock device tree. */
+IRQCHIP_DECLARE(ac8x_sysirq, "mediatek,ac8x-sysirq", mtk_sysirq_of_init);
 

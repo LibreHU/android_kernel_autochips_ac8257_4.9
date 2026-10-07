@@ -40,7 +40,11 @@
 #define PLL_SETTLE_TIME		20
 #define POS_SETTLE_TIME		1
 
+#ifdef CONFIG_MACH_AC8257
+#define DVFSP_DT_NODE		"mediatek,ac8257-dvfsp"
+#else
 #define DVFSP_DT_NODE		"mediatek,mt6761-dvfsp"
+#endif
 
 #define CSRAM_BASE		0x00110800
 #define CSRAM_SIZE		0x1400		/* 5K bytes */

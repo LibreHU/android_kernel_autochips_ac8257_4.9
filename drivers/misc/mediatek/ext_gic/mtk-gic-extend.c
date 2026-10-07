@@ -936,6 +936,8 @@ static int __init mtk_gic_ext_init(void)
 	if (IS_ERR(GIC_CPU_BASE))
 		return -EINVAL;
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6577-sysirq");
+	if (!node)
+		node = of_find_compatible_node(NULL, NULL, "mediatek,ac8x-sysirq");
 	if (!node) {
 		pr_info("[gic_ext] find mediatek,mt6577-sysirq node failed\n");
 		return -EINVAL;
