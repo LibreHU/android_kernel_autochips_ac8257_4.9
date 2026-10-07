@@ -156,7 +156,9 @@ Stage 1p findings:
   `get_arm2_backcar_status`); the intermittent black screens are likely the same issue. Stage 1w, stopgap:
   a display module interrupt arriving with the module clock (or the MM power domain) off is masked instead of
   read, and unmasked when the driver enables that clock again.
-- Stage 1w: runs (no masked interrupt seen in that boot). Display rotation: `persist.sf.hwrotation` (90 on the
+- Stage 1w: the first attempt ended in a watchdog reset with nothing in pstore (header only; LK: boot reason
+  `wdt_by_pass_pwk`), so no kernel log to tell whether this kernel ran; the next attempt with the same image
+  booted and runs (no masked interrupt seen in that boot). Display rotation: `persist.sf.hwrotation` (90 on the
   stock unit) is not set under this kernel. It is set by `/vendor/bin/rotationd` (`on post-fs`, oneshot), which
   reads it from the metazone: the vendor sepolicy gives rotationd `metazone_device (chr_file (ioctl read write
   open))` and the `persist.sf.hwrotation` property; `/dev/mtz` (stock `CONFIG_ATC_METAZONE`: `MTZ_IOControl`,
