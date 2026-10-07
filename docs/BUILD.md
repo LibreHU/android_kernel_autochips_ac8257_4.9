@@ -78,19 +78,28 @@ Outputs:
 
 ## CPU/GPU frequencies, governors
 
-Default: the stock tables, CPU up to 2.0 GHz (MediaTek "FY" table: 16 OPPs, 850 MHz-2.001 GHz, top at
-1.025 V; the same tables are in the stock kernel), GPU up to 660 MHz (0.80 V).
+The overclock tables are loaded by default, with the stock maxima as run-time caps:
 
-Overclock, opt-in on the kernel command line (`--cmdline-append` of `repack_boot.py`):
+- CPU: 16 OPPs from 850 MHz to 2.201 GHz: the stock "FY" voltages up to 2.001 GHz, 2.101 and 2.201 GHz
+  at the same 1.025 V top voltage (2.201 GHz is the top of MediaTek's "SB" table for this CPU family; the
+  stock FY/SB tables are the same in the stock kernel). Cap: `ac8257_cpufreq.max_khz`, **2001000** by
+  default, applied on top of the PPM limits. The EEM voltage adjustments, calibrated against the stock
+  table, are not applied with this table (sign-off voltages instead, slightly higher).
+- GPU: 730 MHz (the MT6761T top OPP of this GPU) added at the 0.80 V of the stock 660 MHz. Cap:
+  `ac8257_gpufreq.max_khz`, **660000** by default.
 
-- `ac8257_cpu_oc=1`: CPU table with 2.101 and 2.201 GHz added at the same 1.025 V top voltage (2.201 GHz is
-  the top of MediaTek's "SB" table for this CPU family), the FY voltages below 2.0 GHz; the EEM voltage
-  adjustments (calibrated against the stock table) are ignored in this mode.
-- `ac8257_gpu_oc=1`: GPU 730 MHz added (the MT6761T top OPP of this GPU) at the 0.80 V of the stock 660 MHz.
+As root, at run time (not kept across reboots):
 
-No voltage is raised above the stock maximum; stability at these frequencies depends on the chip and is
-not guaranteed (watch temperatures, thermal throttling still applies). Check with
-`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies` and `cat /proc/gpufreq/gpufreq_opp_dump`.
+    echo 2201000 > /sys/module/ac8257_cpufreq/parameters/max_khz   # CPU up to 2.2 GHz
+    echo 2001000 > /sys/module/ac8257_cpufreq/parameters/max_khz   # back to 2.0 GHz
+    echo 730000 > /sys/module/ac8257_gpufreq/parameters/max_khz    # GPU up to 730 MHz
+    echo 0 1533000 > /proc/ppm/policy/userlimit_max_cpu_freq       # lower limit through the PPM
+    echo 500000 > /proc/gpufreq/gpufreq_opp_freq                   # fix the GPU OPP (0: automatic)
+
+or on the kernel command line (`--cmdline-append`): `ac8257_cpufreq.max_khz=2201000`,
+`ac8257_gpufreq.max_khz=730000`. `ac8257_cpu_oc=0` / `ac8257_gpu_oc=0` select the stock tables (with EEM).
+No voltage is raised above the stock maximum; stability above the stock frequencies depends on the chip
+and is not guaranteed (thermal throttling still applies).
 
 CPU governors: interactive (default), schedutil, conservative, ondemand, performance, powersave,
 userspace, schedplus (`scaling_governor`). I/O schedulers: cfq (default), deadline, noop.

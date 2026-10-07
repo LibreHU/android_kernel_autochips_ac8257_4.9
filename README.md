@@ -62,7 +62,8 @@ driver loads but nobody has checked the function yet.
    - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration
    - [ ] Install in the boot partition instead of the recovery test method
    - [ ] Release images from the GitHub Actions build
-   - [x] CPU governors (schedutil, conservative added) and opt-in CPU/GPU overclock (`docs/BUILD.md`)
+   - [x] CPU governors (schedutil, conservative added); CPU/GPU overclock tables loaded, capped at 2.0 GHz /
+     660 MHz by default, raised as root (`docs/BUILD.md`)
 4. **Later**: real panel driver from the metazone description, touch interrupt, cleanup of the AutoChips code
    for review.
 

@@ -1269,6 +1269,70 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	return new_opp_idx;
 }
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * Highest CPU frequency used, on top of the PPM limits: /sys/module/ac8257_cpufreq/parameters/max_khz
+ * (or ac8257_cpufreq.max_khz= on the command line). 2001000 by default: the overclock table is
+ * loaded but 2.0 GHz stays the maximum unless raised (2201000 for all of it).
+ */
+static unsigned int ac8257_cpu_max_khz = 2001000;
+static int ac8257_ppm_base[NR_MT_CPU_DVFS], ac8257_ppm_limit[NR_MT_CPU_DVFS];
+static bool ac8257_ppm_seen;
+static unsigned int ac8257_ppm_clusters;
+
+/* index of the highest OPP not above max_khz (lower index = higher frequency) */
+static int ac8257_soft_max_idx(struct mt_cpu_dvfs *p)
+{
+	int i;
+
+	for (i = 0; i < p->nr_opp_tbl - 1; i++)
+		if (cpu_dvfs_get_freq_by_idx(p, i) <= ac8257_cpu_max_khz)
+			break;
+	return i;
+}
+
+/* PPM base/limit indexes of cluster i with the soft maximum applied; cpufreq_para_lock held */
+static void ac8257_apply_soft_max(unsigned int i)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(i);
+	int soft;
+
+	if (!p || !p->opp_tbl || p->nr_opp_tbl <= 0)
+		return;
+	soft = ac8257_soft_max_idx(p);
+	p->idx_opp_ppm_base = ac8257_ppm_base[i];
+	p->idx_opp_ppm_limit = ac8257_ppm_limit[i];
+	if (p->idx_opp_ppm_limit == -1 || p->idx_opp_ppm_limit < soft)
+		p->idx_opp_ppm_limit = soft;
+	if (p->idx_opp_ppm_base != -1 && p->idx_opp_ppm_base < soft)
+		p->idx_opp_ppm_base = soft;
+}
+
+static int ac8257_cpu_max_set(const char *val, const struct kernel_param *kp)
+{
+	unsigned long flags;
+	unsigned int i;
+	int ret = param_set_uint(val, kp);
+
+	if (ret || !ac8257_ppm_seen)
+		return ret;
+	cpufreq_para_lock(flags);
+	for (i = 0; i < ac8257_ppm_clusters; i++)
+		ac8257_apply_soft_max(i);
+	cpufreq_para_unlock(flags);
+	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
+	return 0;
+}
+
+static const struct kernel_param_ops ac8257_cpu_max_ops = {
+	.set = ac8257_cpu_max_set,
+	.get = param_get_uint,
+};
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "ac8257_cpufreq."
+module_param_cb(max_khz, &ac8257_cpu_max_ops, &ac8257_cpu_max_khz, 0644);
+#endif
+
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
@@ -1318,6 +1382,16 @@ static void ppm_limit_callback(struct ppm_client_req req)
 			ppm->cpu_limit[i].max_cpufreq_idx;
 			/* ppm update limit */
 		}
+#ifdef CONFIG_MACH_AC8257
+		if (i < NR_MT_CPU_DVFS) {
+			ac8257_ppm_base[i] = p->idx_opp_ppm_base;
+			ac8257_ppm_limit[i] = p->idx_opp_ppm_limit;
+			ac8257_apply_soft_max(i);
+			ac8257_ppm_seen = true;
+			if (i + 1 > ac8257_ppm_clusters)
+				ac8257_ppm_clusters = i + 1;
+		}
+#endif
 	}
 	cpufreq_para_unlock(flags);
 
@@ -1419,6 +1493,10 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		/* use cur phy freq is better */
 		policy->cur = cpu_dvfs_get_cur_freq(p);
+#ifdef CONFIG_MACH_AC8257
+		if (p->idx_opp_ppm_limit < ac8257_soft_max_idx(p))
+			p->idx_opp_ppm_limit = ac8257_soft_max_idx(p);
+#endif
 		policy->max = cpu_dvfs_get_freq_by_idx(p,
 				p->idx_opp_ppm_limit);
 		policy->min = cpu_dvfs_get_freq_by_idx(p,

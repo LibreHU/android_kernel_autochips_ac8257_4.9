@@ -477,10 +477,11 @@ int mt_cpufreq_dts_map(void)
 }
 
 /*
- * ac8257_cpu_oc=1 on the kernel command line: overclock table (CPU_LEVEL_3, up to 2.2 GHz at the
- * 1.025 V top voltage). Off by default: the stock tables, 2.0 GHz.
+ * Overclock table (CPU_LEVEL_3, up to 2.2 GHz at the 1.025 V top voltage), loaded by default and
+ * capped at run time (ac8257_cpufreq.max_khz, 2.0 GHz by default). ac8257_cpu_oc=0 on the kernel
+ * command line: the stock tables (with EEM).
  */
-int ac8257_cpu_oc;
+int ac8257_cpu_oc = 1;
 
 static int __init ac8257_cpu_oc_setup(char *str)
 {

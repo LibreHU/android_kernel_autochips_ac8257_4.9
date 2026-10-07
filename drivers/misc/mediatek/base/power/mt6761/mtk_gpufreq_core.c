@@ -137,8 +137,8 @@ GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 1),
 GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 2),
 };
 /*
- * ac8257_gpu_oc=1 on the kernel command line: adds 730 MHz (the MT6761T top OPP of this GPU) at
- * the same 0.80 V as the stock 660 MHz. Off by default.
+ * AC8257 table: 730 MHz (the MT6761T top OPP of this GPU) added at the 0.80 V of the stock 660 MHz.
+ * Loaded by default (ac8257_gpu_oc=0: stock table), capped at run time by max_khz below.
  */
 static struct g_opp_table_info g_opp_table_ac8257_oc[] = {
 GPUOP(SEG4_GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 0),
@@ -146,7 +146,16 @@ GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 1),
 GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 2),
 GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 3),
 };
-static int ac8257_gpu_oc;
+static int ac8257_gpu_oc = 1;
+
+/*
+ * Highest GPU frequency used: /sys/module/ac8257_gpufreq/parameters/max_khz (or
+ * ac8257_gpufreq.max_khz= on the command line). 660000 by default (stock maximum).
+ */
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "ac8257_gpufreq."
+static unsigned int ac8257_gpu_max_khz = 660000;
+module_param_named(max_khz, ac8257_gpu_max_khz, uint, 0644);
 
 static int __init ac8257_gpu_oc_setup(char *str)
 {
@@ -261,6 +270,11 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		mutex_unlock(&mt_gpufreq_lock);
 		return -1;
 	}
+
+	/* AC8257 soft maximum: skip the OPPs above max_khz (the last one is always allowed) */
+	while (idx < g_opp_idx_num - 1 &&
+	       g_opp_table[idx].gpufreq_khz > ac8257_gpu_max_khz)
+		idx++;
 
 	/* look up for the target OPP table */
 	target_freq = g_opp_table[idx].gpufreq_khz;
