@@ -115,6 +115,7 @@ timed panic, userspace reboots turned into a panic (with the recovery command cl
 | 1m | native services stable, backlight dims (power manager runs), black screen, no USB; SystemUI crash-loops: `Failed to find provider com.jancar.settings.provider`, `com.jancar.services` (`/vendor/app/ivi-services`, persistent) "not found"; same package installed and enabled on the stock kernel, `/data` unencrypted | USB: below; Jancar packages: under investigation (needs the full boot log, now possible over adb) |
 | 1n | **USB/adb work**. `/data` does not mount: `fs_stat userdata 0x103` (ext4, full mount failed), so init takes the `defaultcrypto` path (`ro.crypto.state=encrypted`, `Cryptfs: Bad magic`), `vold.decrypt=trigger_restart_min_framework`, "only parsing core apps": the Jancar packages missing in 1m come from this | ext4/quota/crypto options identical to the stock config: the kernel error is needed (`log_buf_len=8M`, read-only test mount) |
 | 1o | kernel log: `EXT4-fs (mmcblk0p39): Unrecognized mount option "autoformat"`; a mount without it works | AutoChips ext4 options, below |
+| 1p | **`/data` mounts, Android shows its UI on the panel** with this kernel | (next: check each function: touch, audio, Wi-Fi, BT, GPS, camera, CAN/MCU) |
 
 AutoChips ext4 mount options (stock `fs/ext4/super.c` token table and `parse_options`): `autoformat` (token 70,
 sets a super block flag; `ext4_clear_journal_err` prints "please add autoformat mount option."),
@@ -148,7 +149,8 @@ headers). Converging on these CRCs is the measure of how close the tree is to th
 
 ### Next
 
-1. Android up to the launcher (`/data` mount fixed, to be tested).
+1. Android UI shows (stage 1p): go through each function (touch, audio, Wi-Fi, BT, GPS, cameras, MCU/CAN)
+   and the missing AutoChips devices.
 2. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone, touch, UART2/3 pins, video chain.
 3. Display: real `lcm_driver_common` (panel text parser from metazone/logo).
 4. Module ABI: clang build, then find the type differences behind the CRC mismatches.
