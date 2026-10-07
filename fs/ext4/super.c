@@ -1308,6 +1308,9 @@ enum {
 	Opt_dioread_nolock, Opt_dioread_lock,
 	Opt_discard, Opt_nodiscard, Opt_init_itable, Opt_noinit_itable,
 	Opt_max_dir_size_kb, Opt_nojournal_checksum,
+#ifdef CONFIG_MACH_AC8257
+	Opt_atc_autoformat, Opt_atc_autorestore, Opt_atc_permissioncheck,
+#endif
 };
 
 static const match_table_t tokens = {
@@ -1394,6 +1397,12 @@ static const match_table_t tokens = {
 	{Opt_removed, "reservation"},	/* mount option from ext2/3 */
 	{Opt_removed, "noreservation"}, /* mount option from ext2/3 */
 	{Opt_removed, "journal=%u"},	/* mount option from ext2/3 */
+#ifdef CONFIG_MACH_AC8257
+	/* AutoChips options, given for /data by the stock fstab */
+	{Opt_atc_autoformat, "autoformat"},
+	{Opt_atc_autorestore, "autorestore=%s"},
+	{Opt_atc_permissioncheck, "permissioncheck"},
+#endif
 	{Opt_err, NULL},
 };
 
@@ -1639,6 +1648,19 @@ static int handle_mount_opt(struct super_block *sb, char *opt, int token,
 	case Opt_nolazytime:
 		sb->s_flags &= ~MS_LAZYTIME;
 		return 1;
+#ifdef CONFIG_MACH_AC8257
+	/*
+	 * The stock AutoChips kernel only records these in the super block
+	 * (autoformat: reformat on a fatal error, autorestore: a restore path,
+	 * permissioncheck), and refusing them fails the /data mount. Accepted
+	 * and ignored here: no automatic format of the user's data.
+	 */
+	case Opt_atc_autoformat:
+	case Opt_atc_autorestore:
+	case Opt_atc_permissioncheck:
+		ext4_msg(sb, KERN_INFO, "Ignoring AutoChips %s option", opt);
+		return 1;
+#endif
 	}
 
 	for (m = ext4_mount_opts; m->token != Opt_err; m++)
