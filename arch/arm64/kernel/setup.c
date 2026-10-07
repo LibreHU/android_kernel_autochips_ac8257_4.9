@@ -63,6 +63,7 @@
 #include <asm/efi.h>
 #include <asm/xen/hypervisor.h>
 #include <asm/mmu_context.h>
+#include <linux/ac8257_early_pstore_console.h>
 
 phys_addr_t __fdt_pointer __initdata;
 
@@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
 	arm64_memblock_init();
 
 	paging_init();
+	ac8257_early_pstore_console_init();
 
 	acpi_table_upgrade();
 

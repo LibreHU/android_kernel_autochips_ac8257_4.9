@@ -47,6 +47,13 @@ Outputs:
    `/sys/fs/pstore/console-ramoops*`) after a failed boot, and the UART console (`ttyS0`, 921600 8N1) when
    wired.
 
+   During bring-up the defconfig sets `CONFIG_AC8257_EARLY_PSTORE_CONSOLE=y`: the kernel log is copied
+   into the pstore console zone from `setup_arch()` on, before ramoops registers, so a kernel that dies
+   early still leaves its log. After the failed boot, boot the stock kernel and read
+   `/sys/fs/pstore/console-ramoops*` (or `/proc/last_kmsg`): this kernel's lines follow the marker
+   `==== ac8257 early pstore console ====` (banner `root@vm`, `gcc version 4.9`). No marker means it
+   died before `paging_init()`, or was never started. Set the option to N once the kernel boots.
+
 ## Stock references
 
 `tools/ac8257/extract_stock.py` extracts from the stock images what this reconstruction is checked

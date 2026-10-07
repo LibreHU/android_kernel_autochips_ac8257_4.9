@@ -34,6 +34,7 @@
 #include <linux/slab.h>
 #include <linux/compiler.h>
 #include <linux/pstore_ram.h>
+#include <linux/ac8257_early_pstore_console.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 
@@ -597,6 +598,9 @@ static int ramoops_probe(struct platform_device *pdev)
 	size_t dump_mem_sz;
 	phys_addr_t paddr;
 	int err = -EINVAL;
+
+	/* The zones below are about to be reinitialised: hand over to the real pstore console. */
+	ac8257_early_pstore_console_stop();
 
 	if (dev_of_node(dev) && !pdata) {
 		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
