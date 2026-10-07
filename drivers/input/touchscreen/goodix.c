@@ -435,7 +435,7 @@ static int goodix_reset(struct goodix_ts_data *ts)
  *
  * @ts: goodix_ts_data pointer
  */
-static int goodix_get_gpio_config(struct goodix_ts_data *ts)
+static int __maybe_unused goodix_get_gpio_config(struct goodix_ts_data *ts)
 {
 	int error;
 	struct device *dev;
@@ -605,7 +605,13 @@ static int goodix_request_input_dev(struct goodix_ts_data *ts)
 	input_mt_init_slots(ts->input_dev, ts->max_touch_num,
 			    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
 
+#ifdef CONFIG_MACH_AC8257
+	/* name of the stock MTK TPD input device, used by the IDC/Jancar side */
+	ts->input_dev->name = "mtk-tpd";
+	input_set_capability(ts->input_dev, EV_KEY, BTN_TOUCH);
+#else
 	ts->input_dev->name = "Goodix Capacitive TouchScreen";
+#endif
 	ts->input_dev->phys = "input/ts";
 	ts->input_dev->id.bustype = BUS_I2C;
 	ts->input_dev->id.vendor = 0x0416;
@@ -707,9 +713,28 @@ static int goodix_ts_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, ts);
 	init_completion(&ts->firmware_loading_complete);
 
+#ifdef CONFIG_MACH_AC8257
+	/*
+	 * AutoChips DTBO (ctp@01, ctp@04): "reg" is an index, the controller
+	 * address is in "slave_addr". The panel sits behind the TI FPD-Link III
+	 * bridge set up before Linux, so no GPIO reset / address selection here
+	 * (the stock MTK GT928 TPD driver does not reset it either at probe).
+	 */
+	{
+		u32 addr;
+
+		if (!of_property_read_u32(client->dev.of_node, "slave_addr",
+					  &addr) && addr && addr < 0x80) {
+			dev_info(&client->dev, "AC8257: address 0x%02x -> 0x%02x\n",
+				 client->addr, addr);
+			client->addr = addr;
+		}
+	}
+#else
 	error = goodix_get_gpio_config(ts);
 	if (error)
 		return error;
+#endif
 
 	if (ts->gpiod_int && ts->gpiod_rst) {
 		/* reset the controller */

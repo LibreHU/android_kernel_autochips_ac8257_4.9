@@ -124,6 +124,10 @@ Stage 1p findings:
   brightness change goes through the light HAL to `disp_pwm_set_backlight_cmdq` and
   `lcm_bridge_ic_detect_ds90ub947`/`ds90ub941`: the backlight is set by the panel driver through the bridge,
   which the placeholder `lcm_driver_common` does not do.
+- Touch, first attempt (stage 1q): the GT928 speaks the GT9xx protocol of the mainline `goodix.c` here, which
+  already matches `goodix,gt928`; on AC8257 it now takes the address from `slave_addr` (0x5d) instead of the
+  `reg` index, skips the GPIO reset/address selection (controller behind the FPD-Link bridge, set up before
+  Linux) and names the input device `mtk-tpd` like the stock one. Axis orientation to be checked on the unit.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
