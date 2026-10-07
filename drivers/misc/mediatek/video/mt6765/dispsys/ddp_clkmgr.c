@@ -21,6 +21,9 @@
 #include "ddp_log.h"
 #include "primary_display.h"
 #include "ddp_clkmgr.h"
+#ifdef CONFIG_MACH_AC8257
+#include <linux/clk-provider.h>
+#endif
 
 #define DRV_Reg32(addr) INREG32(addr)
 #define clk_readl(addr) DRV_Reg32(addr)
@@ -144,6 +147,10 @@ int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 	if (ret)
 		DDPERR("DISPSYS CLK prepare failed: errno %d\n",
 			ret);
+#ifdef CONFIG_MACH_AC8257
+	else if (ddp_clks[id].module_id != DISP_MODULE_UNKNOWN)
+		ddp_irq_ac8257_clk_on(ddp_clks[id].module_id);
+#endif
 
 	return ret;
 }
@@ -430,6 +437,26 @@ int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t)
 
 	return ret;
 }
+
+#ifdef CONFIG_MACH_AC8257
+/*
+ * Whether the registers of a display module can be read: its clock (and the MM power domain) are
+ * on in hardware. On the UJC201 the display is shared with ARM2 (rear camera, fast display); an
+ * interrupt of a module whose clock is off made disp_irq_handler read an unclocked register (bus
+ * timeout, "Systracker debug exception", exception reboot).
+ */
+bool ddp_module_clk_is_on(enum DISP_MODULE_ENUM module_id)
+{
+	enum DDP_CLK_ID id = ddp_get_module_clk_id(module_id);
+
+	if (ddp_clks[CLK_MM_MTCMOS].pclk &&
+	    !__clk_is_enabled(ddp_clks[CLK_MM_MTCMOS].pclk))
+		return false;
+	if (id >= MAX_DISP_CLK_CNT || !ddp_clks[id].pclk)
+		return true;
+	return __clk_is_enabled(ddp_clks[id].pclk);
+}
+#endif
 
 enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id)
 {

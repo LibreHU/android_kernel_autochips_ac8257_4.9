@@ -26,6 +26,7 @@
 #include "ddp_debug.h"
 #include "ddp_reg.h"
 #include "ddp_irq.h"
+#include "ddp_clkmgr.h"
 #include "ddp_aal.h"
 #include "ddp_drv.h"
 #include "disp_helper.h"
@@ -190,6 +191,47 @@ unsigned int rdma_done_irq_cnt[2] = { 0, 0 };
 unsigned int rdma_underflow_irq_cnt[2] = { 0, 0 };
 unsigned int rdma_targetline_irq_cnt[2] = { 0, 0 };
 
+#ifdef CONFIG_MACH_AC8257
+/* interrupts masked because their module had its clock off; unmasked when the clock comes back */
+static int ac8257_masked_irq[DISP_MODULE_NUM];
+static DEFINE_SPINLOCK(ac8257_mask_lock);
+
+void ddp_irq_ac8257_clk_on(enum DISP_MODULE_ENUM module)
+{
+	unsigned long flags;
+	int irq = 0;
+
+	if (module >= DISP_MODULE_NUM)
+		return;
+	spin_lock_irqsave(&ac8257_mask_lock, flags);
+	if (ac8257_masked_irq[module]) {
+		irq = ac8257_masked_irq[module];
+		ac8257_masked_irq[module] = 0;
+	}
+	spin_unlock_irqrestore(&ac8257_mask_lock, flags);
+	if (irq)
+		enable_irq(irq);
+}
+
+static bool ac8257_irq_clk_off(int irq)
+{
+	enum DISP_MODULE_ENUM m = disp_irq_to_module(irq);
+	unsigned long flags;
+
+	if (m >= DISP_MODULE_NUM || ddp_module_clk_is_on(m))
+		return false;
+	spin_lock_irqsave(&ac8257_mask_lock, flags);
+	if (!ac8257_masked_irq[m]) {
+		ac8257_masked_irq[m] = irq;
+		disable_irq_nosync(irq);
+	}
+	spin_unlock_irqrestore(&ac8257_mask_lock, flags);
+	pr_warn_ratelimited("disp: %s irq %d with its clock off, masked\n",
+			    ddp_get_module_name(m), irq);
+	return true;
+}
+#endif
+
 irqreturn_t disp_irq_handler(int irq, void *dev_id)
 {
 	enum DISP_MODULE_ENUM module = DISP_MODULE_UNKNOWN;
@@ -197,6 +239,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	unsigned int index = 0;
 	unsigned int m_id = 0;
 	unsigned int reg_temp_val = 0;
+
+#ifdef CONFIG_MACH_AC8257
+	if (ac8257_irq_clk_off(irq))
+		return IRQ_HANDLED;
+#endif
 
 	if (irq == ddp_get_module_irq(DISP_MODULE_DSI0)) {
 		if (ddp_get_module_irq(DISP_MODULE_DSI0) == irq) {

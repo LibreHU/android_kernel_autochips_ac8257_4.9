@@ -29,7 +29,7 @@ driver loads but nobody has checked the function yet.
 | eMMC, partitions, `/data` (ext4) | ✅ Works | AutoChips ext4 mount options (`autoformat`...) accepted |
 | GPU (PowerVR GE8300) | ✅ Works | allocations below 4 GiB, as the stock kernel |
 | Trusty TEE, keymaster | ✅ Works | shared buffers below 4 GiB |
-| Display output (HWC, frame buffer) | ⚠️ Partial | picture shown; **rotated by 90°** and some glitches |
+| Display output (HWC, frame buffer) | ⚠️ Partial | picture shown; **rotated by 90°**, glitches, occasional crash (display shared with ARM2, stopgap in stage 1w) |
 | Backlight | ⚠️ Partial | on, **not adjustable** (set by the panel driver through the TI DS90UB947 bridge) |
 | USB device mode, adb | ✅ Works | connect on the first gadget pull-up |
 | Touch (Goodix GT928 behind FPD-Link) | ✅ Works | polling every 16 ms (no interrupt wired), orientation fixed |
@@ -50,7 +50,8 @@ driver loads but nobody has checked the function yet.
 2. **Stage 2, usable on the stock ROM**
    - [x] Touch (GT928, polling, orientation)
    - [x] Jancar `/dev/gpios_ioctl`
-   - [ ] Display rotation (stock: `persist.sf.hwrotation=90`) and glitches
+   - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel): crashes, glitches
+   - [ ] Display rotation (stock: `persist.sf.hwrotation=90`)
    - [ ] Backlight control: real `lcm_driver_common` with the DS90UB947/941 bridge (`CONFIG_LCM_TRANSFER_IC_SUPPORT`)
    - [ ] Wi-Fi / BT / GPS / FM: build with clang, converge on the stock symbol CRCs so the vendor modules load
    - [ ] Audio, keys, IR: check on the unit

@@ -148,6 +148,14 @@ Stage 1p findings:
   Stage 1u: `invert_x`/`invert_y` in `/sys/module/goodix/parameters/` set the touch orientation at run time
   (after the X/Y swap), to find the right one on the unit.
   Result: both inverted is right (a 180-degree turn after the swap); the default since stage 1v.
+- Stage 1v: exception reboot at 9.7 s: `disp_irq_handler` read RDMA0 (`0x1400d004`) with its clock off
+  (`Unhandled fault: Systracker debug exception`, `AR_TRACKER ReadAddr:0x1400d004`), first read timeout at
+  7.8 s in `atcavm_server` (AutoChips AVM / fast display, started at 3.95 s). The stock kernel has an AutoChips
+  layer sharing the display with ARM2 that this tree lacks (`fast_disp_composer_thread`, `get_fb_or_arm2_status`,
+  `set_arm2_backcar_status`, `get_fast_disp_exit_status`, `u4ARM2Start`; its `disp_irq_handler` checks
+  `get_arm2_backcar_status`); the intermittent black screens are likely the same issue. Stage 1w, stopgap:
+  a display module interrupt arriving with the module clock (or the MM power domain) off is masked instead of
+  read, and unmasked when the driver enables that clock again.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
@@ -192,7 +200,8 @@ headers). Converging on these CRCs is the measure of how close the tree is to th
 
 ### Next
 
-1. Touch: AutoChips goodix with the TI FPD-Link III set-up; backlight path; the i2c6 0x40 device.
+1. Display shared with ARM2 (fast display, AVM): reconstruct the stock hand-over layer; rotation, glitches,
+   backlight path.
 2. Vendor modules (Wi-Fi, BT, GPS, FM): symbol CRCs (see Module ABI).
 3. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone, touch, UART2/3 pins, video chain.
 4. Display: real `lcm_driver_common` (panel text parser from metazone/logo).

@@ -78,6 +78,10 @@ int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t);
 enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id);
 void ddp_clk_force_on(unsigned int on);
 int ddp_clk_check(void);
+#ifdef CONFIG_MACH_AC8257
+bool ddp_module_clk_is_on(enum DISP_MODULE_ENUM module_id);
+void ddp_irq_ac8257_clk_on(enum DISP_MODULE_ENUM module);
+#endif
 int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module);
 int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module);
 #endif
