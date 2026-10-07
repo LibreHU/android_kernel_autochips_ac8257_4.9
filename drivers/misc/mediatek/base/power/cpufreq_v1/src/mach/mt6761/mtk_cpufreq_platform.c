@@ -476,6 +476,18 @@ int mt_cpufreq_dts_map(void)
 	return 0;
 }
 
+/*
+ * ac8257_cpu_oc=1 on the kernel command line: overclock table (CPU_LEVEL_3, up to 2.2 GHz at the
+ * 1.025 V top voltage). Off by default: the stock tables, 2.0 GHz.
+ */
+int ac8257_cpu_oc;
+
+static int __init ac8257_cpu_oc_setup(char *str)
+{
+	return kstrtoint(str, 0, &ac8257_cpu_oc) == 0;
+}
+__setup("ac8257_cpu_oc=", ac8257_cpu_oc_setup);
+
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
@@ -487,6 +499,8 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 #if defined(CONFIG_MTK_LP_OPP)
 		lv = CPU_LEVEL_0;
 #endif
+	if (ac8257_cpu_oc)
+		lv = CPU_LEVEL_3;
 
 	turbo_flag = 0;
 	tag_pr_info("%d,%d,0x%x,%d,%d,%d,%d\n",

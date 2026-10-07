@@ -136,6 +136,23 @@ GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 0),
 GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 1),
 GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 2),
 };
+/*
+ * ac8257_gpu_oc=1 on the kernel command line: adds 730 MHz (the MT6761T top OPP of this GPU) at
+ * the same 0.80 V as the stock 660 MHz. Off by default.
+ */
+static struct g_opp_table_info g_opp_table_ac8257_oc[] = {
+GPUOP(SEG4_GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 0),
+GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 1),
+GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 2),
+GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 3),
+};
+static int ac8257_gpu_oc;
+
+static int __init ac8257_gpu_oc_setup(char *str)
+{
+	return kstrtoint(str, 0, &ac8257_gpu_oc) == 0;
+}
+__setup("ac8257_gpu_oc=", ac8257_gpu_oc_setup);
 static const struct of_device_id g_gpufreq_of_match[] = {
 	{ .compatible = "mediatek,mt6761-gpufreq" },
 	{ .compatible = "mediatek,ac8257-gpufreq" },
@@ -2493,8 +2510,12 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
 
 
-	__mt_gpufreq_setup_opp_table(g_opp_table_6761,
-			ARRAY_SIZE(g_opp_table_6761));
+	if (ac8257_gpu_oc)
+		__mt_gpufreq_setup_opp_table(g_opp_table_ac8257_oc,
+				ARRAY_SIZE(g_opp_table_ac8257_oc));
+	else
+		__mt_gpufreq_setup_opp_table(g_opp_table_6761,
+				ARRAY_SIZE(g_opp_table_6761));
 		g_fixed_vsram_volt_idx = 0;
 
 	/* setup PMIC init value */

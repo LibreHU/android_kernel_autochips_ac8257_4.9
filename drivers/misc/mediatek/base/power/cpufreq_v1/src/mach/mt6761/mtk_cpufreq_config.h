@@ -26,6 +26,7 @@ enum cpu_level {
 	CPU_LEVEL_0, /* FY */
 	CPU_LEVEL_1, /* SB */
 	CPU_LEVEL_2, /* FY2 */
+	CPU_LEVEL_3, /* AC8257 overclock (ac8257_cpu_oc=1) */
 
 	NUM_CPU_LEVEL,
 };

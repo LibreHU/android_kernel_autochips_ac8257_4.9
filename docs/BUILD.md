@@ -76,6 +76,25 @@ Outputs:
    last 64 KiB). `ac8257_panic_secs=N` on the command line (`--cmdline-append`) overrides the delay
    (0: no timed panic), e.g. a longer window for a live `adb` session. Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
 
+## CPU/GPU frequencies, governors
+
+Default: the stock tables, CPU up to 2.0 GHz (MediaTek "FY" table: 16 OPPs, 850 MHz-2.001 GHz, top at
+1.025 V; the same tables are in the stock kernel), GPU up to 660 MHz (0.80 V).
+
+Overclock, opt-in on the kernel command line (`--cmdline-append` of `repack_boot.py`):
+
+- `ac8257_cpu_oc=1`: CPU table with 2.101 and 2.201 GHz added at the same 1.025 V top voltage (2.201 GHz is
+  the top of MediaTek's "SB" table for this CPU family), the FY voltages below 2.0 GHz; the EEM voltage
+  adjustments (calibrated against the stock table) are ignored in this mode.
+- `ac8257_gpu_oc=1`: GPU 730 MHz added (the MT6761T top OPP of this GPU) at the 0.80 V of the stock 660 MHz.
+
+No voltage is raised above the stock maximum; stability at these frequencies depends on the chip and is
+not guaranteed (watch temperatures, thermal throttling still applies). Check with
+`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies` and `cat /proc/gpufreq/gpufreq_opp_dump`.
+
+CPU governors: interactive (default), schedutil, conservative, ondemand, performance, powersave,
+userspace, schedplus (`scaling_governor`). I/O schedulers: cfq (default), deadline, noop.
+
 ## GitHub Actions
 
 `.github/workflows/build.yml` builds `Image.gz-dtb` at each push on master (changes outside `docs/` and
