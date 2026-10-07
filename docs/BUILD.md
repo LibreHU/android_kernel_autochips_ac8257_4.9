@@ -47,11 +47,13 @@ Outputs:
    Safest for a kernel that may not boot: the **recovery** partition, with the stock recovery vbmeta:
    ```
    tools/ac8257/repack_boot.py boot-stock.img out/arch/arm64/boot/Image.gz-dtb recovery-test.img \
-       --vbmeta <device tree>/prebuilt/avb/recovery_stock_vbmeta_250718.bin --size 33554432
+       --vbmeta <device tree>/prebuilt/avb/recovery_stock_vbmeta_250718.bin --size 33554432 \
+       --cmdline-append "init=/init"
    fastboot flash recovery recovery-test.img
    adb reboot recovery
    ```
-   A crash then ends in a normal boot (stock boot partition), with the RAM, so the log, kept. Flash
+   (`init=/init`: in recovery mode the LK does not add it, and without it the kernel mounts system as
+   root and then panics with no init.) A crash then ends in a normal boot (stock boot partition), with the RAM, so the log, kept. Flash
    TWRP back to recovery afterwards. Flashing `boot` directly works too, but a kernel that loops can
    only be replaced with SP Flash Tool, which reinitialises the RAM and loses the log.
 4. What to look at: `adb logcat`, `adb shell dmesg`, `/proc/last_kmsg` (or

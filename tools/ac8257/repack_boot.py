@@ -4,7 +4,7 @@ Puts a kernel built from this tree into the stock UJC201 boot.img, keeping every
 cmdline, load addresses, header v1 recovery DTBO, OS version) byte for byte.
 
     tools/ac8257/repack_boot.py <stock boot.img> <out/arch/arm64/boot/Image.gz-dtb> <new boot.img>
-                                [--vbmeta <vbmeta blob>] [--size <partition bytes>]
+                                [--vbmeta <vbmeta blob>] [--size <partition bytes>] [--cmdline-append <args>]
 
 Android boot image header v0/v1 (system/tools/mkbootimg). The id field is the SHA-1 of the sections,
 recomputed as mkbootimg does.
@@ -18,7 +18,9 @@ unlocked LK and Android's fs_mgr tolerate. The output fills the whole partition 
 
 To test in the recovery partition instead (32 MiB, so that a crash ends with a normal boot rather
 than a boot loop), give the stock recovery vbmeta (prebuilt/avb/recovery_stock_vbmeta_250718.bin of
-the device tree) and --size 33554432.
+the device tree) and --size 33554432. In recovery mode the LK does not add "init=/init" (it does for a
+normal boot, with skip_initramfs): without a ramdisk the kernel then mounts system as root but finds no
+init (/init is not in the kernel's default list); --cmdline-append "init=/init" starts Android's init.
 """
 import argparse
 import hashlib
@@ -48,6 +50,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--vbmeta", help="vbmeta blob for the AVB footer (default: the stock image's own)")
     ap.add_argument("--size", type=int, help="partition size (default: size of the stock image)")
+    ap.add_argument("--cmdline-append", default="", help="appended to the header command line")
     a = ap.parse_args()
     stock = open(a.stock, "rb").read()
     kernel = open(a.kernel, "rb").read()
@@ -63,6 +66,11 @@ def main():
         sys.exit("header v%d not handled (stock UJC201 uses v1)" % version)
     name = stock[48:64]
     cmdline = stock[64:576]
+    if a.cmdline_append:
+        text = cmdline.rstrip(b"\0") + b" " + a.cmdline_append.encode()
+        if len(text) >= 512:
+            sys.exit("command line too long for the header (512 bytes)")
+        cmdline = text.ljust(512, b"\0")
     extra = stock[608:1632]
     o = page
     sections = []
