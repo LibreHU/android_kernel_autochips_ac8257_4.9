@@ -246,10 +246,13 @@ void __init setup_arch(char **cmdline_p)
 
 	early_fixmap_init();
 	early_ioremap_init();
+	ac8257_early_pstore_console_init();
 
 	setup_machine_fdt(__fdt_pointer);
+	ac8257_boot_mark("setup_arch: fdt at %pa", &__fdt_pointer);
 
 	parse_early_param();
+	ac8257_boot_mark("setup_arch: early params done");
 
 	/*
 	 *  Unmask asynchronous aborts after bringing up possible earlycon.
@@ -265,10 +268,13 @@ void __init setup_arch(char **cmdline_p)
 
 	xen_early_init();
 	efi_init();
+	ac8257_boot_mark("setup_arch: memblock init");
 	arm64_memblock_init();
+	ac8257_boot_mark("setup_arch: memblock init done");
 
 	paging_init();
-	ac8257_early_pstore_console_init();
+	ac8257_early_pstore_console_remap();
+	ac8257_boot_mark("setup_arch: paging_init done");
 
 	acpi_table_upgrade();
 
@@ -291,6 +297,7 @@ void __init setup_arch(char **cmdline_p)
 	else
 		psci_acpi_init();
 
+	ac8257_boot_mark("setup_arch: psci done");
 	cpu_read_bootcpu_ops();
 	smp_init_cpus();
 	smp_build_mpidr_hash();

@@ -48,11 +48,13 @@ Outputs:
    wired.
 
    During bring-up the defconfig sets `CONFIG_AC8257_EARLY_PSTORE_CONSOLE=y`: the kernel log is copied
-   into the pstore console zone from `setup_arch()` on, before ramoops registers, so a kernel that dies
+   into the pstore console zone from the start of `setup_arch()`, before ramoops registers, so a kernel that dies
    early still leaves its log. After the failed boot, boot the stock kernel and read
    `/sys/fs/pstore/console-ramoops*` (or `/proc/last_kmsg`): this kernel's lines follow the marker
-   `==== ac8257 early pstore console ====` (banner `root@vm`, `gcc version 4.9`). No marker means it
-   died before `paging_init()`, or was never started. Set the option to N once the kernel boots.
+   `==== ac8257 early pstore console ====` (banner `root@vm`, `gcc version 4.9`). Lines `ac8257: setup_arch: ...` mark the early boot steps. No marker means it died before
+   `setup_arch()` (or was never started). Use `fastboot boot <image>` for these tests: the stock boot
+   partition stays as is, the device comes back to the stock kernel after the crash, and the RAM (so
+   the log) is kept; reflashing with SP Flash Tool reinitialises the RAM. Set the option to N once the kernel boots.
 
 ## Stock references
 
