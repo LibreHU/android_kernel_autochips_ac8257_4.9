@@ -118,7 +118,13 @@ timed panic, userspace reboots turned into a panic (with the recovery command cl
 | 1p | **`/data` mounts, Android shows its UI on the panel** with this kernel; no touch, backlight not working, some artefacts, slow `scrcpy` | below |
 
 Stage 1p findings:
-- Touch: the stock driver is an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
+- Stock unit (live): the touch input is `mtk-tpd` (MTK TPD framework, 720x1280, 10 fingers) and the I2C client
+  3-0001 is named `gt928`: the active driver is the MTK GT928 TPD driver (`CONFIG_TOUCHSCREEN_MTK_GT928`, stock
+  symbols `gtp_*`, `tpd_i2c_probe`, `gt9xx_props_*`), absent from this tree. 0-002d is `lcm_bridge_ic`. Each
+  brightness change goes through the light HAL to `disp_pwm_set_backlight_cmdq` and
+  `lcm_bridge_ic_detect_ds90ub947`/`ds90ub941`: the backlight is set by the panel driver through the bridge,
+  which the placeholder `lcm_driver_common` does not do.
+- Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
   `check_serializer_link_ready`, `init_ti_link` in the stock image): the touch controller is only reachable once
