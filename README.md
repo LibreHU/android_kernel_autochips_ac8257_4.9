@@ -12,6 +12,11 @@ The repository is therefore being treated as the **kernel reconstruction base**,
 
 No claim is made that the current tree is an original AutoChips AC8257 source release.
 
+**Progress (stage 1, stock ROM boot):** a kernel built from this tree boots on the UJC201 and runs the stock
+Android 9 userspace (init, services, GPU, Trusty, `system_server`); the display HAL is the current blocker.
+Details and the list of AutoChips-specific changes found so far: `docs/RECONSTRUCTION_STATUS.md`; building
+and testing safely on the unit: `docs/BUILD.md`.
+
 ## Target platform
 
 - SoC: AutoChips AC8257.

@@ -67,6 +67,14 @@ Outputs:
    `==== ac8257 early pstore console ====` (banner `root@vm`, `gcc version 4.9`). Lines `ac8257: setup_arch: ...` mark the early boot steps. No marker means it died before
    `setup_arch()` (or was never started). Set the option to N once the kernel boots.
 
+   `CONFIG_AC8257_BRINGUP_PANIC` (also on during bring-up) keeps such tests from ending in a loop: it panics
+   `CONFIG_AC8257_BRINGUP_PANIC_SECS` after boot, turns any reboot asked by userspace (Rescue Party,
+   `reboot recovery`...) into the same panic, and clears the recovery command (`boot-...`) from the
+   bootloader message in `para` (the misc partition of this unit). The MTK exception reboot then starts
+   the normal boot partition, with the log kept. Read it from Android with
+   `cat /sys/fs/pstore/console-ramoops*`, `cat /proc/last_kmsg` and `logcat -L` (userspace log, only the
+   last 64 KiB). Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
+
 ## Stock references
 
 `tools/ac8257/extract_stock.py` extracts from the stock images what this reconstruction is checked

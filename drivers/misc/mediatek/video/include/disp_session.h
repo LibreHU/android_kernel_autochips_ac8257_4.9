@@ -255,6 +255,14 @@ struct disp_input_config {
 	__u8 identity;
 	__u8 connected_type;
 	__s8 ext_sel_layer;
+#ifdef CONFIG_MACH_AC8257
+	/*
+	 * AutoChips: one more field (u32 at 0x80, structure 136 bytes instead of 128), filled by the
+	 * stock hwcomposer.ac8257.so and copied by the stock kernel into OVL_CONFIG_STRUCT. Meaning not
+	 * reconstructed yet; the layout is what makes the ioctl numbers match.
+	 */
+	__u32 atc_layer_param;
+#endif
 };
 
 struct disp_output_config {
@@ -359,6 +367,9 @@ struct disp_session_info {
 	/* notes: for better Accuracy, updateFPS = real_fps*100 */
 	unsigned int updateFPS;
 	unsigned int is_updateFPS_stable;
+#ifdef CONFIG_MACH_AC8257
+	unsigned int atc_reserved;	/* AutoChips: 88 bytes in the stock kernel and HWC */
+#endif
 };
 
 struct disp_buffer_info {
@@ -418,6 +429,10 @@ enum DISP_FEATURE {
 struct disp_caps_info {
 	enum DISP_CAP_OUTPUT_MODE output_mode;
 	enum DISP_CAP_OUTPUT_PASS output_pass;
+#ifdef CONFIG_MACH_AC8257
+	/* AutoChips: 144 bytes in the stock kernel and HWC; the fields below are 4 bytes further. */
+	unsigned int atc_reserved;
+#endif
 	unsigned int max_layer_num;
 	unsigned int disp_feature;
 	int is_support_frame_cfg_ioctl;
@@ -569,6 +584,21 @@ enum DISP_SELF_REFRESH_TYPE {
 	DISP_IOW(226, unsigned int)
 #define DISP_IOCTL_WAIT_DISP_SELF_REFRESH	\
 	DISP_IOW(227, unsigned int)
+
+#ifdef CONFIG_MACH_AC8257
+/*
+ * AutoChips ioctls used by the stock hwcomposer.ac8257.so (DispDevice::queryCapsInfo,
+ * DispDevice::setFastDisplayStatus). Numbers from the HWC, layouts from it and the stock kernel.
+ */
+struct disp_ext_panel_info {
+	__u32 support_ext;	/* DispDevice::isDispSupportExt() */
+	__u32 open_ext;		/* DispDevice::isDispOpenExt(), "g_open_ext_disp" of the LK */
+};
+#define DISP_IOCTL_GET_EXT_PANEL_INFO	\
+	DISP_IOWR(228, struct disp_ext_panel_info)
+#define DISP_IOCTL_SET_FAST_DISP_FLAG	\
+	DISP_IOW(232, unsigned int)
+#endif
 #ifdef __KERNEL__
 
 int disp_mgr_get_session_info(struct disp_session_info *info);

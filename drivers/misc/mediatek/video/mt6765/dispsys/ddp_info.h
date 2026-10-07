@@ -222,6 +222,9 @@ struct OVL_CONFIG_STRUCT {
 	int ext_sel_layer;
 	int ext_layer;
 	int phy_layer;
+#ifdef CONFIG_MACH_AC8257
+	unsigned int atc_layer_param;	/* from disp_input_config.atc_layer_param, as the stock kernel */
+#endif
 };
 
 struct OVL_BASIC_STRUCT {

@@ -2745,6 +2745,9 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst,
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
 	dst->ext_sel_layer = src->ext_sel_layer;
+#ifdef CONFIG_MACH_AC8257
+	dst->atc_layer_param = src->atc_layer_param;
+#endif
 	return ret;
 }
 

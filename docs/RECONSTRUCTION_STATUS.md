@@ -92,12 +92,35 @@ Extracted with `tools/ac8257/extract_stock.py` and `tools/ac8257/stock_symvers.p
   `mt6761` ones, or to `mt6765` where MT6761 uses the MT6765 code (display, CCCI, freqhopping, pmic_wrap,
   usb20, MSDC ComboA, sound...), matching the stock file paths.
 - `ac8257_demo_defconfig` from the stock configuration; stock DTB/DTBO as sources.
-- Stage-1 `lcm_driver_common` placeholder (reports 1024x600 DSI video, never touches the panel).
+- Stage-1 `lcm_driver_common` placeholder (reports 720x1280 DSI video, the LK frame buffer; never touches
+  the panel).
 - No battery: no bcct cooler (`ATC_DISABLE_BAT_CHAGE`), as in the stock kernel.
 - Build fixes: host dtc with GCC >= 10, gcc 4.9 false positives, missing `gether.no_skb_reserve`, GPU DVFS
   passing a device index where this DDK wants the device node (real bug, clang refuses it).
-- Builds and links with the AOSP GCC 4.9 toolchain: `Image.gz-dtb` (see `docs/BUILD.md`). **Not tested on
-  the device yet.**
+- Builds and links with the AOSP GCC 4.9 toolchain: `Image.gz-dtb` (see `docs/BUILD.md`).
+
+### On the device (UJC201)
+
+Tests run from the recovery partition (`docs/BUILD.md`), with the bring-up aids on: early pstore console,
+timed panic, userspace reboots turned into a panic (with the recovery command cleared from `para`).
+
+| Test | Result | Fix |
+|---|---|---|
+| stage1, 1b | logo, reboot, no kernel log | the repack dropped the boot partition's AVB footer: the LK refused the image (`repack_boot.py` keeps it now) |
+| 1e | kernel runs to 1.67 s, `BUG` in `trusty_dump_logs` | 6 GiB of RAM, 32-bit Trusty: Trusty shared buffers below 4 GiB (`GFP_DMA`, as the stock kernel) |
+| 1f | runs to 1.72 s, `mtkfb_probe` oops | AutoChips frame buffer: `autochips,framebuffer` node, `vmap`, 0x6000 header, LCM-initialised magic (stock `mtkfb_probe`) |
+| 1g | **kernel boots to the end**: display, sound card, eMMC, system mounted as root, `Kernel_init_done` at 2.25 s | (recovery mode: the LK gives no `init=/init`; `--cmdline-append`) |
+| 1h-1j | Android init and services run; GPU clients fail ("Driver already in bad state") | GPU memory below 4 GiB (stock: gfp `0x24302c3` / `0x24000c1`) |
+| 1k, 1l | GPU OK, Trusty apps OK, `system_server` up; `hwcomposer` aborts in a loop, Rescue Party asks for recovery | AutoChips display ABI, below |
+
+AutoChips display ABI (from the stock `hwcomposer.ac8257.so` and the stock kernel): `disp_input_config` has
+one more u32 (136 bytes), `disp_session_info` and `disp_caps_info` 4 more bytes, two more ioctls
+(`DISP_IOCTL_GET_EXT_PANEL_INFO` 228, `DISP_IOCTL_SET_FAST_DISP_FLAG` 232), caps report direct link and 2
+layers. Without them the HWC's ioctl numbers do not match the kernel's.
+
+Remaining differences seen in the logs: UART2/3 (pins 180-182, `pctl_8` bank), Goodix touch at 3-0001, the
+AutoChips devices of the stock `/dev` (`dualarm-dev`, `wch`, `di`, `nr`, `tvd`, `rdi0`, `mtz`, `backcardrv`,
+`gpios_ioctl`, `touch`), vendor modules (CRCs).
 
 ### Module ABI (CONFIG_MODVERSIONS)
 
@@ -109,9 +132,10 @@ headers). Converging on these CRCs is the measure of how close the tree is to th
 
 ### Next
 
-1. Boot test on the UJC201, then fix what fails (dmesg / last_kmsg).
-2. Module ABI: clang build, then find the type differences behind the CRC mismatches.
-3. Display: real `lcm_driver_common` (panel text parser), then the AutoChips drivers in order of need.
+1. Android up to the launcher with the stock HWC (AutoChips display ABI, then what the next logs show).
+2. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone, touch, UART2/3 pins, video chain.
+3. Display: real `lcm_driver_common` (panel text parser from metazone/logo).
+4. Module ABI: clang build, then find the type differences behind the CRC mismatches.
 
 ## Rule
 

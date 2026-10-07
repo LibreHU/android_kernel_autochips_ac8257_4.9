@@ -1153,6 +1153,36 @@ int _ioctl_get_is_driver_suspend(unsigned long arg)
 	return ret;
 }
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * AutoChips ioctls of the stock hwcomposer. The UJC201 has no external panel (LK:
+ * "g_open_ext_disp:0"). The fast display flag tells the kernel whether the ARM2/fast display path
+ * or the HWC owns the screen; the stock fast display composer is not reconstructed, the flag is
+ * only kept.
+ */
+static unsigned int ac8257_fast_disp_flag;
+
+static int _ioctl_get_ext_panel_info(unsigned long arg)
+{
+	struct disp_ext_panel_info info = { 0, 0 };
+
+	if (copy_to_user((void __user *)arg, &info, sizeof(info)))
+		return -EFAULT;
+	return 0;
+}
+
+static int _ioctl_set_fast_disp_flag(unsigned long arg)
+{
+	unsigned int flag;
+
+	if (copy_from_user(&flag, (void __user *)arg, sizeof(flag)))
+		return -EFAULT;
+	DISPMSG("fast display flag %u\n", flag);
+	ac8257_fast_disp_flag = flag;
+	return 0;
+}
+#endif
+
 int _ioctl_get_display_caps(unsigned long arg)
 {
 	int ret = 0;
@@ -1164,7 +1194,12 @@ int _ioctl_get_display_caps(unsigned long arg)
 		ret = -EFAULT;
 	}
 	memset(&caps_info, 0, sizeof(caps_info));
-#ifdef DISP_HW_MODE_CAP
+#if defined(CONFIG_MACH_AC8257)
+	/* Stock AC8257 values (from its _ioctl_get_display_caps): direct link, 2 layers (the other
+	 * OVL layers are left to the ARM2 fast display path).
+	 */
+	caps_info.output_mode = DISP_OUTPUT_CAP_DIRECT_LINK;
+#elif defined(DISP_HW_MODE_CAP)
 	caps_info.output_mode = DISP_HW_MODE_CAP;
 #else
 	caps_info.output_mode = DISP_OUTPUT_CAP_DIRECT_LINK;
@@ -1176,7 +1211,9 @@ int _ioctl_get_display_caps(unsigned long arg)
 	caps_info.output_pass = DISP_OUTPUT_CAP_SINGLE_PASS;
 #endif
 
-#ifdef DISP_HW_MAX_LAYER
+#if defined(CONFIG_MACH_AC8257)
+	caps_info.max_layer_num = 2;
+#elif defined(DISP_HW_MAX_LAYER)
 	caps_info.max_layer_num = DISP_HW_MAX_LAYER;
 #else
 	caps_info.max_layer_num = 4;
@@ -1521,6 +1558,16 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		{
 			return _ioctl_get_display_caps(arg);
 		}
+#ifdef CONFIG_MACH_AC8257
+	case DISP_IOCTL_GET_EXT_PANEL_INFO:
+		{
+			return _ioctl_get_ext_panel_info(arg);
+		}
+	case DISP_IOCTL_SET_FAST_DISP_FLAG:
+		{
+			return _ioctl_set_fast_disp_flag(arg);
+		}
+#endif
 	case DISP_IOCTL_GET_VSYNC_FPS:
 		{
 			return _ioctl_get_vsync(arg);
