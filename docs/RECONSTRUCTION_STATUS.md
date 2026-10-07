@@ -131,6 +131,10 @@ Stage 1p findings:
   Result: the controller answers at 0x5d (`ID 911, version: 1060`), the input device is created, but the i2c
   core found no interrupt for the node (`request IRQ failed: -22`). Stage 1r: interrupt from the `irq-gpios`
   pin (`gpio_to_irq`), else polling every 16 ms (the stock `goodix.c` has a timer mode too).
+  Stage 1r: the input device stays (X 0-1080, Y 0-600 from the controller config) but no event; the stock
+  `goodix.c` has an "irq mode" and a "polling mode" (`irq_mode`, `goodix_wq`) and the DTBO pin is gpio 0, so
+  stage 1s polls (pin left alone) and swaps X/Y (stock `mtk-tpd` reports 720x1280). The i2c ACK-error dumps
+  are rate-limited (i2c6 0x40 filled the 8 MiB log in two minutes).
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,

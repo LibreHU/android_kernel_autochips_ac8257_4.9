@@ -76,6 +76,22 @@ Outputs:
    last 64 KiB). `ac8257_panic_secs=N` on the command line (`--cmdline-append`) overrides the delay
    (0: no timed panic), e.g. a longer window for a live `adb` session. Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
 
+## GitHub Actions
+
+`.github/workflows/build.yml` builds `Image.gz-dtb` at each push on master (changes outside `docs/` and
+`*.md`) and on demand ("Run workflow", with the recovery command line as input). It fetches the AOSP GCC 4.9
+toolchain (LineageOS mirror, pinned commit), builds with `ac8257_demo_defconfig` and packs:
+
+- `recovery_test_ac8257.img`: 32 MiB, stock recovery vbmeta, command line + `init=/init ac8257_panic_secs=600
+  log_buf_len=8M` (for the recovery test method above);
+- `boot_ac8257.img`: 10 MiB, stock boot vbmeta, for the boot partition;
+- `Image.gz-dtb`, `config`, `BUILD_INFO.txt` (commit, SHA-256).
+
+The packing uses `tools/ac8257/stock/boot_template_250718.img` (8 KiB: the stock boot header, command line
+and boot vbmeta, without the stock kernel; `repack_boot.py` gives the same bytes as with the full stock
+`boot.img`) and `tools/ac8257/stock/recovery_stock_vbmeta_250718.bin`. Both images keep the bring-up
+options of the defconfig. Artifacts are kept 30 days.
+
 ## Stock references
 
 `tools/ac8257/extract_stock.py` extracts from the stock images what this reconstruction is checked

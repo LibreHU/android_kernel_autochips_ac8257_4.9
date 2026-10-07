@@ -30,7 +30,6 @@
 #include <linux/acpi.h>
 #include <linux/of.h>
 #ifdef CONFIG_MACH_AC8257
-#include <linux/of_gpio.h>
 #include <linux/workqueue.h>
 #endif
 #include <asm/unaligned.h>
@@ -319,29 +318,17 @@ static void goodix_poll_work(struct work_struct *work)
 }
 
 /*
- * The i2c core may find no interrupt for the AutoChips DTBO node (4-cell EINT
- * specifier through an overlay fixup); try its "irq-gpios" pin, then poll.
+ * The stock AutoChips goodix.c has an "irq mode" and a "polling mode" (DT
+ * irq_mode): behind the FPD-Link bridge the controller interrupt is not wired
+ * to the SoC (the DTBO irq-gpios is pin 0), so poll unless the node gives a
+ * real interrupt. The pin is left alone.
  */
 static int goodix_ac8257_irq(struct goodix_ts_data *ts)
 {
-	struct i2c_client *client = ts->client;
-	int gpio, irq;
-
-	if (client->irq > 0)
+	if (ts->client->irq > 0)
 		return 0;
-	gpio = of_get_named_gpio(client->dev.of_node, "irq-gpios", 0);
-	if (gpio_is_valid(gpio) &&
-	    !devm_gpio_request_one(&client->dev, gpio, GPIOF_IN, "goodix-int")) {
-		irq = gpio_to_irq(gpio);
-		if (irq > 0) {
-			dev_info(&client->dev, "AC8257: irq %d from gpio %d\n",
-				 irq, gpio);
-			client->irq = irq;
-			return 0;
-		}
-	}
-	dev_info(&client->dev, "AC8257: no interrupt (gpio %d), polling every %d ms\n",
-		 gpio, GOODIX_POLL_MS);
+	dev_info(&ts->client->dev, "AC8257: polling every %d ms\n",
+		 GOODIX_POLL_MS);
 	return -ENODEV;
 }
 #endif
@@ -714,6 +701,10 @@ static int goodix_configure_dev(struct goodix_ts_data *ts)
 						   "touchscreen-inverted-x");
 	ts->inverted_y = device_property_read_bool(&ts->client->dev,
 						   "touchscreen-inverted-y");
+#ifdef CONFIG_MACH_AC8257
+	/* landscape controller, portrait display (persist.sf.hwrotation=90) */
+	ts->swapped_x_y = true;
+#endif
 
 	goodix_read_config(ts);
 
