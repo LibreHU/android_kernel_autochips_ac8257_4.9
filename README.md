@@ -18,6 +18,52 @@ UI on the panel**; the individual functions are being checked next.
 Details and the list of AutoChips-specific changes found so far: `docs/RECONSTRUCTION_STATUS.md`; building
 and testing safely on the unit: `docs/BUILD.md`.
 
+## Hardware status (UJC201, stock Android ROM, recovery test method)
+
+Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 1v). "Untested" means the
+driver loads but nobody has checked the function yet.
+
+| Function | Status | Notes |
+|---|---|---|
+| Boot to the Android UI | ✅ Works | stage 1p; stock Android userspace, `system_server`, launcher |
+| eMMC, partitions, `/data` (ext4) | ✅ Works | AutoChips ext4 mount options (`autoformat`...) accepted |
+| GPU (PowerVR GE8300) | ✅ Works | allocations below 4 GiB, as the stock kernel |
+| Trusty TEE, keymaster | ✅ Works | shared buffers below 4 GiB |
+| Display output (HWC, frame buffer) | ⚠️ Partial | picture shown; **rotated by 90°** and some glitches |
+| Backlight | ⚠️ Partial | on, **not adjustable** (set by the panel driver through the TI DS90UB947 bridge) |
+| USB device mode, adb | ✅ Works | connect on the first gadget pull-up |
+| Touch (Goodix GT928 behind FPD-Link) | ✅ Works | polling every 16 ms (no interrupt wired), orientation fixed |
+| `/dev/gpios_ioctl` (Jancar GPIOs) | 🧪 Untested | device present (stage 1t); used by `com.jancar.services` |
+| Keys (`mtk-kpd`), IR receiver | 🧪 Untested | input devices present |
+| Audio | 🧪 Untested | sound card registers |
+| Wi-Fi, Bluetooth, GPS, FM | ❌ Not working | stock vendor modules do not load (symbol CRCs); BT HAL aborts |
+| Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
+| ARM2 (`dualarm-dev`), metazone (`mtz`) | ❌ Not working | AutoChips drivers missing |
+| UART2/3, `spidev` | ❌ Not working | pins 180-182 (`pctl_8` bank) and SPI devices not set up |
+| MCU / CAN | ❓ Unknown | not checked yet |
+| Suspend / resume | ❓ Unknown | not checked yet |
+| Google Play services | ❓ Unknown | crash loop seen (`co.g.App`), to compare with the stock kernel |
+
+## Roadmap
+
+1. **Stage 1, boot the stock ROM** - ✅ done (stage 1p).
+2. **Stage 2, usable on the stock ROM**
+   - [x] Touch (GT928, polling, orientation)
+   - [x] Jancar `/dev/gpios_ioctl`
+   - [ ] Display rotation (stock: `persist.sf.hwrotation=90`) and glitches
+   - [ ] Backlight control: real `lcm_driver_common` with the DS90UB947/941 bridge (`CONFIG_LCM_TRANSFER_IC_SUPPORT`)
+   - [ ] Wi-Fi / BT / GPS / FM: build with clang, converge on the stock symbol CRCs so the vendor modules load
+   - [ ] Audio, keys, IR: check on the unit
+   - [ ] MCU / CAN, UART2/3 (pins 180-182)
+   - [ ] AutoChips devices: ARM2 (`dualarm-dev`), metazone, rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)
+   - [ ] Suspend / resume
+3. **Stage 3, daily use**
+   - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration
+   - [ ] Install in the boot partition instead of the recovery test method
+   - [ ] Release images from the GitHub Actions build
+4. **Later**: real panel driver from the metazone description, touch interrupt, cleanup of the AutoChips code
+   for review.
+
 ## Target platform
 
 - SoC: AutoChips AC8257.
