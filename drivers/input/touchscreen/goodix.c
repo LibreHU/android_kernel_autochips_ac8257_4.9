@@ -29,6 +29,10 @@
 #include <linux/slab.h>
 #include <linux/acpi.h>
 #include <linux/of.h>
+#ifdef CONFIG_MACH_AC8257
+#include <linux/of_gpio.h>
+#include <linux/workqueue.h>
+#endif
 #include <asm/unaligned.h>
 
 struct goodix_ts_data {
@@ -49,6 +53,9 @@ struct goodix_ts_data {
 	const char *cfg_name;
 	struct completion firmware_loading_complete;
 	unsigned long irq_flags;
+#ifdef CONFIG_MACH_AC8257
+	struct delayed_work poll_work;
+#endif
 };
 
 #define GOODIX_GPIO_INT_NAME		"irq"
@@ -298,11 +305,70 @@ static void goodix_free_irq(struct goodix_ts_data *ts)
 	devm_free_irq(&ts->client->dev, ts->client->irq, ts);
 }
 
+#ifdef CONFIG_MACH_AC8257
+#define GOODIX_POLL_MS	16
+
+/* fallback when no interrupt can be obtained, like the stock goodix_ts_timer_handler */
+static void goodix_poll_work(struct work_struct *work)
+{
+	struct goodix_ts_data *ts = container_of(to_delayed_work(work),
+						 struct goodix_ts_data, poll_work);
+
+	goodix_ts_irq_handler(0, ts);
+	schedule_delayed_work(&ts->poll_work, msecs_to_jiffies(GOODIX_POLL_MS));
+}
+
+/*
+ * The i2c core may find no interrupt for the AutoChips DTBO node (4-cell EINT
+ * specifier through an overlay fixup); try its "irq-gpios" pin, then poll.
+ */
+static int goodix_ac8257_irq(struct goodix_ts_data *ts)
+{
+	struct i2c_client *client = ts->client;
+	int gpio, irq;
+
+	if (client->irq > 0)
+		return 0;
+	gpio = of_get_named_gpio(client->dev.of_node, "irq-gpios", 0);
+	if (gpio_is_valid(gpio) &&
+	    !devm_gpio_request_one(&client->dev, gpio, GPIOF_IN, "goodix-int")) {
+		irq = gpio_to_irq(gpio);
+		if (irq > 0) {
+			dev_info(&client->dev, "AC8257: irq %d from gpio %d\n",
+				 irq, gpio);
+			client->irq = irq;
+			return 0;
+		}
+	}
+	dev_info(&client->dev, "AC8257: no interrupt (gpio %d), polling every %d ms\n",
+		 gpio, GOODIX_POLL_MS);
+	return -ENODEV;
+}
+#endif
+
 static int goodix_request_irq(struct goodix_ts_data *ts)
 {
+#ifdef CONFIG_MACH_AC8257
+	int error;
+
+	if (goodix_ac8257_irq(ts))
+		goto poll;
+	error = devm_request_threaded_irq(&ts->client->dev, ts->client->irq,
+					  NULL, goodix_ts_irq_handler,
+					  ts->irq_flags, ts->client->name, ts);
+	if (!error)
+		return 0;
+	dev_info(&ts->client->dev, "AC8257: irq %d request failed (%d), polling\n",
+		 ts->client->irq, error);
+poll:
+	INIT_DELAYED_WORK(&ts->poll_work, goodix_poll_work);
+	schedule_delayed_work(&ts->poll_work, msecs_to_jiffies(GOODIX_POLL_MS));
+	return 0;
+#else
 	return devm_request_threaded_irq(&ts->client->dev, ts->client->irq,
 					 NULL, goodix_ts_irq_handler,
 					 ts->irq_flags, ts->client->name, ts);
+#endif
 }
 
 /**

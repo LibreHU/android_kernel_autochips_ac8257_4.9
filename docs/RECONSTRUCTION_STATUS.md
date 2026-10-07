@@ -128,6 +128,9 @@ Stage 1p findings:
   already matches `goodix,gt928`; on AC8257 it now takes the address from `slave_addr` (0x5d) instead of the
   `reg` index, skips the GPIO reset/address selection (controller behind the FPD-Link bridge, set up before
   Linux) and names the input device `mtk-tpd` like the stock one. Axis orientation to be checked on the unit.
+  Result: the controller answers at 0x5d (`ID 911, version: 1060`), the input device is created, but the i2c
+  core found no interrupt for the node (`request IRQ failed: -22`). Stage 1r: interrupt from the `irq-gpios`
+  pin (`gpio_to_irq`), else polling every 16 ms (the stock `goodix.c` has a timer mode too).
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
