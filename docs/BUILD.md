@@ -102,7 +102,17 @@ No voltage is raised above the stock maximum; stability above the stock frequenc
 and is not guaranteed (thermal throttling still applies).
 
 CPU governors: interactive (default), schedutil, conservative, ondemand, performance, powersave,
-userspace, schedplus (`scaling_governor`). I/O schedulers: cfq (default), deadline, noop.
+userspace, schedplus (`scaling_governor`). I/O schedulers: deadline (default), cfq, noop.
+
+Other tweaks (kept to what is measurable and leaves the vendor module ABI alone):
+
+- Touch input boost (`CONFIG_AC8257_INPUT_BOOST`): on a new touch, CPU minimum raised to 1.533 GHz for
+  100 ms through the PPM system boost (its unused `BOOST_BY_UT` user, so the PPM API the vendor modules
+  use is unchanged). `/sys/module/ac8257_input_boost/parameters/freq_khz` (0 disables), `duration_ms`.
+- zram compresses with lz4 by default (lzo upstream): 1 GiB zram swap set up by `fstab.enableswap`.
+- deadline as the default I/O scheduler (cfq before) for the eMMC.
+- Not needed: `slub_debug=OFZPU page_owner=on` given by the LK are no-ops (`CONFIG_SLUB_DEBUG`,
+  `CONFIG_PAGE_OWNER` off). Config/debug cleanup that changes structure layouts waits for the module ABI work.
 
 ## GitHub Actions
 

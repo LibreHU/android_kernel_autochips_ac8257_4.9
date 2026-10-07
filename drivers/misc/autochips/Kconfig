@@ -48,4 +48,13 @@ config JANCAR_GPIOS
 	  "ac8227l_pin_N" pins of the "mediatek,ac8227l-gpio-ioctl" DT node,
 	  set high/low/input or read with ioctls 0x6b00-0x6b03 (stock option).
 
+config AC8257_INPUT_BOOST
+	bool "Touch input boost"
+	depends on MACH_MT6761
+	default y if MACH_AC8257
+	help
+	  Raises the CPU minimum frequency for a short time on a touch, through
+	  the PPM system boost (tunables in
+	  /sys/module/ac8257_input_boost/parameters/).
+
 endmenu
