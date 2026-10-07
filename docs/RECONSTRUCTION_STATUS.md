@@ -135,6 +135,12 @@ Stage 1p findings:
   `goodix.c` has an "irq mode" and a "polling mode" (`irq_mode`, `goodix_wq`) and the DTBO pin is gpio 0, so
   stage 1s polls (pin left alone) and swaps X/Y (stock `mtk-tpd` reports 720x1280). The i2c ACK-error dumps
   are rate-limited (i2c6 0x40 filled the 8 MiB log in two minutes).
+- Stage 1r logcat: `com.jancar.services` cannot open `/dev/gpios_ioctl` (stock `CONFIG_JANCAR_GPIOS`,
+  `misc_gpio_ioctl`) and its `CarService` hits ANR after ANR; the BT HAL aborts (no vendor modules);
+  GMS crash-loops (`co.g.App`, to compare with the stock kernel). Stage 1t adds the device
+  (`drivers/misc/autochips/jancar_gpios.c`): the ioctl argument is the index N of an `ac8227l_pin_N` GPIO
+  of the `mediatek,ac8227l-gpio-ioctl` node of the stock DTB; 0x6b00 high, 0x6b01 low, 0x6b02 input,
+  0x6b03 read, as the stock driver.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,

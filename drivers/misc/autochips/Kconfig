@@ -39,4 +39,13 @@ config AC8257_BRINGUP_PANIC_SECS
 	depends on AC8257_BRINGUP_PANIC
 	default 90
 
+config JANCAR_GPIOS
+	bool "Jancar /dev/gpios_ioctl"
+	depends on OF_GPIO
+	default y if MACH_AC8257
+	help
+	  GPIO access for the Jancar userspace (com.jancar.services): the
+	  "ac8227l_pin_N" pins of the "mediatek,ac8227l-gpio-ioctl" DT node,
+	  set high/low/input or read with ioctls 0x6b00-0x6b03 (stock option).
+
 endmenu
