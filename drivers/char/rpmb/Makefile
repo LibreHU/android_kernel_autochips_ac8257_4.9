@@ -10,7 +10,7 @@ ccflags-y += -I$(srctree)/drivers/devfreq
 ccflags-y += -I$(srctree)/drivers/scsi/ufs
 
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6761")
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6761" "ac8257"))
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6765
 else
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/$(MTK_PLATFORM)

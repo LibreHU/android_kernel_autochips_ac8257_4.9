@@ -321,7 +321,7 @@ endif
 
 
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6761"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6761" "ac8257"))
 
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 

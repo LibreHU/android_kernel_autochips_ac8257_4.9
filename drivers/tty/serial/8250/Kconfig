@@ -377,6 +377,14 @@ config SERIAL_8250_LPC18XX
 	  If you have a LPC18xx/43xx based board and want to use the
 	  serial port, say Y to this option. If unsure, say Y.
 
+config SERIAL_8250_AC8X
+	bool "AutoChips AC8x serial port support"
+	depends on SERIAL_8250 && MACH_AC8257
+	select SERIAL_8250_MT6577
+	help
+	  AC8257 UARTs: the stock kernel's driver is MediaTek's 8250_mtk renamed (mtk8250_* symbols, DT
+	  compatible "mediatek,ac8257-uart", "mediatek,mt6577-uart").
+
 config SERIAL_8250_MT6577
 	tristate "Mediatek serial port support"
 	depends on SERIAL_8250

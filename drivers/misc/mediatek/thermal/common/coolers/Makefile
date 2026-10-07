@@ -138,12 +138,14 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799" "mt6759" "mt6763" "mt6758" "mt6739" "mt6765" "mt6761"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799" "mt6759" "mt6763" "mt6758" "mt6739" "mt6765" "mt6761" "ac8257"))
 ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
     obj-$(CONFIG_THERMAL) += mtk_cooler_mutt.o
 endif
 obj-$(CONFIG_THERMAL) += mtk_cooler_fps.o
-ifeq ($(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT),y)
+ifeq ($(CONFIG_ATC_DISABLE_BAT_CHAGE),y)
+# AC8257: no battery, the stock kernel has no bcct cooler.
+else ifeq ($(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT),y)
 	obj-$(CONFIG_THERMAL) += mtk_cooler_bcct_v1.o
 else
 	ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)

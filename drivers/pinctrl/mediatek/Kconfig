@@ -14,6 +14,14 @@ config PINCTRL_MT6758
 	select PINCTRL_MTK_NO_UPSTREAM
 	select MTK_EINT_MULTI_TRIGGER_DESIGN
 
+config PINCTRL_AC8257
+	bool "AutoChips AC8257 pin control"
+	depends on MACH_AC8257
+	select PINCTRL_MT6761
+	help
+	  AC8257 pin controller: the MT6761 one (same registers, pins 0-179) plus an extra register bank
+	  (syscfg_pctl_8 at 0x10001000) for pins 180-182.
+
 config PINCTRL_MT6761
 	bool "Mediatek MT6761 pin control"
 	default n

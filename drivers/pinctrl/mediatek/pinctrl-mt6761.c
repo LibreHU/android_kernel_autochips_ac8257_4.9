@@ -285,6 +285,9 @@ static const struct of_device_id mtk_pctrl_match[] = {
 	{
 		.compatible = "mediatek,mt6761-pinctrl",
 	}, {
+		/* AutoChips AC8257: MT6761 pin controller, see PINCTRL_AC8257. */
+		.compatible = "mediatek,ac8257-pinctrl",
+	}, {
 	}
 };
 MODULE_DEVICE_TABLE(of, mt6761_pctrl_match);

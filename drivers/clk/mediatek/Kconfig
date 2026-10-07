@@ -131,6 +131,14 @@ config COMMON_CLK_MT6765
 	  instead of old clkmgr architecture.
 	  MT6765 default will use CCF.
 
+config COMMON_CLK_AC8257
+	bool "Clock driver for AutoChips AC8257"
+	depends on COMMON_CLK && MACH_AC8257
+	select COMMON_CLK_MT6761
+	help
+	  AC8257 clocks: the stock device tree uses the MT6761 clock controllers (mediatek,topckgen,
+	  mediatek,apmixed, mediatek,infracfg_ao...) at the same addresses.
+
 config COMMON_CLK_MT6761
 	bool "Clock driver for Mediatek MT6761"
 	depends on COMMON_CLK

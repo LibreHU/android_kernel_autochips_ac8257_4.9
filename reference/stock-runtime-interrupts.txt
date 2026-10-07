@@ -1,0 +1,85 @@
+           CPU0       CPU1       CPU2       CPU3       
+  2:          0          0          0          0     GICv3  29 Level     arch_timer
+  3:      91742      92255      94412      84921     GICv3  30 Level     arch_timer
+  6:         51         34        121        112  MT_SYSIRQ 114 Level     mtk_timer
+  7:          0          0          0          0  MT_SYSIRQ 123 Level     pmic_wrap
+  8:          0          0          0          0  MT_SYSIRQ 158 Level     10205000.m4u
+  9:          0          0          0          0  MT_SYSIRQ 224 Level     CIRQ
+ 11:          0          0          0          0  MT_SYSIRQ   0 Level     L2C_irq-0
+ 12:          0          0          0          1  MT_SYSIRQ 189 Level     DUALARM_ISR
+ 13:          1          0          0          0  MT_SYSIRQ 190 Level     DUALARM_ISR
+ 17:          0          0          0          0  MT_SYSIRQ  78 Edge      ATF_irq
+ 18:          0          0          0          0  MT_SYSIRQ  68 Edge      amms_irq
+ 20:          0          0          0          0  MT_SYSIRQ 125 Level     SPM
+ 26:          0          0          0          0   mt-eint   4 Edge      gpio-ir-recv-irq
+ 41:          0          0          0          0   mt-eint  19 Edge      11240000.msdc cd
+ 64:          8         14         13          6   mt-eint  42 Edge      mtk-tpd
+166:          0          0          0          0   mt-eint 144 Level     pmic-eint
+182:          0          0          0          0  MT_SYSIRQ  83 Edge      mt_wdt
+186:          0          1          4          2  MT_SYSIRQ 136 Level     SCP A IPC2HOST
+187:          0          0          0          0  MT_SYSIRQ 124 Edge      mtk-kpd
+198:          0          0          0          0  MT_SYSIRQ  86 Level     devapc
+204:          0          0          0          0  MT_SYSIRQ  57 Level     CQDMA
+205:          0          0          0          0  MT_SYSIRQ  58 Level     CQDMA
+206:          0          0          0          0  MT_SYSIRQ  59 Level     CQDMA
+207:          0          0          0          0  MT_SYSIRQ  88 Level     mpu
+211:       1397       1278       1347       1351  MT_SYSIRQ  98 Level     mtk_cmdq
+215:          7          7          1          2  MT_SYSIRQ 149 Level     SSPM_MBOX
+216:         74        105         27         57  MT_SYSIRQ 150 Level     SSPM_MBOX
+217:          1          0          5          0  MT_SYSIRQ 151 Level     SSPM_MBOX
+218:          0          0          0          0  MT_SYSIRQ 152 Level     SSPM_MBOX
+227:          1          1          0          0  MT_SYSIRQ  35 Level     serial
+228:        196        223        211        212  MT_SYSIRQ  36 Level     serial
+231:          0          0          0          0  MT_SYSIRQ  21 Level     mt-pwm
+232:         27         24         21         20  MT_SYSIRQ  28 Level     mt-i2c
+233:          0          0          0          0  MT_SYSIRQ  29 Level     mt-i2c
+234:          0          0          0          0  MT_SYSIRQ  30 Level     mt-i2c
+235:         65        131         98         92  MT_SYSIRQ  31 Level     mt-i2c
+236:          0          0          0          0  MT_SYSIRQ  32 Level     mt-i2c
+237:          0          0          0          0  MT_SYSIRQ  74 Level     mt-i2c
+238:          5          9         13         20  MT_SYSIRQ  75 Level     mt-i2c
+239:          0          0          0          0  MT_SYSIRQ  62 Level     1100a000.spi0
+240:          0          0          0          0  MT_SYSIRQ  22 Level     mtk-thermal
+241:          0          0          1          1  MT_SYSIRQ  69 Level     eem
+242:          0          0          0          0  MT_SYSIRQ  56 Level     mtk btif irq
+243:       2243       2078       2148       2241  MT_SYSIRQ  33 Level     mtk btif tx dma irq
+244:       3671       3710       3584       3625  MT_SYSIRQ  34 Level     mtk btif rx dma irq
+245:        145        153        134        173  MT_SYSIRQ 211 Level     BTIF_WAKEUP_IRQ
+247:          1          4          0          2  MT_SYSIRQ 214 Edge      CONN_LOG_IRQ
+248:       1066       1136       1077       1207  MT_SYSIRQ 212 Level     wlan0
+249:          0          0          0          0  MT_SYSIRQ  66 Level     11010000.spi1
+250:          0          0          0          0  MT_SYSIRQ  72 Level     11012000.spi2
+251:          0          0          0          0  MT_SYSIRQ  73 Level     11013000.spi3
+252:          0          0          0          0  MT_SYSIRQ  39 Level     11014000.spi4
+253:          0          0          0          0  MT_SYSIRQ  40 Level     11015000.spi5
+254:          0        259          0          0  MT_SYSIRQ  17 Level     musb-hdrc
+255:        138        118        135        124  MT_SYSIRQ  67 Level     xhci-hcd:usb2
+256:       7322       7375       6736       7295  MT_SYSIRQ  23 Level     mtk-msdc
+257:          0          0          0          0  MT_SYSIRQ  24 Level     mtk-msdc
+258:          0          0          0          0  MT_SYSIRQ 210 Level     BTCVSD_ISR_Handle
+259:          0          0          0          0  MT_SYSIRQ  97 Level     Afe_ISR_Handle
+260:      60412      58017      58671      62781  MT_SYSIRQ 203 Level     pvrsrvkm
+262:       5156       5237       5326       5305  MT_SYSIRQ 154 Level     mutex
+269:       2736       2656       2662       2700  MT_SYSIRQ 161 Level     ovl0
+270:       2724       2746       2666       2619  MT_SYSIRQ 173 Level     ovl0_2l
+271:       5343       5537       5322       5169  MT_SYSIRQ 162 Level     rdma0
+272:          0          0          0          0  MT_SYSIRQ 163 Level     wdma0
+274:          2          4          4          5  MT_SYSIRQ 165 Level     ccorr0
+275:          0          0          0          0  MT_SYSIRQ 166 Level     aal0
+278:          0          0          0          1  MT_SYSIRQ 169 Level     dsi0
+285:          0          0          0          0  MT_SYSIRQ 179 Level     ISP
+288:          0          0          0          0  MT_SYSIRQ 184 Level     ISP
+289:          0          0          0          0  MT_SYSIRQ 185 Level     ISP
+290:       2325       2350       2351       2361  MT_SYSIRQ 186 Level     ISP
+291:       2312       2256       2373       2449  MT_SYSIRQ 187 Level     ISP
+292:          0          0          0          0  MT_SYSIRQ 182 Level     camera-fdvt
+293:          0          0          0          0  MT_SYSIRQ 174 Level     Vcodec
+294:          0          0          0          0  MT_SYSIRQ 176 Level     jpeg_enc_driver
+295:         45         46         46         49  MT_SYSIRQ 177 Level     Vcodec
+IPI0:    169852     169153     164401     143660       Rescheduling interrupts
+IPI1:       489        481        455        428       Function call interrupts
+IPI2:         0          0          0          0       CPU stop interrupts
+IPI3:         0          0          0          0       Timer broadcast interrupts
+IPI4:      1378       1401       1381       1330       IRQ work interrupts
+IPI5:         0          0          0          0       CPU wake-up interrupts
+Err:          0

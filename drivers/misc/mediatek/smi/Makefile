@@ -53,7 +53,7 @@ obj-y += mmdvfs_profile_adaptor.o
 SUPPORT_USE_DDR_TYPE := true
 SUPPORT_MMP := true
 FORCE_STEP0 := false
-else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6761"))
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6761" "ac8257"))
 ccflags-y += -DSMI_MER
 ccflags-y += -DMMDVFS_HOOK
 ccflags-y += -DMMDVFS_QOS_SUPPORT

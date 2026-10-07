@@ -165,6 +165,17 @@ config MACH_MT6765
 	  thin-design smartphones. MT6765 also offers significant multitasking and
 	  multimedia improvements.
 
+config MACH_AC8257
+	bool "AutoChips AC8257"
+	select MACH_MT6761
+	select PINCTRL_AC8257
+	select COMMON_CLK_AC8257
+	help
+	  AutoChips AC8257 (car infotainment SoC, Jancar UJC201): 4 x Cortex-A53, PowerVR GE8300, MT6357 PMIC.
+	  The stock kernel is the MediaTek MT6761 BSP with the platform renamed to ac8257: same register map
+	  (pinctrl, clocks, MSDC, UART...), see docs/RECONSTRUCTION_STATUS.md. Stage 1 reuses the MT6761
+	  platform code (MACH_MT6761) and adds what AC8257 needs on top.
+
 config MACH_MT6761
 	bool "MediaTek MT6761"
 	select GENERIC_TIME

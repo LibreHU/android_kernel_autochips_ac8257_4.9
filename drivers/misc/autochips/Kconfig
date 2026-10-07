@@ -1,0 +1,21 @@
+#
+# AutoChips (AC8257) options of the stock kernel. Names and values come from the stock configuration
+# (reference/stock-ac8257_demo.config); each one is reconstructed when its code is.
+#
+menu "AutoChips AC8257 options"
+	depends on MACH_AC8257
+
+config ATC_SOLUTION
+	bool "AutoChips car solution"
+	default y
+	help
+	  Umbrella option of the stock kernel for the AutoChips car features.
+
+config ATC_DISABLE_BAT_CHAGE
+	bool "No battery (car head unit)"
+	default y
+	help
+	  The head unit runs from the car supply: no battery charging and no battery-current cooler
+	  (the stock kernel has no bcct cooler). Spelling kept from the stock option.
+
+endmenu
