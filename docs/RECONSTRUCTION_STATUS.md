@@ -147,6 +147,7 @@ Stage 1p findings:
   comes from userspace (`persist.sf.hwrotation=90` on the stock unit), to be checked under this kernel.
   Stage 1u: `invert_x`/`invert_y` in `/sys/module/goodix/parameters/` set the touch orientation at run time
   (after the X/Y swap), to find the right one on the unit.
+  Result: both inverted is right (a 180-degree turn after the swap); the default since stage 1v.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,

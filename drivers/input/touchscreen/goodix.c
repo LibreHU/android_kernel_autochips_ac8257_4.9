@@ -237,9 +237,9 @@ static int goodix_ts_read_input_report(struct goodix_ts_data *ts, u8 *data)
  * Orientation of the reported coordinates, after the X/Y swap (landscape controller, portrait
  * panel): writable at run time in /sys/module/goodix/parameters/ to find the right one on the unit.
  */
-static bool ac8257_invert_x;
+static bool ac8257_invert_x = true;	/* both inverted on the UJC201 (stage 1u test) */
 module_param_named(invert_x, ac8257_invert_x, bool, 0644);
-static bool ac8257_invert_y;
+static bool ac8257_invert_y = true;
 module_param_named(invert_y, ac8257_invert_y, bool, 0644);
 #endif
 
