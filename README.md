@@ -39,7 +39,7 @@ driver loads but nobody has checked the function yet.
 | Bluetooth | ✅ Works (stage 2i) | stock vendor modules (`wmt_drv`, `bt_drv`) load: stock symbol CRCs exported (`CONFIG_AC8257_STOCK_CRCS`); phone paired, Android Auto starts over it |
 | GPS | ✅ Works (stage 2i) | stock `gps_drv` |
 | Wi-Fi | ✅ Works (stage 2j) | stock `wmt_chrdev_wifi` + `wlan_drv_gen4m` (spidev moved to char major 163 as in the stock kernel); client and hotspot work; random MAC address until the metazone is read |
-| FM radio | ❓ Untested | stock `fmradio_drv` loads with the same CRC fix |
+| FM radio | ⚠️ Driver works, reception weak (stage 2j) | stock `fmradio_drv` (MT6631 FM): power-up, tuning and seek work; a full scan found 3 stations at very low RSSI (noise floor ~-25): antenna, or its supply, to compare with the stock kernel |
 | Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
 | ARM2 (`dualarm-dev`), metazone (`mtz`) | ❌ Not working | AutoChips drivers missing |
 | UART2/3, `spidev` | ❌ Not working | pins 180-182 (`pctl_8` bank) and SPI devices not set up |

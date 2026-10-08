@@ -244,6 +244,11 @@ Stage 1p findings:
   from metazone binary 0x10026, 6 bytes, and generates one when that fails). The stock panel driver also
   reads its MIPI init table from the metazone (`jac_lcm_analysis_mipi_params_form_MetaZone` in the stock
   boot log), one more reason for the metazone driver (with `rotationd` and the backlight path).
+- FM under 2j: `fmradio_drv` (MT6631) powers up (`mt6631_PowerUp: pwr on seq ok`), tunes and seeks; the
+  Jancar radio app (FMLIB) scanned the band: RSSI between -264 and -192 (driver units), 3 stations marked
+  valid (90.7, 93.2, 97.4 MHz) at -192, -210, -240, the rest at the noise floor. Either the unit had no
+  antenna signal (bench, antenna amplifier not powered) or something in the RF path differs from the stock
+  kernel: to compare with a scan under the stock kernel at the same place.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
