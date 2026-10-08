@@ -356,6 +356,17 @@ Stage 1p findings:
   set in `ion_buffer_create`) into 64-bit device addresses. The IOMMU page tables carry PA bits 32/33
   (`IO_PGTABLE_QUIRK_ARM_MTK_4GB`, `enable_4GB` from `max_pfn`). Nothing here differs from the stock
   kernel's code; stage 2o moves every ION page allocation (pools and system-contig) below 4 GiB.
+  Comparison with another kernel using this GPU (Samsung Galaxy MT6765 common kernel,
+  github.com/gta7lite/android_kernel_samsung_mt6765, Linux 5.10, PowerVR DDK 1.13/1.15): its MediaTek
+  platform code also sets the GPU DMA mask to 32 bits on MT6761 (`rgx_mtk/sysconfig.c`,
+  `#if defined(CONFIG_MACH_MT6761) dma_set_mask(pvOSDevice, DMA_BIT_MASK(32))`, the same line as our DDK
+  1.10, and `CONFIG_MACH_MT6761` is set here: the AC8257 is an MT6761 derivative). The newer DDK picks
+  `__GFP_DMA32` for its own pages from that mask (`osfunc.c`, `physmem_osmem_linux.c`), which is what our
+  `__GFP_DMA` fix does; neither DDK checks the addresses of imported dma-bufs against the mask
+  (`physmem_dmabuf.c` takes `sg_dma_address()` as is), and the stock kernel's
+  `PhysmemCreateNewDmaBufBackedPMR` makes the same calls as ours. The MediaTek zone-movable CMA region
+  (0xc0000000, all memory above 3 GiB) is not activated in either kernel (`0K cma-reserved`,
+  `memory-ssmr: [INIT FAIL]: cma is not inited` in both), so it does not explain a difference.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
