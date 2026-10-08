@@ -46,9 +46,11 @@
  * "ac8257_bringup.oneshot=1" (command line, for a test kernel in the boot partition): the kernel
  * writes "boot-recovery" into the bootloader message instead of clearing it, about 10 s after boot
  * and again before its timed panic or an intercepted reboot. Whatever ends that boot (timed panic,
- * watchdog reset after a hang, power cut), the LK then starts the recovery partition, which should hold
+ * watchdog reset after a hang, power cut), the LK should then start the recovery partition, which should hold
  * a kernel known to boot to adb (that one clears the message again). One normal-mode boot per try,
- * with its log kept in pstore, and no unit stuck on a test kernel without adb.
+ * with its log kept in pstore, and no unit stuck on a test kernel without adb. The timer and an
+ * intercepted reboot restart with the "recovery" command (RTC flag) instead of panicking: after a
+ * panic the LK ignores the bootloader message (stage 2g).
  */
 static bool ac8257_oneshot;
 
@@ -111,8 +113,23 @@ static int __init ac8257_panic_secs_setup(char *str)
 }
 __setup("ac8257_panic_secs=", ac8257_panic_secs_setup);
 
+/*
+ * One-shot boot: restart into recovery the way "adb reboot recovery" does (the MTK restart handler
+ * marks recovery in the RTC, which the LK honours), without the device shutdown that a broken driver
+ * could hang. The LK does not honour the bootloader message after a panic reboot: stage 2g looped on
+ * the boot partition. The kernel log stays in pstore (warm reset).
+ */
+static void ac8257_oneshot_restart(const char *why)
+{
+	pr_emerg("ac8257 bring-up: %s, one-shot boot: restarting into recovery\n", why);
+	ac8257_clear_bcb();
+	machine_restart("recovery");
+}
+
 static void ac8257_bringup_panic(struct work_struct *work)
 {
+	if (ac8257_oneshot)
+		ac8257_oneshot_restart("timer expired");
 	ac8257_clear_bcb();
 	panic("ac8257 bring-up: timed panic (%d s), to keep the log in pstore",
 	      ac8257_panic_secs);
@@ -176,6 +193,8 @@ static int ac8257_bringup_reboot_notify(struct notifier_block *nb, unsigned long
 {
 	if (!ac8257_intercept_reboot)
 		return NOTIFY_DONE;
+	if (ac8257_oneshot)
+		ac8257_oneshot_restart("reboot requested");
 	ac8257_clear_bcb();
 	panic("ac8257 bring-up: reboot requested (event %lu, \"%s\"), turned into a panic",
 	      code, cmd ? (char *)cmd : "");
