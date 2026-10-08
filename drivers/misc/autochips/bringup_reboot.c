@@ -19,7 +19,13 @@
  *
  * "ac8257_panic_secs=N" on the kernel command line overrides the delay (0 disables the timed panic,
  * the reboot interception stays), so a test image can be given a longer window for a live adb session
- * without rebuilding the kernel. This program is free software; GPL v2.
+ * without rebuilding the kernel.
+ *
+ * At run time, as root, in /sys/module/ac8257_bringup/parameters/:
+ *   panic_secs        write N: timed panic N seconds from now (0 disarms it); read: last value set
+ *   time_left         read only: seconds before the timed panic, 0 when disarmed
+ *   intercept_reboot  1 (default): userspace reboots become a panic; 0: normal reboots ("adb reboot")
+ * This program is free software; GPL v2.
  */
 #include <linux/blkdev.h>
 #include <linux/buffer_head.h>
@@ -27,6 +33,7 @@
 #include <linux/genhd.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
+#include <linux/moduleparam.h>
 #include <linux/notifier.h>
 #include <linux/reboot.h>
 #include <linux/workqueue.h>
@@ -75,6 +82,9 @@ static void ac8257_clear_bcb(void)
 }
 
 static int ac8257_panic_secs = CONFIG_AC8257_BRINGUP_PANIC_SECS;
+static bool ac8257_intercept_reboot = true;
+static bool ac8257_bringup_ready;		/* workqueues usable: set by the late initcall */
+static unsigned long ac8257_panic_deadline;	/* jiffies; valid while the work is pending */
 
 static int __init ac8257_panic_secs_setup(char *str)
 {
@@ -85,14 +95,67 @@ __setup("ac8257_panic_secs=", ac8257_panic_secs_setup);
 static void ac8257_bringup_panic(struct work_struct *work)
 {
 	ac8257_clear_bcb();
-	panic("ac8257 bring-up: timed panic after %d s, to keep the log in pstore",
+	panic("ac8257 bring-up: timed panic (%d s), to keep the log in pstore",
 	      ac8257_panic_secs);
 }
 
 static DECLARE_DELAYED_WORK(ac8257_bringup_work, ac8257_bringup_panic);
 
+static void ac8257_bringup_arm(void)
+{
+	if (ac8257_panic_secs > 0) {
+		ac8257_panic_deadline = jiffies + ac8257_panic_secs * HZ;
+		mod_delayed_work(system_wq, &ac8257_bringup_work, ac8257_panic_secs * HZ);
+		pr_info("ac8257 bring-up: timed panic in %d s\n", ac8257_panic_secs);
+	} else {
+		cancel_delayed_work(&ac8257_bringup_work);
+		pr_info("ac8257 bring-up: timed panic disabled\n");
+	}
+}
+
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "ac8257_bringup."
+
+static int ac8257_panic_secs_set(const char *val, const struct kernel_param *kp)
+{
+	int secs, ret = kstrtoint(val, 0, &secs);
+
+	if (ret)
+		return ret;
+	if (secs < 0 || secs > INT_MAX / HZ)
+		return -EINVAL;
+	ac8257_panic_secs = secs;
+	if (ac8257_bringup_ready)	/* from the command line: the initcall arms it */
+		ac8257_bringup_arm();
+	return 0;
+}
+
+static const struct kernel_param_ops ac8257_panic_secs_ops = {
+	.set = ac8257_panic_secs_set,
+	.get = param_get_int,
+};
+module_param_cb(panic_secs, &ac8257_panic_secs_ops, &ac8257_panic_secs, 0644);
+
+static int ac8257_time_left_get(char *buf, const struct kernel_param *kp)
+{
+	long left = 0;
+
+	if (delayed_work_pending(&ac8257_bringup_work))
+		left = max_t(long, 0, (long)(ac8257_panic_deadline - jiffies)) / HZ;
+	return scnprintf(buf, PAGE_SIZE, "%ld\n", left);
+}
+
+static const struct kernel_param_ops ac8257_time_left_ops = {
+	.get = ac8257_time_left_get,
+};
+module_param_cb(time_left, &ac8257_time_left_ops, NULL, 0444);
+
+module_param_named(intercept_reboot, ac8257_intercept_reboot, bool, 0644);
+
 static int ac8257_bringup_reboot_notify(struct notifier_block *nb, unsigned long code, void *cmd)
 {
+	if (!ac8257_intercept_reboot)
+		return NOTIFY_DONE;
 	ac8257_clear_bcb();
 	panic("ac8257 bring-up: reboot requested (event %lu, \"%s\"), turned into a panic",
 	      code, cmd ? (char *)cmd : "");
@@ -114,12 +177,8 @@ static struct notifier_block ac8257_bringup_reboot_nb = {
 
 static int __init ac8257_bringup_panic_init(void)
 {
-	if (ac8257_panic_secs > 0) {
-		pr_info("ac8257 bring-up: timed panic in %d s\n", ac8257_panic_secs);
-		schedule_delayed_work(&ac8257_bringup_work, ac8257_panic_secs * HZ);
-	} else {
-		pr_info("ac8257 bring-up: timed panic disabled\n");
-	}
+	ac8257_bringup_ready = true;
+	ac8257_bringup_arm();
 	schedule_delayed_work(&ac8257_bringup_clear_work, 10 * HZ);
 	register_reboot_notifier(&ac8257_bringup_reboot_nb);
 	return 0;

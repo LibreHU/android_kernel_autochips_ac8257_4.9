@@ -74,7 +74,14 @@ Outputs:
    the normal boot partition, with the log kept. Read it from Android with
    `cat /sys/fs/pstore/console-ramoops*`, `cat /proc/last_kmsg` and `logcat -L` (userspace log, only the
    last 64 KiB). `ac8257_panic_secs=N` on the command line (`--cmdline-append`) overrides the delay
-   (0: no timed panic), e.g. a longer window for a live `adb` session. Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
+   (0: no timed panic), e.g. a longer window for a live `adb` session. At run time, as root:
+
+       cat /sys/module/ac8257_bringup/parameters/time_left             # seconds left, 0 = disarmed
+       echo 1800 > /sys/module/ac8257_bringup/parameters/panic_secs    # panic 30 min from now
+       echo 0 > /sys/module/ac8257_bringup/parameters/panic_secs       # no timed panic
+       echo 0 > /sys/module/ac8257_bringup/parameters/intercept_reboot # adb reboot reboots normally
+
+   Not kept across reboots. Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
 
 ## CPU/GPU frequencies, governors
 
