@@ -122,42 +122,44 @@
 #define CPU_DVFS_VOLT14_VPROC_LL_FY2    80000           /* 10uV */
 #define CPU_DVFS_VOLT15_VPROC_LL_FY2    80000           /* 10uV */
 
-/* OC: AC8257 overclock, selected with ac8257_cpu_oc=1. The FY sign-off voltages up to 2.0 GHz,
- * 2.1 and 2.2 GHz (the SB top frequency of this CPU family) at the same top voltage, 1.025 V.
+/* OC: AC8257 overclock, selected with ac8257_cpu_oc=1. The FY sign-off voltages up to 2.0 GHz, then
+ * 2.1, 2.2 and 2.3 GHz at the same top voltage, 1.025 V (no voltage above the stock maximum). The table
+ * has 16 entries (NR_FREQ, fixed by the SSPM record table): 2.3 GHz took the place of 850 MHz, the
+ * lowest OPP is 987 MHz. Stability above 2.0 GHz depends on the chip.
  */
-#define CPU_DVFS_FREQ0_LL_OC    2201000    /* KHz */
-#define CPU_DVFS_FREQ1_LL_OC    2101000    /* KHz */
-#define CPU_DVFS_FREQ2_LL_OC    2001000    /* KHz */
-#define CPU_DVFS_FREQ3_LL_OC    1917000    /* KHz */
-#define CPU_DVFS_FREQ4_LL_OC    1834000    /* KHz */
-#define CPU_DVFS_FREQ5_LL_OC    1767000    /* KHz */
-#define CPU_DVFS_FREQ6_LL_OC    1700000    /* KHz */
-#define CPU_DVFS_FREQ7_LL_OC    1633000    /* KHz */
-#define CPU_DVFS_FREQ8_LL_OC    1533000    /* KHz */
-#define CPU_DVFS_FREQ9_LL_OC    1466000    /* KHz */
-#define CPU_DVFS_FREQ10_LL_OC   1400000    /* KHz */
-#define CPU_DVFS_FREQ11_LL_OC   1308000    /* KHz */
-#define CPU_DVFS_FREQ12_LL_OC   1216000    /* KHz */
-#define CPU_DVFS_FREQ13_LL_OC   1125000    /* KHz */
-#define CPU_DVFS_FREQ14_LL_OC    987000    /* KHz */
-#define CPU_DVFS_FREQ15_LL_OC    850000    /* KHz */
+#define CPU_DVFS_FREQ0_LL_OC    2301000    /* KHz */
+#define CPU_DVFS_FREQ1_LL_OC    2201000    /* KHz */
+#define CPU_DVFS_FREQ2_LL_OC    2101000    /* KHz */
+#define CPU_DVFS_FREQ3_LL_OC    2001000    /* KHz */
+#define CPU_DVFS_FREQ4_LL_OC    1917000    /* KHz */
+#define CPU_DVFS_FREQ5_LL_OC    1834000    /* KHz */
+#define CPU_DVFS_FREQ6_LL_OC    1767000    /* KHz */
+#define CPU_DVFS_FREQ7_LL_OC    1700000    /* KHz */
+#define CPU_DVFS_FREQ8_LL_OC    1633000    /* KHz */
+#define CPU_DVFS_FREQ9_LL_OC    1533000    /* KHz */
+#define CPU_DVFS_FREQ10_LL_OC   1466000    /* KHz */
+#define CPU_DVFS_FREQ11_LL_OC   1400000    /* KHz */
+#define CPU_DVFS_FREQ12_LL_OC   1308000    /* KHz */
+#define CPU_DVFS_FREQ13_LL_OC   1216000    /* KHz */
+#define CPU_DVFS_FREQ14_LL_OC   1125000    /* KHz */
+#define CPU_DVFS_FREQ15_LL_OC    987000    /* KHz */
 
 #define CPU_DVFS_VOLT0_VPROC_LL_OC    102500           /* 10uV */
 #define CPU_DVFS_VOLT1_VPROC_LL_OC    102500           /* 10uV */
 #define CPU_DVFS_VOLT2_VPROC_LL_OC    102500           /* 10uV */
-#define CPU_DVFS_VOLT3_VPROC_LL_OC     99375           /* 10uV */
-#define CPU_DVFS_VOLT4_VPROC_LL_OC     96250           /* 10uV */
-#define CPU_DVFS_VOLT5_VPROC_LL_OC     93750           /* 10uV */
-#define CPU_DVFS_VOLT6_VPROC_LL_OC     91250           /* 10uV */
-#define CPU_DVFS_VOLT7_VPROC_LL_OC     88750           /* 10uV */
-#define CPU_DVFS_VOLT8_VPROC_LL_OC     85000           /* 10uV */
-#define CPU_DVFS_VOLT9_VPROC_LL_OC     82500           /* 10uV */
-#define CPU_DVFS_VOLT10_VPROC_LL_OC    80000           /* 10uV */
-#define CPU_DVFS_VOLT11_VPROC_LL_OC    77500           /* 10uV */
-#define CPU_DVFS_VOLT12_VPROC_LL_OC    75000           /* 10uV */
-#define CPU_DVFS_VOLT13_VPROC_LL_OC    72500           /* 10uV */
-#define CPU_DVFS_VOLT14_VPROC_LL_OC    68750           /* 10uV */
-#define CPU_DVFS_VOLT15_VPROC_LL_OC    65000           /* 10uV */
+#define CPU_DVFS_VOLT3_VPROC_LL_OC    102500           /* 10uV */
+#define CPU_DVFS_VOLT4_VPROC_LL_OC     99375           /* 10uV */
+#define CPU_DVFS_VOLT5_VPROC_LL_OC     96250           /* 10uV */
+#define CPU_DVFS_VOLT6_VPROC_LL_OC     93750           /* 10uV */
+#define CPU_DVFS_VOLT7_VPROC_LL_OC     91250           /* 10uV */
+#define CPU_DVFS_VOLT8_VPROC_LL_OC     88750           /* 10uV */
+#define CPU_DVFS_VOLT9_VPROC_LL_OC     85000           /* 10uV */
+#define CPU_DVFS_VOLT10_VPROC_LL_OC    82500           /* 10uV */
+#define CPU_DVFS_VOLT11_VPROC_LL_OC    80000           /* 10uV */
+#define CPU_DVFS_VOLT12_VPROC_LL_OC    77500           /* 10uV */
+#define CPU_DVFS_VOLT13_VPROC_LL_OC    75000           /* 10uV */
+#define CPU_DVFS_VOLT14_VPROC_LL_OC    72500           /* 10uV */
+#define CPU_DVFS_VOLT15_VPROC_LL_OC    68750           /* 10uV */
 
 /* DVFS OPP table */
 #define OPP_TBL(cluster, seg, lv, vol)	\
@@ -293,7 +295,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_OC[] = {
 	FP(1,	1),
 	FP(1,	1),
 	FP(1,	1),
-	FP(2,	1),
+	FP(1,	1),
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),

@@ -79,7 +79,8 @@ static unsigned int fy2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 /* OC (CPU_LEVEL_3): same frequencies/voltages as opp_tbl_LL_e3_0, Vproc code = 21 + (uV - 650000) / 6250 */
 static unsigned int ocTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	/* Freq, Vproc, post_div, clk_div */
-	{ 2201, 81, 1, 1 },	/* LL */
+	{ 2301, 81, 1, 1 },	/* LL */
+	{ 2201, 81, 1, 1 },
 	{ 2101, 81, 1, 1 },
 	{ 2001, 81, 1, 1 },
 	{ 1917, 76, 1, 1 },
@@ -94,7 +95,6 @@ static unsigned int ocTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	{ 1216, 37, 2, 1 },
 	{ 1125, 33, 2, 1 },
 	{  987, 27, 2, 1 },
-	{  850, 21, 2, 1 },
 };
 
 unsigned int *xrecordTbl[NUM_CPU_LEVEL] = {	/* v0.3 */

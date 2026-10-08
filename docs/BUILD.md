@@ -110,37 +110,47 @@ Outputs:
 
 The overclock tables are loaded by default, with the stock maxima as run-time caps:
 
-- CPU: 16 OPPs from 850 MHz to 2.201 GHz: the stock "FY" voltages up to 2.001 GHz, 2.101 and 2.201 GHz
-  at the same 1.025 V top voltage (2.201 GHz is the top of MediaTek's "SB" table for this CPU family; the
-  stock FY/SB tables are the same in the stock kernel). Cap: `ac8257_cpufreq.max_khz`, **2001000** by
-  default, applied on top of the PPM limits. CPU DVFS is "hybrid" on this SoC (`CONFIG_HYBRID_CPU_DVFS`,
-  defined by `mtk_cpufreq_platform.h` with SSPM support): the SSPM applies the OPPs from the record table
-  (`xrecordTbl`, `mtk_cpufreq_opp_pv_table.h`, with an `ocTbl` for this level) and the limits given by
-  `cpuhvfs_set_min_max()`, where the cap is applied. (Stages 1y-2a lacked the record table entry and
-  crashed at 1.3 s in `cpuhvfs_pvt_tbl_create`; stage 2b hung in the EEM init because the PTPOD OPP, which
-  must be at the 0.80 V boot voltage, is index 10 in this table, not 8.) The EEM voltage adjustments, calibrated against the stock
-  table, are not applied with this table (sign-off voltages instead, slightly higher).
-- GPU: 730 MHz (the MT6761T top OPP of this GPU) added at the 0.80 V of the stock 660 MHz. Cap:
-  `ac8257_gpufreq.max_khz`, **660000** by default.
-  The boot OPP and the PTPOD OPP stay at 660 MHz or below even with a 730 MHz cap (stage 2d, which
-  started the GPU at 730 MHz, had GPU EMI MPU violations); DVFS goes up to the cap afterwards.
+- CPU: 16 OPPs (the SSPM record table has 16 entries) from 987 MHz to 2.301 GHz: the stock "FY"
+  voltages up to 2.001 GHz, then 2.101, 2.201 and 2.301 GHz at the same 1.025 V top voltage (no voltage
+  above the stock maximum; 2.301 GHz took the place of 850 MHz). Ceiling: `ac8257_cpufreq.max_khz`,
+  **2001000** by default; `ac8257_cpufreq.boot_khz` (0 = max_khz) is the maximum in force at boot. CPU
+  DVFS is "hybrid" on this SoC (`CONFIG_HYBRID_CPU_DVFS`): the SSPM applies the OPPs from the record table
+  (`xrecordTbl`, `mtk_cpufreq_opp_pv_table.h`, `ocTbl` for this level) and the limits given by
+  `cpuhvfs_set_min_max()`, where the ceiling is applied. The PTPOD OPP, which must be at the 0.80 V boot
+  voltage, is index 11 of this table (1.4 GHz; stage 2b hung in the EEM init with a wrong index). The EEM
+  voltage adjustments, calibrated against the stock table, are not applied with this table (sign-off
+  voltages instead, slightly higher).
+- GPU: 730 MHz (the MT6761T top OPP of this GPU) at the 0.80 V of the stock 660 MHz, plus 600, 450 and
+  300 MHz at the voltage of the stock OPP above each (730/660/600/500/450/390/300 MHz). Ceiling:
+  `ac8257_gpufreq.max_khz`, **660000** by default; floor: `ac8257_gpufreq.min_khz` (0 = none). The boot
+  OPP and the PTPOD OPP stay at 660 MHz or below even with a 730 MHz ceiling (stage 2d, which started the
+  GPU at 730 MHz, had GPU EMI MPU violations).
 
-  Stage 2p images (`recovery_test_ac8257_stage2p_oc`) are built with both overclocks on the command line
-  (`ac8257_cpufreq.max_khz=2201000 ac8257_gpufreq.max_khz=730000`), the interactive governor and the touch
-  boost (defaults), and no timed panic (`ac8257_panic_secs=0`).
+Tuning apps (Kernel Adiutor, SmartPack Kernel Manager...):
+
+- CPU: `scaling_max_freq` / `scaling_min_freq` / `scaling_governor` of
+  `/sys/devices/system/cpu/cpu0/cpufreq/` work: a cpufreq policy notifier folds the policy limits into
+  the SSPM limits (the PPM ignores them otherwise), within `max_khz`. `scaling_available_frequencies`
+  lists the whole table.
+- GPU: the PowerVR devfreq layout these apps know, `/sys/devices/platform/dfrgx/devfreq/dfrgx/`
+  (kHz): `cur_freq`, `available_frequencies`, `max_freq` and `min_freq` (the `max_khz` / `min_khz`
+  limits); `governor` reports the MediaTek GPU DVFS (`mtk_ged`), writes ignored.
 
 As root, at run time (not kept across reboots):
 
-    echo 2201000 > /sys/module/ac8257_cpufreq/parameters/max_khz   # CPU up to 2.2 GHz
-    echo 2001000 > /sys/module/ac8257_cpufreq/parameters/max_khz   # back to 2.0 GHz
-    echo 730000 > /sys/module/ac8257_gpufreq/parameters/max_khz    # GPU up to 730 MHz
+    echo 2301000 > /sys/module/ac8257_cpufreq/parameters/max_khz   # CPU ceiling 2.3 GHz
+    echo 1800000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+    echo 730000 > /sys/devices/platform/dfrgx/devfreq/dfrgx/max_freq
+    echo 500000 > /sys/devices/platform/dfrgx/devfreq/dfrgx/min_freq
     echo 0 1533000 > /proc/ppm/policy/userlimit_max_cpu_freq       # lower limit through the PPM
-    echo 500000 > /proc/gpufreq/gpufreq_opp_freq                   # fix the GPU OPP (0: automatic)
 
-or on the kernel command line (`--cmdline-append`): `ac8257_cpufreq.max_khz=2201000`,
-`ac8257_gpufreq.max_khz=730000`. `ac8257_cpu_oc=0` / `ac8257_gpu_oc=0` select the stock tables (with EEM).
-No voltage is raised above the stock maximum; stability above the stock frequencies depends on the chip
-and is not guaranteed (thermal throttling still applies).
+or on the kernel command line (`--cmdline-append`): `ac8257_cpufreq.max_khz=2301000`,
+`ac8257_cpufreq.boot_khz=2201000`, `ac8257_gpufreq.max_khz=730000`. `ac8257_cpu_oc=0` /
+`ac8257_gpu_oc=0` select the stock tables (with EEM). Stability above the stock frequencies depends on
+the chip and is not guaranteed (thermal throttling still applies).
+
+Stage 2q images (`recovery_test_ac8257_stage2q_oc`): CPU ceiling 2.301 GHz with 2.201 GHz at boot, GPU
+730 MHz, interactive governor and touch boost (defaults), no timed panic (`ac8257_panic_secs=0`).
 
 CPU governors: interactive (default), schedutil, conservative, ondemand, performance, powersave,
 userspace, schedplus (`scaling_governor`). I/O schedulers: deadline (default), cfq, noop.
