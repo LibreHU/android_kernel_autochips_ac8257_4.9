@@ -344,6 +344,8 @@ Stage 1p findings:
   (default; `ac8257_ion_low=0` on the command line restores the upstream behaviour). If 2o is stable, one
   of the ION buffer users truncates addresses, and keeping ION below 4 GiB is a usable fix that leaves
   the rest of the 6 GiB to the system.
+  The artefacts and crashes were already there before the vendor Wi-Fi/Bluetooth modules loaded (stage
+  2i/2j), so the connectivity chip is not the cause.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
