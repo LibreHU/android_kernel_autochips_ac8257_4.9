@@ -299,6 +299,15 @@ Stage 1p findings:
   stock boot log shows `detect_flag = 2` (no bridge), so the stock kernel uses the disp PWM alone, like
   this kernel (no AAL in either). To narrow down on the unit: `pwm_test:queryBL` / `pwm_test:dump` through
   `/sys/kernel/debug/dispsys` and the `[PWM]` kernel lines while the backlight does not follow.
+- Stage 2l, a boot that needed four tries: the logs only hold the boot that worked (boot_completed at
+  30 s, no panic, oops or lockup) and, in the RAM console, the stock kernel's boot before it
+  (`bootmenu: reboot recovery`, WDT status 0x2 = software reboot). The failed tries are not in any log:
+  a try that hangs is reset by the hardware watchdog and goes through the stock normal boot again, which
+  overwrites the RAM console and pstore. Only one backlight write in that boot (lights HAL, level 51 →
+  `level_1024 = 205`, PWM on); the Jancar service has `global_autobacklightadjust = true`
+  (`global_backlight = 70`), so its automatic backlight mode may override the slider. ttyS2 and ttyS3
+  (0x11004000, 0x11005000) still fail to probe (-22) where the stock kernel registers them; the stock DT
+  gives them pinctrl states (`utxd`, `urxd`, `tx_gpio`, `rx_gpio`) for pins 180-182.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
