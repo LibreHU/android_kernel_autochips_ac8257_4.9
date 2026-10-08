@@ -210,6 +210,11 @@ Stage 1p findings:
   took index 0, 730 MHz, ignoring `ac8257_gpufreq.max_khz`), and a boot-partition image for a normal-mode
   test. Other differences: no vendor module (`wmt_drv`, `bt_drv`, `gps_drv`, `fmradio_drv`, `wlan_drv_gen4m`,
   `wmt_chrdev_wifi`, `fpsgo` on the stock unit), so no `wpa_supplicant`, BT HAL aborts.
+- Stage 2e (recovery-partition boot): display and touch as before, and the **backlight is now adjustable**
+  from Android (it was on but fixed up to stage 2c/2d at least). Nothing in 2e touches the backlight path
+  directly (2e: GPU soft maximum for the initial/PTPOD OPPs); to be confirmed over several boots. In a
+  normal (boot-partition) boot, 2e shows multicoloured artefacts and no USB: the LK then starts what it skips
+  in recovery mode (SCP, ARM2 fast display), which this tree does not hand over yet.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,

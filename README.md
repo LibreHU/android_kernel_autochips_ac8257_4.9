@@ -30,7 +30,7 @@ driver loads but nobody has checked the function yet.
 | GPU (PowerVR GE8300) | ✅ Works | allocations below 4 GiB, as the stock kernel |
 | Trusty TEE, keymaster | ✅ Works | shared buffers below 4 GiB |
 | Display output (HWC, frame buffer) | ⚠️ Partial | picture shown; **rotated by 90°**, glitches, occasional crash (display shared with ARM2, stopgap in stage 1w) |
-| Backlight | ⚠️ Partial | on, **not adjustable** (set by the panel driver through the TI DS90UB947 bridge) |
+| Backlight | ✅ Works (stage 2e, recovery-partition boot) | adjustable from Android; earlier stages: on but not adjustable. Cause of the change not identified yet |
 | USB device mode, adb | ✅ Works | connect on the first gadget pull-up |
 | Touch (Goodix GT928 behind FPD-Link) | ✅ Works | polling every 16 ms (no interrupt wired), orientation fixed |
 | `/dev/gpios_ioctl` (Jancar GPIOs) | 🧪 Untested | device present (stage 1t); used by `com.jancar.services` |
@@ -52,7 +52,7 @@ driver loads but nobody has checked the function yet.
    - [x] Jancar `/dev/gpios_ioctl`
    - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel): crashes, glitches
    - [ ] Display rotation: metazone driver (`/dev/mtz`), read by `rotationd` to set `persist.sf.hwrotation`
-   - [ ] Backlight control: real `lcm_driver_common` with the DS90UB947/941 bridge (`CONFIG_LCM_TRANSFER_IC_SUPPORT`)
+   - [x] Backlight control: adjustable since stage 2e (recovery-partition boot); to confirm in a normal boot
    - [ ] Wi-Fi / BT / GPS / FM: build with clang, converge on the stock symbol CRCs so the vendor modules load
    - [ ] Audio, keys, IR: check on the unit
    - [ ] MCU / CAN, UART2/3 (pins 180-182)
