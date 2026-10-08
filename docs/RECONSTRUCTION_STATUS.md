@@ -367,6 +367,14 @@ Stage 1p findings:
   `PhysmemCreateNewDmaBufBackedPMR` makes the same calls as ours. The MediaTek zone-movable CMA region
   (0xc0000000, all memory above 3 GiB) is not activated in either kernel (`0K cma-reserved`,
   `memory-ssmr: [INIT FAIL]: cma is not inited` in both), so it does not explain a difference.
+- Stage 2o on the unit (6 GiB, ION below 4 GiB): Android up on the fourth try, then **no artefact, no
+  native crash** (0 `Fatal signal` against several per minute under 2l, no `DeadSystemException`),
+  backlight adjustable (`[PWM] level_1024` follows the slider). The runtime corruption was ION buffers
+  above 4 GiB reaching a device that only addresses 32 bits (the GPU, 32-bit DMA mask on MT6761, is the
+  first suspect); `ac8257_ion_low=1` stays the default. Still open: boot tries ending in a reset (the
+  successful boot again came right after a stock boot, `INTO_RECOVERY_COUNT` back to 1), and installd
+  failing to prepare `/data/data/<pkg>` for some third-party apps (`Failed to prepare ...: Success`,
+  VLC `SQLITE_CANTOPEN`), probably directories damaged while memory was being corrupted.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
