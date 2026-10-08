@@ -331,6 +331,13 @@ Stage 1p findings:
   kernel, `mem=3G` (all RAM below 4 GiB physical, applied before the reserved memory scan), to check
   whether a device or driver truncating physical addresses above 4 GiB causes the corruption (GPU and
   Trusty buffers above 4 GiB already did).
+- Stage 2n (`mem=3G`) on the unit: **stable**, Jancar boot animation shown, no artefact on the panel or in
+  scrcpy captures. The corruption comes from memory above 4 GiB physical. Checked so far and not the cause
+  on their own: the IOMMU (`mtk_iommu_v2`, 4 GB mode with PA bits 32/33 in the v7s page tables), the SMI
+  larb MMU settings (same register dump as the stock kernel at boot), MSDC (36-bit DMA mask, high address
+  bits programmed, `enable_4G()` weak 0 as in the stock kernel, so `SUPPORT64G` set). The zones match the
+  stock kernel (DMA below 4 GiB, Normal above). Backlight still not adjustable under 2n (separate issue).
+  Next: narrow the device down (Wi-Fi/Bluetooth/GPS off under 6 GiB, then the other DMA users).
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
