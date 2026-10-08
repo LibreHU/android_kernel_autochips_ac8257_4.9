@@ -81,7 +81,18 @@ Outputs:
        echo 0 > /sys/module/ac8257_bringup/parameters/panic_secs       # no timed panic
        echo 0 > /sys/module/ac8257_bringup/parameters/intercept_reboot # adb reboot reboots normally
 
-   Not kept across reboots. Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
+   Not kept across reboots.
+
+   Normal-mode (boot partition) tests: a kernel booted from the recovery partition runs in recovery
+   mode, where the LK skips the SCP, its reserved memory and ARM2's fast display; a normal boot needs the
+   test kernel in the boot partition, with no fallback if it hangs. `ac8257_bringup.oneshot=1` on its
+   command line gives one: the kernel writes "boot-recovery" into the bootloader message (`para`) at 10 s
+   and 30 s, so whatever ends that boot (timed panic, watchdog, power cut), the next start is from the
+   recovery partition, which must hold a kernel known to boot to adb (a recovery test image; it clears
+   the message again). Procedure: test image in recovery, `boot_oneshot_*.img` in boot, reboot; the unit
+   comes back in the recovery test kernel with the normal-mode log in pstore (`get_log.bat`); then put
+   the stock boot.img back (`dd` of the stock image to `/dev/block/by-name/boot`, or fastboot).
+   Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
 
 ## CPU/GPU frequencies, governors
 

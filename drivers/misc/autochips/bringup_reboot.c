@@ -25,6 +25,7 @@
  *   panic_secs        write N: timed panic N seconds from now (0 disarms it); read: last value set
  *   time_left         read only: seconds before the timed panic, 0 when disarmed
  *   intercept_reboot  1 (default): userspace reboots become a panic; 0: normal reboots ("adb reboot")
+ *   oneshot           1: next boot from the recovery partition (see ac8257_oneshot below)
  * This program is free software; GPL v2.
  */
 #include <linux/blkdev.h>
@@ -40,6 +41,16 @@
 
 #define AC8257_MMC_DEVT		MKDEV(MMC_BLOCK_MAJOR, 0)	/* mmcblk0, the eMMC */
 #define BCB_COMMAND_SIZE	32				/* struct bootloader_message.command */
+
+/*
+ * "ac8257_bringup.oneshot=1" (command line, for a test kernel in the boot partition): the kernel
+ * writes "boot-recovery" into the bootloader message instead of clearing it, about 10 s after boot
+ * and again before its timed panic or an intercepted reboot. Whatever ends that boot (timed panic,
+ * watchdog reset after a hang, power cut), the LK then starts the recovery partition, which should hold
+ * a kernel known to boot to adb (that one clears the message again). One normal-mode boot per try,
+ * with its log kept in pstore, and no unit stuck on a test kernel without adb.
+ */
+static bool ac8257_oneshot;
 
 static void ac8257_clear_bcb(void)
 {
@@ -68,8 +79,16 @@ static void ac8257_clear_bcb(void)
 	}
 	bh = __bread(bdev, 0, 512);
 	if (bh) {
+		if (ac8257_oneshot) {
+			if (strncmp(bh->b_data, "boot-recovery", BCB_COMMAND_SIZE)) {
+				pr_info("ac8257 bring-up: one-shot boot, next boot from recovery\n");
+				memset(bh->b_data, 0, BCB_COMMAND_SIZE);
+				strcpy(bh->b_data, "boot-recovery");
+				mark_buffer_dirty(bh);
+				sync_dirty_buffer(bh);
+			}
 		/* Only an AOSP command ("boot-recovery", "boot-bootloader"...): leave anything else. */
-		if (!strncmp(bh->b_data, "boot-", 5)) {
+		} else if (!strncmp(bh->b_data, "boot-", 5)) {
 			pr_info("ac8257 bring-up: clearing bootloader message command \"%.*s\"\n",
 				BCB_COMMAND_SIZE, bh->b_data);
 			memset(bh->b_data, 0, BCB_COMMAND_SIZE);
@@ -151,6 +170,7 @@ static const struct kernel_param_ops ac8257_time_left_ops = {
 module_param_cb(time_left, &ac8257_time_left_ops, NULL, 0444);
 
 module_param_named(intercept_reboot, ac8257_intercept_reboot, bool, 0644);
+module_param_named(oneshot, ac8257_oneshot, bool, 0644);
 
 static int ac8257_bringup_reboot_notify(struct notifier_block *nb, unsigned long code, void *cmd)
 {
@@ -165,7 +185,14 @@ static int ac8257_bringup_reboot_notify(struct notifier_block *nb, unsigned long
 /* Also once early (the eMMC is up by then): a crash later on then ends in a normal boot as well. */
 static void ac8257_bringup_early_clear(struct work_struct *work)
 {
+	static bool again;
+
 	ac8257_clear_bcb();
+	/* one-shot: once more later, in case the eMMC was not there yet */
+	if (ac8257_oneshot && !again) {
+		again = true;
+		schedule_delayed_work(to_delayed_work(work), 20 * HZ);
+	}
 }
 
 static DECLARE_DELAYED_WORK(ac8257_bringup_clear_work, ac8257_bringup_early_clear);
