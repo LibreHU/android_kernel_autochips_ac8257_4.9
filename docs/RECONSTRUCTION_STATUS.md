@@ -346,6 +346,16 @@ Stage 1p findings:
   the rest of the 6 GiB to the system.
   The artefacts and crashes were already there before the vendor Wi-Fi/Bluetooth modules loaded (stage
   2i/2j), so the connectivity chip is not the cause.
+  ION code review (while 2o is tested): gralloc (`gralloc.ac8257.so`, PowerVR) asks for a heap named
+  "system", which neither kernel has (same heap table as the stock kernel); buffers come from the mm heap
+  pools (`ion_page_pool`). The display gets a buffer address through `ion_phys()` cast to `unsigned int`
+  (`mtkfb_ion_phys_mmu_addr`), and `ION_MM_GET_PHYS` returns `(unsigned int)phy_addr` to userspace: fine
+  for the mm heaps (an IOVA below 4 GiB from `__pseudo_alloc_mva` → `iommu_dma_map_sg`), truncated for a
+  heap whose `phys` is the physical address (system-contig, carveout). `ion_mm_heap_phys` writes only the
+  low 32 bits of `*addr` on a cached MVA. The GPU imports ION buffers by `sg_dma_address()` (= `sg_phys()`,
+  set in `ion_buffer_create`) into 64-bit device addresses. The IOMMU page tables carry PA bits 32/33
+  (`IO_PGTABLE_QUIRK_ARM_MTK_4GB`, `enable_4GB` from `max_pfn`). Nothing here differs from the stock
+  kernel's code; stage 2o moves every ION page allocation (pools and system-contig) below 4 GiB.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
