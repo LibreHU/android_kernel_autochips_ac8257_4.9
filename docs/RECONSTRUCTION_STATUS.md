@@ -238,6 +238,12 @@ Stage 1p findings:
   stock `rotationd` sets `persist.sf.hwrotation` at every boot from the metazone (`/dev/mtz`, still
   missing), so the value set by hand does not last; the backlight was fixed again under 2i (it could be
   set under 2e), cause still unknown.
+- Stage 2j on the unit: **Wi-Fi works** (all vendor modules loaded: `wlan_drv_gen4m`, `wmt_chrdev_wifi`,
+  `gps_drv`, `fmradio_drv`, `bt_drv`, `wmt_drv`, `fpsgo`), client (ping over Wi-Fi) and hotspot; Bluetooth
+  paired with a phone and Android Auto started over it. MAC address: random for now (the driver reads it
+  from metazone binary 0x10026, 6 bytes, and generates one when that fails). The stock panel driver also
+  reads its MIPI init table from the metazone (`jac_lcm_analysis_mipi_params_form_MetaZone` in the stock
+  boot log), one more reason for the metazone driver (with `rotationd` and the backlight path).
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
