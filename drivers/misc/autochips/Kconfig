@@ -18,6 +18,24 @@ config ATC_DISABLE_BAT_CHAGE
 	  The head unit runs from the car supply: no battery charging and no battery-current cooler
 	  (the stock kernel has no bcct cooler). Spelling kept from the stock option.
 
+config AC8257_STOCK_CRCS
+	bool "Export the stock kernel's symbol CRCs (vendor modules)"
+	depends on MODVERSIONS
+	default y
+	help
+	  Exports the CONFIG_MODVERSIONS CRCs of the stock UJC201 kernel instead of the ones genksyms
+	  computes here, so that the prebuilt vendor modules of the stock ROM (wmt_drv, wlan_drv_gen4m,
+	  bt_drv, gps_drv, fmradio_drv, ...) load. The stock kernel was built with clang, this tree with
+	  gcc: the preprocessed declarations, and so the CRCs, differ although the structures are the
+	  same. See tools/ac8257/stock-crcs.awk.
+
+config ATC_METAZONE
+	bool "AutoChips metazone"
+	default y
+	help
+	  Kernel API of the AutoChips metazone (MetaZone_*), the configuration store the LK loads into
+	  the autochips,metazone reserved memory (0x60700000). Used by the vendor WLAN module.
+
 config AC8257_EARLY_PSTORE_CONSOLE
 	bool "Early kernel log in the pstore console zone (bring-up)"
 	depends on PSTORE_RAM && PSTORE_CONSOLE && ARM64

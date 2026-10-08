@@ -159,13 +159,20 @@ cmd_cpp_i_c       = $(CPP) $(c_flags) -o $@ $<
 $(obj)/%.i: $(src)/%.c FORCE
 	$(call if_changed_dep,cpp_i_c)
 
+# CONFIG_AC8257_STOCK_CRCS: CRCs of the stock kernel (tools/ac8257/stock-crcs.awk)
+ifdef CONFIG_AC8257_STOCK_CRCS
+genksyms_crc_filter = | $(AWK) -f $(srctree)/tools/ac8257/stock-crcs.awk     \
+    $(srctree)/tools/ac8257/stock/Module.symvers -
+endif
+
 # These mirror gensymtypes_S and co below, keep them in synch.
 cmd_gensymtypes_c =                                                         \
     $(CPP) -D__GENKSYMS__ $(c_flags) $< |                                   \
     $(GENKSYMS) $(if $(1), -T $(2))                                         \
      $(patsubst y,-s _,$(CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX))             \
      $(if $(KBUILD_PRESERVE),-p)                                            \
-     -r $(firstword $(wildcard $(2:.symtypes=.symref) /dev/null))
+     -r $(firstword $(wildcard $(2:.symtypes=.symref) /dev/null))           \
+     $(genksyms_crc_filter)
 
 quiet_cmd_cc_symtypes_c = SYM $(quiet_modtag) $@
 cmd_cc_symtypes_c =                                                         \
@@ -379,7 +386,8 @@ cmd_gensymtypes_S =                                                         \
     $(GENKSYMS) $(if $(1), -T $(2))                                         \
      $(patsubst y,-s _,$(CONFIG_HAVE_UNDERSCORE_SYMBOL_PREFIX))             \
      $(if $(KBUILD_PRESERVE),-p)                                            \
-     -r $(firstword $(wildcard $(2:.symtypes=.symref) /dev/null))
+     -r $(firstword $(wildcard $(2:.symtypes=.symref) /dev/null))           \
+     $(genksyms_crc_filter)
 
 quiet_cmd_cc_symtypes_S = SYM $(quiet_modtag) $@
 cmd_cc_symtypes_S =                                                         \

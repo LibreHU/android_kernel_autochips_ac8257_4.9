@@ -555,6 +555,20 @@ void __warn(const char *file, int line, void *caller, unsigned taint,
 	add_taint(taint, LOCKDEP_STILL_OK);
 }
 
+/*
+ * AC8257: the stock kernel (clang) exports the WARN slow paths and the vendor modules call them
+ * (bt_drv, wlan_drv_gen4m, wmt_drv, met: warn_slowpath_null/_fmt), so they are built here too even
+ * though this tree's WARN() does not use them.
+ */
+#if !defined(WANT_WARN_ON_SLOWPATH) && defined(CONFIG_MACH_AC8257)
+#define WANT_WARN_ON_SLOWPATH
+extern __printf(3, 4)
+void warn_slowpath_fmt(const char *file, const int line, const char *fmt, ...);
+extern __printf(4, 5)
+void warn_slowpath_fmt_taint(const char *file, const int line, unsigned taint, const char *fmt, ...);
+extern void warn_slowpath_null(const char *file, const int line);
+#endif
+
 #ifdef WANT_WARN_ON_SLOWPATH
 void warn_slowpath_fmt(const char *file, int line, const char *fmt, ...)
 {

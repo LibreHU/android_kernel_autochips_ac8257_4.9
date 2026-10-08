@@ -215,6 +215,20 @@ Stage 1p findings:
   directly (2e: GPU soft maximum for the initial/PTPOD OPPs); to be confirmed over several boots. In a
   normal (boot-partition) boot, 2e shows multicoloured artefacts and no USB: the LK then starts what it skips
   in recovery mode (SCP, ARM2 fast display), which this tree does not hand over yet.
+- Vendor modules (stage 2i): `wmt_drv: disagrees about version of symbol module_layout` had a simple
+  cause. The stock kernel was built with clang, this tree with gcc, and genksyms hashes the preprocessed
+  declarations with their attributes; clang presents itself as GCC 4.2.1, so `compiler-gcc.h` leaves out
+  what it gates on newer GCC versions (`printk` is `__cold` here, not in the stock kernel): 6365 of the
+  9674 stock CRCs differed while the structures are the same (sizes of `task_struct` 0xe40, `sk_buff`
+  0xe8, `mm_struct` 0x340, `signal_struct` 0x3e0, `inode` 0x238, `file` 0x100, ... read from both images;
+  `struct module` 0x300 with `init` at 0x158 and `exit` at 0x2f0 in the stock modules and here).
+  Preprocessing with clang for genksyms confirmed it (`printk` then gets the stock CRC) but left the
+  task_struct cluster different (textual differences in the reconstructed headers), so
+  `CONFIG_AC8257_STOCK_CRCS` now exports the stock CRCs for every symbol the stock kernel exports
+  (`tools/ac8257/stock-crcs.awk`, `tools/ac8257/stock/Module.symvers`): 9519 of 9519 shared exports
+  match, every import of the vendor modules matches, vermagic identical. Also exported as in the stock
+  kernel: `warn_slowpath_null`/`_fmt`, and `MetaZone_ReadBinary`/`SpecWriteBinary`/`Flush` (first step of
+  the metazone driver, returning the stock error value until the metazone is read).
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
