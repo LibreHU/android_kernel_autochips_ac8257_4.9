@@ -229,6 +229,15 @@ Stage 1p findings:
   match, every import of the vendor modules matches, vermagic identical. Also exported as in the stock
   kernel: `warn_slowpath_null`/`_fmt`, and `MetaZone_ReadBinary`/`SpecWriteBinary`/`Flush` (first step of
   the metazone driver, returning the stock error value until the metazone is read).
+- Stage 2i on the unit: **Bluetooth and GPS work** with the stock vendor modules. Wi-Fi does not:
+  `insmod wmt_chrdev_wifi.ko` fails with -EBUSY, so `wlan_drv_gen4m` misses the symbols that module
+  exports (`wifi_reset_start/end`, `register_file_buf_handler`, `register_set_p2p_mode_handler`,
+  `wifi_fwlog_event_func_register`). wmt_chrdev_wifi registers char major 153 (`WIFI_major`), which spidev
+  holds here (`SPIDEV_MAJOR` 153 upstream); in the stock kernel spidev is at 163 (`/proc/devices` of both
+  captures). Stage 2j: spidev at 163 on AC8257. The display rotation went back to 0 after a reboot: the
+  stock `rotationd` sets `persist.sf.hwrotation` at every boot from the metazone (`/dev/mtz`, still
+  missing), so the value set by hand does not last; the backlight was fixed again under 2i (it could be
+  set under 2e), cause still unknown.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,

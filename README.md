@@ -36,7 +36,10 @@ driver loads but nobody has checked the function yet.
 | `/dev/gpios_ioctl` (Jancar GPIOs) | 🧪 Untested | device present (stage 1t); used by `com.jancar.services` |
 | Keys (`mtk-kpd`), IR receiver | 🧪 Untested | input devices present |
 | Audio | 🧪 Untested | sound card registers |
-| Wi-Fi, Bluetooth, GPS, FM | ❌ Not working | stock vendor modules do not load (symbol CRCs); BT HAL aborts |
+| Bluetooth | ✅ Works (stage 2i) | stock vendor modules (`wmt_drv`, `bt_drv`) load: stock symbol CRCs exported (`CONFIG_AC8257_STOCK_CRCS`) |
+| GPS | ✅ Works (stage 2i) | stock `gps_drv` |
+| Wi-Fi | 🧪 Fix in test (stage 2j) | 2i: `wmt_chrdev_wifi` failed with -EBUSY (spidev held its char major 153; 163 as in the stock kernel since 2j), so `wlan_drv_gen4m` missed its symbols; MAC address from the metazone not read yet (random MAC) |
+| FM radio | ❓ Untested | stock `fmradio_drv` loads with the same CRC fix |
 | Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
 | ARM2 (`dualarm-dev`), metazone (`mtz`) | ❌ Not working | AutoChips drivers missing |
 | UART2/3, `spidev` | ❌ Not working | pins 180-182 (`pctl_8` bank) and SPI devices not set up |
@@ -54,7 +57,8 @@ driver loads but nobody has checked the function yet.
    - [ ] Display rotation: metazone driver (`/dev/mtz`), read by `rotationd` to set `persist.sf.hwrotation`
      (workaround confirmed on the unit: `su -c "setprop persist.sf.hwrotation 90 && stop && start"`)
    - [x] Backlight control: adjustable since stage 2e (recovery-partition boot); to confirm in a normal boot
-   - [ ] Wi-Fi / BT / GPS / FM: build with clang, converge on the stock symbol CRCs so the vendor modules load
+   - [x] Vendor modules load (stock symbol CRCs, `CONFIG_AC8257_STOCK_CRCS`): BT and GPS work
+   - [ ] Wi-Fi (spidev major fixed in 2j, to confirm), FM to test, metazone (MAC address, rotation)
    - [ ] Audio, keys, IR: check on the unit
    - [ ] MCU / CAN, UART2/3 (pins 180-182)
    - [ ] AutoChips devices: ARM2 (`dualarm-dev`), metazone, rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)

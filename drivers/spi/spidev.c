@@ -51,7 +51,15 @@
  * nodes, since there is no fixed association of minor numbers with any
  * particular SPI bus or device.
  */
+#ifdef CONFIG_MACH_AC8257
+/*
+ * 163 as in the stock AC8257 kernel: 153 is taken by the vendor module wmt_chrdev_wifi.ko
+ * (/dev/wmtWifi, WIFI_major 153), which otherwise fails with -EBUSY and leaves no Wi-Fi.
+ */
+#define SPIDEV_MAJOR			163
+#else
 #define SPIDEV_MAJOR			153	/* assigned */
+#endif
 #define N_SPI_MINORS			32	/* ... up to 256 */
 
 static DECLARE_BITMAP(minors, N_SPI_MINORS);
