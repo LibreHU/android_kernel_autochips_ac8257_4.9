@@ -318,6 +318,19 @@ Stage 1p findings:
   starts after a watchdog reset without the stock kernel having run first (state left by the stock
   kernel, or by ARM2 in a normal boot, to identify). Do not use `ac8257_bringup.retry=1` until then;
   way out of the loop: SP Flash Tool, recovery partition only (stage 2l image).
+  The boot that finally came up under 2m: the LK log shows the failed tries ended in a cold reset
+  (`[pmic_check_rst] Cold Reset`, `kedump: last is full pmic reset`), after which the preloader tests the
+  DRAM, so no log survives; the LK also counts recovery boots in the metazone (`INTO_RECOVERY_COUNT`,
+  dword 0x101A2, now 4; effect unknown). Its logcat shows crashes all over userspace within two minutes:
+  `system_server` (SIGSEGV in `LocationManager`, fault address 0xfffafb1a, then `DeadSystemException`),
+  `com.android.systemui`, `com.jancar.settings`, Maps (SIGSEGV), WebView (SIGILL, illegal opcode), and
+  installd failing to prepare `/data/data/<app>` for every third-party app. The backlight became
+  adjustable again after Bluetooth and Wi-Fi were switched off and on. This looks like memory corruption.
+  The MCU firmware analysis of librehu-service (MCU-tools-app/docs/mcu_firmware.md) rules out the MCU on a
+  cold start (it waits 15 min for PC_READY `1F 01`; 10 s only when waking from standby). Stage 2n: same
+  kernel, `mem=3G` (all RAM below 4 GiB physical, applied before the reserved memory scan), to check
+  whether a device or driver truncating physical addresses above 4 GiB causes the corruption (GPU and
+  Trusty buffers above 4 GiB already did).
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
