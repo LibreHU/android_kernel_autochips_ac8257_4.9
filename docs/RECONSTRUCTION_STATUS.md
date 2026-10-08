@@ -249,6 +249,15 @@ Stage 1p findings:
   valid (90.7, 93.2, 97.4 MHz) at -192, -210, -240, the rest at the noise floor. Either the unit had no
   antenna signal (bench, antenna amplifier not powered) or something in the RF path differs from the stock
   kernel: to compare with a scan under the stock kernel at the same place.
+- Stage 2j / 2j-nooc: no GPU EMI MPU violation any more (`AXI_MST_GPU`: 0; the 2d ones came with the
+  GPU starting at 730 MHz, fixed in 2e). Still, without the overclock tables too: flickering black bands
+  on the panel and in scrcpy captures, and crashes that look like memory corruption in processes that do
+  not use the GPU (`dex2oat` SIGSEGV in a std::map insert, `system_server` SIGSEGV in
+  `NetworkStats.subtract`), apps failing on their own data (`SQLITE_CANTOPEN`, "Permission denied" on a
+  file of the app's cache). The PowerVR DDK is the stock one (`1.10@5130912` in both kernels and in
+  `rgx.fw.22.68.54.30`; `m1.9ED4971894` in the configuration is only a name). Stage 2k: the SPM
+  (0x77ff0000, 64 KiB) and SCP (0x9f900000, 6 MiB) regions the LK reserves only in a normal boot are now
+  reserved by the device tree (no-map), so a recovery-partition boot no longer hands them to Linux.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,

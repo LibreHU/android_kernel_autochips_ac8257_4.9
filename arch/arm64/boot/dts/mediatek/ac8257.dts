@@ -29,6 +29,21 @@
 			reg = <0x00 0x47d70000 0x00 0x10000>;
 		};
 
+		/*
+		 * Reserved by the LK in a normal boot only (mblock-9-SPM-reserved, mblock-10-SCP-reserved in
+		 * the live device tree of the stock unit): a recovery-partition boot left them to Linux as
+		 * ordinary RAM. Same addresses here so that both boot modes keep them out.
+		 */
+		ac8257-spm-reserved@77ff0000 {
+			reg = <0x00 0x77ff0000 0x00 0x10000>;
+			no-map;
+		};
+
+		ac8257-scp-reserved@9f900000 {
+			reg = <0x00 0x9f900000 0x00 0x600000>;
+			no-map;
+		};
+
 		cvbs-ion-reserved-memory@5e000000 {
 			compatible = "autochips,cvbs-ion";
 			reg = <0x00 0x5e000000 0x00 0x2000000>;
