@@ -338,6 +338,12 @@ Stage 1p findings:
   bits programmed, `enable_4G()` weak 0 as in the stock kernel, so `SUPPORT64G` set). The zones match the
   stock kernel (DMA below 4 GiB, Normal above). Backlight still not adjustable under 2n (separate issue).
   Next: narrow the device down (Wi-Fi/Bluetooth/GPS off under 6 GiB, then the other DMA users).
+  The ION heaps of the stock kernel allow memory above 4 GiB too (system and mm heap pools: gfp 0x292c2,
+  `GFP_HIGHUSER`-based, as here), and gralloc (PowerVR) / the HWC hand ION buffers to the GPU, the display
+  and MDP. Stage 2o: 6 GiB, ION pages allocated in ZONE_DMA (below 4 GiB) by `ac8257_ion_low=1`
+  (default; `ac8257_ion_low=0` on the command line restores the upstream behaviour). If 2o is stable, one
+  of the ION buffer users truncates addresses, and keeping ION below 4 GiB is a usable fix that leaves
+  the rest of the 6 GiB to the system.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,

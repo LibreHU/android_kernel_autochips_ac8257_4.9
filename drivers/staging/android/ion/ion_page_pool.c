@@ -25,13 +25,37 @@
 #include "ion_priv.h"
 
 static unsigned long long last_alloc_ts;
+
+#ifdef CONFIG_MACH_AC8257
+/*
+ * AC8257 (UJC201, 6 GiB of RAM): with all the RAM, memory above 4 GiB physical gets corrupted (panel
+ * artefacts, crashes all over userspace), with mem=3G it does not. "ac8257_ion_low=1" (the default)
+ * allocates the ION buffers (graphics, video, camera) below 4 GiB, in ZONE_DMA, to find out whether
+ * one of their users truncates addresses; "ac8257_ion_low=0" restores the upstream behaviour.
+ */
+static bool ac8257_ion_low = true;
+
+static int __init ac8257_ion_low_setup(char *str)
+{
+	return strtobool(str, &ac8257_ion_low) == 0;
+}
+__setup("ac8257_ion_low=", ac8257_ion_low_setup);
+
+gfp_t ac8257_ion_gfp(gfp_t gfp)
+{
+	if (!ac8257_ion_low)
+		return gfp;
+	return (gfp & ~(__GFP_HIGHMEM | __GFP_MOVABLE)) | __GFP_DMA;
+}
+#endif
+
 static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 {
 	unsigned long long start, end;
 	struct page *page;
 
 	start = sched_clock();
-	page = alloc_pages(pool->gfp_mask, pool->order);
+	page = alloc_pages(ac8257_ion_gfp(pool->gfp_mask), pool->order);
 	end = sched_clock();
 
 	if ((end - start > 10000000ULL) &&

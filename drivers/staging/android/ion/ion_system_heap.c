@@ -384,7 +384,7 @@ static int ion_system_contig_heap_allocate(struct ion_heap *heap,
 	if (align > (PAGE_SIZE << order))
 		return -EINVAL;
 
-	page = alloc_pages(low_order_gfp_flags | __GFP_NOWARN, order);
+	page = alloc_pages(ac8257_ion_gfp(low_order_gfp_flags | __GFP_NOWARN), order);
 	if (!page)
 		return -ENOMEM;
 

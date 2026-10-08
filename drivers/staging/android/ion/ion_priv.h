@@ -439,6 +439,11 @@ struct ion_page_pool {
 	struct plist_node list;
 };
 
+#ifdef CONFIG_MACH_AC8257
+gfp_t ac8257_ion_gfp(gfp_t gfp);
+#else
+#define ac8257_ion_gfp(gfp)	(gfp)
+#endif
 struct ion_page_pool *ion_page_pool_create(gfp_t gfp_mask, unsigned int order,
 					   bool cached);
 void ion_page_pool_destroy(struct ion_page_pool *);
