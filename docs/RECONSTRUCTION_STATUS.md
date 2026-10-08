@@ -181,6 +181,22 @@ Stage 1p findings:
   in use (swap free = total). Prime suspect: the overclock level, which runs on the sign-off voltages without
   the EEM per-chip corrections (`mt_cpufreq_update_volt` ignored). A/B test: the same kernel with
   `ac8257_cpu_oc=0 ac8257_gpu_oc=0` (stock FY table with EEM).
+- Stock reference capture (stock kernel #25, 14 min uptime): no native crash, one `system_server` start, BT
+  firmware configured, `schedplus` governor, the same 16 CPU frequencies (850 MHz-2.001 GHz). The AEE
+  database of the unit (`/data/aee_exp/db.fatal.*`) holds `system_server` native crashes under this tree's
+  kernels: SIGABRT pid 639 at 22:58 on 10-07, which is the stage 1w boot (#28: no overclock table, no
+  KernelSU, no tweaks; `system_server` was pid 639 in that boot), then SIGABRT/SIGSEGV/SIGBUS on 10-08
+  (stage 2c). The memory corruption therefore predates the overclock level; the OC A/B test is kept but is
+  unlikely to be the whole answer. Stage 2c itself ended with the bring-up timed panic at 611 s
+  (`ac8257_panic_secs=600`).
+  Differences with the stock kernel at boot: the stock ION driver has an AutoChips "backcar" heap (type
+  RESERVED) on `wch-di-reserved-memory@60800000` (the CVBS AVM heap `cvbs-ion@5e000000` when the metazone
+  enables AVM), 11 heaps against 10 here; the stock `reserved-memory` handlers (`autochips,cvbs-ion`,
+  `wch-di`, `mdp`, `isp`, `arm2-backcar-ui`, `metazone`) and `CONFIG_MEMBLK_RELEASE_POLICY` are absent (the
+  regions are still reserved from their `reg`); config options only in the stock kernel: `ATC_BACKCAR`,
+  `ATC_FASTDISP_VERSION`, `ATC_METAZONE`, `ATC_WCH`, `ATC_DI`, `ATC_TVD`, `ATC_NR`, `ATC_AVIN`,
+  `ATC_BOOT_STATE`, `ATC_QB_ENHANCEMENT`, `ATC_AOSP_ENHANCEMENT`, `LCM_TRANSFER_IC_SUPPORT`, `MTK_RDI`,
+  `SPI_AC8X`, `TOUCHSCREEN_MTK_GT928`, `ATC_USB_BC12`, `ATC_USB_HSRX_DISC`, `JANCAR_SOLUTION`.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
