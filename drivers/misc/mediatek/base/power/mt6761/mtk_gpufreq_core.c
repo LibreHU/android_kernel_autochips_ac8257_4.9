@@ -155,6 +155,13 @@ static int ac8257_gpu_oc = 1;
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "ac8257_gpufreq."
 static unsigned int ac8257_gpu_max_khz = 660000;
+/*
+ * Boot and PTPOD OPPs stay at or below the stock top (660 MHz) even when max_khz allows the 730 MHz
+ * overclock OPP: stage 2d, which started the GPU at 730 MHz, had GPU EMI MPU violations. DVFS can still
+ * go up to max_khz afterwards.
+ */
+#define AC8257_GPU_BOOT_MAX_KHZ	660000
+#define ac8257_gpu_boot_max_khz()	min(ac8257_gpu_max_khz, (unsigned int)AC8257_GPU_BOOT_MAX_KHZ)
 module_param_named(max_khz, ac8257_gpu_max_khz, uint, 0644);
 
 static int __init ac8257_gpu_oc_setup(char *str)
@@ -491,7 +498,7 @@ void mt_gpufreq_disable_by_ptpod(void)
 	for (i = 0; i < g_opp_idx_num; i++) {
 		if (g_opp_table_default[i].gpufreq_volt <=
 			GPU_DVFS_PTPOD_DISABLE_VOLT &&
-		    (g_opp_table_default[i].gpufreq_khz <= ac8257_gpu_max_khz ||
+		    (g_opp_table_default[i].gpufreq_khz <= ac8257_gpu_boot_max_khz() ||
 		     i == g_opp_idx_num - 1)) {
 			target_idx = i;
 			break;
@@ -2392,10 +2399,10 @@ static void __mt_gpufreq_set_initial(void)
 
 	mutex_lock(&mt_gpufreq_lock);
 
-	/* default OPP index: the highest one within the AC8257 soft maximum */
+	/* default OPP index: the highest one within the AC8257 boot maximum */
 	g_cur_opp_cond_idx = 0;
 	while (g_cur_opp_cond_idx < g_opp_idx_num - 1 &&
-	       g_opp_table[g_cur_opp_cond_idx].gpufreq_khz > ac8257_gpu_max_khz)
+	       g_opp_table[g_cur_opp_cond_idx].gpufreq_khz > ac8257_gpu_boot_max_khz())
 		g_cur_opp_cond_idx++;
 
 	/* set POST_DIVIDER initial value */

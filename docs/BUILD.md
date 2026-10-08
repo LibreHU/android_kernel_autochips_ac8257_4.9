@@ -122,6 +122,12 @@ The overclock tables are loaded by default, with the stock maxima as run-time ca
   table, are not applied with this table (sign-off voltages instead, slightly higher).
 - GPU: 730 MHz (the MT6761T top OPP of this GPU) added at the 0.80 V of the stock 660 MHz. Cap:
   `ac8257_gpufreq.max_khz`, **660000** by default.
+  The boot OPP and the PTPOD OPP stay at 660 MHz or below even with a 730 MHz cap (stage 2d, which
+  started the GPU at 730 MHz, had GPU EMI MPU violations); DVFS goes up to the cap afterwards.
+
+  Stage 2p images (`recovery_test_ac8257_stage2p_oc`) are built with both overclocks on the command line
+  (`ac8257_cpufreq.max_khz=2201000 ac8257_gpufreq.max_khz=730000`), the interactive governor and the touch
+  boost (defaults), and no timed panic (`ac8257_panic_secs=0`).
 
 As root, at run time (not kept across reboots):
 
