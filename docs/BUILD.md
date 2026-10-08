@@ -103,6 +103,8 @@ Outputs:
    instead of the stock normal boot that overwrites the RAM console and pstore, so the next boot keeps
    the failed boot's log (`/proc/last_kmsg`, `/sys/fs/pstore`). A test kernel that hangs at every boot
    loops until SP Flash Tool flashes the recovery partition.
+   Stage 2m looped this way on the unit (no boot reached Android without a stock boot before it): keep
+   it off.
 
 ## CPU/GPU frequencies, governors
 

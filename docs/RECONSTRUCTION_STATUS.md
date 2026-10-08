@@ -312,6 +312,12 @@ Stage 1p findings:
   changed only after the fifth crash, so it varies from boot to boot like the crashes. Stage 2m: same
   kernel plus `ac8257_bringup.retry=1` (RTC recovery flag during the first 90 s, see BUILD.md), so that
   a failed try restarts the recovery partition with its log kept.
+  On the unit, stage 2m no longer reached Android: the tries restarted straight into recovery (no stock
+  boot in between) kept failing. Under 2l the successful boot always came right after a stock normal
+  boot (`bootmenu: reboot recovery`): the hang seems more likely, perhaps certain, when the test kernel
+  starts after a watchdog reset without the stock kernel having run first (state left by the stock
+  kernel, or by ARM2 in a normal boot, to identify). Do not use `ac8257_bringup.retry=1` until then;
+  way out of the loop: SP Flash Tool, recovery partition only (stage 2l image).
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
