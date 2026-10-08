@@ -288,6 +288,17 @@ Stage 1p findings:
   hand-over at boot; `rotationd` is `stopped` after its oneshot run (`persist.sf.hwrotation` 90,
   `runtime.arm2.finish` y, `ro.atc.fastdisp.version` 2.0, `backcar_daemon` and `hal_fastdisplay`
   running); `com.autochips.watermarkservice` is the AVM camera overlay, not a display layer.
+- Stage 2l on the unit: `/dev/mtz` present (10, 62), `metazone: version 0x20000, 500 values, 200
+  binaries`, `persist.sf.hwrotation` 90 after a reboot without setting it by hand, Wi-Fi MAC address
+  00:08:22:c4:10:fc (the metazone one). No glitch on the panel any more; the black bands are only in scrcpy
+  captures: the virtual display has no HWC id (`getLayerReleaseFence failed for display -1`), so
+  SurfaceFlinger composes it with the GPU and MDP converts it for the encoder (`DpBlit`). The backlight
+  still cannot be changed. Stock path for it: `disp_pwm_set_backlight_cmdq` sets the disp PWM and calls
+  `modules_lcm_backlight_ctrl` (on/off, level), which only talks to a TI DS90UB941/947 bridge (I2C 0x2d,
+  register 0x1a, 7-byte frame with checksum, level × 245 / 1023 + 10) when one answers; on this unit the
+  stock boot log shows `detect_flag = 2` (no bridge), so the stock kernel uses the disp PWM alone, like
+  this kernel (no AAL in either). To narrow down on the unit: `pwm_test:queryBL` / `pwm_test:dump` through
+  `/sys/kernel/debug/dispsys` and the `[PWM]` kernel lines while the backlight does not follow.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
