@@ -288,6 +288,25 @@ Stage 1p findings:
   hand-over at boot; `rotationd` is `stopped` after its oneshot run (`persist.sf.hwrotation` 90,
   `runtime.arm2.finish` y, `ro.atc.fastdisp.version` 2.0, `backcar_daemon` and `hal_fastdisplay`
   running); `com.autochips.watermarkservice` is the AVM camera overlay, not a display layer.
+- av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
+  kernel:
+  - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
+    metazone 0x101D7 (marker 0x51525354), 0x101D8 (top level, 179 on this unit) and 0x101D9 (bottom
+    level, 0), and sends `bottom + brightness × (top - bottom) / 255` to the driver: Android's 255 is 179
+    for the panel. The stock also adds `/sys/class/leds/*/min_brightness` (read by `ivi-settings`; writing
+    a percentage 0-100 sets top = 255 - percentage × 255 / 100 and stores it in 0x101D7/0x101D8). Missing
+    here: our backlight goes up to 255, above the stock maximum. Next stage.
+  - Panel: metazone 0x101A4-0x101D6 hold, one character per value,
+    `dMIPI_720x1280_HLT090WSB6-V7-D100-175M-2025/6/3 11:` (panel reference, MIPI 720 × 1280, likely a
+    175 MHz clock), 0x101DA-0x101DE 4, 368, 175, 720, 1280 with marker 0x101DF; 0x10043/0x10044
+    1268 × 720. Input for the stock-like panel driver.
+  - `libfastdisplay2.0.so` (fast display HAL) also reads the rotation from the metazone
+    (`loadHWRotationFromMetazone`) and uses `/dev/mtk_disp_mgr`; `hwcomposer.ac8257.so` uses the
+    AutoChips `DISP_IOCTL_SET_FAST_DISP_FLAG`, `GET_EXT_PANEL_INFO`, `WAIT_DISP_SELF_REFRESH`.
+  - `vendor.autochips.hardware.metalogo@1.0-impl.so` uses `MetaZone_SpecReadReserved`/`SpecWriteReserved`
+    (32 KiB reserved area, boot logo settings), not supported by the stage 2l driver.
+  - `ivi-settings` also reads `/proc/gt9xx_config`, `/proc/Backcar_Display_effect`,
+    `/sys/devices/platform/touch/gt9xx_props`, `jancar_board_id` and `/dev/ttyS3`.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
