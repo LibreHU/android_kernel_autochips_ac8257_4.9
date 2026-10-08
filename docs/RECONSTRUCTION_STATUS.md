@@ -197,6 +197,19 @@ Stage 1p findings:
   `ATC_FASTDISP_VERSION`, `ATC_METAZONE`, `ATC_WCH`, `ATC_DI`, `ATC_TVD`, `ATC_NR`, `ATC_AVIN`,
   `ATC_BOOT_STATE`, `ATC_QB_ENHANCEMENT`, `ATC_AOSP_ENHANCEMENT`, `LCM_TRANSFER_IC_SUPPORT`, `MTK_RDI`,
   `SPI_AC8X`, `TOUCHSCREEN_MTK_GT928`, `ATC_USB_BC12`, `ATC_USB_HSRX_DISC`, `JANCAR_SOLUTION`.
+- Stage 2d capture with the collector (`ujc201_debug`, same tool as the stock capture), compared with the stock
+  one. Live device trees: in a recovery-partition boot the LK passes `atag,boot` boot mode 2 (recovery),
+  `firmware/android/mode = "recovery"`, disables `scp@10500000` (hence no `/dev/scp`) and does not add two
+  reserved regions it adds in a normal boot: `mblock-10-SCP-reserved` (0x9f900000, 6 MiB) and
+  `mblock-9-SPM-reserved` (0x77ff0000, 64 KiB, SPM firmware); they are the 6208 KiB of "System RAM" more than
+  the stock kernel. Every test so far ran in this recovery mode, unlike the stock comparison. Under 2d the
+  kernel log also shows hundreds of EMI MPU write violations from the GPU (`AXI_MST_GPU`/`MFG_M0`, domain 6)
+  into region 0 (0x563xxxxx-0x567xxxxx, inside the ATF reservation, and 0x40000000), from 20 s on; none
+  under the stock kernel. A GPU writing to physical addresses it should not reach also explains random
+  corruption elsewhere. Stage 2e: GPU soft maximum also applied to the initial OPP and the PTPOD OPP (both
+  took index 0, 730 MHz, ignoring `ac8257_gpufreq.max_khz`), and a boot-partition image for a normal-mode
+  test. Other differences: no vendor module (`wmt_drv`, `bt_drv`, `gps_drv`, `fmradio_drv`, `wlan_drv_gen4m`,
+  `wmt_chrdev_wifi`, `fpsgo` on the stock unit), so no `wpa_supplicant`, BT HAL aborts.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
