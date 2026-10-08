@@ -395,6 +395,22 @@ void rtc_mark_recovery(void)
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * Only the recovery boot flag of rtc_mark_recovery() (the LK clears it when it boots recovery), without
+ * resetting the power-on alarm: the bring-up retry of drivers/misc/autochips/bringup_reboot.c sets it
+ * during a test boot and clears it once that boot has lasted.
+ */
+void rtc_set_recovery_flag(bool set)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_spare_register(RTC_FAC_RESET, set ? 0x1 : 0x0);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+}
+#endif
+
 void rtc_mark_kpoc(void)
 {
 	unsigned long flags;

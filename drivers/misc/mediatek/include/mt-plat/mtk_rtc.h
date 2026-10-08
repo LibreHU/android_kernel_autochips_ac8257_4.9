@@ -49,6 +49,9 @@ extern void rtc_disable_writeif(void);
 
 extern void rtc_mark_recovery(void);
 extern void rtc_mark_kpoc(void);
+#ifdef CONFIG_MACH_AC8257
+extern void rtc_set_recovery_flag(bool set);
+#endif
 extern void rtc_mark_fast(void);
 extern u16 rtc_rdwr_uart_bits(u16 *val);
 extern void rtc_bbpu_power_down(void);
@@ -71,6 +74,7 @@ extern void mt_power_off(void);
 #define rtc_disable_writeif()		({ 0; })
 #define rtc_mark_recovery()             ({ 0; })
 #define rtc_mark_kpoc()                 ({ 0; })
+#define rtc_set_recovery_flag(set)	({ 0; })
 #define rtc_mark_fast()		        ({ 0; })
 #define rtc_rdwr_uart_bits(val)		({ 0; })
 #define rtc_bbpu_power_down()		({ 0; })

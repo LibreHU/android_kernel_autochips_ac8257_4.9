@@ -308,6 +308,10 @@ Stage 1p findings:
   (`global_backlight = 70`), so its automatic backlight mode may override the slider. ttyS2 and ttyS3
   (0x11004000, 0x11005000) still fail to probe (-22) where the stock kernel registers them; the stock DT
   gives them pinctrl states (`utxd`, `urxd`, `tx_gpio`, `rx_gpio`) for pins 180-182.
+- Stage 2l on the unit: the failed tries were a black screen then a reset; the backlight could be
+  changed only after the fifth crash, so it varies from boot to boot like the crashes. Stage 2m: same
+  kernel plus `ac8257_bringup.retry=1` (RTC recovery flag during the first 90 s, see BUILD.md), so that
+  a failed try restarts the recovery partition with its log kept.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,

@@ -96,6 +96,14 @@ Outputs:
    the stock boot.img back (`dd` of the stock image to `/dev/block/by-name/boot`, or fastboot).
    Keep a copy of `para` before testing (`dd if=/dev/block/by-name/para of=...`).
 
+   Recovery-partition tests that hang now and then (stage 2l: black screen then reset, about one boot
+   in five reached Android): `ac8257_bringup.retry=1` on the command line (stage 2m images) sets the
+   RTC recovery flag at boot and clears it after `ac8257_bringup.retry_secs` seconds (90). A boot that
+   hangs before that is reset by the hardware watchdog and starts the recovery partition again directly,
+   instead of the stock normal boot that overwrites the RAM console and pstore, so the next boot keeps
+   the failed boot's log (`/proc/last_kmsg`, `/sys/fs/pstore`). A test kernel that hangs at every boot
+   loops until SP Flash Tool flashes the recovery partition.
+
 ## CPU/GPU frequencies, governors
 
 The overclock tables are loaded by default, with the stock maxima as run-time caps:

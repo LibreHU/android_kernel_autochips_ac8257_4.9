@@ -26,6 +26,7 @@
  *   time_left         read only: seconds before the timed panic, 0 when disarmed
  *   intercept_reboot  1 (default): userspace reboots become a panic; 0: normal reboots ("adb reboot")
  *   oneshot           1: next boot from the recovery partition (see ac8257_oneshot below)
+ *   retry             read only: 1 while a crash of this boot restarts it (see ac8257_retry below)
  * This program is free software; GPL v2.
  */
 #include <linux/blkdev.h>
@@ -38,6 +39,7 @@
 #include <linux/notifier.h>
 #include <linux/reboot.h>
 #include <linux/workqueue.h>
+#include <mt-plat/mtk_rtc.h>
 
 #define AC8257_MMC_DEVT		MKDEV(MMC_BLOCK_MAJOR, 0)	/* mmcblk0, the eMMC */
 #define BCB_COMMAND_SIZE	32				/* struct bootloader_message.command */
@@ -101,6 +103,28 @@ static void ac8257_clear_bcb(void)
 	}
 	blkdev_put(bdev, FMODE_READ | FMODE_WRITE);
 }
+
+/*
+ * "ac8257_bringup.retry=1" (command line, for a test kernel in the recovery partition): the kernel
+ * sets the RTC recovery flag at boot (as "reboot recovery" does) and clears it once the boot has lasted
+ * "ac8257_bringup.retry_secs" seconds (90 by default; Android is up in about 30 s). A boot that hangs
+ * before that (black screen, then hardware watchdog reset) restarts the recovery partition directly,
+ * instead of going through the stock normal boot, which overwrites the RAM console and pstore: the
+ * next boot then has the log of the failed one (/proc/last_kmsg, /sys/fs/pstore). A test kernel that
+ * hangs at every boot loops until one boot lasts retry_secs seconds or SP Flash Tool flashes the
+ * recovery partition.
+ */
+static bool ac8257_retry;
+static int ac8257_retry_secs = 90;
+
+static void ac8257_retry_clear(struct work_struct *work)
+{
+	rtc_set_recovery_flag(false);
+	ac8257_retry = false;
+	pr_info("ac8257 bring-up: boot lasted %d s, RTC recovery flag cleared\n", ac8257_retry_secs);
+}
+
+static DECLARE_DELAYED_WORK(ac8257_retry_work, ac8257_retry_clear);
 
 static int ac8257_panic_secs = CONFIG_AC8257_BRINGUP_PANIC_SECS;
 static bool ac8257_intercept_reboot = true;
@@ -188,6 +212,8 @@ module_param_cb(time_left, &ac8257_time_left_ops, NULL, 0444);
 
 module_param_named(intercept_reboot, ac8257_intercept_reboot, bool, 0644);
 module_param_named(oneshot, ac8257_oneshot, bool, 0644);
+module_param_named(retry, ac8257_retry, bool, 0444);
+module_param_named(retry_secs, ac8257_retry_secs, int, 0444);
 
 static int ac8257_bringup_reboot_notify(struct notifier_block *nb, unsigned long code, void *cmd)
 {
@@ -227,6 +253,12 @@ static int __init ac8257_bringup_panic_init(void)
 	ac8257_bringup_arm();
 	schedule_delayed_work(&ac8257_bringup_clear_work, 10 * HZ);
 	register_reboot_notifier(&ac8257_bringup_reboot_nb);
+	if (ac8257_retry) {
+		rtc_set_recovery_flag(true);
+		schedule_delayed_work(&ac8257_retry_work, max(ac8257_retry_secs, 1) * HZ);
+		pr_info("ac8257 bring-up: RTC recovery flag set, a crash in the next %d s restarts recovery\n",
+			ac8257_retry_secs);
+	}
 	return 0;
 }
 late_initcall(ac8257_bringup_panic_init);
