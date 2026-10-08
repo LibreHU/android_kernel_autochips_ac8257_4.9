@@ -146,7 +146,9 @@ rewrite the tree; its `struct seccomp` change is dropped (only used on 5.9+, and
 `task_struct`, hence the symbol CRCs of the vendor modules).
 
 Manager: the KernelSU Next app of the same release
-(https://github.com/KernelSU-Next/KernelSU-Next/releases, `v3.4.0-legacy`). Remove with `CONFIG_KSU=n`.
+(https://github.com/KernelSU-Next/KernelSU-Next/releases, `v3.4.0-legacy`); the kernel checks the
+manager signature, so the original KernelSU app (`me.weishu.kernelsu`) is not accepted (`is_manager: 0` in
+the kernel log). Remove with `CONFIG_KSU=n`.
 
 ## GitHub Actions
 

@@ -171,6 +171,16 @@ Stage 1p findings:
   that wait a display interrupt read `MMSYS_CG_CON0` (0x14000100) through the stage 1w guard (`__clk_is_enabled`
   reads the gate register) while the MM bus was not clocked: Systracker read timeout, exception reboot at
   18.5 s. The guard now uses the software clock enable counts only, with no register read.
+- Stage 2c: **boots to Android**, CPU at 2001000 kHz (cap applied on the hybrid path), KernelSU Next runs
+  (`/init second_stage executed`, init.rc hook, `on_post_fs_data`); the manager installed was the original
+  KernelSU one (`me.weishu.kernelsu`, `is_manager: 0`): KernelSU Next only accepts its own manager. The USB
+  disconnections are `system_server` restarts (`UsbDeviceManager` sets `mtp,adb` again each time); the crashes
+  look like memory corruption, in several processes and never seen in the stage 1p/1t logs without the
+  overclock table: SIGBUS `BUS_ADRALN` in `ConcurrentLinkedQueue.size` (`system_server`, GMS), ART `Invalid
+  monitor state ForwardingAddress`, `Invalid address 0xff9f9f9f passed to free`, SIGSEGV in CPU-Z. zram is not
+  in use (swap free = total). Prime suspect: the overclock level, which runs on the sign-off voltages without
+  the EEM per-chip corrections (`mt_cpufreq_update_volt` ignored). A/B test: the same kernel with
+  `ac8257_cpu_oc=0 ac8257_gpu_oc=0` (stock FY table with EEM).
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
