@@ -29,7 +29,7 @@ driver loads but nobody has checked the function yet.
 | eMMC, partitions, `/data` (ext4) | ✅ Works | AutoChips ext4 mount options (`autoformat`...) accepted |
 | GPU (PowerVR GE8300) | ✅ Works | allocations below 4 GiB, as the stock kernel |
 | Trusty TEE, keymaster | ✅ Works | shared buffers below 4 GiB |
-| Display output (HWC, frame buffer) | ⚠️ Partial | picture shown; rotation right with `setprop persist.sf.hwrotation 90` (as root, then `stop && start`; kept across reboots) until `/dev/mtz` exists; glitches, occasional crash (display shared with ARM2, stopgap in stage 1w) |
+| Display output (HWC, frame buffer) | ⚠️ Partial | picture shown; rotation right with `setprop persist.sf.hwrotation 90` (as root, then `stop && start`); stage 2l adds `/dev/mtz` so that `rotationd` sets it at boot (to confirm); glitches, occasional crash (display shared with ARM2, stopgap in stage 1w) |
 | Backlight | ✅ Works (stage 2e, recovery-partition boot) | adjustable from Android; earlier stages: on but not adjustable. Cause of the change not identified yet |
 | USB device mode, adb | ✅ Works | connect on the first gadget pull-up |
 | Touch (Goodix GT928 behind FPD-Link) | ✅ Works | polling every 16 ms (no interrupt wired), orientation fixed; follows the display rotation (`persist.sf.hwrotation=90`) |
@@ -38,10 +38,11 @@ driver loads but nobody has checked the function yet.
 | Audio | 🧪 Untested | sound card registers |
 | Bluetooth | ✅ Works (stage 2i) | stock vendor modules (`wmt_drv`, `bt_drv`) load: stock symbol CRCs exported (`CONFIG_AC8257_STOCK_CRCS`); phone paired, Android Auto starts over it |
 | GPS | ✅ Works (stage 2i) | stock `gps_drv` |
-| Wi-Fi | ✅ Works (stage 2j) | stock `wmt_chrdev_wifi` + `wlan_drv_gen4m` (spidev moved to char major 163 as in the stock kernel); client and hotspot work; random MAC address until the metazone is read |
+| Wi-Fi | ✅ Works (stage 2j) | stock `wmt_chrdev_wifi` + `wlan_drv_gen4m` (spidev moved to char major 163 as in the stock kernel); client and hotspot work; MAC address from the metazone (binary 0x10026) from stage 2l, random before |
 | FM radio | ⚠️ Driver works, reception weak (stage 2j) | stock `fmradio_drv` (MT6631 FM): power-up, tuning and seek work; a full scan found 3 stations at very low RSSI (noise floor ~-25): antenna, or its supply, to compare with the stock kernel |
 | Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
-| ARM2 (`dualarm-dev`), metazone (`mtz`) | ❌ Not working | AutoChips drivers missing |
+| Metazone (`/dev/mtz`, kernel API) | 🧪 Stage 2l, to test | reads the copy the LK loads at 0x60700000 (format checked against a dump of the unit's `metazone` partition); writes are kept in memory only, nothing is written back to the eMMC |
+| ARM2 (`dualarm-dev`) | ❌ Not working | AutoChips driver missing |
 | UART2/3, `spidev` | ❌ Not working | pins 180-182 (`pctl_8` bank) and SPI devices not set up |
 | MCU / CAN | ❓ Unknown | not checked yet |
 | Suspend / resume | ❓ Unknown | not checked yet |
@@ -54,15 +55,15 @@ driver loads but nobody has checked the function yet.
    - [x] Touch (GT928, polling, orientation)
    - [x] Jancar `/dev/gpios_ioctl`
    - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel): crashes, glitches
-   - [ ] Display rotation: metazone driver (`/dev/mtz`), read by `rotationd` to set `persist.sf.hwrotation`
+   - [ ] Display rotation: metazone driver (`/dev/mtz`, stage 2l, to test), read by `rotationd` to set `persist.sf.hwrotation`
      (workaround confirmed on the unit: `su -c "setprop persist.sf.hwrotation 90 && stop && start"`)
    - [x] Backlight control: adjustable since stage 2e (recovery-partition boot); to confirm in a normal boot
    - [x] Vendor modules load (stock symbol CRCs, `CONFIG_AC8257_STOCK_CRCS`): BT and GPS work
    - [x] Wi-Fi (client and hotspot, stage 2j)
-   - [ ] FM to test; metazone driver (Wi-Fi MAC address, display rotation, panel settings)
+   - [ ] FM reception to compare with the stock kernel; metazone driver (stage 2l: Wi-Fi MAC address, display rotation; panel settings next)
    - [ ] Audio, keys, IR: check on the unit
    - [ ] MCU / CAN, UART2/3 (pins 180-182)
-   - [ ] AutoChips devices: ARM2 (`dualarm-dev`), metazone, rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)
+   - [ ] AutoChips devices: ARM2 (`dualarm-dev`), rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)
    - [ ] Suspend / resume
 3. **Stage 3, daily use**
    - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration

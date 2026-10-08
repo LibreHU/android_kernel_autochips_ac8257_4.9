@@ -227,8 +227,8 @@ Stage 1p findings:
   `CONFIG_AC8257_STOCK_CRCS` now exports the stock CRCs for every symbol the stock kernel exports
   (`tools/ac8257/stock-crcs.awk`, `tools/ac8257/stock/Module.symvers`): 9519 of 9519 shared exports
   match, every import of the vendor modules matches, vermagic identical. Also exported as in the stock
-  kernel: `warn_slowpath_null`/`_fmt`, and `MetaZone_ReadBinary`/`SpecWriteBinary`/`Flush` (first step of
-  the metazone driver, returning the stock error value until the metazone is read).
+  kernel: `warn_slowpath_null`/`_fmt`, and the `MetaZone_*` functions (stubs in 2i, the full metazone driver
+  from stage 2l).
 - Stage 2i on the unit: **Bluetooth and GPS work** with the stock vendor modules. Wi-Fi does not:
   `insmod wmt_chrdev_wifi.ko` fails with -EBUSY, so `wlan_drv_gen4m` misses the symbols that module
   exports (`wifi_reset_start/end`, `register_file_buf_handler`, `register_set_p2p_mode_handler`,
@@ -258,6 +258,36 @@ Stage 1p findings:
   `rgx.fw.22.68.54.30`; `m1.9ED4971894` in the configuration is only a name). Stage 2k: the SPM
   (0x77ff0000, 64 KiB) and SCP (0x9f900000, 6 MiB) regions the LK reserves only in a normal boot are now
   reserved by the device tree (no-map), so a recovery-partition boot no longer hands them to Linux.
+- Stage 2l: **metazone driver** (`drivers/misc/autochips/metazone.c`, `CONFIG_ATC_METAZONE`), from the
+  stock disassembly (`MetaZone_*`, `MTZ_IOControl`, `mtz_ioctl`) and a dump of the unit's `metazone`
+  partition (`mmcblk0p34`). The LK loads the partition into `autochips,metazone` (0x60700000, 1 MiB) in
+  both boot modes, at the partition offsets:
+
+  | Offset | Content |
+  |---|---|
+  | 0x000 | MTK partition header (`0x58881688`, "metazone") |
+  | 0x200 | header: version 0x20000, magic 0xabcdef01, size 0x80000, dw_offset 0x200, dw_num 500, bin_offset 0x1588, bin_num 200, bin_unit 100, copy2_offset 0x40200, resv_offset 0xb678 (offsets relative to the header) |
+  | 0x400 | 500 dword entries of 10 bytes: u8, u8 flags (bit 0 valid), u32 value, u32 default |
+  | 0x1788 | 200 binary entries of 206 bytes (2 × unit + 6): u8, u8 flags (bit 0 valid), u32 length, data |
+
+  Indexes are 0x10000 + n (0x20000 and above are refused). Values seen in the unit's dump (126 valid dwords,
+  15 valid binaries): 0x10033 rotation 90, 0x10037/0x10038 panel 1280 × 720, 0x1000C backlight level
+  (written by `lights.ac8257.so`), binary 0x10026 Wi-Fi MAC address (6 bytes), binaries 0x10028-0x10031
+  CarPlay certificate. Kernel API with the stock prototypes and CRCs (`MetaZone_Read`, `_Write`,
+  `_SpecWrite`, `_ReadBinary` (copies min(length, stored) and returns 0), `_WriteBinary`,
+  `_SpecWriteBinary`, `_ReadInfo`, `_Flush`; errors 0x80000000, 0x80000001 not initialised). `/dev/mtz`
+  (misc, 0666) for `libmetazone.so`: argument `{u32 in_len, out_len; in; out; u32 *returned}` (20 bytes
+  for 32-bit callers), codes 0x220804 Read, 0x220808 Write, 0x22080c ReadBinary, 0x220810 WriteBinary
+  (data in the "out" buffer), 0x220820 ReadInfo (36 bytes), 0x220824 Flush, 0x220854 SpecWrite, 0x220858
+  SpecWriteBinary; reserved area and factory reset (0x22085c-0x220864) not supported. As in the stock
+  driver, a failed operation returns 1 (`libmetazone` only treats a negative value as an error). Writes
+  only change the copy in memory: the stock flush thread (eMMC write-back of both copies and the CRC) is
+  not reconstructed, so this driver cannot damage the partition (rotation and backlight level set from
+  Android last until the next reboot, the stored values come back at boot).
+- av2 capture (stock kernel, normal boot): `DUALARM_ISR` (IRQ 189 and 190) fired once each, the ARM2
+  hand-over at boot; `rotationd` is `stopped` after its oneshot run (`persist.sf.hwrotation` 90,
+  `runtime.arm2.finish` y, `ro.atc.fastdisp.version` 2.0, `backcar_daemon` and `hal_fastdisplay`
+  running); `com.autochips.watermarkservice` is the AVM camera overlay, not a display layer.
 - Touch: the stock image also has an AutoChips `drivers/input/touchscreen/goodix.c` (`goodix,gt928`, DTBO fragment 66 on
   i2c3, nodes `ctp@01`/`ctp@04` with `slave_addr`, `tps-info`, `ti-link`, `ti-serializer = 0x1a`,
   `ti-deserializer = 0x2c`). The panel is behind a TI FPD-Link III serializer (`ds90ub947`/`ds90ub941`,
@@ -305,7 +335,7 @@ headers). Converging on these CRCs is the measure of how close the tree is to th
 1. Display shared with ARM2 (fast display, AVM): reconstruct the stock hand-over layer; rotation, glitches,
    backlight path.
 2. Vendor modules (Wi-Fi, BT, GPS, FM): symbol CRCs (see Module ABI).
-3. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone, touch, UART2/3 pins, video chain.
+3. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone (stage 2l, to test), touch, UART2/3 pins, video chain.
 4. Display: real `lcm_driver_common` (panel text parser from metazone/logo).
 5. Module ABI: clang build, then find the type differences behind the CRC mismatches.
 
