@@ -902,6 +902,8 @@ static const struct mtk_gate ifr_clks[] __initconst = {
 	GATE_IFR2(CLK_IFR_PWM, "ifr_pwm", "f_fpwm_ck", 21),
 	GATE_IFR2(CLK_IFR_UART0, "ifr_uart0", "f_fuart_ck", 22),
 	GATE_IFR2(CLK_IFR_UART1, "ifr_uart1", "f_fuart_ck", 23),
+	GATE_IFR2(CLK_IFR_UART2, "ifr_uart2", "f_fuart_ck", 24),
+	GATE_IFR2(CLK_IFR_UART3, "ifr_uart3", "f_fuart_ck", 25),
 	GATE_IFR2(CLK_IFR_GCE_26M, "ifr_gce_26m", "f_f26m_ck", 27),
 	GATE_IFR2(CLK_IFR_CQ_DMA_FPC, "ifr_dma", "axi_ck", 28),
 	GATE_IFR2(CLK_IFR_BTIF, "ifr_btif", "axi_ck", 31),

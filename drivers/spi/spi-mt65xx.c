@@ -768,6 +768,13 @@ static int mtk_spi_probe(struct platform_device *pdev)
 
 	master->auto_runtime_pm = true;
 	master->dev.of_node = pdev->dev.of_node;
+	/* "busnum" in the DT (AutoChips, read by the stock driver): spidev0.0-5.0 as on the stock unit */
+	{
+		u32 busnum;
+
+		if (!of_property_read_u32(pdev->dev.of_node, "busnum", &busnum))
+			master->bus_num = busnum;
+	}
 	master->mode_bits = SPI_CPOL | SPI_CPHA;
 
 	master->set_cs = mtk_spi_set_cs;

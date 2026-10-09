@@ -273,7 +273,10 @@
 #define CLK_IFR_CCIF3_AP			90
 #define CLK_IFR_CCIF3_MD			91
 #define CLK_IFR_PERI_DCM_RG_FORCE_CLKOFF	92
-#define CLK_IFR_NR_CLK				93
+/* AC8257: UART2/3 bus clocks (ids and bits from the stock UJC201 kernel) */
+#define CLK_IFR_UART2				93
+#define CLK_IFR_UART3				94
+#define CLK_IFR_NR_CLK				95
 
 /* PERICFG */
 #define CLK_PERIAXI_DISABLE		0
