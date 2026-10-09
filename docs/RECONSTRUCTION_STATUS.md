@@ -411,6 +411,19 @@ Stage 1p findings:
   available; whether this one drives the AutoChips controllers is what the test shows), and `spidev`
   matches the `Autochips,spidev` children of the DTBO (one per bus, `reg` 0, 52 MHz). First images
   for the boot partition as well (see BUILD.md).
+  On the unit (stage 2s, recovery): six spidev devices (root 0600, as on the stock unit) but named
+  `spidev32761.0`-`32766.0`: the masters had dynamic bus numbers, the stock driver reads the DT
+  `busnum` property (string in the stock kernel), as this one does from 2t (`spidev0.0`-`5.0`, the
+  stock names). ttyS2/ttyS3: the pinctrl error is gone, the probe now fails with -2 (`ENOENT`) on the
+  "bus" clock: `clocks = <&clk26m>, <&infracfg_ao 93>` (94 for UART3), ids the MT6761 table does not
+  have (93 clocks). The stock kernel's infracfg gate table has `ifr_uart2` (id 93, bit 24) and
+  `ifr_uart3` (id 94, bit 25) next to `ifr_uart0`/`ifr_uart1` (22/23), parent `f_fuart_ck`, same
+  set/clear/status registers (0x80/0x84/0x90): added in 2t. No stock userspace user of ttyS2/ttyS3 or
+  spidev found in the captured ROM files.
+  Boot partition (stage 2s): stuck at the Renault logo, resets now and then, no log (cold resets
+  wipe it). Same pattern as the recovery tries that fail when no stock kernel ran before them (stage
+  2m): in a boot-partition boot the stock kernel never runs first. To find before any boot-partition
+  image is worth trying again.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,

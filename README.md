@@ -20,7 +20,7 @@ and testing safely on the unit: `docs/BUILD.md`.
 
 ## Hardware status (UJC201, stock Android ROM, recovery test method)
 
-Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 2r). "Untested" means the
+Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 2s). "Untested" means the
 driver loads but nobody has checked the function yet.
 
 | Function | Status | Notes |
@@ -43,7 +43,7 @@ driver loads but nobody has checked the function yet.
 | Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
 | Metazone (`/dev/mtz`, kernel API) | ✅ Works (stage 2l) | reads the copy the LK loads at 0x60700000 (format checked against a dump of the unit's `metazone` partition); writes are kept in memory only, nothing is written back to the eMMC |
 | ARM2 (`dualarm-dev`) | ❌ Not working | AutoChips driver missing |
-| UART2/3, `spidev` | 🧪 To test (stage 2s) | pins 179-182 (GPIO200-203, URXD2/UTXD2/URXD3/UTXD3) added to the pin controller from the stock kernel's tables, so ttyS2/ttyS3 should probe (-22 before); `CONFIG_SPI_MT65XX` on with a 32-bit DMA mask, `spidev` matches the stock DTBO's `Autochips,spidev` children (spidev0.0-5.0 expected) |
+| UART2/3, `spidev` | 🧪 spidev works, UART2/3 to test (stage 2t) | spidev: six devices since stage 2s (`CONFIG_SPI_MT65XX`, 32-bit DMA, `Autochips,spidev` of the stock DTBO), named `spidev0.0`-`5.0` from stage 2t as on the stock unit (DT `busnum`); UART2/3: pins 179-182 added (2s), the probe then failed with -2 on the missing bus clocks `ifr_uart2`/`ifr_uart3`, added in 2t |
 | MCU / CAN | ✅ Works | `/dev/ttyS1` (115200 8N1), used by `jancar.services` / LibreHU service |
 | Suspend / resume | ❓ Unknown | not checked yet |
 | Google Play services | ⚠️ Partial | GMS crashes seen (IllegalArgumentException), unrelated to the kernel as far as seen |
@@ -58,7 +58,7 @@ driver loads but nobody has checked the function yet.
    - [x] Jancar `/dev/gpios_ioctl`
    - [x] Memory corruption above 4 GiB (artefacts, crashes): ION buffers below 4 GiB (stage 2o)
    - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel) for the normal boot
-   - [ ] Boot retries from the recovery partition (cold resets before Android)
+   - [ ] Boot retries from the recovery partition (cold resets before Android); also blocks the boot partition (stage 2s: stuck at the logo, resets)
    - [x] Display rotation: metazone driver (`/dev/mtz`, stage 2l, works), read by `rotationd` to set `persist.sf.hwrotation`
      (workaround confirmed on the unit: `su -c "setprop persist.sf.hwrotation 90 && stop && start"`)
    - [x] Backlight control: adjustable since stage 2e (recovery-partition boot); to confirm in a normal boot
@@ -66,12 +66,13 @@ driver loads but nobody has checked the function yet.
    - [x] Wi-Fi (client and hotspot, stage 2j)
    - [ ] FM reception to compare with the stock kernel; metazone driver (stage 2l: Wi-Fi MAC address, display rotation; panel settings next)
    - [ ] Audio, keys, IR: check on the unit
-   - [ ] UART2/3 (pins 179-182) and `spidev` (stage 2s, to test)
+   - [x] `spidev` (stage 2s, works)
+   - [ ] UART2/3 (pins 179-182, bus clocks: stage 2t, to test)
    - [ ] AutoChips devices: ARM2 (`dualarm-dev`), rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)
    - [ ] Suspend / resume
 3. **Stage 3, daily use**
    - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration
-   - [ ] Install in the boot partition instead of the recovery test method (stage 2s has a boot-partition image to try)
+   - [ ] Install in the boot partition instead of the recovery test method (stage 2s boot-partition image: stuck at the logo, see the boot retries)
    - [ ] Release images from the GitHub Actions build
    - [x] CPU governors (interactive default, schedutil, conservative...); CPU/GPU overclock tables (CPU up to
      2.3 GHz, GPU 300-730 MHz), capped at the stock maxima by default, settable from Kernel Adiutor /

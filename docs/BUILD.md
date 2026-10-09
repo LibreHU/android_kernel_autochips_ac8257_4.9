@@ -163,6 +163,14 @@ boot, GPU 730 MHz, no timed panic, `adb reboot` not intercepted):
   on the unit) starts the recovery test kernel, and from there
   `dd if=boot-stock.img of=/dev/block/by-name/boot`; SP Flash Tool otherwise.
 
+On the unit: the recovery image boots, the six spidev devices appear (`spidev32761.0`-`32766.0`, bus
+numbers fixed in 2t), ttyS2/ttyS3 still fail (-2, bus clocks, fixed in 2t). The boot-partition image
+stays at the logo with resets now and then, like the failed recovery tries (no stock kernel before it,
+see RECONSTRUCTION_STATUS.md); way back: SP Flash Tool, download only, stock `boot.img` in boot.
+
+Stage 2t image (`recovery_ac8257_stage2t.img`, recovery partition only, same settings): UART2/3 bus
+clocks, spidev bus numbers.
+
 Checks (as root):
 
     ls -l /dev/ttyS* /dev/spidev*
