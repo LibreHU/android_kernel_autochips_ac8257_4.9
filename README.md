@@ -20,17 +20,17 @@ and testing safely on the unit: `docs/BUILD.md`.
 
 ## Hardware status (UJC201, stock Android ROM, recovery test method)
 
-Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 1v). "Untested" means the
+Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 2q; stage 2r to test). "Untested" means the
 driver loads but nobody has checked the function yet.
 
 | Function | Status | Notes |
 |---|---|---|
 | Boot to the Android UI | ✅ Works | stage 1p; stock Android userspace, `system_server`, launcher |
 | eMMC, partitions, `/data` (ext4) | ✅ Works | AutoChips ext4 mount options (`autoformat`...) accepted |
-| GPU (PowerVR GE8300) | ✅ Works | allocations below 4 GiB, as the stock kernel |
+| GPU (PowerVR GE8300) | ✅ Works | 32-bit DMA on MT6761: its own allocations and the ION buffers it renders into are kept below 4 GiB (stage 2o); OPPs 300-730 MHz (stage 2q) |
 | Trusty TEE, keymaster | ✅ Works | shared buffers below 4 GiB |
-| Display output (HWC, frame buffer) | ✅ Works (stage 2o: ION buffers below 4 GiB, no artefacts, 6 GiB of RAM) | picture shown; rotation right with `setprop persist.sf.hwrotation 90` (as root, then `stop && start`); since stage 2l `rotationd` sets it at boot from the metazone (confirmed); no glitch on the panel under 2l, black bands only in scrcpy captures (virtual display composed by the GPU, then the encoder); glitches, occasional crash (display shared with ARM2, stopgap in stage 1w) |
-| Backlight | ✅ Works (stage 2e, recovery-partition boot) | adjustable from Android; earlier stages: on but not adjustable. Cause of the change not identified yet |
+| Display output (HWC, frame buffer) | ✅ Works (stage 2o) | no artefacts on the panel or in scrcpy captures and no userspace crashes with 6 GiB of RAM since ION buffers stay below 4 GiB (`ac8257_ion_low`); rotation set at boot by `rotationd` from the metazone (stage 2l). Normal-boot hand-over with ARM2 (fast display) not reconstructed |
+| Backlight | ⚠️ Works on most boots | adjustable from Android (disp PWM, as the stock kernel on this unit: no TI bridge answers); on some boots it does not follow the slider, cause not found yet (2n with 3 GiB too) |
 | USB device mode, adb | ✅ Works | connect on the first gadget pull-up |
 | Touch (Goodix GT928 behind FPD-Link) | ✅ Works | stage 2r tries EINT 42 and falls back to polling every 16 ms if it does not deliver, orientation fixed; follows the display rotation (`persist.sf.hwrotation=90`) |
 | `/dev/gpios_ioctl` (Jancar GPIOs) | 🧪 Untested | device present (stage 1t); used by `com.jancar.services` |
@@ -43,18 +43,22 @@ driver loads but nobody has checked the function yet.
 | Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
 | Metazone (`/dev/mtz`, kernel API) | ✅ Works (stage 2l) | reads the copy the LK loads at 0x60700000 (format checked against a dump of the unit's `metazone` partition); writes are kept in memory only, nothing is written back to the eMMC |
 | ARM2 (`dualarm-dev`) | ❌ Not working | AutoChips driver missing |
-| UART2/3, `spidev` | ❌ Not working | pins 180-182 (`pctl_8` bank) and SPI devices not set up |
-| MCU / CAN | ❓ Unknown | not checked yet |
+| UART2/3, `spidev` | ❌ Not working | ttyS2/ttyS3 probe fails (-22): pins 180-182 (`pctl_8` bank) missing from the pin controller tables; `CONFIG_SPI_MT65XX` off (the driver matches `mediatek,ac8257-spi`) |
+| MCU / CAN | ✅ Works | `/dev/ttyS1` (115200 8N1), used by `jancar.services` / LibreHU service |
 | Suspend / resume | ❓ Unknown | not checked yet |
-| Google Play services | ❓ Unknown | crash loop seen (`co.g.App`), to compare with the stock kernel |
+| Google Play services | ⚠️ Partial | GMS crashes seen (IllegalArgumentException), unrelated to the kernel as far as seen |
+| Boot from the recovery partition | ⚠️ Retries | often several tries (black screen, cold reset) before Android; the try that works follows a stock boot; under investigation |
+| KernelSU Next | ✅ Works | KernelSU Next manager v3.4.0 (the official KernelSU app refuses non-GKI kernels) |
 
 ## Roadmap
 
 1. **Stage 1, boot the stock ROM** - ✅ done (stage 1p).
 2. **Stage 2, usable on the stock ROM**
-   - [x] Touch (GT928, polling, orientation)
+   - [x] Touch (GT928, polling, orientation); EINT 42 interrupt checked against polling (stage 2r, to test)
    - [x] Jancar `/dev/gpios_ioctl`
-   - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel): crashes, glitches
+   - [x] Memory corruption above 4 GiB (artefacts, crashes): ION buffers below 4 GiB (stage 2o)
+   - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel) for the normal boot
+   - [ ] Boot retries from the recovery partition (cold resets before Android)
    - [x] Display rotation: metazone driver (`/dev/mtz`, stage 2l, works), read by `rotationd` to set `persist.sf.hwrotation`
      (workaround confirmed on the unit: `su -c "setprop persist.sf.hwrotation 90 && stop && start"`)
    - [x] Backlight control: adjustable since stage 2e (recovery-partition boot); to confirm in a normal boot
@@ -69,11 +73,12 @@ driver loads but nobody has checked the function yet.
    - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration
    - [ ] Install in the boot partition instead of the recovery test method
    - [ ] Release images from the GitHub Actions build
-   - [x] CPU governors (schedutil, conservative added); CPU/GPU overclock tables loaded, capped at 2.0 GHz /
-     660 MHz by default, raised as root (`docs/BUILD.md`)
+   - [x] CPU governors (interactive default, schedutil, conservative...); CPU/GPU overclock tables (CPU up to
+     2.3 GHz, GPU 300-730 MHz), capped at the stock maxima by default, settable from Kernel Adiutor /
+     SmartPack (`scaling_max_freq`/`scaling_min_freq`, `/sys/devices/platform/dfrgx/devfreq/dfrgx/`), see `docs/BUILD.md`
    - [x] Touch input boost, zram lz4, deadline I/O scheduler
-   - [x] KernelSU Next (v3.4.0-legacy, manual hooks), to be tested with its manager
-4. **Later**: real panel driver from the metazone description, touch interrupt, cleanup of the AutoChips code
+   - [x] KernelSU Next (v3.4.0-legacy, manual hooks), works with the KernelSU Next v3.4.0 manager
+4. **Later**: real panel driver from the metazone description, cleanup of the AutoChips code
    for review.
 
 ## Target platform

@@ -157,6 +157,9 @@ userspace, schedplus (`scaling_governor`). I/O schedulers: deadline (default), c
 
 Other tweaks (kept to what is measurable and leaves the vendor module ABI alone):
 
+- Touch interrupt (stage 2r): `goodix.c` tries EINT 42 next to polling and keeps it only if it delivers
+  the touches (see RECONSTRUCTION_STATUS.md); `/sys/module/goodix/parameters/irq_mode` tells the mode,
+  `eint_gpio=-1` on the command line (`goodix.eint_gpio=-1`) forces polling, `poll_ms` sets the period.
 - Touch input boost (`CONFIG_AC8257_INPUT_BOOST`): on a new touch, CPU minimum raised to 1.533 GHz for
   100 ms through the PPM system boost (its unused `BOOST_BY_UT` user, so the PPM API the vendor modules
   use is unchanged). `/sys/module/ac8257_input_boost/parameters/freq_khz` (0 disables), `duration_ms`.
