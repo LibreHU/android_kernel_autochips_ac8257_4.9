@@ -169,7 +169,9 @@ stays at the logo with resets now and then, like the failed recovery tries (no s
 see RECONSTRUCTION_STATUS.md); way back: SP Flash Tool, download only, stock `boot.img` in boot.
 
 Stage 2t image (`recovery_ac8257_stage2t.img`, recovery partition only, same settings): UART2/3 bus
-clocks, spidev bus numbers.
+clocks, spidev bus numbers. On the unit: `spidev0.0`-`5.0`, ttyS2/ttyS3 registered (0x11004000 IRQ
+228, 0x11005000 IRQ 229); MCU on ttyS1 unaffected (illumination, ACC, handbrake, subwoofer output
+through the LibreHU service).
 
 Checks (as root):
 

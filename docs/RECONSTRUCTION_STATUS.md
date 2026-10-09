@@ -424,6 +424,11 @@ Stage 1p findings:
   wipe it). Same pattern as the recovery tries that fail when no stock kernel ran before them (stage
   2m): in a boot-partition boot the stock kernel never runs first. To find before any boot-partition
   image is worth trying again.
+- Stage 2t on the unit (recovery): `spidev0.0`-`spidev5.0` (minors 0-5, as on the stock unit),
+  `11004000.serial: ttyS2` (IRQ 228) and `11005000.serial: ttyS3` (IRQ 229), ST16650V2 like ttyS0/1.
+  MCU traffic on ttyS1 still fine (illumination, ACC, handbrake and subwoofer switching seen through
+  the LibreHU service). `ttyS1 - failed to request DMA` when `jancar.services` opens it: the 8250
+  core then falls back to PIO, as in earlier stages. No panic or oops in the logs.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,

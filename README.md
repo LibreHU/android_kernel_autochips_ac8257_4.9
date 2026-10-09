@@ -20,7 +20,7 @@ and testing safely on the unit: `docs/BUILD.md`.
 
 ## Hardware status (UJC201, stock Android ROM, recovery test method)
 
-Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 2s). "Untested" means the
+Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 2t). "Untested" means the
 driver loads but nobody has checked the function yet.
 
 | Function | Status | Notes |
@@ -43,7 +43,7 @@ driver loads but nobody has checked the function yet.
 | Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
 | Metazone (`/dev/mtz`, kernel API) | ✅ Works (stage 2l) | reads the copy the LK loads at 0x60700000 (format checked against a dump of the unit's `metazone` partition); writes are kept in memory only, nothing is written back to the eMMC |
 | ARM2 (`dualarm-dev`) | ❌ Not working | AutoChips driver missing |
-| UART2/3, `spidev` | 🧪 spidev works, UART2/3 to test (stage 2t) | spidev: six devices since stage 2s (`CONFIG_SPI_MT65XX`, 32-bit DMA, `Autochips,spidev` of the stock DTBO), named `spidev0.0`-`5.0` from stage 2t as on the stock unit (DT `busnum`); UART2/3: pins 179-182 added (2s), the probe then failed with -2 on the missing bus clocks `ifr_uart2`/`ifr_uart3`, added in 2t |
+| UART2/3, `spidev` | ✅ Registered (stage 2t) | spidev: six devices since stage 2s (`CONFIG_SPI_MT65XX`, 32-bit DMA, `Autochips,spidev` of the stock DTBO), named `spidev0.0`-`5.0` from stage 2t as on the stock unit (DT `busnum`); UART2/3: pins 179-182 added (2s), the probe then failed with -2 on the missing bus clocks `ifr_uart2`/`ifr_uart3`, added in 2t: ttyS2/ttyS3 now registered (ST16650V2, IRQ 228/229, as on the stock unit); nothing known is wired to them yet, no data exchanged |
 | MCU / CAN | ✅ Works | `/dev/ttyS1` (115200 8N1), used by `jancar.services` / LibreHU service |
 | Suspend / resume | ❓ Unknown | not checked yet |
 | Google Play services | ⚠️ Partial | GMS crashes seen (IllegalArgumentException), unrelated to the kernel as far as seen |
@@ -67,7 +67,7 @@ driver loads but nobody has checked the function yet.
    - [ ] FM reception to compare with the stock kernel; metazone driver (stage 2l: Wi-Fi MAC address, display rotation; panel settings next)
    - [ ] Audio, keys, IR: check on the unit
    - [x] `spidev` (stage 2s, works)
-   - [ ] UART2/3 (pins 179-182, bus clocks: stage 2t, to test)
+   - [x] UART2/3 registered (pins 179-182, bus clocks: stage 2t); no known user to test traffic with
    - [ ] AutoChips devices: ARM2 (`dualarm-dev`), rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)
    - [ ] Suspend / resume
 3. **Stage 3, daily use**
