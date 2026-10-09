@@ -429,6 +429,18 @@ Stage 1p findings:
   MCU traffic on ttyS1 still fine (illumination, ACC, handbrake and subwoofer switching seen through
   the LibreHU service). `ttyS1 - failed to request DMA` when `jancar.services` opens it: the 8250
   core then falls back to PIO, as in earlier stages. No panic or oops in the logs.
+- Stage 2t, reverse input (GPIO 2, read by the LibreHU service through `/dev/gpios_ioctl`) driven on
+  the unit: the unit restarted. No log of that boot survives: the next boot was a stock normal boot
+  (overwrites pstore). Its expdb records (LK/preloader logs): `[pmic_check_rst] Cold Reset`,
+  `PONSTS 0x16`, `POFFSTS 0x20`, `kedump: last is full pmic reset`, RAM console `wdt_status 0x800`
+  then `0x404` and `exp_type 0`, boot reason 4 (`wdt_by_pass_pwk`), RTC back to 1999/12/31. So no
+  Linux exception was recorded (a panic sets `exp_type` 2, a watchdog timeout 1, see
+  `mtk_ram_console.h`) and the reset is not the AP watchdog's (`AP Watchdog` in the stock reboots): a
+  full PMIC reset from outside Linux, with the same `Cold Reset`/`POFFSTS 0x20` as each try of the
+  stage 2s boot-partition loop (about 24 s apart). Suspects: the MCU (it controls the SoC power and
+  may reset it when the reverse hand-over it expects, ARM2 in the stock normal boot, does not come),
+  or a supply dip. To confirm with a live `dmesg -w` over adb (a stream that stops without an oops
+  means an external reset) and the MCU frames around the reverse change.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,

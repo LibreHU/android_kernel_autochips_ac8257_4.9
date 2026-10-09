@@ -69,6 +69,7 @@ driver loads but nobody has checked the function yet.
    - [x] `spidev` (stage 2s, works)
    - [x] UART2/3 registered (pins 179-182, bus clocks: stage 2t); no known user to test traffic with
    - [ ] AutoChips devices: ARM2 (`dualarm-dev`), rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)
+   - [ ] Reverse input: the unit restarts (full PMIC reset, no Linux exception recorded, stage 2t)
    - [ ] Suspend / resume
 3. **Stage 3, daily use**
    - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration
