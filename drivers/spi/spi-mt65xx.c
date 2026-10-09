@@ -104,6 +104,8 @@ struct mtk_spi_compatible {
 	/*some chip support 8GB DRAM access, there are two kinds solutions*/
 	bool dma8g_peri_ext;
 	bool dma8g_spi_ext;
+	/* DMA limited to 32-bit addresses (buffers above 4 GiB bounce through swiotlb) */
+	bool dma32;
 };
 
 struct mtk_spi {
@@ -141,6 +143,17 @@ static const struct mtk_spi_compatible mt6765_compat = {
 	.must_tx = true,
 };
 
+/*
+ * AutoChips AC8257 (MT6761 SPI, like MT6765 otherwise): the stock kernel leaves the default 32-bit
+ * DMA mask (its probe has no dma_set_mask()). With 6 GiB of RAM, buffers above 4 GiB must not reach a
+ * device whose 32-bit truncation would corrupt memory (as the GPU did with ION buffers).
+ */
+static const struct mtk_spi_compatible ac8257_compat = {
+	.need_pad_sel = true,
+	.enhance_timing = true,
+	.must_tx = true,
+	.dma32 = true,
+};
 static const struct mtk_spi_compatible mt3967_compat = {
 	.need_pad_sel = true,
 	.enhance_timing = true,
@@ -186,7 +199,7 @@ static const struct of_device_id mtk_spi_of_match[] = {
 		.data = (void *)&mt6765_compat,
 	},
 	{ .compatible = "mediatek,ac8257-spi",	/* AutoChips AC8257 (MT6761 SPI) */
-		.data = (void *)&mt6765_compat,
+		.data = (void *)&ac8257_compat,
 	},
 	{ .compatible = "mediatek,mt3967-spi",
 		.data = (void *)&mt3967_compat,
@@ -939,10 +952,14 @@ static int mtk_spi_probe(struct platform_device *pdev)
 		dev_notice(&pdev->dev, "SPI sysfs_create_file fail, ret:%d\n",
 			ret);
 
-	ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(DMA_ADDR_BITS));
-	if (ret)
-		dev_notice(&pdev->dev, "SPI dma_set_mask(%d) failed, ret:%d\n",
-			DMA_ADDR_BITS, ret);
+	{
+		int bits = mdata->dev_comp->dma32 ? 32 : DMA_ADDR_BITS;
+
+		ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(bits));
+		if (ret)
+			dev_notice(&pdev->dev, "SPI dma_set_mask(%d) failed, ret:%d\n",
+				bits, ret);
+	}
 
 	return 0;
 

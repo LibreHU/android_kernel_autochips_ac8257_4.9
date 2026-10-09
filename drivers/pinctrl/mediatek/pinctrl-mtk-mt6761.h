@@ -208,6 +208,11 @@ struct mtk_pin_info mtk_pin_info_ies[] = {
 	MTK_PIN_INFO(176, 0x0040, 14, 1, 4),
 	MTK_PIN_INFO(177, 0x0040, 15, 1, 4),
 	MTK_PIN_INFO(178, 0x0040, 16, 1, 4),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 7, 1, 8),
+	MTK_PIN_INFO(180, 0x00e0, 23, 1, 8),
+	MTK_PIN_INFO(181, 0x00e4, 7, 1, 8),
+	MTK_PIN_INFO(182, 0x00e4, 23, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_smt[] = {
@@ -390,6 +395,11 @@ struct mtk_pin_info mtk_pin_info_smt[] = {
 	MTK_PIN_INFO(176, 0x00c0, 5, 1, 4),
 	MTK_PIN_INFO(177, 0x00c0, 5, 1, 4),
 	MTK_PIN_INFO(178, 0x00c0, 5, 1, 4),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 6, 1, 8),
+	MTK_PIN_INFO(180, 0x00e0, 22, 1, 8),
+	MTK_PIN_INFO(181, 0x00e4, 6, 1, 8),
+	MTK_PIN_INFO(182, 0x00e4, 22, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_pu[] = {
@@ -544,6 +554,11 @@ struct mtk_pin_info mtk_pin_info_pu[] = {
 	MTK_PIN_INFO(176, 0x0080, 14, 1, 4),
 	MTK_PIN_INFO(177, 0x0080, 15, 1, 4),
 	MTK_PIN_INFO(178, 0x0080, 16, 1, 4),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 4, 1, 8),
+	MTK_PIN_INFO(180, 0x00e0, 20, 1, 8),
+	MTK_PIN_INFO(181, 0x00e4, 4, 1, 8),
+	MTK_PIN_INFO(182, 0x00e4, 20, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_pd[] = {
@@ -698,6 +713,11 @@ struct mtk_pin_info mtk_pin_info_pd[] = {
 	MTK_PIN_INFO(176, 0x0060, 14, 1, 4),
 	MTK_PIN_INFO(177, 0x0060, 15, 1, 4),
 	MTK_PIN_INFO(178, 0x0060, 16, 1, 4),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 5, 1, 8),
+	MTK_PIN_INFO(180, 0x00e0, 21, 1, 8),
+	MTK_PIN_INFO(181, 0x00e4, 5, 1, 8),
+	MTK_PIN_INFO(182, 0x00e4, 21, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_mode[] = {
@@ -880,6 +900,11 @@ struct mtk_pin_info mtk_pin_info_mode[] = {
 	MTK_PIN_INFO(176, 0x0460, 0, 4, 0),
 	MTK_PIN_INFO(177, 0x0460, 4, 4, 0),
 	MTK_PIN_INFO(178, 0x0460, 8, 4, 0),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 15, 1, 8),
+	MTK_PIN_INFO(180, 0x00e0, 31, 1, 8),
+	MTK_PIN_INFO(181, 0x00e4, 15, 1, 8),
+	MTK_PIN_INFO(182, 0x00e4, 31, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_dataout[] = {
@@ -1062,6 +1087,11 @@ struct mtk_pin_info mtk_pin_info_dataout[] = {
 	MTK_PIN_INFO(176, 0x0150, 16, 1, 0),
 	MTK_PIN_INFO(177, 0x0150, 17, 1, 0),
 	MTK_PIN_INFO(178, 0x0150, 18, 1, 0),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 14, 1, 8),
+	MTK_PIN_INFO(180, 0x00e0, 30, 1, 8),
+	MTK_PIN_INFO(181, 0x00e4, 14, 1, 8),
+	MTK_PIN_INFO(182, 0x00e4, 30, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_datain[] = {
@@ -1244,6 +1274,11 @@ struct mtk_pin_info mtk_pin_info_datain[] = {
 	MTK_PIN_INFO(176, 0x0250, 16, 1, 0),
 	MTK_PIN_INFO(177, 0x0250, 17, 1, 0),
 	MTK_PIN_INFO(178, 0x0250, 18, 1, 0),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00ec, 0, 1, 8),
+	MTK_PIN_INFO(180, 0x00ec, 1, 1, 8),
+	MTK_PIN_INFO(181, 0x00ec, 2, 1, 8),
+	MTK_PIN_INFO(182, 0x00ec, 3, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_dir[] = {
@@ -1426,6 +1461,11 @@ struct mtk_pin_info mtk_pin_info_dir[] = {
 	MTK_PIN_INFO(176, 0x0050, 16, 1, 0),
 	MTK_PIN_INFO(177, 0x0050, 17, 1, 0),
 	MTK_PIN_INFO(178, 0x0050, 18, 1, 0),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 0, 1, 8),
+	MTK_PIN_INFO(180, 0x00e0, 16, 1, 8),
+	MTK_PIN_INFO(181, 0x00e4, 0, 1, 8),
+	MTK_PIN_INFO(182, 0x00e4, 16, 1, 8),
 };
 
 struct mtk_pin_info mtk_pin_info_pupd[] = {
@@ -2065,6 +2105,11 @@ struct mtk_pin_info mtk_pin_info_drv[] = {
 	MTK_PIN_INFO(176, 0x0000, 15, 3, 4),
 	MTK_PIN_INFO(177, 0x0000, 15, 3, 4),
 	MTK_PIN_INFO(178, 0x0000, 15, 3, 4),
+	/* AC8257: UART2/3 pins of the 9th register bank (syscfg_pctl_8 @ 0x10001000), from the stock kernel */
+	MTK_PIN_INFO(179, 0x00e0, 1, 3, 8),
+	MTK_PIN_INFO(180, 0x00e0, 17, 3, 8),
+	MTK_PIN_INFO(181, 0x00e4, 1, 3, 8),
+	MTK_PIN_INFO(182, 0x00e4, 17, 3, 8),
 };
 
 
@@ -3804,10 +3849,33 @@ static const struct mtk_desc_pin mtk_pins_mt6761[] = {
 		MTK_FUNCTION(0, "GPIO178")
 	),
 	MTK_PIN(
-		PINCTRL_PIN(179, "GPIO179"),
+		/* AC8257 (stock kernel): UART2/3 pins of the 9th register bank, mux 0 = UART, 1 = GPIO */
+		PINCTRL_PIN(179, "GPIO200"),
 		NULL, "mt6761",
-		MTK_EINT_FUNCTION(0, 151),
-		MTK_FUNCTION(0, "GPIO179")
+		MTK_EINT_FUNCTION(NO_EINT_SUPPORT, NO_EINT_SUPPORT),
+		MTK_FUNCTION(0, "URXD2"),
+		MTK_FUNCTION(1, "GPIO200")
+	),
+	MTK_PIN(
+		PINCTRL_PIN(180, "GPIO201"),
+		NULL, "mt6761",
+		MTK_EINT_FUNCTION(NO_EINT_SUPPORT, NO_EINT_SUPPORT),
+		MTK_FUNCTION(0, "UTXD2"),
+		MTK_FUNCTION(1, "GPIO201")
+	),
+	MTK_PIN(
+		PINCTRL_PIN(181, "GPIO202"),
+		NULL, "mt6761",
+		MTK_EINT_FUNCTION(NO_EINT_SUPPORT, NO_EINT_SUPPORT),
+		MTK_FUNCTION(0, "URXD3"),
+		MTK_FUNCTION(1, "GPIO202")
+	),
+	MTK_PIN(
+		PINCTRL_PIN(182, "GPIO203"),
+		NULL, "mt6761",
+		MTK_EINT_FUNCTION(NO_EINT_SUPPORT, NO_EINT_SUPPORT),
+		MTK_FUNCTION(0, "UTXD3"),
+		MTK_FUNCTION(1, "GPIO203")
 	),
 };
 

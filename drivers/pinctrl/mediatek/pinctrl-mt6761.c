@@ -238,9 +238,10 @@ static const struct mtk_pinctrl_devdata mt6761_pinctrl_data = {
 	.mtk_pctl_get_pull_en = mtk_pinctrl_get_gpio_pullen,
 	.spec_debounce_select = mt6761_spec_debounce_select,
 	.mtk_irq_domain_ops = &mtk_irq_domain_ops,
-	.type1_start = 179,
-	.type1_end = 179,
-	.regmap_num = 8,
+	/* AC8257: 183 pins and a 9th register bank (pins 179-182, UART2/3), as the stock kernel */
+	.type1_start = 182,
+	.type1_end = 182,
+	.regmap_num = 9,
 	.port_shf = 4,
 	.port_mask = 0xf,
 	.port_align = 4,
