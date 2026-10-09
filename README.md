@@ -46,7 +46,7 @@ driver loads but nobody has checked the function yet.
 | UART2/3, `spidev` | ✅ Registered (stage 2t) | spidev: six devices since stage 2s (`CONFIG_SPI_MT65XX`, 32-bit DMA, `Autochips,spidev` of the stock DTBO), named `spidev0.0`-`5.0` from stage 2t as on the stock unit (DT `busnum`); UART2/3: pins 179-182 added (2s), the probe then failed with -2 on the missing bus clocks `ifr_uart2`/`ifr_uart3`, added in 2t: ttyS2/ttyS3 now registered (ST16650V2, IRQ 228/229, as on the stock unit); nothing known is wired to them yet, no data exchanged |
 | MCU / CAN | ✅ Works | `/dev/ttyS1` (115200 8N1), used by `jancar.services` / LibreHU service |
 | Suspend / resume | ❓ Unknown | not checked yet |
-| Google Play services | ⚠️ Partial | GMS crashes seen (IllegalArgumentException), unrelated to the kernel as far as seen |
+| Microphone | ✅ Works | confirmed on the unit |
 | Boot from the recovery partition | ⚠️ Retries | often several tries (black screen, cold reset) before Android; the try that works follows a stock boot; under investigation |
 | KernelSU Next | ✅ Works | KernelSU Next manager v3.4.0 (the official KernelSU app refuses non-GKI kernels) |
 
