@@ -20,7 +20,7 @@ and testing safely on the unit: `docs/BUILD.md`.
 
 ## Hardware status (UJC201, stock Android ROM, recovery test method)
 
-Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 2q; stage 2r to test). "Untested" means the
+Tested on the unit with the test images of `docs/BUILD.md` (last test: stage 2r). "Untested" means the
 driver loads but nobody has checked the function yet.
 
 | Function | Status | Notes |
@@ -32,7 +32,7 @@ driver loads but nobody has checked the function yet.
 | Display output (HWC, frame buffer) | ✅ Works (stage 2o) | no artefacts on the panel or in scrcpy captures and no userspace crashes with 6 GiB of RAM since ION buffers stay below 4 GiB (`ac8257_ion_low`); rotation set at boot by `rotationd` from the metazone (stage 2l). Normal-boot hand-over with ARM2 (fast display) not reconstructed |
 | Backlight | ⚠️ Works on most boots | adjustable from Android (disp PWM, as the stock kernel on this unit: no TI bridge answers); on some boots it does not follow the slider, cause not found yet (2n with 3 GiB too) |
 | USB device mode, adb | ✅ Works | connect on the first gadget pull-up |
-| Touch (Goodix GT928 behind FPD-Link) | ✅ Works | stage 2r tries EINT 42 and falls back to polling every 16 ms if it does not deliver, orientation fixed; follows the display rotation (`persist.sf.hwrotation=90`) |
+| Touch (Goodix GT928 behind FPD-Link) | ✅ Works | interrupt on EINT 42 since stage 2r (checked against polling at boot, safety poll once a second, falls back to polling every 16 ms if the interrupt fails), orientation fixed; follows the display rotation (`persist.sf.hwrotation=90`) |
 | `/dev/gpios_ioctl` (Jancar GPIOs) | 🧪 Untested | device present (stage 1t); used by `com.jancar.services` |
 | Keys (`mtk-kpd`), IR receiver | 🧪 Untested | input devices present |
 | Audio | 🧪 Untested | sound card registers |
@@ -54,7 +54,7 @@ driver loads but nobody has checked the function yet.
 
 1. **Stage 1, boot the stock ROM** - ✅ done (stage 1p).
 2. **Stage 2, usable on the stock ROM**
-   - [x] Touch (GT928, polling, orientation); EINT 42 interrupt checked against polling (stage 2r, to test)
+   - [x] Touch (GT928, polling, orientation); EINT 42 interrupt (stage 2r, works)
    - [x] Jancar `/dev/gpios_ioctl`
    - [x] Memory corruption above 4 GiB (artefacts, crashes): ION buffers below 4 GiB (stage 2o)
    - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel) for the normal boot

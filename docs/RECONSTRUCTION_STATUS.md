@@ -385,6 +385,10 @@ Stage 1p findings:
   frees the interrupt and polls every `poll_ms`. Parameters in `/sys/module/goodix/parameters/`:
   `eint_gpio` (42, -1 = always poll), `poll_ms` (16), `irq_mode` (read only). The kernel log says which
   mode was chosen (`AC8257: interrupt mode` / `no usable interrupt`).
+  On the unit (stage 2r): `AC8257: interrupt mode (34 interrupts, 30 of 31 frames)` 31 s after boot,
+  `irq_mode` Y, `/proc/interrupts` `64: mt-eint 42 Edge gt928` at about 2460 after use, no fall back to
+  polling, no native crash: the interrupt does come through the FPD-Link bridge (the 3 interrupts of the
+  stock captures were taken without touching the screen). Polling is down to one read per second.
 - Review of patches proposed by another assistant (DeepSeek), stage 2r: kept the 64-bit metazone header
   bounds checks (u32 sums could wrap), the input boost mutex (boost on/off works may run on two CPUs) and
   the `jancar_gpios` log of an unset value. Not kept: the `bringup_reboot` "bdev leak" fix (`blkdev_get()`
