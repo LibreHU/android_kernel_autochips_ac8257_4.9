@@ -43,7 +43,7 @@ driver loads but nobody has checked the function yet.
 | Rear camera, AV-in, AVM (TVD, DI, NR, WCH, backcar) | ❌ Not working | AutoChips drivers missing; i2c6 device 0x40 does not answer |
 | Metazone (`/dev/mtz`, kernel API) | ✅ Works (stage 2l) | reads the copy the LK loads at 0x60700000 (format checked against a dump of the unit's `metazone` partition); writes are kept in memory only, nothing is written back to the eMMC |
 | ARM2 (`dualarm-dev`) | ❌ Not working | AutoChips driver missing |
-| UART2/3, `spidev` | ❌ Not working | ttyS2/ttyS3 probe fails (-22): pins 180-182 (`pctl_8` bank) missing from the pin controller tables; `CONFIG_SPI_MT65XX` off (the driver matches `mediatek,ac8257-spi`) |
+| UART2/3, `spidev` | 🧪 To test (stage 2s) | pins 179-182 (GPIO200-203, URXD2/UTXD2/URXD3/UTXD3) added to the pin controller from the stock kernel's tables, so ttyS2/ttyS3 should probe (-22 before); `CONFIG_SPI_MT65XX` on with a 32-bit DMA mask, `spidev` matches the stock DTBO's `Autochips,spidev` children (spidev0.0-5.0 expected) |
 | MCU / CAN | ✅ Works | `/dev/ttyS1` (115200 8N1), used by `jancar.services` / LibreHU service |
 | Suspend / resume | ❓ Unknown | not checked yet |
 | Google Play services | ⚠️ Partial | GMS crashes seen (IllegalArgumentException), unrelated to the kernel as far as seen |
@@ -66,12 +66,12 @@ driver loads but nobody has checked the function yet.
    - [x] Wi-Fi (client and hotspot, stage 2j)
    - [ ] FM reception to compare with the stock kernel; metazone driver (stage 2l: Wi-Fi MAC address, display rotation; panel settings next)
    - [ ] Audio, keys, IR: check on the unit
-   - [ ] MCU / CAN, UART2/3 (pins 180-182)
+   - [ ] UART2/3 (pins 179-182) and `spidev` (stage 2s, to test)
    - [ ] AutoChips devices: ARM2 (`dualarm-dev`), rear camera / AV-in / AVM (TVD, DI, NR, WCH, backcar)
    - [ ] Suspend / resume
 3. **Stage 3, daily use**
    - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration
-   - [ ] Install in the boot partition instead of the recovery test method
+   - [ ] Install in the boot partition instead of the recovery test method (stage 2s has a boot-partition image to try)
    - [ ] Release images from the GitHub Actions build
    - [x] CPU governors (interactive default, schedutil, conservative...); CPU/GPU overclock tables (CPU up to
      2.3 GHz, GPU 300-730 MHz), capped at the stock maxima by default, settable from Kernel Adiutor /

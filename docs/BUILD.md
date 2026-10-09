@@ -152,6 +152,24 @@ the chip and is not guaranteed (thermal throttling still applies).
 Stage 2q images (`recovery_test_ac8257_stage2q_oc`): CPU ceiling 2.301 GHz with 2.201 GHz at boot, GPU
 730 MHz, interactive governor and touch boost (defaults), no timed panic (`ac8257_panic_secs=0`).
 
+Stage 2s images (UART2/3 and `spidev`), both with the stage 2q settings (CPU 2.301 GHz, 2.201 GHz at
+boot, GPU 730 MHz, no timed panic, `adb reboot` not intercepted):
+
+- `recovery_ac8257_stage2s.img`: recovery partition, as before (`init=/init`).
+- `boot_ac8257_stage2s.img`: boot partition (10 MiB, stock boot vbmeta kept), for a normal-mode boot.
+  Stage 2e showed artefacts and no USB in a normal boot (SCP and ARM2 started by the LK, not handed
+  over); 2e predates the 4 GiB fix of stage 2o, so the artefacts may be gone, USB is still to check.
+  Keep the stock `boot.img` at hand: `adb reboot recovery` (or `su -c "reboot recovery"` in a terminal
+  on the unit) starts the recovery test kernel, and from there
+  `dd if=boot-stock.img of=/dev/block/by-name/boot`; SP Flash Tool otherwise.
+
+Checks (as root):
+
+    ls -l /dev/ttyS* /dev/spidev*
+    cat /proc/tty/driver/serial                       # uart:... port:... for ttyS2 and ttyS3
+    dmesg | grep -i -E "11004000|11005000|ttyS|spi|pinctrl"
+    cat /sys/kernel/debug/pinctrl/1000b000.pinctrl/pinmux-pins | grep -E "pin 1(79|8[0-2])"
+
 CPU governors: interactive (default), schedutil, conservative, ondemand, performance, powersave,
 userspace, schedplus (`scaling_governor`). I/O schedulers: deadline (default), cfq, noop.
 

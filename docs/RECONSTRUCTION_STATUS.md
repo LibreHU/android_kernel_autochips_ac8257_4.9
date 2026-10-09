@@ -398,6 +398,19 @@ Stage 1p findings:
   without their register tables in `mtk_pin_info_*`, mux values guessed), and the dualarm/backcar/ION
   heap skeletons (guessed ABIs). `CONFIG_SPI_MT65XX` (spidev) is a fair candidate for a later test: the
   driver here already matches `mediatek,ac8257-spi`.
+- UART2/3 and spidev (stage 2s). The DTBO gives `serial@11004000`/`11005000` (uart2/uart3) a pinmux on
+  pins 179-182 (0xb300/0xb400 mode 0, 0xb301/0xb401... mode 1, 0xb500-0xb601), which this pin controller
+  did not know (183 pins in the stock devdata, 179 here): the probe failed with -22. Pin entries and
+  register tables taken from the stock kernel (pinctrl devdata at 0xffffff8008f1b0a0 in the stock
+  vmlinux: 183 pins, `mtk_pin_info` tables {pin, offset, bit, width, ip_num} of 183 entries, pull tables
+  of 155, 9 register maps, type1 pins up to 182): all four on IP 8 (`pctl_8`), mode at 0xe0/0xe4 bits
+  15/31, input at 0xec bits 0-3, direction, output, IES, SMT, pull-up/down and drive in the same
+  registers; mode 0 is URXD2/UTXD2/URXD3/UTXD3, mode 1 GPIO200-203, no EINT. SPI: the six controllers
+  (`mediatek,ac8257-spi`, nodes spi0-spi5) are on in the DT; the driver is now built
+  (`CONFIG_SPI_MT65XX`) with a 32-bit DMA mask (the stock kernel used its own `SPI_AC8X` driver, not
+  available; whether this one drives the AutoChips controllers is what the test shows), and `spidev`
+  matches the `Autochips,spidev` children of the DTBO (one per bus, `reg` 0, 52 MHz). First images
+  for the boot partition as well (see BUILD.md).
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,
@@ -447,7 +460,7 @@ one more u32 (136 bytes), `disp_session_info` and `disp_caps_info` 4 more bytes,
 (`DISP_IOCTL_GET_EXT_PANEL_INFO` 228, `DISP_IOCTL_SET_FAST_DISP_FLAG` 232), caps report direct link and 2
 layers. Without them the HWC's ioctl numbers do not match the kernel's.
 
-Remaining differences seen in the logs: UART2/3 (pins 180-182, `pctl_8` bank), Goodix touch at 3-0001, the
+Remaining differences seen in the logs: UART2/3 (pins 179-182, `pctl_8` bank, stage 2s to test), Goodix touch at 3-0001, the
 AutoChips devices of the stock `/dev` (`dualarm-dev`, `wch`, `di`, `nr`, `tvd`, `rdi0`, `mtz`, `backcardrv`,
 `gpios_ioctl`, `touch`), vendor modules (CRCs).
 
@@ -464,7 +477,7 @@ headers). Converging on these CRCs is the measure of how close the tree is to th
 1. Display shared with ARM2 (fast display, AVM): reconstruct the stock hand-over layer; rotation, glitches,
    backlight path.
 2. Vendor modules (Wi-Fi, BT, GPS, FM): symbol CRCs (see Module ABI).
-3. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone (stage 2l, to test), touch, UART2/3 pins, video chain.
+3. AutoChips drivers in order of need: ARM2 (`dualarm-dev`), metazone (stage 2l, works), touch (works), UART2/3 pins and spidev (stage 2s), video chain.
 4. Display: real `lcm_driver_common` (panel text parser from metazone/logo).
 5. Module ABI: clang build, then find the type differences behind the CRC mismatches.
 
