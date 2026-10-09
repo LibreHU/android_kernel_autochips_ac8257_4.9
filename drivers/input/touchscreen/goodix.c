@@ -30,6 +30,9 @@
 #include <linux/acpi.h>
 #include <linux/of.h>
 #ifdef CONFIG_MACH_AC8257
+#include <linux/gpio.h>
+#include <linux/gpio/driver.h>
+#include <linux/mutex.h>
 #include <linux/workqueue.h>
 #endif
 #include <asm/unaligned.h>
@@ -54,6 +57,14 @@ struct goodix_ts_data {
 	unsigned long irq_flags;
 #ifdef CONFIG_MACH_AC8257
 	struct delayed_work poll_work;
+	struct mutex ac8257_lock;	/* poll work and interrupt thread read the controller */
+	bool ac8257_irq_on;		/* an interrupt handler is registered */
+	bool ac8257_free_irq;		/* drop decided: free it once the lock is released */
+	bool ac8257_irq_mode;		/* the interrupt is trusted: slow safety poll only */
+	unsigned int frames;		/* frames with touches read so far (any source) */
+	unsigned int irq_frames;	/* of which read by the interrupt thread */
+	unsigned int irq_count;		/* interrupts received */
+	unsigned int missed;		/* safety polls that found a pending frame */
 #endif
 };
 
@@ -311,7 +322,7 @@ static void goodix_process_events(struct goodix_ts_data *ts)
  * @irq: interrupt number.
  * @dev_id: private data pointer.
  */
-static irqreturn_t goodix_ts_irq_handler(int irq, void *dev_id)
+static irqreturn_t __maybe_unused goodix_ts_irq_handler(int irq, void *dev_id)
 {
 	struct goodix_ts_data *ts = dev_id;
 
@@ -329,31 +340,156 @@ static void goodix_free_irq(struct goodix_ts_data *ts)
 }
 
 #ifdef CONFIG_MACH_AC8257
-#define GOODIX_POLL_MS	16
+/*
+ * Touch interrupt on the UJC201. The stock MTK GT928 driver registers EINT 42 ("mt-eint 42 Edge
+ * mtk-tpd", touch_irq 64; the LK reads the touch state on GPIO 42 too), but the interrupt line
+ * comes from the panel through the FPD-Link bridge and the stock /proc/interrupts captures only
+ * counted 3 interrupts. So: request EINT 42 and keep polling at first; once enough frames with
+ * touches were read, keep the interrupt only if it delivered a real share of them (the interrupt
+ * thread found the controller's data-ready flag), then poll only every second as a safety net (a
+ * frame found by that poll counts as missed; ten in a row fall back to polling). Otherwise free the
+ * interrupt and keep polling every poll_ms.
+ *   /sys/module/goodix/parameters/eint_gpio  pin to try (42), -1: always poll (set at boot)
+ *   /sys/module/goodix/parameters/poll_ms    polling period (16 ms)
+ *   /sys/module/goodix/parameters/irq_mode   1 once the interrupt is used (read only)
+ */
+static int ac8257_eint_gpio = 42;
+module_param_named(eint_gpio, ac8257_eint_gpio, int, 0444);
+static unsigned int ac8257_poll_ms = 16;
+module_param_named(poll_ms, ac8257_poll_ms, uint, 0644);
+static bool ac8257_irq_mode_param;
+module_param_named(irq_mode, ac8257_irq_mode_param, bool, 0444);
 
-/* fallback when no interrupt can be obtained, like the stock goodix_ts_timer_handler */
+#define AC8257_DECIDE_FRAMES	30	/* frames with touches before choosing the mode */
+#define AC8257_SAFETY_POLL_MS	1000
+#define AC8257_MISSED_MAX	10
+#define AC8257_STORM		2000	/* interrupts without any data: noise, give up */
+
+/* read and report one frame; returns the touch count, -EAGAIN when no frame is pending */
+static int goodix_ac8257_service(struct goodix_ts_data *ts)
+{
+	u8 point_data[1 + GOODIX_CONTACT_SIZE * GOODIX_MAX_CONTACTS];
+	int touch_num, i;
+
+	touch_num = goodix_ts_read_input_report(ts, point_data);
+	if (touch_num < 0)
+		return touch_num;
+	for (i = 0; i < touch_num; i++)
+		goodix_ts_report_touch(ts, &point_data[1 + GOODIX_CONTACT_SIZE * i]);
+	input_mt_sync_frame(ts->input_dev);
+	input_sync(ts->input_dev);
+	if (goodix_i2c_write_u8(ts->client, GOODIX_READ_COOR_ADDR, 0) < 0)
+		dev_err(&ts->client->dev, "I2C write end_cmd error\n");
+	return touch_num;
+}
+
+static void goodix_ac8257_drop_irq(struct goodix_ts_data *ts, const char *why)
+{
+	/* called with ac8257_lock held: free_irq waits for the thread, which takes that lock */
+	if (ts->ac8257_irq_on) {
+		disable_irq_nosync(ts->client->irq);
+		ts->ac8257_irq_on = false;
+		ts->ac8257_free_irq = true;
+	}
+	ts->ac8257_irq_mode = false;
+	ac8257_irq_mode_param = false;
+	dev_info(&ts->client->dev, "AC8257: %s (%u interrupts, %u of %u frames), polling every %u ms\n",
+		 why, ts->irq_count, ts->irq_frames, ts->frames, ac8257_poll_ms);
+}
+
+static irqreturn_t goodix_ac8257_irq_thread(int irq, void *dev_id)
+{
+	struct goodix_ts_data *ts = dev_id;
+	int n;
+
+	mutex_lock(&ts->ac8257_lock);
+	ts->irq_count++;
+	n = goodix_ac8257_service(ts);
+	if (n > 0) {
+		ts->frames++;
+		ts->irq_frames++;
+	}
+	mutex_unlock(&ts->ac8257_lock);
+	return IRQ_HANDLED;
+}
+
 static void goodix_poll_work(struct work_struct *work)
 {
 	struct goodix_ts_data *ts = container_of(to_delayed_work(work),
 						 struct goodix_ts_data, poll_work);
+	unsigned int next = ac8257_poll_ms ? ac8257_poll_ms : 16;
+	int n;
 
-	goodix_ts_irq_handler(0, ts);
-	schedule_delayed_work(&ts->poll_work, msecs_to_jiffies(GOODIX_POLL_MS));
+	mutex_lock(&ts->ac8257_lock);
+	n = goodix_ac8257_service(ts);
+	if (ts->ac8257_irq_mode) {
+		/* safety net: a pending frame here is one the interrupt did not deliver */
+		if (n > 0 && ++ts->missed >= AC8257_MISSED_MAX)
+			goodix_ac8257_drop_irq(ts, "interrupts missed");
+		else if (n < 0)
+			ts->missed = 0;
+		if (ts->ac8257_irq_mode)
+			next = AC8257_SAFETY_POLL_MS;
+	} else if (ts->ac8257_irq_on) {
+		/* verification phase: interrupt and polling side by side */
+		if (n > 0)
+			ts->frames++;
+		if (!ts->irq_frames && ts->irq_count > AC8257_STORM) {
+			goodix_ac8257_drop_irq(ts, "interrupt storm without data");
+		} else if (ts->frames >= AC8257_DECIDE_FRAMES) {
+			if (ts->irq_frames >= 5 && ts->irq_frames * 4 >= ts->frames) {
+				ts->ac8257_irq_mode = true;
+				ac8257_irq_mode_param = true;
+				ts->missed = 0;
+				next = AC8257_SAFETY_POLL_MS;
+				dev_info(&ts->client->dev,
+					 "AC8257: interrupt mode (%u interrupts, %u of %u frames)\n",
+					 ts->irq_count, ts->irq_frames, ts->frames);
+			} else {
+				goodix_ac8257_drop_irq(ts, "no usable interrupt");
+			}
+		}
+	}
+	mutex_unlock(&ts->ac8257_lock);
+	if (ts->ac8257_free_irq) {
+		ts->ac8257_free_irq = false;
+		devm_free_irq(&ts->client->dev, ts->client->irq, ts);
+	}
+	schedule_delayed_work(&ts->poll_work, msecs_to_jiffies(next));
 }
 
-/*
- * The stock AutoChips goodix.c has an "irq mode" and a "polling mode" (DT
- * irq_mode): behind the FPD-Link bridge the controller interrupt is not wired
- * to the SoC (the DTBO irq-gpios is pin 0), so poll unless the node gives a
- * real interrupt. The pin is left alone.
- */
+static int goodix_ac8257_match_pio(struct gpio_chip *gc, void *data)
+{
+	return gc->label && !strcmp(gc->label, "1000b000.pinctrl");
+}
+
+/* interrupt of the touch: from the node, else EINT ac8257_eint_gpio of the SoC pin controller */
 static int goodix_ac8257_irq(struct goodix_ts_data *ts)
 {
+	struct gpio_chip *gc;
+	int gpio, irq;
+
 	if (ts->client->irq > 0)
 		return 0;
-	dev_info(&ts->client->dev, "AC8257: polling every %d ms\n",
-		 GOODIX_POLL_MS);
-	return -ENODEV;
+	if (ac8257_eint_gpio < 0)
+		return -ENODEV;
+	gc = gpiochip_find(NULL, goodix_ac8257_match_pio);
+	if (!gc || ac8257_eint_gpio >= gc->ngpio)
+		return -ENODEV;
+	gpio = gc->base + ac8257_eint_gpio;
+	if (gpio_request(gpio, "goodix-eint") || gpio_direction_input(gpio)) {
+		dev_info(&ts->client->dev, "AC8257: cannot use GPIO %d\n", ac8257_eint_gpio);
+		return -EBUSY;
+	}
+	irq = gpio_to_irq(gpio);
+	if (irq <= 0) {
+		gpio_free(gpio);
+		return -ENODEV;
+	}
+	ts->client->irq = irq;
+	dev_info(&ts->client->dev, "AC8257: trying EINT %d (irq %d) with polling until checked\n",
+		 ac8257_eint_gpio, irq);
+	return 0;
 }
 #endif
 
@@ -362,18 +498,22 @@ static int goodix_request_irq(struct goodix_ts_data *ts)
 #ifdef CONFIG_MACH_AC8257
 	int error;
 
-	if (goodix_ac8257_irq(ts))
-		goto poll;
-	error = devm_request_threaded_irq(&ts->client->dev, ts->client->irq,
-					  NULL, goodix_ts_irq_handler,
-					  ts->irq_flags, ts->client->name, ts);
-	if (!error)
-		return 0;
-	dev_info(&ts->client->dev, "AC8257: irq %d request failed (%d), polling\n",
-		 ts->client->irq, error);
-poll:
+	/* called once at probe here: no GPIO reset/INT pins, so no suspend/resume re-request */
+	mutex_init(&ts->ac8257_lock);
+	if (!goodix_ac8257_irq(ts)) {
+		error = devm_request_threaded_irq(&ts->client->dev, ts->client->irq,
+						  NULL, goodix_ac8257_irq_thread,
+						  ts->irq_flags, ts->client->name, ts);
+		if (!error)
+			ts->ac8257_irq_on = true;
+		else
+			dev_info(&ts->client->dev, "AC8257: irq %d request failed (%d)\n",
+				 ts->client->irq, error);
+	}
+	if (!ts->ac8257_irq_on)
+		dev_info(&ts->client->dev, "AC8257: polling every %u ms\n", ac8257_poll_ms);
 	INIT_DELAYED_WORK(&ts->poll_work, goodix_poll_work);
-	schedule_delayed_work(&ts->poll_work, msecs_to_jiffies(GOODIX_POLL_MS));
+	schedule_delayed_work(&ts->poll_work, msecs_to_jiffies(ac8257_poll_ms));
 	return 0;
 #else
 	return devm_request_threaded_irq(&ts->client->dev, ts->client->irq,
@@ -885,6 +1025,10 @@ static int __maybe_unused goodix_suspend(struct device *dev)
 
 	/* We need gpio pins to suspend/resume */
 	if (!ts->gpiod_int || !ts->gpiod_rst) {
+#ifdef CONFIG_MACH_AC8257
+		cancel_delayed_work_sync(&ts->poll_work);
+		if (ts->ac8257_irq_on)
+#endif
 		disable_irq(client->irq);
 		return 0;
 	}
@@ -928,6 +1072,12 @@ static int __maybe_unused goodix_resume(struct device *dev)
 	int error;
 
 	if (!ts->gpiod_int || !ts->gpiod_rst) {
+#ifdef CONFIG_MACH_AC8257
+		if (ts->ac8257_irq_on)
+			enable_irq(client->irq);
+		schedule_delayed_work(&ts->poll_work, msecs_to_jiffies(ac8257_poll_ms));
+		return 0;
+#endif
 		enable_irq(client->irq);
 		return 0;
 	}

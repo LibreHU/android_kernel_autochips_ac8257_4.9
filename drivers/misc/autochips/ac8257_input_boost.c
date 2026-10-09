@@ -9,6 +9,7 @@
  */
 #include <linux/input.h>
 #include <linux/module.h>
+#include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <mtk_ppm_api.h>
@@ -19,6 +20,7 @@ static unsigned int duration_ms = 100;
 module_param(duration_ms, uint, 0644);
 
 static bool boosted;
+static DEFINE_MUTEX(boost_lock);	/* boost_on and boost_off may run on two CPUs */
 static void ac8257_boost_on(struct work_struct *w);
 static void ac8257_boost_off(struct work_struct *w);
 static DECLARE_WORK(boost_on_work, ac8257_boost_on);
@@ -26,19 +28,23 @@ static DECLARE_DELAYED_WORK(boost_off_work, ac8257_boost_off);
 
 static void ac8257_boost_on(struct work_struct *w)
 {
+	mutex_lock(&boost_lock);
 	if (!boosted && freq_khz) {
 		mt_ppm_sysboost_freq(BOOST_BY_UT, freq_khz);
 		boosted = true;
 	}
+	mutex_unlock(&boost_lock);
 	mod_delayed_work(system_wq, &boost_off_work, msecs_to_jiffies(duration_ms));
 }
 
 static void ac8257_boost_off(struct work_struct *w)
 {
+	mutex_lock(&boost_lock);
 	if (boosted) {
 		mt_ppm_sysboost_freq(BOOST_BY_UT, 0);
 		boosted = false;
 	}
+	mutex_unlock(&boost_lock);
 }
 
 static void ac8257_boost_event(struct input_handle *handle, unsigned int type,

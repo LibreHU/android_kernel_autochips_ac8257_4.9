@@ -62,7 +62,7 @@ static long jancar_gpio_ioctl(struct file *file, unsigned int cmd, unsigned long
 	long ret = 0;
 
 	if (copy_from_user(&n, (void __user *)arg, sizeof(n))) {
-		pr_info("[jancar]copy_from_user data:%d error.\n", n);
+		pr_info("[jancar]copy_from_user failed\n");
 		return -EFAULT;
 	}
 	if (cmd < JANCAR_GPIO_SET_HIGH || cmd > JANCAR_GPIO_GET) {

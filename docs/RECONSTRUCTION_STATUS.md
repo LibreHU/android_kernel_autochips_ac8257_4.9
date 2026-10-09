@@ -375,6 +375,25 @@ Stage 1p findings:
   successful boot again came right after a stock boot, `INTO_RECOVERY_COUNT` back to 1), and installd
   failing to prepare `/data/data/<pkg>` for some third-party apps (`Failed to prepare ...: Success`,
   VLC `SQLITE_CANTOPEN`), probably directories damaged while memory was being corrupted.
+- Touch interrupt (stage 2r): the stock MTK GT928 driver registers EINT 42 (`mt-eint 42 Edge mtk-tpd`,
+  `touch_irq number 64` in its log; the LK reads the touch state on GPIO 42, `INT_GPIO:42`), but both stock
+  `/proc/interrupts` captures (av2) show 3 interrupts in all, so whether the line toggles at each touch
+  through the FPD-Link bridge is not proven. `goodix.c` now requests EINT 42 (pin of the SoC pin
+  controller `1000b000.pinctrl`, dynamic GPIO base) and keeps polling meanwhile; after 30 frames with
+  touches it keeps the interrupt only if the interrupt thread read at least a quarter of them (data-ready
+  flag set), then polls once a second as a safety net (ten missed frames fall back to polling), else it
+  frees the interrupt and polls every `poll_ms`. Parameters in `/sys/module/goodix/parameters/`:
+  `eint_gpio` (42, -1 = always poll), `poll_ms` (16), `irq_mode` (read only). The kernel log says which
+  mode was chosen (`AC8257: interrupt mode` / `no usable interrupt`).
+- Review of patches proposed by another assistant (DeepSeek), stage 2r: kept the 64-bit metazone header
+  bounds checks (u32 sums could wrap), the input boost mutex (boost on/off works may run on two CPUs) and
+  the `jancar_gpios` log of an unset value. Not kept: the `bringup_reboot` "bdev leak" fix (`blkdev_get()`
+  already calls `bdput()` on failure in 4.9, the extra `bdput()` would be a double put), single-node
+  metazone lookup (there are two `autochips,metazone` nodes), `-ENOTTY` and 0660 for `/dev/gpios_ioctl`
+  (the stock device is 0666 and `jancar.services` needs it), the UART2/3 pinctrl patch (adds pins 180-182
+  without their register tables in `mtk_pin_info_*`, mux values guessed), and the dualarm/backcar/ION
+  heap skeletons (guessed ABIs). `CONFIG_SPI_MT65XX` (spidev) is a fair candidate for a later test: the
+  driver here already matches `mediatek,ac8257-spi`.
 - av2 (stock `/system` and `/vendor` libraries and apps) and the metazone dump, what matters for the
   kernel:
   - Backlight range: the stock LED class (`set_brightness_delayed`, `led_set_brightness_nopm`) reads, once,

@@ -32,7 +32,7 @@ driver loads but nobody has checked the function yet.
 | Display output (HWC, frame buffer) | ✅ Works (stage 2o: ION buffers below 4 GiB, no artefacts, 6 GiB of RAM) | picture shown; rotation right with `setprop persist.sf.hwrotation 90` (as root, then `stop && start`); since stage 2l `rotationd` sets it at boot from the metazone (confirmed); no glitch on the panel under 2l, black bands only in scrcpy captures (virtual display composed by the GPU, then the encoder); glitches, occasional crash (display shared with ARM2, stopgap in stage 1w) |
 | Backlight | ✅ Works (stage 2e, recovery-partition boot) | adjustable from Android; earlier stages: on but not adjustable. Cause of the change not identified yet |
 | USB device mode, adb | ✅ Works | connect on the first gadget pull-up |
-| Touch (Goodix GT928 behind FPD-Link) | ✅ Works | polling every 16 ms (no interrupt wired), orientation fixed; follows the display rotation (`persist.sf.hwrotation=90`) |
+| Touch (Goodix GT928 behind FPD-Link) | ✅ Works | stage 2r tries EINT 42 and falls back to polling every 16 ms if it does not deliver, orientation fixed; follows the display rotation (`persist.sf.hwrotation=90`) |
 | `/dev/gpios_ioctl` (Jancar GPIOs) | 🧪 Untested | device present (stage 1t); used by `com.jancar.services` |
 | Keys (`mtk-kpd`), IR receiver | 🧪 Untested | input devices present |
 | Audio | 🧪 Untested | sound card registers |

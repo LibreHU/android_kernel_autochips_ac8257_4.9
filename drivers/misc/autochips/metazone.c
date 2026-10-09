@@ -375,7 +375,7 @@ static int __init mtz_init(void)
 {
 	struct device_node *np;
 	struct resource res;
-	u32 bin_end;
+	u64 bin_end, dw_end;
 	int ret;
 
 	/* the reserved-memory node is the autochips,metazone node with a reg */
@@ -396,11 +396,13 @@ static int __init mtz_init(void)
 		return -ENOMEM;
 	}
 	memcpy(&mtz_hdr, mtz_base + MTZ_HDR_OFFSET, sizeof(mtz_hdr));
-	bin_end = MTZ_HDR_OFFSET + mtz_hdr.bin_offset + mtz_hdr.bin_num * (2 * mtz_hdr.bin_unit + 6);
+	/* in 64 bits: the u32 header fields must not wrap the bounds checks */
+	dw_end = (u64)MTZ_HDR_OFFSET + mtz_hdr.dw_offset + (u64)mtz_hdr.dw_num * MTZ_DW_ENTRY;
+	bin_end = (u64)MTZ_HDR_OFFSET + mtz_hdr.bin_offset +
+		  (u64)mtz_hdr.bin_num * (2 * mtz_hdr.bin_unit + 6);
 	if (mtz_hdr.magic != MTZ_MAGIC || mtz_hdr.bin_unit > MTZ_MAX_IO / 2 ||
 	    mtz_hdr.dw_num > MTZ_IDX_END - MTZ_IDX_BASE || mtz_hdr.bin_num > MTZ_IDX_END - MTZ_IDX_BASE ||
-	    MTZ_HDR_OFFSET + mtz_hdr.dw_offset + mtz_hdr.dw_num * MTZ_DW_ENTRY > resource_size(&res) ||
-	    bin_end > resource_size(&res)) {
+	    dw_end > resource_size(&res) || bin_end > resource_size(&res)) {
 		pr_err("metazone: bad header (magic 0x%x), not loaded by the LK?\n", mtz_hdr.magic);
 		memunmap(mtz_base);
 		mtz_base = NULL;
