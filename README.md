@@ -12,6 +12,8 @@ The repository is therefore being treated as the **kernel reconstruction base**,
 
 No claim is made that the current tree is an original AutoChips AC8257 source release.
 
+CPU-Z Validation @2.3Ghz: https://valid.x86.fr/a/rmc1y9
+
 **Progress (stage 1, stock ROM boot):** a kernel built from this tree boots on the UJC201 and runs the stock
 Android 9 userspace (init, services, GPU, Trusty, `system_server`, display HAL). USB/adb work, `/data` mounts and **Android shows its
 UI on the panel**; the individual functions are being checked next.
