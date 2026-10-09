@@ -168,6 +168,10 @@ numbers fixed in 2t), ttyS2/ttyS3 still fail (-2, bus clocks, fixed in 2t). The 
 stays at the logo with resets now and then, like the failed recovery tries (no stock kernel before it,
 see RECONSTRUCTION_STATUS.md); way back: SP Flash Tool, download only, stock `boot.img` in boot.
 
+Stage 2u images (`recovery_ac8257_stage2u.img`, `boot_ac8257_stage2u.img`, same settings): the boot
+partition image no longer stops in the LK (SPM/SCP reservations moved out of the device tree, see
+RECONSTRUCTION_STATUS.md). What a normal boot does next (ARM2 display, USB) is to test.
+
 Stage 2t image (`recovery_ac8257_stage2t.img`, recovery partition only, same settings): UART2/3 bus
 clocks, spidev bus numbers. On the unit: `spidev0.0`-`5.0`, ttyS2/ttyS3 registered (0x11004000 IRQ
 228, 0x11005000 IRQ 229); MCU on ttyS1 unaffected (illumination, ACC, handbrake, subwoofer output

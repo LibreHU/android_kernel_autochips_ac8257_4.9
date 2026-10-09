@@ -258,6 +258,8 @@ Stage 1p findings:
   `rgx.fw.22.68.54.30`; `m1.9ED4971894` in the configuration is only a name). Stage 2k: the SPM
   (0x77ff0000, 64 KiB) and SCP (0x9f900000, 6 MiB) regions the LK reserves only in a normal boot are now
   reserved by the device tree (no-map), so a recovery-partition boot no longer hands them to Linux.
+  This broke the normal boot (found in stage 2u, see below): the LK of a normal boot refuses
+  reservations that overlap its own. Since 2u the kernel removes them only on the `recovery` flag.
 - Stage 2l: **metazone driver** (`drivers/misc/autochips/metazone.c`, `CONFIG_ATC_METAZONE`), from the
   stock disassembly (`MetaZone_*`, `MTZ_IOControl`, `mtz_ioctl`) and a dump of the unit's `metazone`
   partition (`mmcblk0p34`). The LK loads the partition into `autochips,metazone` (0x60700000, 1 MiB) in
@@ -424,6 +426,14 @@ Stage 1p findings:
   wipe it). Same pattern as the recovery tries that fail when no stock kernel ran before them (stage
   2m): in a boot-partition boot the stock kernel never runs first. To find before any boot-partition
   image is worth trying again.
+  Found in the expdb records of those tries (stage 2u): the LK loads the boot image, SCP and SPM,
+  decompresses the kernel, then stops on `reserved_memory_conflict_check:1167 failed i:8` /
+  `reserved_memory_conflict_check fatal error keep while (1)`, and its watchdog resets the unit
+  (`lk_wdt_dump(): watchdog timeout in LK`, `rc_wdt_status = 5, rc_exp_type = 6`). The kernel never
+  ran. Cause: the SPM/SCP reserved-memory nodes of stage 2k overlap the regions the LK reserves itself
+  in a normal boot (stage 2e, before 2k, did start from the boot partition). 2u drops the nodes and
+  removes the two regions from memblock only when the command line has `recovery`
+  (`drivers/misc/autochips/recovery_mem.c`).
 - Stage 2t on the unit (recovery): `spidev0.0`-`spidev5.0` (minors 0-5, as on the stock unit),
   `11004000.serial: ttyS2` (IRQ 228) and `11005000.serial: ttyS3` (IRQ 229), ST16650V2 like ttyS0/1.
   MCU traffic on ttyS1 still fine (illumination, ACC, handbrake and subwoofer switching seen through
