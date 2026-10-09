@@ -434,6 +434,10 @@ Stage 1p findings:
   in a normal boot (stage 2e, before 2k, did start from the boot partition). 2u drops the nodes and
   removes the two regions from memblock only when the command line has `recovery`
   (`drivers/misc/autochips/recovery_mem.c`).
+  On the unit (stage 2u, boot partition): the kernel now starts, as in 2e: artefacts on the display
+  (green lines) and no USB (no adb). Next, `boot_ac8257_stage2u_oneshot.img`
+  (`ac8257_bringup.oneshot=1 ac8257_panic_secs=120`): one normal boot, then a restart into the
+  recovery test kernel with the normal-mode log kept in pstore.
 - Stage 2t on the unit (recovery): `spidev0.0`-`spidev5.0` (minors 0-5, as on the stock unit),
   `11004000.serial: ttyS2` (IRQ 228) and `11005000.serial: ttyS3` (IRQ 229), ST16650V2 like ttyS0/1.
   MCU traffic on ttyS1 still fine (illumination, ACC, handbrake and subwoofer switching seen through

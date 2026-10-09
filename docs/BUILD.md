@@ -170,7 +170,10 @@ see RECONSTRUCTION_STATUS.md); way back: SP Flash Tool, download only, stock `bo
 
 Stage 2u images (`recovery_ac8257_stage2u.img`, `boot_ac8257_stage2u.img`, same settings): the boot
 partition image no longer stops in the LK (SPM/SCP reservations moved out of the device tree, see
-RECONSTRUCTION_STATUS.md). What a normal boot does next (ARM2 display, USB) is to test.
+RECONSTRUCTION_STATUS.md). On the unit the kernel starts from the boot partition, with artefacts (green
+lines) and no USB. `boot_ac8257_stage2u_oneshot.img` adds `ac8257_bringup.oneshot=1
+ac8257_panic_secs=120`: 120 s of normal boot, then a restart into the recovery partition (keep the 2u
+recovery image there) with the log of the normal boot in `/proc/last_kmsg` and `/sys/fs/pstore`.
 
 Stage 2t image (`recovery_ac8257_stage2t.img`, recovery partition only, same settings): UART2/3 bus
 clocks, spidev bus numbers. On the unit: `spidev0.0`-`5.0`, ttyS2/ttyS3 registered (0x11004000 IRQ

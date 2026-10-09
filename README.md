@@ -60,7 +60,7 @@ driver loads but nobody has checked the function yet.
    - [x] Jancar `/dev/gpios_ioctl`
    - [x] Memory corruption above 4 GiB (artefacts, crashes): ION buffers below 4 GiB (stage 2o)
    - [ ] Display shared with ARM2 (fast display / AVM hand-over of the stock kernel) for the normal boot
-   - [ ] Boot retries from the recovery partition (cold resets before Android); boot partition: stage 2s stopped in the LK on overlapping reserved memory, fixed in 2u (to test)
+   - [ ] Boot retries from the recovery partition (cold resets before Android); boot partition: stage 2s stopped in the LK on overlapping reserved memory, fixed in 2u (the kernel starts; artefacts, no USB yet)
    - [x] Display rotation: metazone driver (`/dev/mtz`, stage 2l, works), read by `rotationd` to set `persist.sf.hwrotation`
      (workaround confirmed on the unit: `su -c "setprop persist.sf.hwrotation 90 && stop && start"`)
    - [x] Backlight control: adjustable since stage 2e (recovery-partition boot); to confirm in a normal boot
@@ -75,7 +75,7 @@ driver loads but nobody has checked the function yet.
    - [ ] Suspend / resume
 3. **Stage 3, daily use**
    - [ ] Remove the bring-up options (early pstore console, timed panic) from the release configuration
-   - [ ] Install in the boot partition instead of the recovery test method (stage 2s stopped in the LK on reserved memory; stage 2u to test)
+   - [ ] Install in the boot partition instead of the recovery test method (stage 2u starts: artefacts, no USB, ARM2 hand-over missing)
    - [ ] Release images from the GitHub Actions build
    - [x] CPU governors (interactive default, schedutil, conservative...); CPU/GPU overclock tables (CPU up to
      2.3 GHz, GPU 300-730 MHz), capped at the stock maxima by default, settable from Kernel Adiutor /
