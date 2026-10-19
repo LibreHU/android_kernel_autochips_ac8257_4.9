@@ -15,6 +15,10 @@
 | **`dtc` et GCC hote >= 10** | `scripts/dtc` definit `yylloc` deux fois (lexer et parser) ; GCC 10+ (`-fno-common` par defaut) refuse l'edition de liens | `HOSTCC="gcc -fcommon"` (la correction amont « Remove redundant YYLOC global declaration » est dans `reverse-engineering`, pas ici) |
 | **Variables de `kenv.mk`** | l'environnement Android d'Autochips passe `ATC_*` a `make` ; seule `ATC_DISABLE_BATTERY_CHARGER` est lue par l'arbre (refroidissement batterie) | `ATC_DISABLE_BATTERY_CHARGER=yes` (l'unite n'a pas de batterie) ; les autres donnent des avertissements Kconfig sans effet |
 | **Compilateur** | `kenv.mk` prevoit GCC 4.9 AOSP, clang en option ; le noyau stock #72 a ete compile par **clang 6.0.2 (r316199, `clang-4691093`)** avec les binutils GCC 4.9. Avec GCC 4.9 seul, le build s'arrete sur des avertissements que clang ne donne pas (`-Werror` : `maybe-uninitialized` dans `kernel/compat.c`, format dans `avin_mod.c`) | AOSP `clang-4691093` (prebuilts Android 9) + binutils GCC 4.9 : `CC=clang CLANG_TRIPLE=aarch64-linux-gnu-` ; donne aussi des CRC de symboles comparables a ceux du stock (modules vendor) |
+| **Liens symboliques** | le paquet a ete fait sous Windows : les 27 liens de l'arbre (dont `arch/arm64/boot/dts/include/dt-bindings`) y sont des petits fichiers texte contenant leur cible | remis en vrais liens dans `main` (`autochips-gpl` garde le paquet tel quel) |
+| **Bits d'execution** | perdus pour les 3 binaires precompiles `scripts/dtc/dtc_overlay`, `scripts/dtc/ufdt_apply_overlay`, `scripts/mkimage` (« Permission denied ») | remis (`100755`) dans `main` |
+| **`ac8257_reserved_memory.dtsi`** | `ac8257.dts` inclut `<generated/ac8257_reserved_memory.dtsi>`, produit par le build Android d'Autochips (`device/autochips/common/ParseReservedMemory/generate_rsv.py`, absent du paquet) a partir de `ac8257_reserved_memory.xls` ; la table de Jancar differe de ce xls (mdp 15 Mo au lieu de 8, arm2-backcar-ui 5 Mo au lieu de 4) | `arch/arm64/boot/dts/generated/ac8257_reserved_memory.dtsi` = noeud `/reserved-memory` des noyaux stock #25 et #72 (identiques), adresses utilisees par le LK et l'ARM2 ; verifie : le DTB obtenu a le meme noeud que le stock |
+| **`libtinfo5`** | le clang AOSP `clang-4691093` est lie a `libtinfo.so.5`, absente d'Ubuntu 22.04 par defaut | paquet `libtinfo5` |
 | **defconfig** | `ac8257_demo_defconfig` d'Autochips vise une carte de demonstration (ecran 720 x 1280, capteur imx135, audio ATC, `ATC_ARM2_LOG_BUFFER` actif) et ne donne pas la config de l'unite | `ac8257_ujc201_defconfig` = **config complete du noyau stock #72** (IKCONFIG), ajustee seulement la ou des sources manquent : overlay `ac8257_demo` au lieu de `UJC201_64`, capteurs sans `tp9963`, sans `JANCAR_*`, `TOUCHSCREEN_FTS*`, `TOUCHSCREEN_SYNA_TCM2*` |
 
 Le device tree ajoute au noyau est `mediatek/ac8257` (source Autochips) ; l'overlay `UJC201_64` du stock manque,
@@ -25,7 +29,7 @@ decompilee, identique octet pour octet au stock).
 ```
 git clone --depth 1 -b lineage-17.1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc49
 export PATH=$PWD/gcc49/bin:$PATH
-# python2 joignable en /usr/bin/python (DrvGen.py)
+# python2 joignable en /usr/bin/python (DrvGen.py) ; clang-4691093 a besoin de libtinfo5
 M="O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- ATC_DISABLE_BATTERY_CHARGER=yes"
 make $M HOSTCC="gcc -fcommon" ac8257_ujc201_defconfig
 make $M HOSTCC="gcc -fcommon" -j$(nproc) Image.gz-dtb
