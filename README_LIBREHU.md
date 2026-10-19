@@ -10,9 +10,12 @@
 `main` part de `autochips-gpl` (meme historique : `git merge autochips-gpl` suffit apres un nouvel envoi). Ajoute pour
 l'instant :
 - CI (`.github/workflows/build.yml`, artefacts seulement) et outils d'image (`tools/ac8257/repack_boot.py`, gabarit de
-  boot et vbmeta du recovery stock), repris de `reverse-engineering` ; compilateur AOSP GCC 4.9 (prevu par `kenv.mk`,
-  le stock a ete compile par clang 6.0.2) et `ATC_DISABLE_BATTERY_CHARGER=yes`, seule variable de `kenv.mk` lue par
-  l'arbre ;
+  boot et vbmeta du recovery stock), repris de `reverse-engineering` ; compilateur du stock (AOSP clang 6.0.2
+  `clang-4691093` + binutils GCC 4.9) et les variables de `kenv.mk` du stock (`ATC_DISABLE_BATTERY_CHARGER=yes`,
+  `ATC_FASTDISP_VERSION=2.0`) ;
+- ce que le paquet a perdu ou ne contient pas : les 27 liens symboliques et 3 bits d'execution (paquet fait sous
+  Windows), les fichiers generes par le build Android `arch/arm64/boot/dts/generated/ac8257_reserved_memory.dtsi` et
+  `drivers/mmc/host/mediatek/ComboA/ac8257/atc_storage_partition.h`, repris du noyau stock (detail : `docs/BUILD.md`) ;
 - `arch/arm64/configs/ac8257_ujc201_defconfig` = config complete du noyau stock #72 (IKCONFIG de l'image), ajustee
   seulement la ou le paquet manque de sources : overlay `mediatek/ac8257_demo` au lieu de `UJC201_64` (l'unite garde sa
   partition `dtbo` stock), capteurs sans `tp9963_yuv`, sans `JANCAR_*`, `TOUCHSCREEN_FTS*`, `TOUCHSCREEN_SYNA_TCM2*`.

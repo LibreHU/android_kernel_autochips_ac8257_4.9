@@ -13,7 +13,8 @@
 |---|---|---|
 | **Python 2** | `tools/dct/DrvGen.py` genere `cust.dtsi` a partir du `.dws` ; script Python 2 lance par `#! /usr/bin/python` | runner `ubuntu-22.04`, paquet `python2`, lien `/usr/bin/python` |
 | **`dtc` et GCC hote >= 10** | `scripts/dtc` definit `yylloc` deux fois (lexer et parser) ; GCC 10+ (`-fno-common` par defaut) refuse l'edition de liens | `HOSTCC="gcc -fcommon"` (la correction amont « Remove redundant YYLOC global declaration » est dans `reverse-engineering`, pas ici) |
-| **Variables de `kenv.mk`** | l'environnement Android d'Autochips passe `ATC_*` a `make` ; seule `ATC_DISABLE_BATTERY_CHARGER` est lue par l'arbre (refroidissement batterie) | `ATC_DISABLE_BATTERY_CHARGER=yes` (l'unite n'a pas de batterie) ; les autres donnent des avertissements Kconfig sans effet |
+| **Variables de `kenv.mk`** | l'environnement Android d'Autochips passe des variables a `make`, lues par Kconfig (`option env=`) : elles ne sont pas dans la defconfig et les options qui en dependent disparaissent sans elles | valeurs deduites de la config stock : `ATC_DISABLE_BATTERY_CHARGER=yes` (`ATC_DISABLE_BAT_CHAGE=y`, pas de batterie) et `ATC_FASTDISP_VERSION=2.0` (`ATC_FASTDISP_VERSION=y`, affichage rapide 2.0 ; sans elle `primary_display.c` compile un bloc fastdisp 1.0 qui ne compile pas) ; `ENABLE_AB_UPDATE`, `ATC_MACRO_VTS`, `ATC_MULTI_DISP_SUPPORT_ENABLE` restent vides (leurs options sont absentes du stock) |
+| **`atc_storage_partition.h`** | table des partitions eMMC generee par le build Android (sortie passee par `ATC_LINUXINCLUDE`), absente du paquet ; lue par `sd.c` pour `CONFIG_MMC_ATC_SW_WP` (protection logicielle des partitions « RO », active seulement par debugfs) | `drivers/mmc/host/mediatek/ComboA/ac8257/atc_storage_partition.h` = table compilee dans le noyau stock #72 (41 partitions, nom, debut, taille, RO/RW) |
 | **Compilateur** | `kenv.mk` prevoit GCC 4.9 AOSP, clang en option ; le noyau stock #72 a ete compile par **clang 6.0.2 (r316199, `clang-4691093`)** avec les binutils GCC 4.9. Avec GCC 4.9 seul, le build s'arrete sur des avertissements que clang ne donne pas (`-Werror` : `maybe-uninitialized` dans `kernel/compat.c`, format dans `avin_mod.c`) | AOSP `clang-4691093` (prebuilts Android 9) + binutils GCC 4.9 : `CC=clang CLANG_TRIPLE=aarch64-linux-gnu-` ; donne aussi des CRC de symboles comparables a ceux du stock (modules vendor) |
 | **Liens symboliques** | le paquet a ete fait sous Windows : les 27 liens de l'arbre (dont `arch/arm64/boot/dts/include/dt-bindings`) y sont des petits fichiers texte contenant leur cible | remis en vrais liens dans `main` (`autochips-gpl` garde le paquet tel quel) |
 | **Bits d'execution** | perdus pour les 3 binaires precompiles `scripts/dtc/dtc_overlay`, `scripts/dtc/ufdt_apply_overlay`, `scripts/mkimage` (« Permission denied ») | remis (`100755`) dans `main` |
@@ -30,7 +31,7 @@ decompilee, identique octet pour octet au stock).
 git clone --depth 1 -b lineage-17.1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc49
 export PATH=$PWD/gcc49/bin:$PATH
 # python2 joignable en /usr/bin/python (DrvGen.py) ; clang-4691093 a besoin de libtinfo5
-M="O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- ATC_DISABLE_BATTERY_CHARGER=yes"
+M="O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0"
 make $M HOSTCC="gcc -fcommon" ac8257_ujc201_defconfig
 make $M HOSTCC="gcc -fcommon" -j$(nproc) Image.gz-dtb
 ```
