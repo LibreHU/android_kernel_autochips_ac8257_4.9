@@ -64,11 +64,27 @@ jobs:
           git checkout -q FETCH_HEAD
           echo "$RUNNER_TEMP/gcc49/bin" >> "$GITHUB_PATH"
 
+      - name: Toolchain (AOSP clang 6.0.2, clang-4691093, as the stock kernel)
+        run: |
+          # The stock UJC201 kernel #72 was built with AOSP clang 6.0.2 (r316199, clang-4691093) and the GCC 4.9
+          # binutils: same compiler here, so the AutoChips sources build as they did for Jancar (GCC 4.9 stops on
+          # warnings clang does not give) and the symbol CRCs can match the stock vendor modules.
+          mkdir -p "$RUNNER_TEMP/clang"
+          cd "$RUNNER_TEMP/clang"
+          for ref in refs/tags/android-9.0.0_r61 refs/tags/android-9.0.0_r1 refs/heads/pie-release; do
+            url="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/$ref/clang-4691093.tar.gz"
+            if curl -fsSL --retry 3 "$url" -o clang.tar.gz && tar xzf clang.tar.gz; then echo "clang from $ref"; break; fi
+          done
+          ./bin/clang --version | tee /dev/stderr | grep -q 4691093
+          echo "$RUNNER_TEMP/clang/bin" >> "$GITHUB_PATH"
+
       - name: Configure
-        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- HOSTCC="gcc -fcommon" $ATC_MAKE "$DEFCONFIG"
+        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE "$DEFCONFIG"
 
       - name: Build Image.gz-dtb
-        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" Image.gz-dtb 2>&1 | tee build.log
+        run: |
+          set -o pipefail
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" Image.gz-dtb 2>&1 | tee build.log
 
       - name: Pack images
         env:

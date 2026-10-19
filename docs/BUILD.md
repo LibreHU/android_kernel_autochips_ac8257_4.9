@@ -14,7 +14,7 @@
 | **Python 2** | `tools/dct/DrvGen.py` genere `cust.dtsi` a partir du `.dws` ; script Python 2 lance par `#! /usr/bin/python` | runner `ubuntu-22.04`, paquet `python2`, lien `/usr/bin/python` |
 | **`dtc` et GCC hote >= 10** | `scripts/dtc` definit `yylloc` deux fois (lexer et parser) ; GCC 10+ (`-fno-common` par defaut) refuse l'edition de liens | `HOSTCC="gcc -fcommon"` (la correction amont « Remove redundant YYLOC global declaration » est dans `reverse-engineering`, pas ici) |
 | **Variables de `kenv.mk`** | l'environnement Android d'Autochips passe `ATC_*` a `make` ; seule `ATC_DISABLE_BATTERY_CHARGER` est lue par l'arbre (refroidissement batterie) | `ATC_DISABLE_BATTERY_CHARGER=yes` (l'unite n'a pas de batterie) ; les autres donnent des avertissements Kconfig sans effet |
-| **Compilateur** | `kenv.mk` prevoit GCC 4.9 AOSP, clang en option ; le noyau stock #72 a ete compile par clang 6.0.2 (r316199) | GCC 4.9 AOSP (`aarch64-linux-android-4.9`, miroir LineageOS) |
+| **Compilateur** | `kenv.mk` prevoit GCC 4.9 AOSP, clang en option ; le noyau stock #72 a ete compile par **clang 6.0.2 (r316199, `clang-4691093`)** avec les binutils GCC 4.9. Avec GCC 4.9 seul, le build s'arrete sur des avertissements que clang ne donne pas (`-Werror` : `maybe-uninitialized` dans `kernel/compat.c`, format dans `avin_mod.c`) | AOSP `clang-4691093` (prebuilts Android 9) + binutils GCC 4.9 : `CC=clang CLANG_TRIPLE=aarch64-linux-gnu-` ; donne aussi des CRC de symboles comparables a ceux du stock (modules vendor) |
 | **defconfig** | `ac8257_demo_defconfig` d'Autochips vise une carte de demonstration (ecran 720 x 1280, capteur imx135, audio ATC, `ATC_ARM2_LOG_BUFFER` actif) et ne donne pas la config de l'unite | `ac8257_ujc201_defconfig` = **config complete du noyau stock #72** (IKCONFIG), ajustee seulement la ou des sources manquent : overlay `ac8257_demo` au lieu de `UJC201_64`, capteurs sans `tp9963`, sans `JANCAR_*`, `TOUCHSCREEN_FTS*`, `TOUCHSCREEN_SYNA_TCM2*` |
 
 Le device tree ajoute au noyau est `mediatek/ac8257` (source Autochips) ; l'overlay `UJC201_64` du stock manque,
@@ -30,8 +30,8 @@ M="O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- ATC_DISABLE_BATTERY_CHA
 make $M HOSTCC="gcc -fcommon" ac8257_ujc201_defconfig
 make $M HOSTCC="gcc -fcommon" -j$(nproc) Image.gz-dtb
 ```
-Avec clang (comme le stock, a essayer pour que les modules vendor du stock se chargent sans export de CRC) :
-ajouter `CC=clang CLANG_TRIPLE=aarch64-linux-gnu-`.
+Le compilateur du stock est clang (`clang-4691093`, dans `prebuilts/clang/host/linux-x86` d'Android 9) : ajouter
+`CC=clang CLANG_TRIPLE=aarch64-linux-gnu-` avec ce clang dans le `PATH` (GCC 4.9 seul s'arrete sur des avertissements).
 
 ## Tester sur l'unite
 Meme methode que `reverse-engineering` (`docs/BUILD.md` de cette branche, details et pieges) :
