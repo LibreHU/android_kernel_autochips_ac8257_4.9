@@ -45,3 +45,10 @@ comparison only, nothing built from it yet): `docs/kernel_gpl.md` of
 - Not in it: the Jancar drivers (`JANCAR_*`), the `tp9963` sensor, the `UJC201_64` overlay, and the out-of-tree
   vendor modules (`wmt_drv`, `bt_drv`, `gps_drv`, `fmradio_drv`, `wmt_chrdev_wifi`, `wlan_drv_gen4m`, `fpsgo`);
   requested again from the distributor.
+- Not in it either: Jancar's edits of existing files. Stock strings absent from the package sources: LCM
+  `jac_lcm_get_mipi_params_form_MetaZone`, `jac_detect_format_from_metazone`, `jac_push_table`,
+  `jac_set_lcd_power_kthread`; lowmemorykiller `jump kill 'jancar.services'` / `/jancar/config/ivi-priapps.ini`;
+  IR keymap `rc-jancar`; `show_jancar_board_id`; `gpios_ioctl` (`gpio_get_mode` / `gpio_set_mode`); Sitronix touch.
+- Complete otherwise: all 1 137 source paths embedded in the stock image are in the package except the 14 touch
+  files; of the 9 674 stock exports, only those of the drivers above have no `EXPORT_SYMBOL` in it. GPU
+  `m1.10ED5130912` matches the stock DDK `1.10@5130912`.
