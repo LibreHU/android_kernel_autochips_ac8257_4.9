@@ -144,8 +144,9 @@ The stock kernel Device Tree identifies the target as `AC8257`, and the target k
 - The public AC8257 device-tree/TWRP repositories are used as device-specific structural references.
 - The stock UJC201 firmware remains the authoritative reference for the actual target hardware.
 - The official AutoChips GPL package sent by SIXWIN / Jancar on 19/10/2026 (Linux 4.9.117, AutoChips reference BSP
-  without the Jancar additions) is kept untouched on the `autochips-gpl` branch; `ac8257-integration` is where it is
-  merged with this reconstruction (see `docs/ujc201/kernel_gpl.md`).
+  without the Jancar additions) is kept untouched on the `autochips-gpl` branch. This reconstruction is the
+  `reverse-engineering` branch; the main working branch, `main`, is the AutoChips kernel plus the changes taken from
+  here (see `README_LIBREHU.md` on `main` and `docs/ujc201/kernel_gpl.md`).
 
 ## Directory documentation
 

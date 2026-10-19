@@ -30,11 +30,11 @@ That repository has not been treated as publicly accessible source.
 
 Answer to the GPLv2 request for the UJC201: `kernel-4.9.tgz` (156 599 414 bytes, SHA-256
 `f0303951aed4ed65eef9da7fdaf0718c50d019f5c956429dc4cdb5cb7d83c577`), shared through OneDrive. Analysis (text
-comparison only, nothing built from it yet): `docs/kernel_gpl.md` of
-[docs/ujc201/kernel_gpl.md](ujc201/kernel_gpl.md). The package itself is the
-[`autochips-gpl`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/autochips-gpl) branch; the
-work merging it with this reconstruction goes on
-[`ac8257-integration`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/ac8257-integration).
+comparison only): [docs/ujc201/kernel_gpl.md](ujc201/kernel_gpl.md). The package itself is the
+[`autochips-gpl`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/autochips-gpl) branch; this
+reconstruction is `reverse-engineering`; the main working branch is
+[`main`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/main) (AutoChips kernel + the changes
+ported from `reverse-engineering`).
 
 - Linux 4.9.117, AutoChips reference BSP: `ac8257_{car,demo,evb,jac}` defconfigs, `ac8257*.dts`,
   `drivers/misc/autochips/` (`metazone`, `tvd`, `avin`, `backcar`, `di`, `nr`, `wch`, `dualarm`, `arm2_log`,
