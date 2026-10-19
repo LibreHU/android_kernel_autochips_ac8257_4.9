@@ -31,4 +31,8 @@ Une ligne par groupe repris (commit de `main`, CI, test sur l'unite) :
 
 | Groupe | Commit `main` | CI | Test unite |
 |---|---|---|---|
-| Outils d'image et CI | `a70448108`, `ba5b44fd2`, `26bbe7fbc` | en cours | — |
+| Outils d'image et CI | `a70448108`, `ba5b44fd2`, `26bbe7fbc` | OK (run 40) | — |
+| defconfig de l'unite (config stock #72) | `a35f816ad` | OK (run 40) | non teste |
+| Compilateur du stock (clang `4691093`, `libtinfo5`) | `98b34d316`, `0b1bd57c7` | OK (run 40) | — |
+| Paquet Windows : 27 liens, 3 bits d'execution | `069a4cf4d`, `65918ba8b` | OK (run 40) | — |
+| Fichiers generes par le build Android : memoire reservee, table des partitions ; `ATC_FASTDISP_VERSION=2.0` | `65918ba8b`, `710d83310` | OK (run 40) | non teste |

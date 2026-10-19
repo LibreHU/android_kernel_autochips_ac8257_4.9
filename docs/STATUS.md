@@ -5,7 +5,7 @@ Aucun test sur l'unite pour l'instant. Colonne « reverse-engineering » : etat 
 
 | Fonction | `main` (Autochips) | `reverse-engineering` | Notes pour `main` |
 |---|---|---|---|
-| Compilation CI | en cours de mise au point | OK | Python 2, `-fcommon`, clang `4691093`, liens, bits d'execution, memoire reservee : voir [BUILD.md](BUILD.md) |
+| Compilation CI | **OK** (run 40, `710d83310`) | OK | `Image.gz-dtb` 9,7 Mo (stock 10,3 Mo : pilotes Jancar absents) ; mises au point de l'environnement : [BUILD.md](BUILD.md) |
 | Demarrage jusqu'a l'interface Android | non teste | OK | DT `ac8257` d'Autochips au lieu du DT stock decompile |
 | eMMC, `/data` (options `autoformat`...) | non teste | OK | options natives ici (`fs/ext4/super.c`) |
 | GPU PowerVR GE8300 | non teste | OK (tampons sous 4 Go) | pilote `m1.10ED5130912` natif, meme DDK que le stock |
