@@ -1,0 +1,1 @@
+obj-y += ub964_yuv_sensor.o

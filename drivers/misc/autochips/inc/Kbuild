@@ -1,0 +1,4 @@
+header-y += metazone/
+header-y += fast_display_header.h \
+			di_drv.h
+

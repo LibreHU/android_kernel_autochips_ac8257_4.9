@@ -1,0 +1,5 @@
+config CLI_AUTOCHIPS
+	tristate "Commands Line Interface Driver"
+	default y
+	---help---
+	  A user interface for AutoChips chip validation

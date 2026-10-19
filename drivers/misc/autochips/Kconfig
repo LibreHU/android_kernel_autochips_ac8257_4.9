@@ -1,0 +1,78 @@
+
+comment "ATC Misc config for 3.18 kernel"
+
+
+menu "ATC Misc config"
+
+menuconfig ATC_SOLUTION
+	bool "Autochips Properitary Configuration"
+        default y
+	help
+	  Check this to enable Autochips properity configuration.
+
+config ATC_LIB_OSAL
+	tristate "ATC OS interface Driver"
+	default y
+	help
+	  This is basic driver. If unsure say Y.
+
+config ATC_BACKCAR
+	bool "Enable Autochips Backcar feature"
+	depends on ATC_AVIN
+	default y
+	help
+	   Check this to enable autochips drivers configuration which is related to backcar.
+
+config ATC_WCH
+	tristate "ATC write channel driver"
+	depends on ATC_AVIN
+	default y
+	help
+	  ATC write channel driver.
+
+config ATC_NR
+	tristate "ATC noise reduction Driver"
+	depends on ATC_AVIN
+	default y
+	help
+	  This is noise reduction driver. If unsure say Y.
+
+config ATC_DI
+	tristate "ATC De-Interlance Driver"
+	depends on ATC_AVIN
+	default y
+	help
+	  ATC De-Interlance Driver.
+
+config ATC_AVIN
+	bool "ATC v4l2 virtual driver"
+	depends on VIDEO_V4L2 && VIDEOBUF2_CORE
+	default y
+	help
+	   Used for control tvd/wch/di/nr module
+
+config ATC_TVD
+	bool "ATC support tvd hardware which decode analog signal"
+	depends on ATC_AVIN
+	default y
+	help
+	   Used for decode analog signal in order to achieve backcar function
+
+config ATC_BOOT_STATE
+	bool "Enable ATC BOOT STATE Driver"
+	default y
+	help
+	  Show Boot state.
+
+config ATC_METAZONE
+	tristate "Autochips Metazone Driver"
+	default y
+	help
+	  Say Y here for supporting metazone driver.
+
+config ATC_ARM2_LOG_BUFFER
+	bool "Autochips Arm2 Log buffer manage driver."
+	default y
+	help
+	  Say Y for supporting arm2 log buffer
+endmenu

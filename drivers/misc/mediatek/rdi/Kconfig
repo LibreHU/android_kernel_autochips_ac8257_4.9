@@ -1,0 +1,5 @@
+config MTK_RDI
+	bool "Enable MTK RDI Driver"
+	default y
+	help
+	  MTK RDI Driver

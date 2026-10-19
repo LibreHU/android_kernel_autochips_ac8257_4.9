@@ -1,0 +1,1 @@
+obj-y += rn6752m_yuv_sensor.o

@@ -1,0 +1,1 @@
+obj-y += tp2854_yuv_sensor.o

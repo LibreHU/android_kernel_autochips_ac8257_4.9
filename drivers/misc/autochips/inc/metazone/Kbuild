@@ -1,0 +1,3 @@
+header-y += metazone.h
+header-y += metazone_inter.h
+header-y += metazone_ioctl.h

@@ -1,0 +1,36 @@
+config PINCTRL_MTK
+	bool
+	depends on OF
+	select PINMUX
+	select GENERIC_PINCONF
+	select GPIOLIB
+	select OF_GPIO
+
+config PINCTRL_AC8257
+	bool "Mediatek AC8257 pin control"
+	default n
+	depends on (!ARCH_MEDIATEK) && MACH_AC8257
+	select PINCTRL_MTK
+	select PINCTRL_MTK_NO_UPSTREAM
+	select MTK_EINT_MULTI_TRIGGER_DESIGN
+
+config MTK_EINT_MULTI_TRIGGER_DESIGN
+	bool "Mediatek EINT multi-trigger design"
+	depends on PINCTRL_MTK
+	default n
+	help
+	  On MTK EINT design, a GPIO pin is connected to 2 EINT pin  in order to
+	  save pins for assignments. Which EINT pin is actually occupied by a GPIO
+	  is described in *pins and it is decided in run time.
+
+config PINCTRL_MTK_NO_UPSTREAM
+	bool "Mediatek pin control"
+	depends on OF
+	select PINCTRL_MTK
+	help
+	  Say yes here to enable support for MediaTek pinctrl debug command.
+	  It can provide gpio status debug shell command.
+	  We also can use these shell command to change gpio status.
+	  It is common for all ICs.
+	  We can use the command to debug gpio status issues.
+	  we also can use it in user space.

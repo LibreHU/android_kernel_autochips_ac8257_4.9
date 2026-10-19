@@ -1,0 +1,18 @@
+#
+# MediaTek SoC drivers
+#
+config COMMON_CLK_MEDIATEK
+	bool
+	---help---
+	  Mediatek SoCs' clock support.
+
+config COMMON_CLK_AC8257
+	bool "Clock driver for Mediatek AC8257"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK
+	default y if MACH_AC8257 && !MTK_CLKMGR && !FPGA_EARLY_PORTING
+	---help---
+	  This driver supports Mediatek AC8257 clocks.
+	  Use the config to support CCF on AC8257,
+	  instead of old clkmgr architecture.
+	  AC8257 default will use CCF.
