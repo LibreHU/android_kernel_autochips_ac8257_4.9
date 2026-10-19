@@ -52,6 +52,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends bc bison flex libssl-dev libelf-dev cpio
           # tools/dct/DrvGen.py (AutoChips cust.dtsi generator) is Python 2, run through #! /usr/bin/python
           sudo apt-get install -y --no-install-recommends python2
+          # AOSP clang-4691093 is linked against libtinfo.so.5
+          sudo apt-get install -y --no-install-recommends libtinfo5
           sudo ln -sf /usr/bin/python2 /usr/bin/python
           /usr/bin/python --version
 
