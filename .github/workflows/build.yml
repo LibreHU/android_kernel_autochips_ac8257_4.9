@@ -29,6 +29,8 @@ env:
   DEFCONFIG: ac8257_ujc201_defconfig
   # Make variable of the AutoChips build environment (kenv.mk); the only one the tree reads
   ATC_MAKE: ATC_DISABLE_BATTERY_CHARGER=yes
+  # HOSTCC with -fcommon: the AutoChips scripts/dtc defines yylloc twice, which host GCC >= 10 refuses at link time
+  # (fixed upstream by "scripts/dtc: Remove redundant YYLOC global declaration", present on reverse-engineering)
 
 jobs:
   build:
@@ -63,10 +65,10 @@ jobs:
           echo "$RUNNER_TEMP/gcc49/bin" >> "$GITHUB_PATH"
 
       - name: Configure
-        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- $ATC_MAKE "$DEFCONFIG"
+        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- HOSTCC="gcc -fcommon" $ATC_MAKE "$DEFCONFIG"
 
       - name: Build Image.gz-dtb
-        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- $ATC_MAKE -j"$(nproc)" Image.gz-dtb 2>&1 | tee build.log
+        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" Image.gz-dtb 2>&1 | tee build.log
 
       - name: Pack images
         env:
