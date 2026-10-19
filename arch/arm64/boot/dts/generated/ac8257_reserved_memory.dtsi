@@ -1,0 +1,140 @@
+/*
+ * LibreHU: reserved memory of the UJC201 (Jancar, AC8257).
+ *
+ * Autochips generates this file during the Android build from
+ * arch/arm64/boot/dts/mediatek/ac8257_reserved_memory.xls with
+ * device/autochips/common/ParseReservedMemory/generate_rsv.py, which is not in the GPL package.
+ * The values below are the /reserved-memory node of the stock kernels #25 and #72 (identical):
+ * the LK and the ARM2 firmware use these addresses. Jancar's table differs from the package's
+ * xls (mdp 15 MB instead of 8 MB, arm2-backcar-ui 5 MB instead of 4 MB). soter-shared-mem is
+ * left out like in the stock (CONFIG_MICROTRUST_TEE_SUPPORT is not set).
+ */
+
+/ {
+	reserved-memory {
+		#address-cells = <0x02>;
+		#size-cells = <0x02>;
+		ranges;
+
+		ram_console-reserved-memor@47c80000 {
+			compatible = "mediatek,ram_console";
+			reg = <0x00 0x47c80000 0x00 0x10000>;
+		};
+
+		pstore-reserved-memor@47c90000 {
+			compatible = "mediatek,pstore";
+			reg = <0x00 0x47c90000 0x00 0xe0000>;
+		};
+
+		minirdump-reserved-memory@47d70000 {
+			compatible = "mediatek,minirdump";
+			reg = <0x00 0x47d70000 0x00 0x10000>;
+		};
+
+		cvbs-ion-reserved-memory@5e000000 {
+			compatible = "autochips,cvbs-ion";
+			reg = <0x00 0x5e000000 0x00 0x2000000>;
+		};
+
+		arm2-reserved-memory@60000000 {
+			compatible = "autochips,arm2";
+			reg = <0x00 0x60000000 0x00 0x400000>;
+			no-map;
+		};
+
+		arm2-log-reserved-memory@60400000 {
+			compatible = "autochips,arm2-log";
+			reg = <0x00 0x60400000 0x00 0x300000>;
+			no-map;
+		};
+
+		metazone-reserved-memory@60700000 {
+			compatible = "autochips,metazone";
+			reg = <0x00 0x60700000 0x00 0x100000>;
+			no-map;
+		};
+
+		wch-di-reserved-memory@60800000 {
+			compatible = "autochips,wch-di";
+			reg = <0x00 0x60800000 0x00 0x400000>;
+			no-map;
+		};
+
+		wch-vdi-reserved-memory@60c00000 {
+			compatible = "autochips,wch-vdi";
+			reg = <0x00 0x60c00000 0x00 0x400000>;
+			no-map;
+		};
+
+		tvd-reserved-memory@61000000 {
+			compatible = "autochips,tvd";
+			reg = <0x00 0x61000000 0x00 0x400000>;
+			no-map;
+		};
+
+		nr-reserved-memory@61400000 {
+			compatible = "autochips,nr";
+			reg = <0x00 0x61400000 0x00 0x400000>;
+			no-map;
+		};
+
+		framebuffer-reserved-memory@61800000 {
+			compatible = "autochips,framebuffer";
+			reg = <0x00 0x61800000 0x00 0x3800000>;
+		};
+
+		dummy-reserved-memory@65000000 {
+			compatible = "autochips,dummy";
+			reg = <0x00 0x65000000 0x00 0x100000>;
+			no-map;
+		};
+
+		mdp-reserved-memory@65100000 {
+			compatible = "autochips,mdp";
+			reg = <0x00 0x65100000 0x00 0xf00000>;
+		};
+
+		isp-reserved-memory@76000000 {
+			compatible = "autochips,isp";
+			reg = <0x00 0x76000000 0x00 0x1400000>;
+		};
+
+		arm2-backcar-ui-reserved-memory@77400000 {
+			compatible = "autochips,arm2-backcar-ui";
+			reg = <0x00 0x77400000 0x00 0x500000>;
+		};
+
+		reserve-memory-sspm_share {
+			compatible = "mediatek,reserve-memory-sspm_share";
+			size = <0x00 0x510000>;
+			alignment = <0x00 0x10000>;
+			alloc-ranges = <0x00 0x40000000 0x00 0x60000000>;
+			no-map;
+			status = "okay";
+		};
+
+		reserve-memory-scp_share {
+			compatible = "mediatek,reserve-memory-scp_share";
+			size = <0x00 0x1000000>;
+			alignment = <0x00 0x1000000>;
+			alloc-ranges = <0x00 0x40000000 0x00 0x50000000>;
+			no-map;
+		};
+
+		consys-reserve-memory {
+			compatible = "mediatek,consys-reserve-memory";
+			size = <0x00 0x400000>;
+			alignment = <0x00 0x1000000>;
+			alloc-ranges = <0x00 0x40000000 0x00 0x80000000>;
+			no-map;
+		};
+
+		wifi-reserve-memory {
+			compatible = "mediatek,wifi-reserve-memory";
+			size = <0x00 0x300000>;
+			alignment = <0x00 0x1000000>;
+			alloc-ranges = <0x00 0x40000000 0x00 0x80000000>;
+			no-map;
+		};
+	};
+};
