@@ -36,6 +36,8 @@
 *.ll
 modules.builtin
 Module.symvers
+# LibreHU: stock kernel CRCs used by the build (tools/ac8257/stock-crcs.awk), not a build output
+!tools/ac8257/stock/Module.symvers
 *.dwo
 *.su
 *.c.[012]*.*
