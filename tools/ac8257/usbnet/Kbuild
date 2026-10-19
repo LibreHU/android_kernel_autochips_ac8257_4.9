@@ -1,0 +1,4 @@
+# LibreHU: USB network drivers missing from the stock AC8257 kernel (Linux 4.9.117+), as modules.
+obj-m := r8152.o rndis_host.o ipheth.o dm9601.o sr9700.o sr9800.o smsc95xx.o smsc75xx.o mcs7830.o ch9200.o \
+	lan78xx.o rtl8150.o pegasus.o cdc_eem.o
+rndis_host-y := rndis_host_main.o cdc_rndis_bind.o
