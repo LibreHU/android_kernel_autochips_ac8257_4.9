@@ -15,7 +15,7 @@
 | **`dtc` et GCC hote >= 10** | `scripts/dtc` definit `yylloc` deux fois (lexer et parser) ; GCC 10+ (`-fno-common` par defaut) refuse l'edition de liens | `HOSTCC="gcc -fcommon"` (la correction amont « Remove redundant YYLOC global declaration » est dans `reverse-engineering`, pas ici) |
 | **Variables de `kenv.mk`** | l'environnement Android d'Autochips passe `ATC_*` a `make` ; seule `ATC_DISABLE_BATTERY_CHARGER` est lue par l'arbre (refroidissement batterie) | `ATC_DISABLE_BATTERY_CHARGER=yes` (l'unite n'a pas de batterie) ; les autres donnent des avertissements Kconfig sans effet |
 | **Compilateur** | `kenv.mk` prevoit GCC 4.9 AOSP, clang en option ; le noyau stock #72 a ete compile par clang 6.0.2 (r316199) | GCC 4.9 AOSP (`aarch64-linux-android-4.9`, miroir LineageOS) |
-| **defconfig** | `ac8257_demo_defconfig` d'Autochips vise une carte de demonstration (ecran 720 x 1280, capteur imx135, audio ATC) | `ac8257_ujc201_defconfig` : la meme + reglages produit du stock #72 (ecran 1024 x 600, capteurs `tp2850` / `tp2854`, pas de `SND_SOC_ATC`) |
+| **defconfig** | `ac8257_demo_defconfig` d'Autochips vise une carte de demonstration (ecran 720 x 1280, capteur imx135, audio ATC, `ATC_ARM2_LOG_BUFFER` actif) et ne donne pas la config de l'unite | `ac8257_ujc201_defconfig` = **config complete du noyau stock #72** (IKCONFIG), ajustee seulement la ou des sources manquent : overlay `ac8257_demo` au lieu de `UJC201_64`, capteurs sans `tp9963`, sans `JANCAR_*`, `TOUCHSCREEN_FTS*`, `TOUCHSCREEN_SYNA_TCM2*` |
 
 Le device tree ajoute au noyau est `mediatek/ac8257` (source Autochips) ; l'overlay `UJC201_64` du stock manque,
 l'unite garde sa partition `dtbo` stock. A comparer avec le DTB stock (`reverse-engineering` en a une version

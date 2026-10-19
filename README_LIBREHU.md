@@ -13,9 +13,9 @@ l'instant :
   boot et vbmeta du recovery stock), repris de `reverse-engineering` ; compilateur AOSP GCC 4.9 (prevu par `kenv.mk`,
   le stock a ete compile par clang 6.0.2) et `ATC_DISABLE_BATTERY_CHARGER=yes`, seule variable de `kenv.mk` lue par
   l'arbre ;
-- `arch/arm64/configs/ac8257_ujc201_defconfig` = `ac8257_demo_defconfig` d'Autochips + les reglages produit du noyau
-  stock #72 : ecran 1024 x 600, capteurs `tp2850_yuv tp2854_yuv` (`tp9963_yuv` absent du paquet), `SND_SOC_ATC` non.
-  L'overlay reste `mediatek/ac8257_demo` (`UJC201_64` absent) : l'unite garde sa partition `dtbo` stock.
+- `arch/arm64/configs/ac8257_ujc201_defconfig` = config complete du noyau stock #72 (IKCONFIG de l'image), ajustee
+  seulement la ou le paquet manque de sources : overlay `mediatek/ac8257_demo` au lieu de `UJC201_64` (l'unite garde sa
+  partition `dtbo` stock), capteurs sans `tp9963_yuv`, sans `JANCAR_*`, `TOUCHSCREEN_FTS*`, `TOUCHSCREEN_SYNA_TCM2*`.
 
 ## Documentation
 `docs/` : [README](docs/README.md) (index), [BUILD](docs/BUILD.md) (compiler, tester), [STATUS](docs/STATUS.md)
