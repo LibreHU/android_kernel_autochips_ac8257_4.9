@@ -41,7 +41,8 @@ pres (noyau de 10 031 811 octets) ; les pilotes integres ajoutent 1,29 Mo (run 5
   coupes par defaut et ne s'activaient qu'a la main par `/sys/kernel/debug/dynamic_debug`) ;
 - la CI recompresse le meme `Image` avec zopfli (`pigz -11`) : flux gzip standard, lu par le LK comme avant,
   environ 3,7 % plus petit que `gzip -9` (mesure sur le noyau stock : 10 187 690 → 9 811 640 octets).
-Les tailles obtenues sont dans le journal de la CI (etape *Pack images*).
+Run 56 (`37da89b66`) : `Image.gz-dtb` 10 562 417 octets en gzip -9, **10 175 250** avec zopfli ; image `boot`
+10 178 560 octets pour 10 485 760 : il reste environ 0,3 Mo. Tailles dans le journal de la CI (etape *Pack images*).
 
 ## WPA2 / WPA3
 - WPA2 : gere comme avant, par `wpa_supplicant` et le firmware.
@@ -50,7 +51,7 @@ Les tailles obtenues sont dans le journal de la CI (etape *Pack images*).
   Android 10 cote framework ([source.android.com : WPA3 et OWE](https://source.android.com/docs/core/connect/wifi-wpa3-owe)).
 
 ## Etat
-- Compile (clang 6.0.2, CI de la branche).
+- Compile et tient dans la partition `boot` (CI run 56 verte).
 - **Non teste sur l'unite.** A verifier au premier demarrage : `dmesg | grep -E "WMT|wlan|built into"`,
   `ls /dev/stpwmt /dev/stpbt /dev/stpgps /dev/fm /dev/wmtWifi`, puis Wi-Fi, Bluetooth (appairage, A2DP, appel),
   GPS (YGPS), radio FM.
