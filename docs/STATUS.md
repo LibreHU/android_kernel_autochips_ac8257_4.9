@@ -22,6 +22,6 @@ Aucun test sur l'unite pour l'instant. Colonne « reverse-engineering » : etat 
 | USB peripherique, adb | non teste | OK | |
 | MCU / CAN (`ttyS1`) | non teste | OK | |
 | spidev, UART2/3 | non teste | OK | `spi-ac82xx-dev` natif |
-| KernelSU Next, overclock, gouverneurs | non teste | OK (CPU 2,3 GHz, GPU 730 MHz) | repris ; CPU jusqu'a 2,6 GHz (2,2 au demarrage), tensions reglables : [TUNING.md](TUNING.md) |
+| KernelSU Next, overclock, gouverneurs | non teste | OK (CPU 2,3 GHz, GPU 730 MHz) | repris ; CPU jusqu'a 2,6 GHz (2,3 au demarrage), tensions reglables : [TUNING.md](TUNING.md) |
 | Ethernet USB (RTL8152/8153, RNDIS, ipheth, AX88179...) | non teste | modules (`tools/ac8257/usbnet`) | integres au noyau |
 | Mise en veille / reprise | non teste | inconnu | |

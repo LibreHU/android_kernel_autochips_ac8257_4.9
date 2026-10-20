@@ -19,7 +19,7 @@ Une partie contournait l'absence des sources Autochips et existe deja ici (verif
 | USB : connexion au premier pull-up | `9f32427be` | oui (`musb_gadget.c`, `CONFIG_ATC_AOSP_ENHANCEMENT` sans chargeur) | rien |
 | Mise au point (console pstore precoce, panique minutee, retour en recovery, one-shot) | `5d50c2353`, `e833e4408`, `66b3140c6`, `d415557dc`, `27cc3b086`, `33bf59608`, `912ebc302`, `8ef6d980f`, `144a90eb6` | non | **fait** (`drivers/misc/librehu`) |
 | Outils d'image (`repack_boot`) et CI | `d0c82e5d5`, `cd7e19590`, `dc209546f` | — | **fait** |
-| Overclock CPU / GPU, gouverneurs, reglages | `eb3b1ba14`, `59871d544`, `ca26db327`, `3e3d3eda1`, `53bd202ce`, `365db127c`, `0da8dc694` | non | **fait**, etendu : CPU jusqu'a 2,6 GHz (2,2 GHz au demarrage), tensions CPU et VCORE reglables ([TUNING.md](TUNING.md)) |
+| Overclock CPU / GPU, gouverneurs, reglages | `eb3b1ba14`, `59871d544`, `ca26db327`, `3e3d3eda1`, `53bd202ce`, `365db127c`, `0da8dc694` | non | **fait**, etendu : CPU jusqu'a 2,6 GHz (2,3 GHz au demarrage), tensions CPU et VCORE reglables ([TUNING.md](TUNING.md)) |
 | KernelSU Next | `54f36f715` | non | **fait** |
 
 Methode : `git show <commit>` sur `reverse-engineering`, adapter aux chemins Autochips (`mt6765` / `mt6761` cote

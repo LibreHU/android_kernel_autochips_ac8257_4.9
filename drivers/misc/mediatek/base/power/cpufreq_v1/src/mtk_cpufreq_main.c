@@ -1277,11 +1277,11 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
  */
 static unsigned int ac8257_cpu_max_khz = 2601000;
 /*
- * boot_khz: maximum in force at boot (the initial scaling_max_freq), 0 = max_khz. 2201000 by default
- * (2.2 GHz, run on the UJC201); CPU tuning apps (Kernel Adiutor, SmartPack, LibreHU-service Tweaks...)
+ * boot_khz: maximum in force at boot (the initial scaling_max_freq), 0 = max_khz. 2301000 by default
+ * (2.3 GHz, stable on the UJC201); CPU tuning apps (Kernel Adiutor, SmartPack, LibreHU-service Tweaks...)
  * can raise scaling_max_freq up to max_khz.
  */
-static unsigned int ac8257_cpu_boot_khz = 2201000;
+static unsigned int ac8257_cpu_boot_khz = 2301000;
 /* scaling_max_freq / scaling_min_freq of the cpufreq policy (cpufreq notifier below) */
 static unsigned int ac8257_pol_max_khz = UINT_MAX, ac8257_pol_min_khz;
 static int ac8257_ppm_base[NR_MT_CPU_DVFS], ac8257_ppm_limit[NR_MT_CPU_DVFS];

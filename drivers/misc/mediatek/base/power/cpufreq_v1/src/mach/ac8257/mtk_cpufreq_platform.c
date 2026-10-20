@@ -478,7 +478,7 @@ int mt_cpufreq_dts_map(void)
 
 /*
  * Overclock table (CPU_LEVEL_3, up to 2.6 GHz, mtk_cpufreq_opp_table.h), loaded by default; maximum at boot
- * 2.2 GHz (ac8257_cpufreq.boot_khz), raisable at run time up to ac8257_cpufreq.max_khz. ac8257_cpu_oc=0
+ * 2.3 GHz (ac8257_cpufreq.boot_khz), raisable at run time up to ac8257_cpufreq.max_khz. ac8257_cpu_oc=0
  * on the kernel command line: the stock tables (with EEM).
  */
 int ac8257_cpu_oc = 1;

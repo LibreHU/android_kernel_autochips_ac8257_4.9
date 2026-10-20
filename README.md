@@ -20,7 +20,7 @@ Ce qu'on en verifie sur l'unite :
 
 | Annonce | Sur l'UJC201 |
 |---|---|
-| 4 coeurs Cortex-A53 jusqu'a 2,0 GHz, GPU GE8300 | **oui** : 4 coeurs au demarrage (`SMP: Total of 4 processors activated`, MIDR `410fd034` = Cortex-A53), table stock a 2001 MHz maximum, PowerVR GE8300. L'overclock LibreHU (2,2 GHz au demarrage, 2,6 GHz possibles) depasse donc la fiche : voir [docs/TUNING.md](docs/TUNING.md) |
+| 4 coeurs Cortex-A53 jusqu'a 2,0 GHz, GPU GE8300 | **oui** : 4 coeurs au demarrage (`SMP: Total of 4 processors activated`, MIDR `410fd034` = Cortex-A53), table stock a 2001 MHz maximum, PowerVR GE8300. L'overclock LibreHU (2,3 GHz au demarrage, 2,6 GHz possibles) depasse donc la fiche : voir [docs/TUNING.md](docs/TUNING.md) |
 | ARM9 dedie au recul rapide (CVBS en 2 s, AHD 1080p / 720p en 3 s) | **oui** : c'est l'« ARM2 » (`dualarm`, memoire `arm2-backcar-*`) ; il rend la camera a Linux apres le demarrage |
 | AHD par MIPI CSI-2 | **oui** : decodeur Techpoint TP9963 sur MIPI ; CVBS par le decodeur integre (TVD) ; voir [docs/VIDEO.md](docs/VIDEO.md) |
 | LPDDR3 / LPDDR4(X), eMMC 5.1, USB 3.1 Gen1 + USB 2.0 OTG, modem LTE Cat 7 integre, ecran jusqu'a 1920 x 1080, decodage 1080p30 H.265 / H.264 | non verifie un par un ; l'ecran de l'unite est en 1280 x 720 |
@@ -74,7 +74,7 @@ points d'accroche.
 | KernelSU Next v3.4.0-legacy | hooks manuels, gestionnaire KernelSU Next v3.4.0 | OK |
 | Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock | OK |
 | Outils de mise au point | console pstore precoce, panique minutee, interception des redemarrages, one-shot, retour en recovery, memoire SPM / SCP hors de Linux en boot recovery. **A desactiver pour l'usage quotidien** | OK |
-| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,2 GHz** | 16 OPP ; 2,1-2,3 GHz a 1,025 V (testes sur `reverse-engineering`), 2,4-2,6 GHz a 1,05-1,10 V (non testes) ; [docs/TUNING.md](docs/TUNING.md) | OK (run 48) |
+| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,3 GHz** | 16 OPP ; 2,1-2,3 GHz a 1,025 V (stables sur `reverse-engineering`), 2,4-2,6 GHz a 1,05-1,10 V (non testes) ; [docs/TUNING.md](docs/TUNING.md) | OK (run 48) |
 | **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,10 V, envoyees a la SSPM | OK (run 48) |
 | **GPU 730 MHz** et OPP intermediaires, **tensions VCORE reglables** | le GPU tourne sur VCORE (partagee avec le SoC) : `ac8257_gpufreq.vcore_uv`, 0,60-0,90 V | OK (run 48) |
 | **Decodeur camera TP9963** (camera AHD) | pilote `tp9963_yuv` absent du paquet, **reconstruit depuis le noyau stock** (registres, metazones, reponses a la HAL camera) et recoupe avec les pilotes GPL OpenIPC et Allwinner du meme TP9963 ; [docs/VIDEO.md](docs/VIDEO.md) | OK (run 49) |

@@ -15,8 +15,8 @@ d'enregistrement de la SSPM, qui applique le DVFS) :
 | 2601 | 1,100 V | **au-dessus du stock, non teste** |
 | 2501 | 1,075 V | **au-dessus du stock, non teste** |
 | 2401 | 1,050 V | **au-dessus du stock, non teste** |
-| 2301 | 1,025 V | teste (noyau `reverse-engineering`) |
-| 2201 | 1,025 V | teste ; **maximum au demarrage** |
+| 2301 | 1,025 V | **stable** (noyau `reverse-engineering`) ; **maximum au demarrage** |
+| 2201 | 1,025 V | stable |
 | 2101 | 1,025 V | teste |
 | 2001 ... 987 | tensions stock (table FY) | maximum stock 2001 MHz |
 
@@ -28,7 +28,7 @@ Parametres (`/sys/module/ac8257_cpufreq/parameters/`, ou `ac8257_cpufreq.<nom>=`
 | Parametre | Defaut | Role |
 |---|---|---|
 | `max_khz` | 2601000 | frequence la plus haute atteignable ; `scaling_max_freq` peut monter jusque-la |
-| `boot_khz` | 2201000 | maximum au demarrage (`scaling_max_freq` initial), lecture seule a chaud |
+| `boot_khz` | 2301000 | maximum au demarrage (`scaling_max_freq` initial), lecture seule a chaud |
 | `volt_uv` | table | les 16 tensions en uV, frequence la plus haute d'abord ; ecrire 16 valeurs separees par des virgules, 0 = valeur de la table |
 | `volt_offset_uv` | 0 | decalage ajoute a toutes les tensions (negatif = sous-tension) |
 
