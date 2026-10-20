@@ -201,8 +201,16 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_TP2850_YUV,
 		{
+#ifdef CONFIG_JANCAR_SOLUTION
+			/* LibreHU: as the stock UJC201 kernel (no regulator, no MCLK) */
+			{PDN, Vol_Low, 0},
+			{RST, Vol_Low, 0},
+			{PDN, Vol_High, 0},
+			{RST, Vol_High, 10}
+#else
 			{RST, Vol_Low, 5},
 			{RST, Vol_High, 5}
+#endif
 		},
 	},
 #endif
@@ -251,7 +259,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		{
 			{PDN, Vol_Low, 0},
 			{RST, Vol_Low, 0},
-#ifdef BUILD_JAC_BSP
+#if defined(BUILD_JAC_BSP) || defined(CONFIG_JANCAR_SOLUTION)
+			/* LibreHU (UJC201): no regulator, as the stock kernel; on MAIN2 DVDD is
+			 * vcamd_main2, the PMIC vcamd LDO that never registers (-EPROBE_DEFER)
+			 */
 			/*{AVDD, Vol_2800, 0},*/
 			//{DOVDD, Vol_1800, 0},
 			/*{DVDD, Vol_1100, 0},*/

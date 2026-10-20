@@ -289,7 +289,12 @@ void mmc_add_host_debugfs(struct mmc_host *host)
 					     &host->fail_mmc_request)))
 		goto err_node;
 #endif
-#ifdef CONFIG_MMC_ATC_SW_WP
+#if defined(CONFIG_MMC_ATC_SW_WP) && !defined(CONFIG_JANCAR_SOLUTION)
+		/*
+		 * LibreHU: not on the Jancar UJC201. Its vendor init.ac8257.rc writes 1 to
+		 * mmc0/sw_wp_en; the stock kernel has no such file (init tries to create it
+		 * and fails), so /system and the other "RO" partitions stay writable there.
+		 */
 		if(host->index == 0) {//is emmc
 			if (!debugfs_create_file("sw_wp_en", S_IRUSR | S_IWUSR, root, host, &mmc_sw_wp_fops))
 				goto err_node;

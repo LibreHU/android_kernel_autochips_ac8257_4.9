@@ -106,7 +106,7 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
 		mdelay(5);
 		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) {
 			preg = regulator_get(pdevice, "vcama");
-			if (preg && regulator_is_enabled(preg)) {
+			if (!IS_ERR_OR_NULL(preg) && regulator_is_enabled(preg)) {
 			pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
 				regulator_put(preg);
 				pr_debug("[regulator] %s INT_VCAMA_OC %d\n",
@@ -116,7 +116,7 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
 		}
 		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
 			preg = regulator_get(pdevice, "vcamd");
-			if (preg && regulator_is_enabled(preg)) {
+			if (!IS_ERR_OR_NULL(preg) && regulator_is_enabled(preg)) {
 			pmic_enable_interrupt(INT_VCAMD_OC, 1, "camera");
 				regulator_put(preg);
 				pr_debug("[regulator] %s INT_VCAMD_OC %d\n",
@@ -129,7 +129,7 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
 			sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
 
 			preg = regulator_get(pdevice, "vcamio");
-			if (preg && regulator_is_enabled(preg)) {
+			if (!IS_ERR_OR_NULL(preg) && regulator_is_enabled(preg)) {
 			pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
 				regulator_put(preg);
 				pr_debug("[regulator] %s INT_VCAMIO_OC %d\n",
@@ -200,6 +200,16 @@ static enum IMGSENSOR_RETURN regulator_init(void *pinstance)
 	for (i = 0; i < REGULATOR_TYPE_MAX_NUM; i++, pregulator_ctrl++) {
 		preg->pregulator[i] =
 		    regulator_get(pdevice, pregulator_ctrl->pregulator_type);
+
+		/* LibreHU: a failed get (e.g. -EPROBE_DEFER for a supply whose LDO did
+		 * not register) is an error pointer, not NULL: treat it as absent
+		 */
+		if (IS_ERR(preg->pregulator[i])) {
+			pr_err("regulator[%d] %s: %ld\n", i,
+				pregulator_ctrl->pregulator_type,
+				PTR_ERR(preg->pregulator[i]));
+			preg->pregulator[i] = NULL;
+		}
 
 		if (preg->pregulator[i] == NULL)
 			pr_err("regulator[%d]  %s fail!\n",
