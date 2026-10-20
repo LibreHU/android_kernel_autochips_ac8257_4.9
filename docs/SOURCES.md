@@ -33,7 +33,7 @@ Answer to the GPLv2 request for the UJC201: `kernel-4.9.tgz` (156 599 414 bytes,
 comparison only): [docs/ujc201/kernel_gpl.md](ujc201/kernel_gpl.md). The package itself is the
 [`autochips-gpl`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/autochips-gpl) branch; this
 reconstruction is `reverse-engineering`; the main working branch is
-[`main`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/main) (AutoChips kernel + the changes
+[`LibreHU-main`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/LibreHU-main) (AutoChips kernel + the changes
 ported from `reverse-engineering`).
 
 - Linux 4.9.117, AutoChips reference BSP: `ac8257_{car,demo,evb,jac}` defconfigs, `ac8257*.dts`,

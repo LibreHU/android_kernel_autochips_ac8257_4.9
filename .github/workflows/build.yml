@@ -10,7 +10,7 @@ name: Build AC8257 kernel
 
 on:
   push:
-    branches: [master]
+    branches: [reverse-engineering]
     paths-ignore:
       - '**.md'
       - 'docs/**'
