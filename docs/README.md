@@ -9,6 +9,7 @@ reconstruit (branche `reverse-engineering`).
 | [BUILD.md](BUILD.md) | compiler (CI, en local), particularites de l'arbre Autochips, tester sur l'unite |
 | [STATUS.md](STATUS.md) | etat par fonction sur l'unite (rien n'est encore teste avec ce noyau) |
 | [PORTING.md](PORTING.md) | modifications de `reverse-engineering` : deja natives chez Autochips, a verifier, a reprendre ; suivi |
+| [../README.md](../README.md) | presentation, branches, roadmap |
 | [../README_LIBREHU.md](../README_LIBREHU.md) | les trois branches, provenance du paquet Autochips et ce qui y manque |
 
 ## Les trois branches
