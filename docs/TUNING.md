@@ -1,0 +1,76 @@
+# Frequences et tensions CPU / GPU (`LibreHU-main`)
+
+Tables d'overclock chargees par defaut, plafonnees au demarrage, reglables a chaud (root) depuis
+`/sys/module/...` ou une appli de reglage (Kernel Adiutor, SmartPack Kernel Manager, onglet Tweaks de
+LibreHU-service). **Pas encore teste avec ce noyau** : les valeurs « testees » sont celles de la branche
+`reverse-engineering` sur l'UJC201.
+
+## CPU (8 x Cortex-A53, un seul cluster)
+
+Table `CPU_LEVEL_3` (`cpufreq_v1/src/mach/ac8257/mtk_cpufreq_opp_table.h`, 16 entrees imposees par la table
+d'enregistrement de la SSPM, qui applique le DVFS) :
+
+| MHz | Tension | Etat |
+|---|---|---|
+| 2601 | 1,100 V | **au-dessus du stock, non teste** |
+| 2501 | 1,075 V | **au-dessus du stock, non teste** |
+| 2401 | 1,050 V | **au-dessus du stock, non teste** |
+| 2301 | 1,025 V | teste (noyau `reverse-engineering`) |
+| 2201 | 1,025 V | teste ; **maximum au demarrage** |
+| 2101 | 1,025 V | teste |
+| 2001 ... 987 | tensions stock (table FY) | maximum stock 2001 MHz |
+
+Le stock tourne a 2,0 GHz maximum (table FY, 1,025 V). 1400 MHz / 0,80 V reste l'OPP de calibration de l'EEM
+(PTPOD).
+
+Parametres (`/sys/module/ac8257_cpufreq/parameters/`, ou `ac8257_cpufreq.<nom>=` sur la ligne de commande) :
+
+| Parametre | Defaut | Role |
+|---|---|---|
+| `max_khz` | 2601000 | frequence la plus haute atteignable ; `scaling_max_freq` peut monter jusque-la |
+| `boot_khz` | 2201000 | maximum au demarrage (`scaling_max_freq` initial), lecture seule a chaud |
+| `volt_uv` | table | les 16 tensions en uV, frequence la plus haute d'abord ; ecrire 16 valeurs separees par des virgules, 0 = valeur de la table |
+| `volt_offset_uv` | 0 | decalage ajoute a toutes les tensions (negatif = sous-tension) |
+
+Chaque tension est arrondie au pas du PMIC (6,25 mV) et gardee entre **0,65 et 1,10 V** (le regulateur Vproc
+accepte jusqu'a 1,3125 V ; la limite est volontairement plus basse). La nouvelle table est envoyee a la SSPM
+comme le fait l'EEM (`cpuhvfs_update_volt`). L'EEM est desactivee avec la table OC (elle est calibree pour la
+table stock). `ac8257_cpu_oc=0` sur la ligne de commande : tables stock, EEM active, pas de reglage de tension.
+
+Exemples (root) :
+```
+# monter a 2,3 GHz
+echo 2301000 > /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq
+# sous-tension de 25 mV sur toute la table
+echo -25000 > /sys/module/ac8257_cpufreq/parameters/volt_offset_uv
+# tensions actuelles
+cat /sys/module/ac8257_cpufreq/parameters/volt_uv
+```
+
+## GPU (PowerVR GE8300)
+
+Table OC : 730, 660, 600, 500, 450, 390, 300 MHz (730 MHz = OPP haute du MT6761T, a la tension stock de 660 MHz).
+
+| Parametre (`/sys/module/ac8257_gpufreq/parameters/`) | Defaut | Role |
+|---|---|---|
+| `max_khz` | 730000 | frequence la plus haute (660000 = maximum stock). Demarrage et PTPOD restent a 660 MHz au plus (violations EMI MPU constatees en demarrant a 730 MHz) |
+| `min_khz` | 0 | frequence la plus basse |
+| `vcore_uv` | 800000,700000,700000,650000 | tensions des niveaux VCORE_OPP_0..3, ecrire 4 valeurs, 0 = inchange, bornes **0,60-0,90 V** |
+
+Le GPU n'a **pas d'alimentation propre** : il tourne sur VCORE, partagee avec le controleur de RAM et le reste du
+SoC. Chaque OPP GPU demande un niveau VCORE au DVFSRC : 730-600 MHz -> VCORE_OPP_0 (0,80 V), 500-450 MHz ->
+VCORE_OPP_1 (0,70 V), 390-300 MHz -> VCORE_OPP_3 (0,65 V). Changer `vcore_uv` change donc la tension de tout le
+SoC a ce niveau, pas seulement du GPU.
+
+Noeud pour les applis : `/sys/devices/platform/dfrgx/devfreq/dfrgx/` (`cur_freq`, `available_frequencies`,
+`max_freq`, `min_freq`).
+
+## Prudence
+
+- Au-dessus de 2,3 GHz et au-dessus de 1,025 V, rien n'a ete essaye sur l'unite. La tenue depend de la puce
+  (chaque AC8257 est differente), la chaleur aussi : l'autoradio est souvent enferme sans ventilation.
+- Le firmware SSPM (partition `sspm`, ferme) applique les tensions ; s'il les borne lui-meme, une tension
+  au-dessus de 1,025 V peut etre ignoree : a verifier au premier test (tension lue au regulateur Vproc,
+  stabilite) avant de conclure qu'une frequence tient.
+- Monter par petits pas, tester (charge CPU complete plusieurs minutes), et garder une sortie : les reglages ne
+  survivent pas a un redemarrage (sauf ligne de commande), un plantage revient donc aux valeurs par defaut.
