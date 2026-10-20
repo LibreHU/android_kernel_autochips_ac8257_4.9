@@ -268,6 +268,18 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(TP9963_YUV)
+	/* Read back from the stock UJC201 kernel (Jancar, #25). No MCLK; on MAIN2 AVDD is the GPIO cam2_vcama. */
+	{
+		SENSOR_DRVNAME_TP9963_YUV,
+		{
+			{PDN, Vol_Low, 0},
+			{AVDD, Vol_Low, 0},
+			{PDN, Vol_High, 0},
+			{AVDD, Vol_High, 10}
+		},
+	},
+#endif
 #if defined(UB964_YUV)
 	{
 		SENSOR_DRVNAME_UB964_YUV,

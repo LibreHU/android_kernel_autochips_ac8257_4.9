@@ -1,7 +1,7 @@
 # UJC201 (Jancar, AC8257): configuration of the stock kernel 4.9.117+ #72 (22/01/2026), read from its IKCONFIG,
 # adjusted only where the AutoChips GPL package lacks the sources:
 # - DTB overlay mediatek/ac8257_demo instead of mediatek/UJC201_64 (the unit keeps its stock dtbo partition);
-# - image sensors without tp9963_yuv;
+# - tp9963_yuv: the LibreHU rebuild (drivers/misc/mediatek/imgsensor/.../tp9963_yuv), Jancar's source is not in the package;
 # - without CONFIG_TOUCHSCREEN_FTS*, CONFIG_TOUCHSCREEN_SYNA_TCM2*;
 # - CONFIG_JANCAR_GPIOS is the LibreHU reimplementation (drivers/misc/jancar), Jancar's source is not in the package;
 # - appended DTB mediatek/ac8257_ujc201 = the stock DT of the unit (AutoChips' generic ac8257 differs);
@@ -1291,9 +1291,9 @@ CONFIG_MTK_THERMAL_PA_VIA_ATCMD=y
 #
 # MultiMedia, Display, Camera related configs
 #
-CONFIG_CUSTOM_KERNEL_IMGSENSOR="tp2850_yuv tp2854_yuv"
+CONFIG_CUSTOM_KERNEL_IMGSENSOR="tp2850_yuv tp2854_yuv tp9963_yuv"
 CONFIG_CUSTOM_KERNEL_MAIN_IMGSENSOR=""
-CONFIG_CUSTOM_KERNEL_MAIN2_IMGSENSOR="tp2854_yuv"
+CONFIG_CUSTOM_KERNEL_MAIN2_IMGSENSOR="tp2854_yuv tp9963_yuv"
 CONFIG_CUSTOM_KERNEL_SUB_IMGSENSOR="tp2850_yuv"
 # CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW is not set
 CONFIG_MTK_VIDEOCODEC_DRIVER=y

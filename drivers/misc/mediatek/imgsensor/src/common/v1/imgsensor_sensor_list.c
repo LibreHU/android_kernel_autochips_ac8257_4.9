@@ -73,6 +73,12 @@ struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
 		TP2854_YUV_SensorInit},
 #endif
 
+#if defined(TP9963_YUV)
+		{TP9963_SENSOR_ID,
+		SENSOR_DRVNAME_TP9963_YUV,
+		TP9963_YUV_SensorInit},
+#endif
+
 #if defined(UB964_YUV)
 		{UB964_SENSOR_ID,
 		SENSOR_DRVNAME_UB964_YUV,

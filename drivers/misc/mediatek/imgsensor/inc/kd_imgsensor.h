@@ -134,6 +134,7 @@
 #define TP2854_SENSOR_ID                        0x2854
 #define UB964_SENSOR_ID                         0x3634
 #define TP2855_SENSOR_ID                        0x2855
+#define TP9963_SENSOR_ID                        0x2863
 #define IMX486_SENSOR_ID                        0x0486
 #define IMX519_SENSOR_ID                        0x0519
 #define IMX576_SENSOR_ID                        0x0576
@@ -355,6 +356,7 @@
 #define SENSOR_DRVNAME_TP2854_YUV               "tp2854_yuv"
 #define SENSOR_DRVNAME_UB964_YUV                "ub964_yuv"
 #define SENSOR_DRVNAME_TP2855_YUV               "tp2855_yuv"
+#define SENSOR_DRVNAME_TP9963_YUV               "tp9963_yuv"
 #define SENSOR_DRVNAME_IMX499_MIPI_RAW_13M      "imx499_mipi_raw_13m"
 #define SENSOR_DRVNAME_IMX486_MIPI_RAW          "imx486_mipi_raw"
 #define SENSOR_DRVNAME_IMX519_MIPI_RAW          "imx519_mipi_raw"
