@@ -2,7 +2,9 @@
 # adjusted only where the AutoChips GPL package lacks the sources:
 # - DTB overlay mediatek/ac8257_demo instead of mediatek/UJC201_64 (the unit keeps its stock dtbo partition);
 # - image sensors without tp9963_yuv;
-# - without CONFIG_JANCAR_SOLUTION, CONFIG_JANCAR_GPIOS, CONFIG_TOUCHSCREEN_FTS*, CONFIG_TOUCHSCREEN_SYNA_TCM2*.
+# - without CONFIG_TOUCHSCREEN_FTS*, CONFIG_TOUCHSCREEN_SYNA_TCM2*;
+# - CONFIG_JANCAR_GPIOS is the LibreHU reimplementation (drivers/misc/jancar), Jancar's source is not in the package;
+# - appended DTB mediatek/ac8257_ujc201 = the stock DT of the unit (AutoChips' generic ac8257 differs).
 #
 # Automatically generated file; DO NOT EDIT.
 # Linux/arm64 4.9.117 Kernel Configuration
@@ -499,7 +501,7 @@ CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE=y
 CONFIG_IMG_GZ_DTB=y
 # CONFIG_IMG_DTB is not set
 CONFIG_BUILD_ARM64_APPENDED_KERNEL_IMAGE_NAME="Image.gz-dtb"
-CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/ac8257"
+CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/ac8257_ujc201"
 CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES="mediatek/ac8257_demo"
 
 #
@@ -1725,11 +1727,13 @@ CONFIG_ATC_METAZONE=y
 # CONFIG_ATC_ARM2_LOG_BUFFER is not set
 
 #
-# ATC Misc config for 3.18 kernel
+# JANCAR Misc config
 #
+CONFIG_JANCAR_SOLUTION=y
+CONFIG_JANCAR_GPIOS=y
 
 #
-# JANCAR Misc config
+# ATC Misc config for 3.18 kernel
 #
 
 #

@@ -1,0 +1,26 @@
+#
+# Jancar additions of the stock UJC201 kernel (same option names as its IKCONFIG). Their sources are not in
+# the AutoChips GPL package: what is here is reimplemented by LibreHU.
+#
+menu "JANCAR Misc config"
+
+menuconfig JANCAR_SOLUTION
+	bool "Jancar solution"
+	default n
+	help
+	  Jancar (UJC201) additions to the AutoChips kernel.
+
+if JANCAR_SOLUTION
+
+config JANCAR_GPIOS
+	bool "Jancar /dev/gpios_ioctl"
+	depends on OF_GPIO
+	default y
+	help
+	  GPIO access for the Jancar userspace (com.jancar.services): the
+	  "ac8227l_pin_N" pins of the "mediatek,ac8227l-gpio-ioctl" DT node,
+	  set high/low/input or read with ioctls 0x6b00-0x6b03 (stock option).
+
+endif # JANCAR_SOLUTION
+
+endmenu
