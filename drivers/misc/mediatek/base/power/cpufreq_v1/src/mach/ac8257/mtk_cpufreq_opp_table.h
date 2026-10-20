@@ -123,11 +123,13 @@
 #define CPU_DVFS_VOLT15_VPROC_LL_FY2    80000           /* 10uV */
 
 /* OC: AC8257 overclock table (CPU_LEVEL_3, ac8257_cpu_oc=1, the default), 16 entries (NR_FREQ, fixed by the
- * SSPM record table). Up to 2.0 GHz: the FY sign-off voltages of the stock table. 2.1 to 2.3 GHz at the stock top
- * voltage, 1.025 V (stable on the UJC201 with the reverse-engineering kernel). 2.4, 2.5 and 2.6 GHz at 1.05, 1.075 and
- * 1.10 V: above the stock maximum, untested, used only when the run-time cap is raised (ac8257_cpufreq.max_khz,
- * 2.3 GHz by default); stability above 2.0 GHz depends on the chip. Voltages settable at run time
- * (ac8257_cpufreq.volt_uv / volt_offset_uv). 1.4 GHz / 0.80 V stays index 11: the EEM PTPOD OPP.
+ * SSPM record table). Up to 2.0 GHz: the FY sign-off voltages of the stock table (2.0 GHz at 1.025 V). Above, the
+ * voltage rises with the frequency: +12.5 mV per 100 MHz up to 2.3 GHz (2.3 GHz already ran stable at 1.025 V on
+ * the UJC201, so this is margin), then +18.75 mV per 100 MHz up to 1.11875 V at 2.6 GHz: the top voltage of the
+ * MediaTek MT6765 table (same Cortex-A53, 12 nm, MT6357 PMIC: 2.351 GHz at 1.11875 V for its FY bin, 2.501 GHz
+ * for SB, about +44 mV per 80-100 MHz), never above. 2.6 GHz hung after 14 min at the former 1.10 V. Stability
+ * above 2.3 GHz depends on the chip. Voltages settable at run time (ac8257_cpufreq.volt_uv / volt_offset_uv).
+ * 1.4 GHz / 0.80 V stays index 11: the EEM PTPOD OPP.
  */
 #define CPU_DVFS_FREQ0_LL_OC    2601000    /* KHz */
 #define CPU_DVFS_FREQ1_LL_OC    2501000    /* KHz */
@@ -146,12 +148,12 @@
 #define CPU_DVFS_FREQ14_LL_OC   1125000    /* KHz */
 #define CPU_DVFS_FREQ15_LL_OC    987000    /* KHz */
 
-#define CPU_DVFS_VOLT0_VPROC_LL_OC    110000           /* 10uV */
-#define CPU_DVFS_VOLT1_VPROC_LL_OC    107500           /* 10uV */
-#define CPU_DVFS_VOLT2_VPROC_LL_OC    105000           /* 10uV */
-#define CPU_DVFS_VOLT3_VPROC_LL_OC    102500           /* 10uV */
-#define CPU_DVFS_VOLT4_VPROC_LL_OC    102500           /* 10uV */
-#define CPU_DVFS_VOLT5_VPROC_LL_OC    102500           /* 10uV */
+#define CPU_DVFS_VOLT0_VPROC_LL_OC    111875           /* 10uV */
+#define CPU_DVFS_VOLT1_VPROC_LL_OC    110000           /* 10uV */
+#define CPU_DVFS_VOLT2_VPROC_LL_OC    108125           /* 10uV */
+#define CPU_DVFS_VOLT3_VPROC_LL_OC    106250           /* 10uV */
+#define CPU_DVFS_VOLT4_VPROC_LL_OC    105000           /* 10uV */
+#define CPU_DVFS_VOLT5_VPROC_LL_OC    103750           /* 10uV */
 #define CPU_DVFS_VOLT6_VPROC_LL_OC    102500           /* 10uV */
 #define CPU_DVFS_VOLT7_VPROC_LL_OC     99375           /* 10uV */
 #define CPU_DVFS_VOLT8_VPROC_LL_OC     96250           /* 10uV */
