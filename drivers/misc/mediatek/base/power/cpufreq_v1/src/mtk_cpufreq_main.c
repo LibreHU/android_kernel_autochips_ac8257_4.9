@@ -1414,14 +1414,15 @@ module_param_named(boot_khz, ac8257_cpu_boot_khz, uint, 0444);
  * The new table goes to the SSPM the way the EEM updates it (cpuhvfs_update_volt). The EEM itself is off
  * with the overclock table (calibrated against the stock one).
  */
+#define AC8257_VOLT_NR		16		/* OPPs of the OC table, NR_FREQ of mtk_cpufreq_opp_pv_table.h */
 #define AC8257_VOLT_MIN_UV	650000		/* MIN_VPROC_VOLT */
 #define AC8257_VOLT_MAX_UV	1100000		/* MAX_VPROC_VOLT; the PMIC buck goes up to 1.3125 V */
 #define AC8257_VOLT_STEP_UV	6250
 #define AC8257_PMIC_BASE_UV	518750		/* Vproc code 0 */
 
 extern int ac8257_cpu_oc;
-static unsigned int ac8257_volt_default[NR_FREQ];	/* 10 uV, the table as built */
-static unsigned int ac8257_volt_user[NR_FREQ];		/* uV, 0 = table value */
+static unsigned int ac8257_volt_default[AC8257_VOLT_NR];	/* 10 uV, the table as built */
+static unsigned int ac8257_volt_user[AC8257_VOLT_NR];		/* uV, 0 = table value */
 static int ac8257_volt_offset_uv;
 static bool ac8257_volt_saved;
 static DEFINE_MUTEX(ac8257_volt_lock);
@@ -1429,13 +1430,13 @@ static DEFINE_MUTEX(ac8257_volt_lock);
 static int ac8257_volt_apply(void)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
-	unsigned int code[NR_FREQ];
+	unsigned int code[AC8257_VOLT_NR];
 	unsigned long flags;
 	int i, n;
 
 	if (!ac8257_cpu_oc || !p || !p->opp_tbl)
 		return -ENODEV;
-	n = min_t(int, p->nr_opp_tbl, NR_FREQ);
+	n = min_t(int, p->nr_opp_tbl, AC8257_VOLT_NR);
 	cpufreq_para_lock(flags);
 	if (!ac8257_volt_saved) {
 		for (i = 0; i < n; i++)
@@ -1460,7 +1461,7 @@ static int ac8257_volt_apply(void)
 
 static int ac8257_volt_uv_set(const char *val, const struct kernel_param *kp)
 {
-	unsigned int v[NR_FREQ];
+	unsigned int v[AC8257_VOLT_NR];
 	char *buf, *s, *tok;
 	int i = 0, ret = 0;
 
@@ -1471,7 +1472,7 @@ static int ac8257_volt_uv_set(const char *val, const struct kernel_param *kp)
 	while ((tok = strsep(&s, ", ")) != NULL) {
 		if (!*tok)
 			continue;
-		if (i >= NR_FREQ || kstrtouint(tok, 0, &v[i])) {
+		if (i >= AC8257_VOLT_NR || kstrtouint(tok, 0, &v[i])) {
 			ret = -EINVAL;
 			break;
 		}
@@ -1482,7 +1483,7 @@ static int ac8257_volt_uv_set(const char *val, const struct kernel_param *kp)
 		i++;
 	}
 	kfree(buf);
-	if (!ret && i != NR_FREQ)
+	if (!ret && i != AC8257_VOLT_NR)
 		ret = -EINVAL;
 	if (ret)
 		return ret;
@@ -1500,7 +1501,7 @@ static int ac8257_volt_uv_get(char *buffer, const struct kernel_param *kp)
 
 	if (!p || !p->opp_tbl)
 		return -ENODEV;
-	for (i = 0; i < p->nr_opp_tbl && i < NR_FREQ; i++)
+	for (i = 0; i < p->nr_opp_tbl && i < AC8257_VOLT_NR; i++)
 		len += scnprintf(buffer + len, PAGE_SIZE - len, "%s%u", i ? "," : "",
 				 cpu_dvfs_get_volt_by_idx(p, i) * 10);
 	len += scnprintf(buffer + len, PAGE_SIZE - len, "\n");
