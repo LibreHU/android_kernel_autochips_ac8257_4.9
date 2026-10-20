@@ -345,6 +345,14 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 
 unsigned int get_cluster_ptpod_fix_freq_idx(unsigned int id)
 {
+#ifdef CONFIG_MACH_AC8257
+	/*
+	 * EEM init01 waits (forever) until Vproc equals VBOOT (0.80 V): the PTPOD OPP must be the
+	 * 1400 MHz / 0.80 V entry, index 10 of the overclock table (index 8 there is 1533 MHz / 0.85 V).
+	 */
+	if (mt_cpufreq_get_cpu_level() == 3)
+		return PTPOD_FREQ_IDX_AC8257_OC;
+#endif
 	if (mt_cpufreq_get_cpu_level() == 1)
 		return PTPOD_FREQ_IDX_SB;
 	else

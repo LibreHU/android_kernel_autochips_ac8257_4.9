@@ -142,6 +142,15 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl,
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 
+#ifdef CONFIG_MACH_AC8257
+	{
+		extern int ac8257_cpu_oc;
+
+		/* EEM is calibrated against the stock table: keep the sign-off voltages */
+		if (ac8257_cpu_oc)
+			return 0;
+	}
+#endif
 	FUNC_ENTER(FUNC_LV_API);
 
 	_mt_cpufreq_dvfs_request_wrapper(p, p->idx_opp_tbl,

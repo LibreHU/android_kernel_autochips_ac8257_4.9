@@ -30,9 +30,9 @@
 #define NORMAL_DIFF_VRSAM_VPROC		10000
 #define MAX_DIFF_VSRAM_VPROC		35000
 #define MIN_VSRAM_VOLT			80000
-#define MAX_VSRAM_VOLT			105000
+#define MAX_VSRAM_VOLT			111250	/* 105000 stock; AC8257 overclock table up to 1.10 V */
 #define MIN_VPROC_VOLT			65000
-#define MAX_VPROC_VOLT			102500
+#define MAX_VPROC_VOLT			110000	/* 102500 stock; AC8257 overclock table up to 1.10 V */
 
 #define PMIC_CMD_DELAY_TIME	5
 #define MIN_PMIC_SETTLE_TIME	5

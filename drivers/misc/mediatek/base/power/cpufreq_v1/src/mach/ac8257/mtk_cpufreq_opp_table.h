@@ -122,6 +122,47 @@
 #define CPU_DVFS_VOLT14_VPROC_LL_FY2    80000           /* 10uV */
 #define CPU_DVFS_VOLT15_VPROC_LL_FY2    80000           /* 10uV */
 
+/* OC: AC8257 overclock table (CPU_LEVEL_3, ac8257_cpu_oc=1, the default), 16 entries (NR_FREQ, fixed by the
+ * SSPM record table). Up to 2.0 GHz: the FY sign-off voltages of the stock table. 2.1 to 2.3 GHz at the stock top
+ * voltage, 1.025 V (run on the UJC201 with the reverse-engineering kernel). 2.4, 2.5 and 2.6 GHz at 1.05, 1.075 and
+ * 1.10 V: above the stock maximum, untested, used only when the run-time cap is raised (ac8257_cpufreq.max_khz,
+ * 2.2 GHz by default); stability above 2.0 GHz depends on the chip. Voltages settable at run time
+ * (ac8257_cpufreq.volt_uv / volt_offset_uv). 1.4 GHz / 0.80 V stays index 11: the EEM PTPOD OPP.
+ */
+#define CPU_DVFS_FREQ0_LL_OC    2601000    /* KHz */
+#define CPU_DVFS_FREQ1_LL_OC    2501000    /* KHz */
+#define CPU_DVFS_FREQ2_LL_OC    2401000    /* KHz */
+#define CPU_DVFS_FREQ3_LL_OC    2301000    /* KHz */
+#define CPU_DVFS_FREQ4_LL_OC    2201000    /* KHz */
+#define CPU_DVFS_FREQ5_LL_OC    2101000    /* KHz */
+#define CPU_DVFS_FREQ6_LL_OC    2001000    /* KHz */
+#define CPU_DVFS_FREQ7_LL_OC    1917000    /* KHz */
+#define CPU_DVFS_FREQ8_LL_OC    1834000    /* KHz */
+#define CPU_DVFS_FREQ9_LL_OC    1700000    /* KHz */
+#define CPU_DVFS_FREQ10_LL_OC   1533000    /* KHz */
+#define CPU_DVFS_FREQ11_LL_OC   1400000    /* KHz */
+#define CPU_DVFS_FREQ12_LL_OC   1308000    /* KHz */
+#define CPU_DVFS_FREQ13_LL_OC   1216000    /* KHz */
+#define CPU_DVFS_FREQ14_LL_OC   1125000    /* KHz */
+#define CPU_DVFS_FREQ15_LL_OC    987000    /* KHz */
+
+#define CPU_DVFS_VOLT0_VPROC_LL_OC    110000           /* 10uV */
+#define CPU_DVFS_VOLT1_VPROC_LL_OC    107500           /* 10uV */
+#define CPU_DVFS_VOLT2_VPROC_LL_OC    105000           /* 10uV */
+#define CPU_DVFS_VOLT3_VPROC_LL_OC    102500           /* 10uV */
+#define CPU_DVFS_VOLT4_VPROC_LL_OC    102500           /* 10uV */
+#define CPU_DVFS_VOLT5_VPROC_LL_OC    102500           /* 10uV */
+#define CPU_DVFS_VOLT6_VPROC_LL_OC    102500           /* 10uV */
+#define CPU_DVFS_VOLT7_VPROC_LL_OC     99375           /* 10uV */
+#define CPU_DVFS_VOLT8_VPROC_LL_OC     96250           /* 10uV */
+#define CPU_DVFS_VOLT9_VPROC_LL_OC     91250           /* 10uV */
+#define CPU_DVFS_VOLT10_VPROC_LL_OC    85000           /* 10uV */
+#define CPU_DVFS_VOLT11_VPROC_LL_OC    80000           /* 10uV */
+#define CPU_DVFS_VOLT12_VPROC_LL_OC    77500           /* 10uV */
+#define CPU_DVFS_VOLT13_VPROC_LL_OC    75000           /* 10uV */
+#define CPU_DVFS_VOLT14_VPROC_LL_OC    72500           /* 10uV */
+#define CPU_DVFS_VOLT15_VPROC_LL_OC    68750           /* 10uV */
+
 /* DVFS OPP table */
 #define OPP_TBL(cluster, seg, lv, vol)	\
 static struct mt_cpu_freq_info opp_tbl_##cluster##_e##lv##_0[] = {        \
@@ -162,6 +203,7 @@ static struct mt_cpu_freq_info opp_tbl_##cluster##_e##lv##_0[] = {        \
 OPP_TBL(LL,  FY, 0, LL); /* opp_tbl_LL_e0_0  */
 OPP_TBL(LL,  SB, 1, LL); /* opp_tbl_LL_e1_0  */
 OPP_TBL(LL,  FY2, 2, LL); /* opp_tbl_LL_e2_0  */
+OPP_TBL(LL,  OC, 3, LL); /* opp_tbl_LL_e3_0  */
 
 
 /* v0.3 */
@@ -174,6 +216,8 @@ struct opp_tbl_info opp_tbls[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {
 				ARRAY_SIZE(opp_tbl_LL_e1_0) },
 		[CPU_LEVEL_2] = { opp_tbl_LL_e2_0,
 				ARRAY_SIZE(opp_tbl_LL_e2_0) },
+		[CPU_LEVEL_3] = { opp_tbl_LL_e3_0,
+				ARRAY_SIZE(opp_tbl_LL_e3_0) },
 	},
 };
 
@@ -241,6 +285,27 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_FY2[] = {
 	FP(2,	1),
 };
 
+/* OC: POS 1 down to 1.533 GHz, as the SB table */
+static struct mt_cpu_freq_method opp_tbl_method_LL_OC[] = {
+	/* POS,	CLK */
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(1,	1),
+	FP(2,	1),
+	FP(2,	1),
+	FP(2,	1),
+	FP(2,	1),
+	FP(2,	1),
+};
+
 /* v0.3 */
 struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {
 	/* LL */
@@ -248,5 +313,6 @@ struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {
 		[CPU_LEVEL_0] = { opp_tbl_method_LL_FY },
 		[CPU_LEVEL_1] = { opp_tbl_method_LL_SB },
 		[CPU_LEVEL_2] = { opp_tbl_method_LL_FY2 },
+		[CPU_LEVEL_3] = { opp_tbl_method_LL_OC },
 	},
 };

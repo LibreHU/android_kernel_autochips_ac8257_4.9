@@ -1269,12 +1269,296 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	return new_opp_idx;
 }
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * Highest CPU frequency used, on top of the PPM limits: /sys/module/ac8257_cpufreq/parameters/max_khz
+ * (or ac8257_cpufreq.max_khz= on the command line). 2601000 by default: the whole overclock table can
+ * be reached.
+ */
+static unsigned int ac8257_cpu_max_khz = 2601000;
+/*
+ * boot_khz: maximum in force at boot (the initial scaling_max_freq), 0 = max_khz. 2201000 by default
+ * (2.2 GHz, run on the UJC201); CPU tuning apps (Kernel Adiutor, SmartPack, LibreHU-service Tweaks...)
+ * can raise scaling_max_freq up to max_khz.
+ */
+static unsigned int ac8257_cpu_boot_khz = 2201000;
+/* scaling_max_freq / scaling_min_freq of the cpufreq policy (cpufreq notifier below) */
+static unsigned int ac8257_pol_max_khz = UINT_MAX, ac8257_pol_min_khz;
+static int ac8257_ppm_base[NR_MT_CPU_DVFS], ac8257_ppm_limit[NR_MT_CPU_DVFS];
+static bool ac8257_ppm_seen;
+static unsigned int ac8257_ppm_clusters;
+
+static int ac8257_idx_not_above(struct mt_cpu_dvfs *p, unsigned int khz)
+{
+	int i;
+
+	for (i = 0; i < p->nr_opp_tbl - 1; i++)
+		if (cpu_dvfs_get_freq_by_idx(p, i) <= khz)
+			break;
+	return i;
+}
+
+/* index of the highest OPP not above max_khz and scaling_max_freq (lower index = higher frequency) */
+static int ac8257_soft_max_idx(struct mt_cpu_dvfs *p)
+{
+	return ac8257_idx_not_above(p, min(ac8257_cpu_max_khz, ac8257_pol_max_khz));
+}
+
+/* index of the lowest OPP not below scaling_min_freq, -1 when there is no minimum */
+static int ac8257_soft_min_idx(struct mt_cpu_dvfs *p)
+{
+	int i;
+
+	if (!ac8257_pol_min_khz)
+		return -1;
+	for (i = p->nr_opp_tbl - 1; i > 0; i--)
+		if (cpu_dvfs_get_freq_by_idx(p, i) >= ac8257_pol_min_khz)
+			break;
+	return i;
+}
+
+/* PPM base/limit indexes of cluster i with the soft maximum applied; cpufreq_para_lock held */
+static void ac8257_apply_soft_max(unsigned int i)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(i);
+	int soft, floor;
+
+	if (!p || !p->opp_tbl || p->nr_opp_tbl <= 0)
+		return;
+	soft = ac8257_soft_max_idx(p);
+	p->idx_opp_ppm_base = ac8257_ppm_base[i];
+	p->idx_opp_ppm_limit = ac8257_ppm_limit[i];
+	/* scaling_min_freq: raise the floor (the maximum below still wins) */
+	floor = ac8257_soft_min_idx(p);
+	if (floor != -1 && (p->idx_opp_ppm_base == -1 || p->idx_opp_ppm_base > floor))
+		p->idx_opp_ppm_base = floor;
+	if (p->idx_opp_ppm_limit == -1 || p->idx_opp_ppm_limit < soft)
+		p->idx_opp_ppm_limit = soft;
+	if (p->idx_opp_ppm_base != -1 && p->idx_opp_ppm_base < soft)
+		p->idx_opp_ppm_base = soft;
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	/* the SSPM applies the limits: give it the capped indexes */
+	cpuhvfs_set_min_max(i, p->idx_opp_ppm_base, p->idx_opp_ppm_limit);
+#endif
+}
+
+static void ac8257_reapply_limits(void)
+{
+	unsigned long flags;
+	unsigned int i;
+
+	if (!ac8257_ppm_seen)
+		return;
+	cpufreq_para_lock(flags);
+	for (i = 0; i < ac8257_ppm_clusters; i++)
+		ac8257_apply_soft_max(i);
+	cpufreq_para_unlock(flags);
+#ifndef CONFIG_HYBRID_CPU_DVFS
+	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
+#endif
+}
+
+static int ac8257_cpu_max_set(const char *val, const struct kernel_param *kp)
+{
+	int ret = param_set_uint(val, kp);
+
+	if (!ret)
+		ac8257_reapply_limits();
+	return ret;
+}
+
+/*
+ * scaling_max_freq / scaling_min_freq written by userspace (CPU tuning apps): the PPM and the SSPM
+ * ignore the cpufreq policy limits, so fold them into the limits given to the SSPM.
+ */
+static int ac8257_policy_notify(struct notifier_block *nb, unsigned long event, void *data)
+{
+	struct cpufreq_policy *policy = data;
+
+	if (event != CPUFREQ_NOTIFY)
+		return NOTIFY_DONE;
+	if (policy->max == ac8257_pol_max_khz && policy->min == ac8257_pol_min_khz)
+		return NOTIFY_OK;
+	ac8257_pol_max_khz = policy->max;
+	ac8257_pol_min_khz = policy->min > policy->cpuinfo.min_freq ? policy->min : 0;
+	ac8257_reapply_limits();
+	return NOTIFY_OK;
+}
+
+static struct notifier_block ac8257_policy_nb = {
+	.notifier_call = ac8257_policy_notify,
+};
+
+static int __init ac8257_policy_nb_init(void)
+{
+	return cpufreq_register_notifier(&ac8257_policy_nb, CPUFREQ_POLICY_NOTIFIER);
+}
+late_initcall(ac8257_policy_nb_init);
+
+static const struct kernel_param_ops ac8257_cpu_max_ops = {
+	.set = ac8257_cpu_max_set,
+	.get = param_get_uint,
+};
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "ac8257_cpufreq."
+module_param_cb(max_khz, &ac8257_cpu_max_ops, &ac8257_cpu_max_khz, 0644);
+module_param_named(boot_khz, ac8257_cpu_boot_khz, uint, 0444);
+
+/*
+ * CPU voltages of the overclock table (ac8257_cpu_oc=1), settable at run time, as root, in
+ * /sys/module/ac8257_cpufreq/parameters/:
+ *   volt_uv         the 16 voltages in uV, highest frequency first (as scaling_available_frequencies);
+ *                   write 16 comma-separated values, 0 = keep the table value
+ *   volt_offset_uv  offset in uV added to every OPP (undervolt < 0, overvolt > 0), default 0
+ * Each result is rounded to the PMIC step (6250 uV) and kept within AC8257_VOLT_MIN_UV..AC8257_VOLT_MAX_UV.
+ * The new table goes to the SSPM the way the EEM updates it (cpuhvfs_update_volt). The EEM itself is off
+ * with the overclock table (calibrated against the stock one).
+ */
+#define AC8257_VOLT_MIN_UV	650000		/* MIN_VPROC_VOLT */
+#define AC8257_VOLT_MAX_UV	1100000		/* MAX_VPROC_VOLT; the PMIC buck goes up to 1.3125 V */
+#define AC8257_VOLT_STEP_UV	6250
+#define AC8257_PMIC_BASE_UV	518750		/* Vproc code 0 */
+
+extern int ac8257_cpu_oc;
+static unsigned int ac8257_volt_default[NR_FREQ];	/* 10 uV, the table as built */
+static unsigned int ac8257_volt_user[NR_FREQ];		/* uV, 0 = table value */
+static int ac8257_volt_offset_uv;
+static bool ac8257_volt_saved;
+static DEFINE_MUTEX(ac8257_volt_lock);
+
+static int ac8257_volt_apply(void)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
+	unsigned int code[NR_FREQ];
+	unsigned long flags;
+	int i, n;
+
+	if (!ac8257_cpu_oc || !p || !p->opp_tbl)
+		return -ENODEV;
+	n = min_t(int, p->nr_opp_tbl, NR_FREQ);
+	cpufreq_para_lock(flags);
+	if (!ac8257_volt_saved) {
+		for (i = 0; i < n; i++)
+			ac8257_volt_default[i] = cpu_dvfs_get_volt_by_idx(p, i);
+		ac8257_volt_saved = true;
+	}
+	for (i = 0; i < n; i++) {
+		int uv = ac8257_volt_user[i] ? ac8257_volt_user[i] : ac8257_volt_default[i] * 10;
+
+		uv += ac8257_volt_offset_uv;
+		uv = clamp(uv, AC8257_VOLT_MIN_UV, AC8257_VOLT_MAX_UV);
+		uv = DIV_ROUND_CLOSEST(uv - AC8257_PMIC_BASE_UV, AC8257_VOLT_STEP_UV);
+		code[i] = uv;
+		p->opp_tbl[i].cpufreq_volt = (AC8257_PMIC_BASE_UV + uv * AC8257_VOLT_STEP_UV) / 10;
+	}
+	cpufreq_para_unlock(flags);
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	cpuhvfs_update_volt(MT_CPU_DVFS_LL, code, n);
+#endif
+	return 0;
+}
+
+static int ac8257_volt_uv_set(const char *val, const struct kernel_param *kp)
+{
+	unsigned int v[NR_FREQ];
+	char *buf, *s, *tok;
+	int i = 0, ret = 0;
+
+	buf = kstrdup(val, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+	s = strim(buf);
+	while ((tok = strsep(&s, ", ")) != NULL) {
+		if (!*tok)
+			continue;
+		if (i >= NR_FREQ || kstrtouint(tok, 0, &v[i])) {
+			ret = -EINVAL;
+			break;
+		}
+		if (v[i] && (v[i] < AC8257_VOLT_MIN_UV || v[i] > AC8257_VOLT_MAX_UV)) {
+			ret = -ERANGE;
+			break;
+		}
+		i++;
+	}
+	kfree(buf);
+	if (!ret && i != NR_FREQ)
+		ret = -EINVAL;
+	if (ret)
+		return ret;
+	mutex_lock(&ac8257_volt_lock);
+	memcpy(ac8257_volt_user, v, sizeof(v));
+	ret = ac8257_volt_apply();
+	mutex_unlock(&ac8257_volt_lock);
+	return ret;
+}
+
+static int ac8257_volt_uv_get(char *buffer, const struct kernel_param *kp)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
+	int i, len = 0;
+
+	if (!p || !p->opp_tbl)
+		return -ENODEV;
+	for (i = 0; i < p->nr_opp_tbl && i < NR_FREQ; i++)
+		len += scnprintf(buffer + len, PAGE_SIZE - len, "%s%u", i ? "," : "",
+				 cpu_dvfs_get_volt_by_idx(p, i) * 10);
+	len += scnprintf(buffer + len, PAGE_SIZE - len, "\n");
+	return len;
+}
+
+static int ac8257_volt_offset_set(const char *val, const struct kernel_param *kp)
+{
+	int off, ret = kstrtoint(val, 0, &off);
+
+	if (ret)
+		return ret;
+	if (off < -(AC8257_VOLT_MAX_UV - AC8257_VOLT_MIN_UV) || off > AC8257_VOLT_MAX_UV - AC8257_VOLT_MIN_UV)
+		return -ERANGE;
+	mutex_lock(&ac8257_volt_lock);
+	ac8257_volt_offset_uv = off;
+	ret = ac8257_volt_apply();
+	mutex_unlock(&ac8257_volt_lock);
+	return ret;
+}
+
+static const struct kernel_param_ops ac8257_volt_uv_ops = {
+	.set = ac8257_volt_uv_set,
+	.get = ac8257_volt_uv_get,
+};
+static const struct kernel_param_ops ac8257_volt_offset_ops = {
+	.set = ac8257_volt_offset_set,
+	.get = param_get_int,
+};
+module_param_cb(volt_uv, &ac8257_volt_uv_ops, NULL, 0644);
+module_param_cb(volt_offset_uv, &ac8257_volt_offset_ops, &ac8257_volt_offset_uv, 0644);
+#endif
+
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
 	unsigned int i;
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
+#ifdef CONFIG_MACH_AC8257
+	unsigned long flags;
+
+	cpufreq_para_lock(flags);
+	for (i = 0; i < ppm->cluster_num && i < NR_MT_CPU_DVFS; i++) {
+		if (ppm->cpu_limit[i].has_advise_freq) {
+			ac8257_ppm_base[i] = ppm->cpu_limit[i].advise_cpufreq_idx;
+			ac8257_ppm_limit[i] = ppm->cpu_limit[i].advise_cpufreq_idx;
+		} else {
+			ac8257_ppm_base[i] = ppm->cpu_limit[i].min_cpufreq_idx;
+			ac8257_ppm_limit[i] = ppm->cpu_limit[i].max_cpufreq_idx;
+		}
+		ac8257_apply_soft_max(i);	/* calls cpuhvfs_set_min_max() */
+		ac8257_ppm_seen = true;
+		if (i + 1 > ac8257_ppm_clusters)
+			ac8257_ppm_clusters = i + 1;
+	}
+	cpufreq_para_unlock(flags);
+#else
 	for (i = 0; i < ppm->cluster_num; i++) {
 		if (ppm->cpu_limit[i].has_advise_freq)
 			cpuhvfs_set_min_max(i,
@@ -1285,6 +1569,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 				ppm->cpu_limit[i].min_cpufreq_idx,
 				ppm->cpu_limit[i].max_cpufreq_idx);
 	}
+#endif
 #else
 	unsigned long flags;
 	struct mt_cpu_dvfs *p;
@@ -1318,6 +1603,16 @@ static void ppm_limit_callback(struct ppm_client_req req)
 			ppm->cpu_limit[i].max_cpufreq_idx;
 			/* ppm update limit */
 		}
+#ifdef CONFIG_MACH_AC8257
+		if (i < NR_MT_CPU_DVFS) {
+			ac8257_ppm_base[i] = p->idx_opp_ppm_base;
+			ac8257_ppm_limit[i] = p->idx_opp_ppm_limit;
+			ac8257_apply_soft_max(i);
+			ac8257_ppm_seen = true;
+			if (i + 1 > ac8257_ppm_clusters)
+				ac8257_ppm_clusters = i + 1;
+		}
+#endif
 	}
 	cpufreq_para_unlock(flags);
 
@@ -1419,6 +1714,16 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		/* use cur phy freq is better */
 		policy->cur = cpu_dvfs_get_cur_freq(p);
+#ifdef CONFIG_MACH_AC8257
+		{
+			unsigned int boot = ac8257_cpu_boot_khz ?
+				min(ac8257_cpu_boot_khz, ac8257_cpu_max_khz) : ac8257_cpu_max_khz;
+			int idx = ac8257_idx_not_above(p, boot);
+
+			if (p->idx_opp_ppm_limit < idx)
+				p->idx_opp_ppm_limit = idx;
+		}
+#endif
 		policy->max = cpu_dvfs_get_freq_by_idx(p,
 				p->idx_opp_ppm_limit);
 		policy->min = cpu_dvfs_get_freq_by_idx(p,

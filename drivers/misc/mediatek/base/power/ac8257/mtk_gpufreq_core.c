@@ -136,6 +136,114 @@ GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 0),
 GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 1),
 GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 2),
 };
+/*
+ * AC8257 table: 730 MHz (the MT6761T top OPP of this GPU) added at the 0.80 V of the stock 660 MHz, and
+ * intermediate steps (600, 450, 300 MHz) at the voltage of the stock OPP just above them, for finer
+ * control from tuning apps. No voltage above the stock maximum. Loaded by default (ac8257_gpu_oc=0:
+ * stock table), capped at run time by max_khz below.
+ */
+static struct g_opp_table_info g_opp_table_ac8257_oc[] = {
+GPUOP(SEG4_GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 0),
+GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 1),
+GPUOP(600000, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 2),
+GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 3),
+GPUOP(450000, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 4),
+GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 5),
+GPUOP(300000, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 6),
+};
+static int ac8257_gpu_oc = 1;
+
+/*
+ * Highest GPU frequency used: /sys/module/ac8257_gpufreq/parameters/max_khz (or
+ * ac8257_gpufreq.max_khz= on the command line). 730000 by default: the whole table (730 MHz run on the
+ * UJC201 with the reverse-engineering kernel); 660000 = stock maximum.
+ */
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "ac8257_gpufreq."
+static unsigned int ac8257_gpu_max_khz = 730000;
+/*
+ * Boot and PTPOD OPPs stay at or below the stock top (660 MHz) even when max_khz allows the 730 MHz
+ * overclock OPP: stage 2d, which started the GPU at 730 MHz, had GPU EMI MPU violations. DVFS can still
+ * go up to max_khz afterwards.
+ */
+#define AC8257_GPU_BOOT_MAX_KHZ	660000
+#define ac8257_gpu_boot_max_khz()	min(ac8257_gpu_max_khz, (unsigned int)AC8257_GPU_BOOT_MAX_KHZ)
+module_param_named(max_khz, ac8257_gpu_max_khz, uint, 0644);
+/* Lowest GPU frequency used (0: none); the maximum wins. Also min_freq of the dfrgx node below. */
+static unsigned int ac8257_gpu_min_khz;
+module_param_named(min_khz, ac8257_gpu_min_khz, uint, 0644);
+
+/*
+ * GPU voltage. The GPU of the AC8257 has no rail of its own: it runs on VCORE, shared with the DRAM
+ * controller and the rest of the SoC, and each GPU OPP asks the DVFSRC for a VCORE level
+ * (__mt_gpufreq_vcore_volt_switch: above 0.70 V -> VCORE_OPP_0, above 0.65 V -> VCORE_OPP_1, else
+ * VCORE_OPP_3). /sys/module/ac8257_gpufreq/parameters/vcore_uv: the voltages of VCORE_OPP_0..3 in uV
+ * (stock 800000,700000,700000,650000); write 4 comma-separated values, 0 = keep. Applied through the
+ * SPM power-wrapper commands (set_vcore_uv_table, as the MediaTek dvfsrc_set_vcore_uv debug node),
+ * within AC8257_VCORE_MIN_UV..AC8257_VCORE_MAX_UV. Affects the whole SoC, not only the GPU.
+ */
+extern void dvfsrc_opp_table_init(void);	/* drivers/devfreq/helio-dvfsrc.c */
+
+#define AC8257_VCORE_MIN_UV	600000
+#define AC8257_VCORE_MAX_UV	900000	/* stock top 0.80 V; the PMIC buck goes up to 1.3125 V */
+
+static int ac8257_vcore_uv_set(const char *val, const struct kernel_param *kp)
+{
+	unsigned int v[VCORE_OPP_NUM];
+	char *buf, *s, *tok;
+	int i = 0, ret = 0;
+
+	buf = kstrdup(val, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+	s = strim(buf);
+	while ((tok = strsep(&s, ", ")) != NULL) {
+		if (!*tok)
+			continue;
+		if (i >= VCORE_OPP_NUM || kstrtouint(tok, 0, &v[i])) {
+			ret = -EINVAL;
+			break;
+		}
+		if (v[i] && (v[i] < AC8257_VCORE_MIN_UV || v[i] > AC8257_VCORE_MAX_UV)) {
+			ret = -ERANGE;
+			break;
+		}
+		i++;
+	}
+	kfree(buf);
+	if (!ret && i != VCORE_OPP_NUM)
+		ret = -EINVAL;
+	if (ret)
+		return ret;
+	for (i = 0; i < VCORE_OPP_NUM; i++)
+		if (v[i])
+			set_vcore_uv_table(i, v[i]);
+	dvfsrc_opp_table_init();
+	return 0;
+}
+
+static int ac8257_vcore_uv_get(char *buffer, const struct kernel_param *kp)
+{
+	int i, len = 0;
+
+	for (i = 0; i < VCORE_OPP_NUM; i++)
+		len += scnprintf(buffer + len, PAGE_SIZE - len, "%s%d", i ? "," : "",
+				 get_vcore_uv_table(i));
+	len += scnprintf(buffer + len, PAGE_SIZE - len, "\n");
+	return len;
+}
+
+static const struct kernel_param_ops ac8257_vcore_uv_ops = {
+	.set = ac8257_vcore_uv_set,
+	.get = ac8257_vcore_uv_get,
+};
+module_param_cb(vcore_uv, &ac8257_vcore_uv_ops, NULL, 0644);
+
+static int __init ac8257_gpu_oc_setup(char *str)
+{
+	return kstrtoint(str, 0, &ac8257_gpu_oc) == 0;
+}
+__setup("ac8257_gpu_oc=", ac8257_gpu_oc_setup);
 static const struct of_device_id g_gpufreq_of_match[] = {
 	{ .compatible = "mediatek,ac8257-gpufreq" },
 	{ /* sentinel */ }
@@ -243,6 +351,15 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		mutex_unlock(&mt_gpufreq_lock);
 		return -1;
 	}
+
+	/* AC8257 soft maximum: skip the OPPs above max_khz (the last one is always allowed) */
+	while (idx < g_opp_idx_num - 1 &&
+	       g_opp_table[idx].gpufreq_khz > ac8257_gpu_max_khz)
+		idx++;
+	/* AC8257 soft minimum, within the maximum */
+	while (idx > 0 && g_opp_table[idx].gpufreq_khz < ac8257_gpu_min_khz &&
+	       g_opp_table[idx - 1].gpufreq_khz <= ac8257_gpu_max_khz)
+		idx--;
 
 	/* look up for the target OPP table */
 	target_freq = g_opp_table[idx].gpufreq_khz;
@@ -458,7 +575,9 @@ void mt_gpufreq_disable_by_ptpod(void)
 	/* Fix GPU @ 0.8V */
 	for (i = 0; i < g_opp_idx_num; i++) {
 		if (g_opp_table_default[i].gpufreq_volt <=
-			GPU_DVFS_PTPOD_DISABLE_VOLT) {
+			GPU_DVFS_PTPOD_DISABLE_VOLT &&
+		    (g_opp_table_default[i].gpufreq_khz <= ac8257_gpu_boot_max_khz() ||
+		     i == g_opp_idx_num - 1)) {
 			target_idx = i;
 			break;
 		}
@@ -2296,8 +2415,11 @@ static void __mt_gpufreq_set_initial(void)
 
 	mutex_lock(&mt_gpufreq_lock);
 
-	/* default OPP index */
+	/* default OPP index: the highest one within the AC8257 boot maximum */
 	g_cur_opp_cond_idx = 0;
+	while (g_cur_opp_cond_idx < g_opp_idx_num - 1 &&
+	       g_opp_table[g_cur_opp_cond_idx].gpufreq_khz > ac8257_gpu_boot_max_khz())
+		g_cur_opp_cond_idx++;
 
 	/* set POST_DIVIDER initial value */
 	g_cur_post_divider_power = POST_DIV4;
@@ -2430,8 +2552,12 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
 
 
-	__mt_gpufreq_setup_opp_table(g_opp_table_6761,
-			ARRAY_SIZE(g_opp_table_6761));
+	if (ac8257_gpu_oc)
+		__mt_gpufreq_setup_opp_table(g_opp_table_ac8257_oc,
+				ARRAY_SIZE(g_opp_table_ac8257_oc));
+	else
+		__mt_gpufreq_setup_opp_table(g_opp_table_6761,
+				ARRAY_SIZE(g_opp_table_6761));
 		g_fixed_vsram_volt_idx = 0;
 
 	/* setup PMIC init value */
@@ -2563,6 +2689,111 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 /*
  * register the gpufreq driver
  */
+#ifdef CONFIG_MACH_AC8257
+/*
+ * GPU frequency control for tuning apps (Kernel Adiutor, SmartPack Kernel Manager...): they know the
+ * PowerVR devfreq layout /sys/devices/platform/dfrgx/devfreq/dfrgx/ (values in kHz). cur_freq,
+ * available_frequencies, max_freq and min_freq (the ac8257_gpufreq max_khz / min_khz limits);
+ * governor and available_governors only report the MediaTek GPU DVFS (GED), writes are ignored.
+ */
+static ssize_t dfrgx_cur_freq_show(struct kobject *k, struct kobj_attribute *a, char *buf)
+{
+	return sprintf(buf, "%u\n", mt_gpufreq_get_cur_freq());
+}
+
+static ssize_t dfrgx_avail_show(struct kobject *k, struct kobj_attribute *a, char *buf)
+{
+	ssize_t n = 0;
+	int i;
+
+	for (i = g_opp_idx_num - 1; i >= 0; i--)
+		n += scnprintf(buf + n, PAGE_SIZE - n, "%u%s", g_opp_table[i].gpufreq_khz,
+			       i ? " " : "\n");
+	return n;
+}
+
+static void dfrgx_reapply(void)
+{
+	if (g_opp_table && g_opp_idx_num)
+		mt_gpufreq_target(g_cur_opp_cond_idx);
+}
+
+static ssize_t dfrgx_max_show(struct kobject *k, struct kobj_attribute *a, char *buf)
+{
+	return sprintf(buf, "%u\n", ac8257_gpu_max_khz);
+}
+
+static ssize_t dfrgx_max_store(struct kobject *k, struct kobj_attribute *a, const char *buf,
+			       size_t count)
+{
+	unsigned int v;
+
+	if (kstrtouint(buf, 0, &v) || !v)
+		return -EINVAL;
+	ac8257_gpu_max_khz = v;
+	dfrgx_reapply();
+	return count;
+}
+
+static ssize_t dfrgx_min_show(struct kobject *k, struct kobj_attribute *a, char *buf)
+{
+	return sprintf(buf, "%u\n", ac8257_gpu_min_khz ? ac8257_gpu_min_khz :
+		       (g_opp_idx_num ? g_opp_table[g_opp_idx_num - 1].gpufreq_khz : 0));
+}
+
+static ssize_t dfrgx_min_store(struct kobject *k, struct kobj_attribute *a, const char *buf,
+			       size_t count)
+{
+	unsigned int v;
+
+	if (kstrtouint(buf, 0, &v))
+		return -EINVAL;
+	ac8257_gpu_min_khz = v;
+	dfrgx_reapply();
+	return count;
+}
+
+static ssize_t dfrgx_gov_show(struct kobject *k, struct kobj_attribute *a, char *buf)
+{
+	return sprintf(buf, "mtk_ged\n");
+}
+
+static ssize_t dfrgx_gov_store(struct kobject *k, struct kobj_attribute *a, const char *buf,
+			       size_t count)
+{
+	return count;
+}
+
+static struct kobj_attribute dfrgx_attrs[] = {
+	__ATTR(cur_freq, 0444, dfrgx_cur_freq_show, NULL),
+	__ATTR(available_frequencies, 0444, dfrgx_avail_show, NULL),
+	__ATTR(max_freq, 0644, dfrgx_max_show, dfrgx_max_store),
+	__ATTR(min_freq, 0644, dfrgx_min_show, dfrgx_min_store),
+	__ATTR(governor, 0644, dfrgx_gov_show, dfrgx_gov_store),
+	__ATTR(available_governors, 0444, dfrgx_gov_show, NULL),
+};
+
+static void __init ac8257_dfrgx_init(void)
+{
+	struct platform_device *pdev;
+	struct kobject *devfreq, *node;
+	int i;
+
+	pdev = platform_device_register_simple("dfrgx", -1, NULL, 0);
+	if (IS_ERR(pdev))
+		return;
+	devfreq = kobject_create_and_add("devfreq", &pdev->dev.kobj);
+	node = devfreq ? kobject_create_and_add("dfrgx", devfreq) : NULL;
+	if (!node) {
+		gpufreq_perr("@%s: cannot create the dfrgx node\n", __func__);
+		return;
+	}
+	for (i = 0; i < ARRAY_SIZE(dfrgx_attrs); i++)
+		if (sysfs_create_file(node, &dfrgx_attrs[i].attr))
+			gpufreq_perr("@%s: cannot create %s\n", __func__, dfrgx_attrs[i].attr.name);
+}
+#endif
+
 static int __init __mt_gpufreq_init(void)
 {
 	int ret = 0;
@@ -2584,6 +2815,10 @@ static int __init __mt_gpufreq_init(void)
 	if (ret)
 		gpufreq_perr("@%s: fail to register gpufreq driver\n",
 		__func__);
+#ifdef CONFIG_MACH_AC8257
+	else
+		ac8257_dfrgx_init();
+#endif
 
 out:
 	return ret;
