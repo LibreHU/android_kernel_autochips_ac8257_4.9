@@ -231,8 +231,11 @@ snd-soc-rt5509-objs := rt5509.o rt5509-regmap.o rt5509-calib.o
 
 ifneq ($(CONFIG_ARCH_MTK_PROJECT), "ac8257_evb")
 ifneq ($(CONFIG_ARCH_MTK_PROJECT), "ac8257_jac")
+# LibreHU: no TDA7729 on the Jancar UJC201 (absent from the stock kernel)
+ifneq ($(CONFIG_JANCAR_SOLUTION),y)
 ccflags-y +=	-DUSE_TDA7729
 snd-soc-tda7729-objs := tda7729.o
+endif
 endif
 endif
 
@@ -464,7 +467,9 @@ obj-$(CONFIG_SND_SOC_MT2701)	+= mt2712-codec.o
 
 ifneq ($(CONFIG_ARCH_MTK_PROJECT), "ac8257_evb")
 ifneq ($(CONFIG_ARCH_MTK_PROJECT), "ac8257_jac")
+ifneq ($(CONFIG_JANCAR_SOLUTION),y)
 obj-$(CONFIG_SND_SOC) += snd-soc-tda7729.o
+endif
 endif
 endif
 
