@@ -9,6 +9,7 @@ reconstruit (branche `reverse-engineering`).
 | [BUILD.md](BUILD.md) | compiler (CI, en local), particularites de l'arbre Autochips, tester sur l'unite |
 | [STATUS.md](STATUS.md) | etat par fonction sur l'unite (rien n'est encore teste avec ce noyau) |
 | [TUNING.md](TUNING.md) | frequences et tensions CPU / GPU (overclock, sous-tension), parametres |
+| [TOUCH.md](TOUCH.md) | dalles tactiles : references, pilotes du stock et de LibreHU, sources |
 | [VIDEO.md](VIDEO.md) | camera AHD (TP9963), CVBS IN, VIDEO OUT, ARM2 ; reconstruction du pilote TP9963 |
 | [PORTING.md](PORTING.md) | modifications de `reverse-engineering` : deja natives chez Autochips, a verifier, a reprendre ; suivi |
 | [../README.md](../README.md) | presentation, branches, roadmap |

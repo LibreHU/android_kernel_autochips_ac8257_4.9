@@ -12,6 +12,7 @@ Aucun test sur l'unite pour l'instant. Colonne « reverse-engineering » : etat 
 | Affichage, HWC, ecran externe | non teste | OK (ABI reconstruite) | `video/ac8257` natif ; `CONFIG_LCM_WIDTH/HEIGHT` 1024 x 600 comme le stock, ecran reel 1280 x 720 (`wm size` du stock) decrit par la metazone (`lcm_driver_common`) |
 | Retro-eclairage | non teste | OK la plupart du temps | |
 | Tactile (dalle Goodix GT911) | non teste | OK (goodix.c adapte) | pilote MediaTek `GT928` (`mtk-tpd`, RST 45 / INT 29) comme le stock ; inversion de X du paquet desactivee (le stock ne l'a pas) |
+| Tactiles d'autres dalles (FocalTech, ILITEK, Himax, Hynitron) | non teste | absent | pilotes GPL publics, apres le GT928 : [TOUCH.md](TOUCH.md) |
 | `/dev/gpios_ioctl` (Jancar) | non teste | present | reimplementation de `reverse-engineering` (`drivers/misc/jancar`), noeud du DT stock |
 | Metazone `/dev/mtz` | non teste | OK (lecture) | pilote Autochips natif (lecture et ecriture : ne rien ecrire sans sauvegarde) |
 | Camera de recul, AV-in, AVM (TVD, DI, NR, WCH, backcar) | non teste | **ne marche pas** | pilotes Autochips presents ; decodeur `tp9963` (camera AHD) reconstruit depuis le stock : [VIDEO.md](VIDEO.md) |

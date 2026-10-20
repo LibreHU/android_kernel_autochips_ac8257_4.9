@@ -43,3 +43,4 @@ Une ligne par groupe repris (commit de `LibreHU-main`, CI, test sur l'unite) :
 | Ethernet USB integre | `21075fda0` | OK (run 48) | non teste |
 | Decodeur camera TP9963 reconstruit (`tp9963_yuv`) | `e6f791680` | OK (run 49) | non teste |
 | Tactile : pas d'inversion de X (`SPECIAL_TOUCHPAD_ATC`) | `f08111f01` | OK (run 49) | non teste |
+| Tactiles des autres dalles (FocalTech V3, ILITEK V3, Himax, Hynitron) | `9be792ee2`, `46bb3db90` | OK (run 51) | non teste |
