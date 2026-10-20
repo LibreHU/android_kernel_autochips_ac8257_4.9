@@ -450,6 +450,15 @@ static ssize_t gt91xx_config_read_proc(struct file *file, char *buffer, size_t c
 	}
 
 	ptr = page;
+#ifdef CONFIG_JANCAR_SOLUTION
+	/*
+	 * Panel id first, as the stock UJC201 kernel: config version, touch number, X max, Y max. Userspace
+	 * (ivi-services, LibreHU-service) picks the calibration of the panel in pointercal.xml by these 19 characters.
+	 */
+	ptr += sprintf(ptr, "%04d_%04d_%04d_%04d\n", config[GTP_ADDR_LENGTH], config[RESOLUTION_LOC + 4],
+		       config[RESOLUTION_LOC] | (config[RESOLUTION_LOC + 1] << 8),
+		       config[RESOLUTION_LOC + 2] | (config[RESOLUTION_LOC + 3] << 8));
+#endif
 	ptr += sprintf(ptr, "==== GT9XX config init value====\n");
 
 	for (i = 0; i < GTP_CONFIG_MAX_LENGTH; i++) {

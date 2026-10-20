@@ -44,6 +44,14 @@ message `ctp calibration: nr=…` dans `dmesg`, meme formule (lue dans `touch_ev
 64 bits et `Div = 0` refuse (`-EINVAL`). Verification : `cat /sys/devices/platform/touch/gt9xx_props` doit
 afficher la matrice de LibreHU-service, pas `1 0 0 0 1 0 1`.
 
+La matrice a appliquer depend de la dalle : l'espace utilisateur (ivi-services, LibreHU-service) la choisit dans
+`/jancar/config/pointercal.xml` par l'identifiant de la dalle, les 19 premiers caracteres de `/proc/gt9xx_config`.
+Le noyau stock y ecrit d'abord une ligne `VVVV_TTTT_XXXX_YYYY` (version de config, nombre de points, X max, Y max
+lus dans la config de la puce, format `%04d_%04d_%04d_%04d` du stock), par exemple `0065_0005_1080_0600` ; le
+paquet GPL commence directement par `==== GT9XX config init value====`. Sans cette ligne aucun noeud ne
+correspond, rien n'est ecrit et la matrice reste l'identite (premier test sur l'unite : tactile hors cadre).
+`LibreHU-main` ajoute la ligne (avec `CONFIG_JANCAR_SOLUTION`). Verification : `head -1 /proc/gt9xx_config`.
+
 ## Firmware des dalles
 Aucun pilote ajoute n'ecrit dans la puce au demarrage :
 - FocalTech : pas de firmware integre (`FTS_AUTO_UPGRADE_EN 0`) ; les modules de mise a jour qui demandent un
