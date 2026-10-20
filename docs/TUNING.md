@@ -65,6 +65,23 @@ SoC a ce niveau, pas seulement du GPU.
 Noeud pour les applis : `/sys/devices/platform/dfrgx/devfreq/dfrgx/` (`cur_freq`, `available_frequencies`,
 `max_freq`, `min_freq`).
 
+## Audit du 20/10/2026 : fréquence « capricieuse »
+
+Le comportement erratique vu avec les noyaux `reverse-engineering` (meme code) avait trois causes, corrigees :
+
+| Cause | Effet | Correction |
+|---|---|---|
+| Le thread de reception SSPM (`mtk_cpufreq_hybrid.c`) recopie les bornes min / max que la SSPM lui renvoie dans `policy->min` / `max` via `opp_tbl[index]` ; un index -1 (« pas de limite ») lisait `opp_tbl[-1]` | `scaling_min_freq` / `scaling_max_freq` aleatoires | bornes toujours dans la table, cote envoi (`ac8257_apply_soft_max`) et cote reception |
+| Plancher au-dessus du plafond (`scaling_min_freq` au-dessus d'une limite PPM / thermique) | la frequence cible oscille entre les deux | le plafond l'emporte : plancher ramene au plafond |
+| Pas de table de puissance (upower) pour la table OC : repli sur la table FY lue par index d'OPP, 2,6 GHz estime comme 2,0 GHz | budget de puissance / thermique de la PPM et modele d'energie de l'ordonnanceur faux en haut : la frequence monte trop, puis le thermique bride brutalement | table upower construite pour l'OC (lignes FY reprises, au-dessus de 2001 MHz extrapolees par exces : f.V^2 dynamique, V^3 fuite ; capacite ramenee a 1024) |
+
+Verifie et sain : chemin gouverneur -> `_calc_new_opp_idx` -> SSPM, plafond utilisateur via le notifier de
+politique (enregistre avant le pilote), plancher du boost tactile, cote GPU ordre des limites (plafond LibreHU,
+plancher, puis thermique / puissance prioritaires) et table de puissance GPU calculee depuis les vraies
+frequence et tension. Limites restantes : une tension changee a chaud (`volt_uv`, `vcore_uv`) n'est pas reportee
+dans les estimations de puissance (upower, table GPU) ; la frequence affichee est celle que la SSPM rapporte
+(moyenne de son journal), pas une mesure de la PLL.
+
 ## Prudence
 
 - Au-dessus de 2,3 GHz et au-dessus de 1,025 V, rien n'a ete essaye sur l'unite. La tenue depend de la puce
