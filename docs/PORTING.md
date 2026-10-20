@@ -41,5 +41,5 @@ Une ligne par groupe repris (commit de `LibreHU-main`, CI, test sur l'unite) :
 | Reglages et outils de mise au point (`drivers/misc/librehu`) | `ca58c1354` | OK (run 45) | non teste |
 | Overclock CPU 2,6 GHz / GPU 730 MHz, tensions CPU et VCORE | `c9be1fcd8`, audit `ff24b6437` | OK (run 48) | non teste |
 | Ethernet USB integre | `21075fda0` | OK (run 48) | non teste |
-| Decodeur camera TP9963 reconstruit (`tp9963_yuv`) | `e6f791680` | en cours | non teste |
-| Tactile : pas d'inversion de X (`SPECIAL_TOUCHPAD_ATC`) | `f08111f01` | en cours | non teste |
+| Decodeur camera TP9963 reconstruit (`tp9963_yuv`) | `e6f791680` | OK (run 49) | non teste |
+| Tactile : pas d'inversion de X (`SPECIAL_TOUCHPAD_ATC`) | `f08111f01` | OK (run 49) | non teste |
