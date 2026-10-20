@@ -9,6 +9,7 @@ reconstruit (branche `reverse-engineering`).
 | [BUILD.md](BUILD.md) | compiler (CI, en local), particularites de l'arbre Autochips, tester sur l'unite |
 | [STATUS.md](STATUS.md) | etat par fonction sur l'unite (rien n'est encore teste avec ce noyau) |
 | [TUNING.md](TUNING.md) | frequences et tensions CPU / GPU (overclock, sous-tension), parametres |
+| [VIDEO.md](VIDEO.md) | camera AHD (TP9963), CVBS IN, VIDEO OUT, ARM2 ; reconstruction du pilote TP9963 |
 | [PORTING.md](PORTING.md) | modifications de `reverse-engineering` : deja natives chez Autochips, a verifier, a reprendre ; suivi |
 | [../README.md](../README.md) | presentation, branches, roadmap |
 | [../README_LIBREHU.md](../README_LIBREHU.md) | les trois branches, provenance du paquet Autochips et ce qui y manque |
@@ -25,7 +26,7 @@ Un nouvel envoi de Jancar (pilotes manquants) est ajoute tel quel sur `autochips
 
 ## Ce qui manque encore aux sources Autochips
 Pilotes et modifications Jancar (`CONFIG_JANCAR_SOLUTION`, `CONFIG_JANCAR_GPIOS`, pilote LCM `jac_*`,
-`lowmemorykiller` `jancar.services`, telecommande `rc-jancar`), overlay `UJC201_64`, capteur `tp9963`, tactiles
+`lowmemorykiller` `jancar.services`, telecommande `rc-jancar`), overlay `UJC201_64`, capteur `tp9963` (reconstruit en attendant, [VIDEO.md](VIDEO.md)), tactiles
 d'autres ecrans, modules hors arbre (`wmt_drv`, `bt_drv`, `gps_drv`, `fmradio_drv`, `wmt_chrdev_wifi`,
 `wlan_drv_gen4m`, `met`, `fpsgo`) : redemandes a Jancar le 19/10/2026. Detail dans `README_LIBREHU.md` ;
 analyse complete et sources de remplacement : `docs/ujc201/kernel_gpl.md` de `reverse-engineering`.

@@ -18,7 +18,8 @@ l'instant :
   `drivers/mmc/host/mediatek/ComboA/ac8257/atc_storage_partition.h`, repris du noyau stock (detail : `docs/BUILD.md`) ;
 - `arch/arm64/configs/ac8257_ujc201_defconfig` = config complete du noyau stock #72 (IKCONFIG de l'image), ajustee
   seulement la ou le paquet manque de sources : overlay `mediatek/ac8257_demo` au lieu de `UJC201_64` (l'unite garde sa
-  partition `dtbo` stock), capteurs sans `tp9963_yuv`, sans `JANCAR_*`, `TOUCHSCREEN_FTS*`, `TOUCHSCREEN_SYNA_TCM2*`.
+  partition `dtbo` stock), sans `TOUCHSCREEN_FTS*`, `TOUCHSCREEN_SYNA_TCM2*` ; `JANCAR_GPIOS` et `tp9963_yuv` y sont
+  les reimplementations LibreHU (`drivers/misc/jancar`, pilote reconstruit depuis le noyau stock : `docs/VIDEO.md`).
 
 ## Documentation
 `docs/` : [README](docs/README.md) (index), [BUILD](docs/BUILD.md) (compiler, tester), [STATUS](docs/STATUS.md)
@@ -59,9 +60,9 @@ Noyau de reference : celui de la mise a jour officielle Jancar de janvier 2026, 
    (`jac_lcm_get_mipi_params_form_MetaZone`, `jac_detect_format_from_metazone`, `jac_push_table`,
    `jac_set_lcd_power_kthread`, `jac_set_params`), `drivers/staging/android/lowmemorykiller.c` (`jancar.services`,
    `/jancar/config/ivi-priapps.ini`), table de telecommande IR `rc-jancar`.
-3. **Pilotes actives mais absents** : capteur `tp9963_yuv` ; tactiles `CONFIG_TOUCHSCREEN_FTS`,
+3. **Pilotes actives mais absents** : capteur `tp9963_yuv` (reconstruit sur `LibreHU-main` en attendant) ; tactiles `CONFIG_TOUCHSCREEN_FTS`,
    `CONFIG_TOUCHSCREEN_SYNA_TCM2` / `_I2C`, `ILITEK_V3`, `hxchipset` (Himax), `synaptics_dsx`, Sitronix (ecrans
-   d'autres variantes ; celui de l'unite, GT928, est present).
+   d'autres variantes ; celui de l'unite, pilote GT928 pour sa dalle GT911, est present).
 4. **Modules hors arbre de `/vendor/lib/modules`** (`vendor/mediatek/kernel_modules/`) : connectivite `wmt_drv`,
    `bt_drv`, `gps_drv`, `fmradio_drv`, `wmt_chrdev_wifi`, `wlan_drv_gen4m` ; `met`, `fpsgo`. Seul l'adaptateur
    integre `connadp` est ici.

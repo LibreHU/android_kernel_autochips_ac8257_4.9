@@ -8,7 +8,7 @@ Une partie contournait l'absence des sources Autochips et existe deja ici (verif
 | Compatibles renommes du device tree stock | `179bd19dc` | oui (arbre `ac8257` natif) | rien, a verifier au demarrage |
 | Frame buffer `autochips,framebuffer`, ABI HWC (ecran externe, affichage rapide) | `a9ea3a022`, `dfcd7fa01` | oui (`video/ac8257/videox`) | rien |
 | Options ext4 `autoformat` / `autorestore` / `permissioncheck` | `abdcad3a5` | oui (`fs/ext4/super.c`) | rien |
-| Tactile GT928 (adresse, polling, EINT 42, axes) | `e74ff9a2c`, `a26190740`, `474264ca4`, `bf5607775`, `b6651b70d`, `c4e33f390` | oui : `goodix.c` Autochips + `atc_customize.c` (axes par ecran, `kps_info`), compiles par le stock | rien ; tester |
+| Tactile GT928 (adresse, polling, EINT 42, axes) | `e74ff9a2c`, `a26190740`, `474264ca4`, `bf5607775`, `b6651b70d`, `c4e33f390` | oui : comme le stock, `goodix.c` abandonne et le pilote MediaTek `GT928` pilote la dalle GT911 (RST 45 / INT 29) | desactiver l'inversion de X du paquet (absente du stock) : **fait** ; tester |
 | Tampons sous 4 Go (Trusty, GPU, ION) | `6a44c9b82`, `4fa7c72d4`, `35b0f246e` | `GFP_DMA` dans ION et Trusty | verifier le GPU et ION avec 6 Go de RAM |
 | metazone (`/dev/mtz`, API noyau) | `3c421dd1b` (stubs), `7b96133c9` | oui (`drivers/misc/autochips/metazone`) | rien |
 | spidev, UART2/3, horloges | `1e95903d7`, `010e78855`, `dafab7e4c` | `spi-ac82xx-dev` | verifier le majeur 163 pour `wmt_chrdev_wifi` |
@@ -39,5 +39,7 @@ Une ligne par groupe repris (commit de `LibreHU-main`, CI, test sur l'unite) :
 | DT stock de l'unite (`mediatek/ac8257_ujc201`), `/dev/gpios_ioctl` | `902fe08c6` | OK (run 44) | non teste |
 | KernelSU Next | `fe434692f` | OK (run 45) | non teste |
 | Reglages et outils de mise au point (`drivers/misc/librehu`) | `ca58c1354` | OK (run 45) | non teste |
-| Overclock CPU 2,6 GHz / GPU 730 MHz, tensions CPU et VCORE | `c9be1fcd8` | en cours | non teste |
-| Ethernet USB integre | `21075fda0` | en cours | non teste |
+| Overclock CPU 2,6 GHz / GPU 730 MHz, tensions CPU et VCORE | `c9be1fcd8`, audit `ff24b6437` | OK (run 48) | non teste |
+| Ethernet USB integre | `21075fda0` | OK (run 48) | non teste |
+| Decodeur camera TP9963 reconstruit (`tp9963_yuv`) | `e6f791680` | en cours | non teste |
+| Tactile : pas d'inversion de X (`SPECIAL_TOUCHPAD_ATC`) | `f08111f01` | en cours | non teste |

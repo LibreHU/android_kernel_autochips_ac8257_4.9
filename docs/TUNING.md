@@ -5,7 +5,7 @@ Tables d'overclock chargees par defaut, plafonnees au demarrage, reglables a cha
 LibreHU-service). **Pas encore teste avec ce noyau** : les valeurs « testees » sont celles de la branche
 `reverse-engineering` sur l'UJC201.
 
-## CPU (8 x Cortex-A53, un seul cluster)
+## CPU (4 x Cortex-A53, un seul cluster)
 
 Table `CPU_LEVEL_3` (`cpufreq_v1/src/mach/ac8257/mtk_cpufreq_opp_table.h`, 16 entrees imposees par la table
 d'enregistrement de la SSPM, qui applique le DVFS) :

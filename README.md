@@ -6,7 +6,28 @@ d'Autochips** recues de SIXWIN / Jancar le 19/10/2026, auxquelles on ajoute les 
 **Etat** : compile en CI (`Image.gz-dtb`, images boot et recovery de test). **Pas encore teste sur l'unite.**
 
 > Les modifications de `reverse-engineering` sont reprises (voir [Modifications LibreHU](#modifications-librehu)),
-> plus l'overclock jusqu'a 2,6 GHz avec tensions reglables et l'Ethernet USB integre.
+> plus l'overclock jusqu'a 2,6 GHz avec tensions reglables, l'Ethernet USB integre et le pilote du decodeur camera
+> TP9963, absent du paquet, reconstruit depuis le noyau stock.
+
+## Le SoC AC8257
+
+![AC8257 : caracteristiques (AutoChips)](docs/img/ac8257_autochips_features.webp)
+
+Page « AC8257产品特征 » (caracteristiques de l'AC8257) de la
+[brochure AutoChips 2020](https://img.sae-china.org/resources/platform/uploadid_1612260475_QARR.pdf), © AutoChips.
+
+Ce qu'on en verifie sur l'unite :
+
+| Annonce | Sur l'UJC201 |
+|---|---|
+| 4 coeurs Cortex-A53 jusqu'a 2,0 GHz, GPU GE8300 | **oui** : 4 coeurs au demarrage (`SMP: Total of 4 processors activated`, MIDR `410fd034` = Cortex-A53), table stock a 2001 MHz maximum, PowerVR GE8300. L'overclock LibreHU (2,2 GHz au demarrage, 2,6 GHz possibles) depasse donc la fiche : voir [docs/TUNING.md](docs/TUNING.md) |
+| ARM9 dedie au recul rapide (CVBS en 2 s, AHD 1080p / 720p en 3 s) | **oui** : c'est l'« ARM2 » (`dualarm`, memoire `arm2-backcar-*`) ; il rend la camera a Linux apres le demarrage |
+| AHD par MIPI CSI-2 | **oui** : decodeur Techpoint TP9963 sur MIPI ; CVBS par le decodeur integre (TVD) ; voir [docs/VIDEO.md](docs/VIDEO.md) |
+| LPDDR3 / LPDDR4(X), eMMC 5.1, USB 3.1 Gen1 + USB 2.0 OTG, modem LTE Cat 7 integre, ecran jusqu'a 1920 x 1080, decodage 1080p30 H.265 / H.264 | non verifie un par un ; l'ecran de l'unite est en 1280 x 720 |
+| Gravure 14 nm | non verifiable ici (aucune autre source trouvee) |
+
+C'est une fiche commerciale : elle donne les limites de la puce, pas celles de la carte Jancar (alimentation,
+refroidissement, puces presentes).
 
 ## Les branches
 
@@ -32,7 +53,7 @@ autochips-gpl ──(git merge autochips-gpl)──▶ LibreHU-main ◀──(re
   GCC 4.9) et les variables de `kenv.mk` du stock (`ATC_DISABLE_BATTERY_CHARGER=yes`, `ATC_FASTDISP_VERSION=2.0`) ;
   artefacts : `Image.gz-dtb`, `config`, `recovery_test_ac8257.img`, `boot_ac8257.img`.
 - **defconfig de l'unite** `ac8257_ujc201_defconfig` = config complete du noyau stock #72, sans les options dont les
-  sources manquent (capteur `tp9963`, overlay `UJC201_64`, tactiles d'autres ecrans), plus les ajouts ci-dessous.
+  sources manquent (overlay `UJC201_64`, tactiles d'autres ecrans), plus les ajouts ci-dessous.
 - **Device tree de l'unite** `mediatek/ac8257_ujc201` = le DT du noyau stock #72, decompile (recompile, il donne le
   DTB stock octet pour octet). Le `ac8257.dts` generique d'Autochips n'a pas le noeud GPIO Jancar, le recepteur IR,
   ni `firmware/android/vbmeta`, et monte `system` alors que l'unite est en system-as-root.
@@ -53,14 +74,17 @@ points d'accroche.
 | KernelSU Next v3.4.0-legacy | hooks manuels, gestionnaire KernelSU Next v3.4.0 | OK |
 | Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock | OK |
 | Outils de mise au point | console pstore precoce, panique minutee, interception des redemarrages, one-shot, retour en recovery, memoire SPM / SCP hors de Linux en boot recovery. **A desactiver pour l'usage quotidien** | OK |
-| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,2 GHz** | 16 OPP ; 2,1-2,3 GHz a 1,025 V (testes sur `reverse-engineering`), 2,4-2,6 GHz a 1,05-1,10 V (non testes) ; [docs/TUNING.md](docs/TUNING.md) | en cours |
-| **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,10 V, envoyees a la SSPM | en cours |
-| **GPU 730 MHz** et OPP intermediaires, **tensions VCORE reglables** | le GPU tourne sur VCORE (partagee avec le SoC) : `ac8257_gpufreq.vcore_uv`, 0,60-0,90 V | en cours |
-| **Ethernet USB integre** | RTL8152/8153, RNDIS (partage de connexion Android), iPhone, LAN78xx, SMSC, DM9601, SR9700/9800, MCS7830, CH9200, RTL8150, Pegasus, CDC EEM (en plus d'AX88179, CDC Ether, CDC NCM du stock) | en cours |
+| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,2 GHz** | 16 OPP ; 2,1-2,3 GHz a 1,025 V (testes sur `reverse-engineering`), 2,4-2,6 GHz a 1,05-1,10 V (non testes) ; [docs/TUNING.md](docs/TUNING.md) | OK (run 48) |
+| **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,10 V, envoyees a la SSPM | OK (run 48) |
+| **GPU 730 MHz** et OPP intermediaires, **tensions VCORE reglables** | le GPU tourne sur VCORE (partagee avec le SoC) : `ac8257_gpufreq.vcore_uv`, 0,60-0,90 V | OK (run 48) |
+| **Decodeur camera TP9963** (camera AHD) | pilote `tp9963_yuv` absent du paquet, **reconstruit depuis le noyau stock** (registres, metazones, reponses a la HAL camera) et recoupe avec les pilotes GPL OpenIPC et Allwinner du meme TP9963 ; [docs/VIDEO.md](docs/VIDEO.md) | en cours |
+| Tactile : pas d'inversion de l'axe X | le pilote GT928 du paquet inverse X pour une dalle annoncant X_MAX = 1080 (celle de l'unite) ; le stock ne le fait pas : desactive pour `CONFIG_JANCAR_SOLUTION` | en cours |
+| **Ethernet USB integre** | RTL8152/8153, RNDIS (partage de connexion Android), iPhone, LAN78xx, SMSC, DM9601, SR9700/9800, MCS7830, CH9200, RTL8150, Pegasus, CDC EEM (en plus d'AX88179, CDC Ether, CDC NCM du stock) | OK (run 48) |
 
 Pas a reprendre :
-- **tactile** : la reconstruction adaptait le `goodix.c` generique ; ici, le `goodix.c` d'Autochips et
-  `atc_customize.c` (axes par ecran) du stock sont compiles, avec l'overlay stock de la partition `dtbo` ;
+- **tactile** : la reconstruction adaptait le `goodix.c` generique ; ici, comme le stock, `goodix.c` d'Autochips
+  sonde d'abord puis abandonne, et c'est le pilote MediaTek `GT928` (`gt9xx_driver.c`, peripherique `mtk-tpd`,
+  RST GPIO 45, INT GPIO 29) qui pilote la dalle Goodix **GT911** de l'unite (firmware 1060, 1080 x 600) ;
 - **USB** (connexion au premier pull-up) et **IRQ d'affichage** : deja dans les pilotes Autochips ;
 - **export des CRC du noyau stock** : seulement si les modules vendor (Wi-Fi, BT, GPS, FM) refusent de se charger ;
   avec le meme compilateur que le stock, les CRC natifs devraient correspondre.
@@ -73,7 +97,7 @@ Pas a reprendre :
    stock.
 3. **Parite avec le stock** : modules vendor (Wi-Fi, BT, GPS, FM), metazone, audio, touches, IR, MCU / CAN ; puis ce
    que la reconstruction n'a jamais fait marcher et dont les pilotes Autochips sont ici : **camera de recul, AV-in,
-   AVM** (TVD, DI, NR, WCH, backcar) et **ARM2** (`dualarm`, affichage rapide), sauf le decodeur `tp9963` qui manque.
+   AVM** (TVD, DI, NR, WCH, backcar), **ARM2** (`dualarm`, affichage rapide) et le decodeur `tp9963` reconstruit.
 4. **Ajouts LibreHU** — repris en CI (20/10/2026) : `/dev/gpios_ioctl`, KernelSU Next, gouverneurs, overclock et
    tensions, boost tactile, zram, I/O, Ethernet USB ; a tester sur l'unite.
 5. **Usage quotidien** : installation dans la partition `boot` (et plus seulement le test recovery), retrait des
@@ -83,7 +107,8 @@ Pas a reprendre :
 
 - **Sources manquantes de Jancar**, redemandees le 19/10/2026 : pilotes `JANCAR_SOLUTION` / `JANCAR_GPIOS`, pilote
   LCM `jac_*`, `lowmemorykiller` (`jancar.services`), telecommande `rc-jancar`, overlay `UJC201_64`, capteur
-  `tp9963`, tactiles d'autres ecrans. A leur arrivee : `autochips-gpl` puis fusion ici.
+  `tp9963` (pour comparer a la reconstruction), tactiles d'autres ecrans. A leur arrivee : `autochips-gpl` puis
+  fusion ici.
 - **Modules hors arbre recompiles depuis les sources** (`wmt_drv`, `bt_drv`, `gps_drv`, `fmradio_drv`,
   `wmt_chrdev_wifi`, `wlan_drv_gen4m`, `met`, `fpsgo`) : a demander a Jancar, ou a adapter depuis l'arbre GPL
   Samsung MT6765 (meme famille de puces, connectivite MT6631) ; d'ici la, les modules stock.
@@ -135,6 +160,7 @@ Resultat : `out/arch/arm64/boot/Image.gz-dtb`, `recovery_test_ac8257.img` (test 
 | [docs/BUILD.md](docs/BUILD.md) | compiler (CI, en local), particularites de l'arbre Autochips, tester sur l'unite |
 | [docs/STATUS.md](docs/STATUS.md) | etat par fonction sur l'unite, compare a `reverse-engineering` |
 | [docs/TUNING.md](docs/TUNING.md) | frequences et tensions CPU / GPU : tables, parametres, prudence |
+| [docs/VIDEO.md](docs/VIDEO.md) | camera AHD (TP9963), CVBS IN, VIDEO OUT, ARM2 ; reconstruction du pilote TP9963 |
 | [docs/PORTING.md](docs/PORTING.md) | modifications de `reverse-engineering` : natives, a verifier, a reprendre ; suivi |
 | [README_LIBREHU.md](README_LIBREHU.md) | provenance du paquet Autochips et ce qui y manque |
 | `README` | README d'origine de Linux |
