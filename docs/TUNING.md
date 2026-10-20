@@ -37,6 +37,13 @@ accepte jusqu'a 1,3125 V ; la limite est volontairement plus basse). La nouvelle
 comme le fait l'EEM (`cpuhvfs_update_volt`). L'EEM est desactivee avec la table OC (elle est calibree pour la
 table stock). `ac8257_cpu_oc=0` sur la ligne de commande : tables stock, EEM active, pas de reglage de tension.
 
+Essais sur l'unite (noyau `LibreHU-main`, tensions par defaut) :
+- 2,3 GHz : stable (deja valide avec `reverse-engineering`) ; c'est le maximum au demarrage.
+- **2,6 GHz : instable.** Le 20/10/2026 (run 59), apres environ 14 min a 2,6 GHz, le coeur CPU 0 s'est fige
+  (chien de garde materiel : `Qwdt`, `kick=0x0e check=0x0f`, `Non-crashing CPUs did not react to IPI`), a
+  46 degres. Les tensions de 2,4 a 2,6 GHz sont extrapolees : il faudrait plus de tension (`volt_offset_uv`),
+  donc plus de chaleur dans un tableau de bord. Deconseille au quotidien.
+
 Exemples (root) :
 ```
 # monter a 2,3 GHz
