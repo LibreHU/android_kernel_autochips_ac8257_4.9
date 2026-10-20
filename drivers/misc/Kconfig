@@ -827,4 +827,5 @@ source "drivers/misc/cxl/Kconfig"
 source "drivers/misc/mediatek/Kconfig"
 source "drivers/misc/autochips/Kconfig"
 source "drivers/misc/jancar/Kconfig"
+source "drivers/misc/librehu/Kconfig"
 endmenu

@@ -60,6 +60,7 @@ obj-$(CONFIG_ARCH_MEDIATEK) += mediatek/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += mediatek/
 obj-$(CONFIG_ATC_SOLUTION)	+= autochips/
 obj-$(CONFIG_JANCAR_SOLUTION)	+= jancar/
+obj-$(CONFIG_MACH_AC8257)	+= librehu/
 lkdtm-$(CONFIG_LKDTM)		+= lkdtm_core.o
 lkdtm-$(CONFIG_LKDTM)		+= lkdtm_bugs.o
 lkdtm-$(CONFIG_LKDTM)		+= lkdtm_heap.o

@@ -1,0 +1,46 @@
+#
+# LibreHU additions for the UJC201 (from the reverse-engineering branch of this repository).
+#
+menu "LibreHU (UJC201) additions"
+	depends on MACH_AC8257
+
+config AC8257_RECOVERY_MEM
+	bool "Keep the SPM and SCP memory out of Linux in a recovery-partition boot"
+	default y
+	help
+	  In a normal boot the LK reserves the SPM (0x77ff0000) and SCP (0x9f900000) memory; in a
+	  recovery-partition boot it does not, and Linux would use it. Removed from memblock when
+	  "recovery" is on the command line (test method from the recovery partition).
+
+config AC8257_EARLY_PSTORE_CONSOLE
+	bool "Early kernel log in the pstore console zone (bring-up)"
+	depends on PSTORE_RAM && PSTORE_CONSOLE && ARM64
+	help
+	  Copies the kernel log into the pstore console zone from setup_arch() on, so that a kernel
+	  that dies before ramoops registers still leaves its log, readable from the next boot in
+	  /sys/fs/pstore/console-ramoops or /proc/last_kmsg. Only for bringing up a new kernel: once
+	  it boots, say N.
+
+config AC8257_BRINGUP_PANIC
+	bool "Timed panic after boot (bring-up)"
+	help
+	  Panics a fixed time after boot, so that a test kernel stuck in userspace (no display, no
+	  USB) reboots through the exception path with its log, init's messages included, kept in
+	  pstore, instead of hanging until the unit is reflashed. Only for bringing up a new kernel.
+	  Settable at run time in /sys/module/ac8257_bringup/parameters/ and with
+	  ac8257_panic_secs= on the command line.
+
+config AC8257_BRINGUP_PANIC_SECS
+	int "Seconds before the timed panic"
+	depends on AC8257_BRINGUP_PANIC
+	default 90
+
+config AC8257_INPUT_BOOST
+	bool "Touch input boost"
+	default y
+	help
+	  Raises the CPU minimum frequency for a short time on a touch, through
+	  the PPM system boost (tunables in
+	  /sys/module/ac8257_input_boost/parameters/).
+
+endmenu

@@ -19,7 +19,7 @@ on:
       cmdline_append:
         description: 'Appended to the recovery test image command line'
         required: false
-        default: 'init=/init log_buf_len=8M'
+        default: 'init=/init ac8257_panic_secs=600 log_buf_len=8M'
 
 env:
   # LineageOS mirror of AOSP prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 (GCC 4.9.x 20150123)
@@ -90,7 +90,7 @@ jobs:
 
       - name: Pack images
         env:
-          CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init log_buf_len=8M' }}
+          CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init ac8257_panic_secs=600 log_buf_len=8M' }}
         run: |
           mkdir -p dist
           K=out/arch/arm64/boot/Image.gz-dtb

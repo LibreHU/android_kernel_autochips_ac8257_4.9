@@ -47,7 +47,11 @@ static DEFINE_MUTEX(zram_index_mutex);
 
 static int zram_major;
 static struct zram *zram_devices;
+#ifdef CONFIG_MACH_AC8257
+static const char *default_compressor = "lz4";	/* faster than lzo on the A53 */
+#else
 static const char *default_compressor = "lzo";
+#endif
 
 /* Module params (documentation at end) */
 static unsigned int num_devices = 1;
