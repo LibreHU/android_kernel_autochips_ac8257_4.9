@@ -22,10 +22,17 @@
  ******************************************************************************/
 typedef int (*wmt_bridge_thermal_query_cb)(void);
 typedef void (*wmt_bridge_connsys_clock_fail_dump_cb)(void);
+#ifdef CONFIG_MTK_COMBO_DRV_BUILD_IN
+/* LibreHU: newer in-tree connectivity drivers */
+typedef int (*wmt_bridge_trigger_assert_cb)(void);
+#endif
 
 struct wmt_platform_bridge {
 	wmt_bridge_thermal_query_cb thermal_query_cb;
 	wmt_bridge_connsys_clock_fail_dump_cb clock_fail_dump_cb;
+#ifdef CONFIG_MTK_COMBO_DRV_BUILD_IN
+	wmt_bridge_trigger_assert_cb trigger_assert_cb;
+#endif
 };
 
 void wmt_export_platform_bridge_register(struct wmt_platform_bridge *cb);

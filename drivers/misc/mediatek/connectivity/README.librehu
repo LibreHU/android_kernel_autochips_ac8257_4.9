@@ -1,0 +1,29 @@
+MediaTek connectivity drivers (WMT, Wi-Fi gen4m, Bluetooth, GPS, FM radio) built into the kernel.
+Branch connectivity-builtin only, CONFIG_MTK_COMBO_DRV_BUILD_IN. Details: docs/CONNECTIVITY.md.
+
+Sources (GPL-2.0, NOTICE files kept):
+  common/common_main, common/common_detect, common/debug_utility, common/Makefile, wlan/, gps/, fmradio/, bt/:
+    https://github.com/rsuntk-oss/mtk_connectivity_module at 3d48d43caa96b6f9be8a06199ee6eb2241d79153
+    (MediaTek vendor/mediatek/kernel_modules/connectivity of the Samsung SM-A055F, MT6765/MT6768, Linux 4.19).
+  common/connectivity_build_in_adapter.[ch], common/wmt_build_in_adapter.[ch], Kconfig, Makefile:
+    AutoChips GPL package (kernel-4.9.tgz), kept: they match this kernel.
+Left out: connfem, power_throttling (4.19 only), the debug tools (Python, .bat), Android.mk files and a stray
+ARM 32-bit object (wlan/core/gen4m/os/linux/gl_sec.o.new).
+
+LibreHU changes (search "LibreHU"):
+- AC8257 = MT6761 consys (95 of the 98 WMT-CONSYS-HW messages of the stock wmt_drv.ko are in mt6761.c,
+  77 in mt6765.c; consys version id 0x10020300 in the stock log; GPS EMI offset 0x281000 in the stock
+  gps_drv.ko): common/Makefile builds platform/mt6761.c for CONSYS_8257, "mediatek,ac8257-consys" bound to
+  the MT6761 ops, CONFIG_MACH_AC8257 next to CONFIG_MACH_MT6761 in gps/gps_stp.
+- SoC chip id 0x8257 as the stock driver (wmt_loader, WMT_SET_CHIP_ID sent to the firmware), added next to
+  0x6761 in wmt_core.c, mtk_wcn_dump_util.c, fmradio legacy_wmt.c and fm_main.c.
+- Wi-Fi gen4m with WLAN_CHIP_ID 6765 (no mt6761 platform folder; both are CONNAC 1.0 soc1_0, firmware
+  WIFI_RAM_CODE_soc1_0); DMA buffers in the no-map "mediatek,wifi-reserve-memory" region of the device tree,
+  as the stock wlan_drv_gen4m.ko (axi.c); 4.9 cfg80211: update_connect_params (4.11), tcf_block (4.13),
+  WPA3 / external auth (4.17) left out, AKM suite values defined.
+- Adapters: trigger_assert_cb added to the platform bridge and to struct _CMB_STUB_CB_ (mt-plat header),
+  only with CONFIG_MTK_COMBO_DRV_BUILD_IN.
+- gps_mod_init no longer starts GPS_init when built in (do_gps_drv_init does it, from wmt_loader).
+- wmt_idc.c: MD_MOD_GMMGR absent from the AC8257 eccci headers (no modem).
+- kernel/module.c refuses wmt_drv, wmt_chrdev_wifi, wlan_drv_gen4m, bt_drv, gps_drv and fmradio_drv
+  (-EEXIST), still loaded by the stock vendor init scripts.

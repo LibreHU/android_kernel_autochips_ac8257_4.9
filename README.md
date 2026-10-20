@@ -34,6 +34,7 @@ refroidissement, puces presentes).
 | Branche | Contenu | Regle |
 |---|---|---|
 | **`LibreHU-main`** (par defaut) | `autochips-gpl` + nos modifications | **branche de travail** : tout nouveau travail sur le noyau arrive ici |
+| `connectivity-builtin` | `LibreHU-main` + Wi-Fi, Bluetooth, GPS et FM integres au noyau (plus de modules `/vendor/lib/modules`) | essai, non teste sur l'unite ; voir [docs/CONNECTIVITY.md](docs/CONNECTIVITY.md) |
 | `autochips-gpl` | paquet GPL Autochips **tel que recu** (`kernel-4.9.tgz`, SHA-256 `f0303951…d83c577`) | jamais modifiee ; un nouvel envoi de Jancar y est ajoute tel quel |
 | `reverse-engineering` | noyau reconstruit sans les sources Autochips (base publique MediaTek MT6761 + reverse engineering) ; demarre la ROM stock | reference : on y reprend les modifications ; garde aussi les notes de l'appareil (`docs/ujc201/`) et les outils `tools/ac8257/` (usbnet, audio, dump) |
 
@@ -163,6 +164,7 @@ Resultat : `out/arch/arm64/boot/Image.gz-dtb`, `recovery_test_ac8257.img` (test 
 | [docs/STATUS.md](docs/STATUS.md) | etat par fonction sur l'unite, compare a `reverse-engineering` |
 | [docs/TUNING.md](docs/TUNING.md) | frequences et tensions CPU / GPU : tables, parametres, prudence |
 | [docs/TOUCH.md](docs/TOUCH.md) | dalles tactiles de l'UJC201 : references, pilotes du stock et de LibreHU, sources |
+| [docs/CONNECTIVITY.md](docs/CONNECTIVITY.md) | branche `connectivity-builtin` : Wi-Fi, BT, GPS, FM integres au noyau, adaptation AC8257, WPA2 / WPA3 |
 | [docs/VIDEO.md](docs/VIDEO.md) | camera AHD (TP9963), CVBS IN, VIDEO OUT, ARM2 ; reconstruction du pilote TP9963 |
 | [docs/PORTING.md](docs/PORTING.md) | modifications de `reverse-engineering` : natives, a verifier, a reprendre ; suivi |
 | [README_LIBREHU.md](README_LIBREHU.md) | provenance du paquet Autochips et ce qui y manque |

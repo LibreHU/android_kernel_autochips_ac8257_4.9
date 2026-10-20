@@ -10,6 +10,7 @@ reconstruit (branche `reverse-engineering`).
 | [STATUS.md](STATUS.md) | etat par fonction sur l'unite (rien n'est encore teste avec ce noyau) |
 | [TUNING.md](TUNING.md) | frequences et tensions CPU / GPU (overclock, sous-tension), parametres |
 | [TOUCH.md](TOUCH.md) | dalles tactiles : references, pilotes du stock et de LibreHU, sources |
+| [CONNECTIVITY.md](CONNECTIVITY.md) | branche `connectivity-builtin` : Wi-Fi, BT, GPS, FM integres au noyau (remplacent les modules vendor) |
 | [VIDEO.md](VIDEO.md) | camera AHD (TP9963), CVBS IN, VIDEO OUT, ARM2 ; reconstruction du pilote TP9963 |
 | [PORTING.md](PORTING.md) | modifications de `reverse-engineering` : deja natives chez Autochips, a verifier, a reprendre ; suivi |
 | [../README.md](../README.md) | presentation, branches, roadmap |
@@ -21,6 +22,7 @@ reconstruit (branche `reverse-engineering`).
 | `autochips-gpl` | paquet GPL Autochips tel que recu (SIXWIN / Jancar, 19/10/2026), jamais modifie |
 | `reverse-engineering` | noyau reconstruit (base publique MediaTek MT6761 + reverse engineering) ; reference |
 | `LibreHU-main` | **branche de travail** : `autochips-gpl` + nos modifications |
+| `connectivity-builtin` | essai : `LibreHU-main` + pilotes Wi-Fi / BT / GPS / FM integres ([CONNECTIVITY.md](CONNECTIVITY.md)) |
 
 Un nouvel envoi de Jancar (pilotes manquants) est ajoute tel quel sur `autochips-gpl`, puis
 `git merge autochips-gpl` sur `LibreHU-main`.
@@ -29,7 +31,8 @@ Un nouvel envoi de Jancar (pilotes manquants) est ajoute tel quel sur `autochips
 Pilotes et modifications Jancar (`CONFIG_JANCAR_SOLUTION`, `CONFIG_JANCAR_GPIOS`, pilote LCM `jac_*`,
 `lowmemorykiller` `jancar.services`, telecommande `rc-jancar` (recreee depuis le stock)), overlay `UJC201_64`, capteur `tp9963` (reconstruit en attendant, [VIDEO.md](VIDEO.md)), tactiles
 d'autres ecrans, modules hors arbre (`wmt_drv`, `bt_drv`, `gps_drv`, `fmradio_drv`, `wmt_chrdev_wifi`,
-`wlan_drv_gen4m`, `met`, `fpsgo`) : redemandes a Jancar le 19/10/2026. Detail dans `README_LIBREHU.md` ;
+`wlan_drv_gen4m`, `met`, `fpsgo`) : redemandes a Jancar le 19/10/2026 ; en attendant, les six modules de
+connectivite sont remplaces par des pilotes publics integres sur `connectivity-builtin`. Detail dans `README_LIBREHU.md` ;
 analyse complete et sources de remplacement : `docs/ujc201/kernel_gpl.md` de `reverse-engineering`.
 
 ## Regles

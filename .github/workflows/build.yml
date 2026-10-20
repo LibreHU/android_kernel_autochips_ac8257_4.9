@@ -7,10 +7,11 @@ name: Build AC8257 kernel
 #    method of docs/BUILD.md (fastboot flash recovery + fastboot oem reboot-recovery)
 #  - boot_ac8257.img: 10 MiB, boot vbmeta (normal boot partition)
 # Branch LibreHU-main: AutoChips GPL kernel (autochips-gpl) + the LibreHU changes ported from reverse-engineering.
+# Branch connectivity-builtin: LibreHU-main + Wi-Fi / BT / GPS / FM drivers built in (docs/CONNECTIVITY.md).
 
 on:
   push:
-    branches: [LibreHU-main]
+    branches: [LibreHU-main, connectivity-builtin]
     paths-ignore:
       - '**.md'
       - 'docs/**'
