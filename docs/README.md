@@ -27,7 +27,7 @@ Un nouvel envoi de Jancar (pilotes manquants) est ajoute tel quel sur `autochips
 
 ## Ce qui manque encore aux sources Autochips
 Pilotes et modifications Jancar (`CONFIG_JANCAR_SOLUTION`, `CONFIG_JANCAR_GPIOS`, pilote LCM `jac_*`,
-`lowmemorykiller` `jancar.services`, telecommande `rc-jancar`), overlay `UJC201_64`, capteur `tp9963` (reconstruit en attendant, [VIDEO.md](VIDEO.md)), tactiles
+`lowmemorykiller` `jancar.services`, telecommande `rc-jancar` (recreee depuis le stock)), overlay `UJC201_64`, capteur `tp9963` (reconstruit en attendant, [VIDEO.md](VIDEO.md)), tactiles
 d'autres ecrans, modules hors arbre (`wmt_drv`, `bt_drv`, `gps_drv`, `fmradio_drv`, `wmt_chrdev_wifi`,
 `wlan_drv_gen4m`, `met`, `fpsgo`) : redemandes a Jancar le 19/10/2026. Detail dans `README_LIBREHU.md` ;
 analyse complete et sources de remplacement : `docs/ujc201/kernel_gpl.md` de `reverse-engineering`.

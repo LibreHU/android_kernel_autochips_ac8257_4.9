@@ -17,6 +17,7 @@ Aucun test sur l'unite pour l'instant. Colonne « reverse-engineering » : etat 
 | Metazone `/dev/mtz` | non teste | OK (lecture) | pilote Autochips natif (lecture et ecriture : ne rien ecrire sans sauvegarde) |
 | Camera de recul, AV-in, AVM (TVD, DI, NR, WCH, backcar) | non teste | **ne marche pas** | pilotes Autochips presents ; decodeur `tp9963` (camera AHD) reconstruit depuis le stock : [VIDEO.md](VIDEO.md) |
 | ARM2 (`dualarm`, affichage rapide) | non teste | **ne marche pas** | pilote Autochips present |
+| Telecommande IR (`gpio-ir-receiver`, `rc-jancar`) | non teste | inconnu | table `rc-jancar` relue dans le noyau stock (identite NEC 0x001-0x2FF), absente du paquet |
 | Audio | non teste | non teste | `SND_SOC_ATC` desactive comme le stock |
 | Wi-Fi, BT, GPS, FM (modules stock) | non teste | OK (CRC du stock exportes) | essayer clang (CRC natifs) avant de reprendre l'export de CRC |
 | USB peripherique, adb | non teste | OK | |

@@ -59,7 +59,8 @@ Noyau de reference : celui de la mise a jour officielle Jancar de janvier 2026, 
 2. **Modifications Jancar de fichiers existants** (ici en version Autochips d'origine) : pilote LCM
    (`jac_lcm_get_mipi_params_form_MetaZone`, `jac_detect_format_from_metazone`, `jac_push_table`,
    `jac_set_lcd_power_kthread`, `jac_set_params`), `drivers/staging/android/lowmemorykiller.c` (`jancar.services`,
-   `/jancar/config/ivi-priapps.ini`), table de telecommande IR `rc-jancar`.
+   `/jancar/config/ivi-priapps.ini`), table de telecommande IR `rc-jancar` (relue dans le noyau stock et recreee sur
+   `LibreHU-main` : `drivers/media/rc/keymaps/rc-jancar.c`).
 3. **Pilotes actives mais absents** : capteur `tp9963_yuv` (reconstruit sur `LibreHU-main` en attendant) ; pour
    les tactiles, `LibreHU-main` a repris des versions publiques de FocalTech, ILITEK, Himax et Hynitron (`docs/TOUCH.md`) ; tactiles `CONFIG_TOUCHSCREEN_FTS`,
    `CONFIG_TOUCHSCREEN_SYNA_TCM2` / `_I2C`, `ILITEK_V3`, `hxchipset` (Himax), `synaptics_dsx`, Sitronix (ecrans
