@@ -27,16 +27,10 @@ l'unite garde sa partition `dtbo` stock. A comparer avec le DTB stock (`reverse-
 decompilee, identique octet pour octet au stock).
 
 ## En local
-```
-git clone --depth 1 -b lineage-17.1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc49
-export PATH=$PWD/gcc49/bin:$PATH
-# python2 joignable en /usr/bin/python (DrvGen.py) ; clang-4691093 a besoin de libtinfo5
-M="O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0"
-make $M HOSTCC="gcc -fcommon" ac8257_ujc201_defconfig
-make $M HOSTCC="gcc -fcommon" -j$(nproc) Image.gz-dtb
-```
-Le compilateur du stock est clang (`clang-4691093`, dans `prebuilts/clang/host/linux-x86` d'Android 9) : ajouter
-`CC=clang CLANG_TRIPLE=aarch64-linux-gnu-` avec ce clang dans le `PATH` (GCC 4.9 seul s'arrete sur des avertissements).
+Pas a pas complet (paquets, chaine GCC 4.9 + clang `4691093`, build, images) : section
+[Compiler from scratch](../README.md#compiler-from-scratch) du README. Les commandes `make` doivent inclure
+`CC=clang CLANG_TRIPLE=aarch64-linux-gnu-` (GCC 4.9 seul s'arrete sur des avertissements) et les variables
+`ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0`.
 
 ## Tester sur l'unite
 Meme methode que `reverse-engineering` (`docs/BUILD.md` de cette branche, details et pieges) :

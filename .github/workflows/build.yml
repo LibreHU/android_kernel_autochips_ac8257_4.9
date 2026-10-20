@@ -27,7 +27,7 @@ env:
   TOOLCHAIN_SHA: a61b4b9ea2a5098dbf113999526978aec683753b
   # AutoChips ac8257_demo_defconfig with the product settings of the stock UJC201 kernel (#72)
   DEFCONFIG: ac8257_ujc201_defconfig
-  # Make variable of the AutoChips build environment (kenv.mk); the only one the tree reads
+  # Variables of the AutoChips build environment (kenv.mk) read by Kconfig (option env=), values of the stock kernel
   ATC_MAKE: ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0
   # HOSTCC with -fcommon: the AutoChips scripts/dtc defines yylloc twice, which host GCC >= 10 refuses at link time
   # (fixed upstream by "scripts/dtc: Remove redundant YYLOC global declaration", present on reverse-engineering)

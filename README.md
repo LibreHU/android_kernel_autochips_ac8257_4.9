@@ -82,6 +82,42 @@ le code Autochips et n'ont pas a etre reprises.
   description de la metazone.
 - **Veille / reprise**, et camera de recul rapide (ARM2) des le demarrage normal.
 
+## Compiler from scratch
+
+Sur un PC Linux x86-64 (Ubuntu 22.04 conseille : dernier Ubuntu avec un paquet `python2`), environ 10 Go libres.
+Memes etapes que la CI (`.github/workflows/build.yml`) ; details et pieges : [docs/BUILD.md](docs/BUILD.md).
+
+```bash
+# 1. Paquets (python2 : generateur DTS Autochips tools/dct/DrvGen.py ; libtinfo5 : clang AOSP)
+sudo apt install bc bison flex libssl-dev libelf-dev cpio git curl python3 python2 libtinfo5 build-essential
+sudo ln -sf /usr/bin/python2 /usr/bin/python      # DrvGen.py est lance par "#! /usr/bin/python"
+
+# 2. Sources
+git clone -b LibreHU-main https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9 kernel
+cd kernel
+
+# 3. Chaine de compilation du noyau stock : binutils AOSP GCC 4.9 + AOSP clang 6.0.2 (clang-4691093)
+git clone --depth 1 -b lineage-17.1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 ../gcc49  # = a61b4b9, comme la CI
+mkdir -p ../clang && curl -fL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-9.0.0_r61/clang-4691093.tar.gz | tar xz -C ../clang
+export PATH="$PWD/../clang/bin:$PWD/../gcc49/bin:$PATH"
+clang --version | grep 4691093                      # doit afficher clang-4691093
+
+# 4. Configuration et build
+M='O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu-'
+M="$M ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0"
+make $M HOSTCC="gcc -fcommon" ac8257_ujc201_defconfig
+make $M HOSTCC="gcc -fcommon" -j"$(nproc)" Image.gz-dtb
+
+# 5. Images pour l'unite (gabarits et vbmeta du stock)
+python3 tools/ac8257/repack_boot.py tools/ac8257/stock/boot_template_250718.img out/arch/arm64/boot/Image.gz-dtb \
+    recovery_test_ac8257.img --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
+    --cmdline-append "init=/init log_buf_len=8M"
+python3 tools/ac8257/repack_boot.py tools/ac8257/stock/boot_template_250718.img out/arch/arm64/boot/Image.gz-dtb \
+    boot_ac8257.img --size 10485760
+```
+Resultat : `out/arch/arm64/boot/Image.gz-dtb`, `recovery_test_ac8257.img` (test depuis la partition recovery) et
+`boot_ac8257.img`. Tester d'abord depuis recovery ([docs/BUILD.md](docs/BUILD.md), *Tester sur l'unite*).
+
 ## Documentation
 
 | Document | Contenu |
