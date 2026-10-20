@@ -1,0 +1,7 @@
+Himax touch driver 2.0.0.68_LC_00, MediaTek TPD, "himax,hxcommon" (GPL-2.0), in-cell HX83102 (A/B/D/E).
+Source: https://github.com/gta7lite/android_kernel_samsung_mt6765 at 90c3c5636a718492983ebda5614184633973685a,
+        drivers/input/touchscreen/mediatek/hxchipset_8789p1_8185p3.
+LibreHU changes: directory paths, Kconfig dependency, HX_CONFIG_DRM off (msm_drm_notify is Qualcomm only; mtk_tpd
+calls suspend / resume). Zero-flash chips get their firmware in RAM from /vendor/firmware/Himax_firmware.bin at
+each start; nothing is written to the chip.
+The stock UJC201 kernel has Himax 2.1.0.12 (HX83102D / E / J; source not published by Jancar).

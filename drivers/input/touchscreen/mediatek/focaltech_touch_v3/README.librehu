@@ -1,0 +1,7 @@
+FocalTech FTS V3.0 20190102, MediaTek TPD driver (GPL-2.0).
+Source: https://github.com/MediaTek-Pie/kernel-4.9 at d864494e78229ba7849e2b34b9f9024554192459,
+        drivers/input/touchscreen/mediatek/focaltech_hd_touch (configured for FT8201).
+LibreHU changes: built by CONFIG_TOUCHSCREEN_FTS (directory CONFIG_TOUCHSCREEN_FTS_DIRECTORY, as the stock UJC201
+kernel); include/firmware/fw_sample.i empty (no built-in firmware, FTS_AUTO_UPGRADE_EN 0); the firmware update
+modules that need a pramboot blob are left out (the blobs are not in the public tree).
+The stock UJC201 kernel has the newer "Focaltech V3.4 20211214" (source not published by Jancar).

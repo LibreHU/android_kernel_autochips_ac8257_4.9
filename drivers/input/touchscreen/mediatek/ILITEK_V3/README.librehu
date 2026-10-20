@@ -1,0 +1,7 @@
+ILITEK V3 TDDI driver 3.0.3.0.200610, MediaTek TPD, I2C (GPL-2.0).
+Source: https://github.com/CartelProject/MT6765-4.9 at f88e18f0f1436e800349e3395d432f21b0552219,
+        drivers/input/touchscreen/mediatek/ili9881x (I2C files only: ili9881x_spi.c, ili9881x_hostdl.c,
+        ili9881x_qcom.c left out).
+LibreHU changes: Makefile; firmware/ili9881x_fw.h without the built-in firmware of the source tablet
+(FW_TDDI_TRUNK_FB.ili not copied, BOOT_FW_UPDATE stays DISABLE: nothing is flashed).
+The stock UJC201 kernel has ILITEK_V3 3.0.12.0.241001 (source not published by Jancar).

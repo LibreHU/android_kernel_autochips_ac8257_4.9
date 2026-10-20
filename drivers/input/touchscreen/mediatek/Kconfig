@@ -96,4 +96,38 @@ config DELAY_QUEUE_TIME
 
 source "drivers/input/touchscreen/mediatek/NT36xxx/Kconfig"
 
+#
+# LibreHU: drivers of the other panels of the Jancar UJC201 stock kernel, from public GPL trees.
+# Linked after GT928 (Makefile): the MediaTek TPD core tries them only when GT928 finds no panel.
+#
+config TOUCHSCREEN_FTS
+	bool "FocalTech FTS V3 (FT8201...) for Mediatek package"
+	default n
+	help
+	  FocalTech V3 TPD driver (FT8201 and the other FTS chips), as
+	  CONFIG_TOUCHSCREEN_FTS of the stock UJC201 kernel.
+
+config TOUCHSCREEN_FTS_DIRECTORY
+	string "FocalTech FTS driver directory"
+	depends on TOUCHSCREEN_FTS
+	default "focaltech_touch_v3"
+
+config TOUCHSCREEN_MTK_ILITEK_V3
+	bool "ILITEK V3 TDDI (ILI9881...) for Mediatek package"
+	default n
+	help
+	  ILITEK V3 TDDI TPD driver over I2C (ILITEK_V3 of the stock UJC201
+	  kernel). No firmware update at boot.
+
+config TOUCHSCREEN_HIMAX_CHIPSET
+	bool "Himax touchscreen (HX83102D/E...) for Mediatek package"
+	default n
+	help
+	  Himax TPD driver ("himax,hxcommon", hxchipset of the stock UJC201
+	  kernel). Zero-flash chips get their firmware in RAM from
+	  /vendor/firmware/Himax_firmware.bin at each start; nothing is
+	  written to the chip.
+
+source "drivers/input/touchscreen/mediatek/hxchipset/Kconfig"
+
 endif

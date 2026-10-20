@@ -2,7 +2,8 @@
 # adjusted only where the AutoChips GPL package lacks the sources:
 # - DTB overlay mediatek/ac8257_demo instead of mediatek/UJC201_64 (the unit keeps its stock dtbo partition);
 # - tp9963_yuv: the LibreHU rebuild (drivers/misc/mediatek/imgsensor/.../tp9963_yuv), Jancar's source is not in the package;
-# - without CONFIG_TOUCHSCREEN_FTS*, CONFIG_TOUCHSCREEN_SYNA_TCM2*;
+# - touch panels other than the GT911 (docs/TOUCH.md): CONFIG_TOUCHSCREEN_FTS = public FocalTech V3.0 (stock V3.4),
+#   ILITEK V3, Himax and Hynitron from public GPL trees, after GT928; no Synaptics TCM2 / DSX, Sitronix, Jadard;
 # - CONFIG_JANCAR_GPIOS is the LibreHU reimplementation (drivers/misc/jancar), Jancar's source is not in the package;
 # - appended DTB mediatek/ac8257_ujc201 = the stock DT of the unit (AutoChips' generic ac8257 differs);
 # - LibreHU: USB Ethernet / tethering drivers built in (RTL8152/8153, RNDIS, ipheth, LAN78xx, SMSC, DM9601, SR9700/9800,
@@ -2065,6 +2066,13 @@ CONFIG_TOUCHSCREEN_MTK=y
 # CONFIG_TOUCHSCREEN_MTK_GT1151 is not set
 # CONFIG_TOUCHSCREEN_TCM2 is not set
 CONFIG_TOUCHSCREEN_MTK_GT928=y
+CONFIG_TOUCHSCREEN_FTS=y
+CONFIG_TOUCHSCREEN_FTS_DIRECTORY="focaltech_touch_v3"
+CONFIG_TOUCHSCREEN_MTK_ILITEK_V3=y
+CONFIG_TOUCHSCREEN_HIMAX_CHIPSET=y
+CONFIG_TOUCHSCREEN_HIMAX_COMMON=y
+CONFIG_TOUCHSCREEN_HIMAX_INCELL=y
+CONFIG_TOUCHSCREEN_HIMAX_IC_HX83102=y
 # CONFIG_TOUCHSCREEN_MTK_NT36xxx is not set
 CONFIG_DELAY_QUEUE_TIME=5
 CONFIG_TOUCHSCREEN_PROPERTIES=y
@@ -2086,6 +2094,7 @@ CONFIG_TOUCHSCREEN_PROPERTIES=y
 # CONFIG_TOUCHSCREEN_EGALAX_SERIAL is not set
 # CONFIG_TOUCHSCREEN_FUJITSU is not set
 CONFIG_TOUCHSCREEN_GOODIX=y
+CONFIG_TOUCHSCREEN_HYNITRON_CSTXXX=y
 # CONFIG_TOUCHSCREEN_ILI210X is not set
 # CONFIG_TOUCHSCREEN_GUNZE is not set
 # CONFIG_TOUCHSCREEN_EKTF2127 is not set
