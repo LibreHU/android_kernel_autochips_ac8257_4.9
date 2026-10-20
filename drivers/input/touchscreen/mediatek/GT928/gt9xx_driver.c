@@ -1583,6 +1583,7 @@ static void tpd_calibrate_driver(int *x, int *y)
 }
 #endif
 
+#ifdef SPECIAL_TOUCHPAD_ATC
 static void special_tp(int *x, int *y)
 {
 	int input_x = *x;
@@ -1594,6 +1595,7 @@ static void special_tp(int *x, int *y)
 	}
 	*x = input_x;
 }
+#endif
 
 static int touch_event_handler(void *unused)
 {

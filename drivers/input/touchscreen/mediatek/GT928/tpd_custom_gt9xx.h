@@ -101,7 +101,13 @@ extern int i2c_read_bytes(struct i2c_client *client, u16 addr, u8 *rxbuf, int le
 #define GTP_DEBUG_ARRAY_ON    0
 #define GTP_DEBUG_FUNC_ON     0
 
+/*
+ * Not in the Jancar UJC201 stock kernel (no "Mtk Extern Touchscreen", its device is "mtk-tpd"): its GT911 panel
+ * reports X_MAX = 1080, which would rename the device and mirror X (special_tp).
+ */
+#ifndef CONFIG_JANCAR_SOLUTION
 #define SPECIAL_TOUCHPAD_ATC
+#endif
 
 /* ***************************PART2:TODO define********************************** */
 /* STEP_1(REQUIRED):Change config table. */
