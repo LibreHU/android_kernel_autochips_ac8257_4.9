@@ -1,4 +1,4 @@
-# Reprendre les modifications de `reverse-engineering` dans `main`
+# Reprendre les modifications de `reverse-engineering` dans `LibreHU-main`
 
 48 commits de code sur `reverse-engineering` (`git log reverse-engineering -- . ':!docs' ':!*.md' ':!reference'`).
 Une partie contournait l'absence des sources Autochips et existe deja ici (verifie dans le paquet) :
@@ -27,9 +27,9 @@ reconstruction, `ac8257` ici), un groupe par commit, CI verte puis test sur l'un
 (`docs/BUILD.md` de `reverse-engineering`). Ne jamais desactiver dm-verity ni ecrire vbmeta automatiquement.
 
 ## Suivi
-Une ligne par groupe repris (commit de `main`, CI, test sur l'unite) :
+Une ligne par groupe repris (commit de `LibreHU-main`, CI, test sur l'unite) :
 
-| Groupe | Commit `main` | CI | Test unite |
+| Groupe | Commit `LibreHU-main` | CI | Test unite |
 |---|---|---|---|
 | Outils d'image et CI | `a70448108`, `ba5b44fd2`, `26bbe7fbc` | OK (run 40) | — |
 | defconfig de l'unite (config stock #72) | `a35f816ad` | OK (run 40) | non teste |

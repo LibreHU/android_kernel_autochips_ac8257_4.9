@@ -1,13 +1,13 @@
-# Noyau AC8257 LibreHU : branche de travail `main`
+# Noyau AC8257 LibreHU : branche de travail `LibreHU-main`
 
 ## Les trois branches
 | Branche | Contenu | Regle |
 |---|---|---|
-| `autochips-gpl` | paquet GPL Autochips **tel quel** (SIXWIN / Jancar, 19/10/2026) + ce README | on n'y touche pas ; un nouvel envoi de Jancar y arrive tel quel, puis est fusionne dans `main` |
+| `autochips-gpl` | paquet GPL Autochips **tel quel** (SIXWIN / Jancar, 19/10/2026) + ce README | on n'y touche pas ; un nouvel envoi de Jancar y arrive tel quel, puis est fusionne dans `LibreHU-main` |
 | `reverse-engineering` | noyau reconstruit (base publique MediaTek MT6761 + reverse engineering), demarre la ROM stock | reference de ce qu'on a fait ; on y reprend les modifications |
-| **`main`** | **`autochips-gpl` + nos modifications reprises de `reverse-engineering`** | **branche de travail principale** |
+| **`LibreHU-main`** | **`autochips-gpl` + nos modifications reprises de `reverse-engineering`** | **branche de travail principale** |
 
-`main` part de `autochips-gpl` (meme historique : `git merge autochips-gpl` suffit apres un nouvel envoi). Ajoute pour
+`LibreHU-main` part de `autochips-gpl` (meme historique : `git merge autochips-gpl` suffit apres un nouvel envoi). Ajoute pour
 l'instant :
 - CI (`.github/workflows/build.yml`, artefacts seulement) et outils d'image (`tools/ac8257/repack_boot.py`, gabarit de
   boot et vbmeta du recovery stock), repris de `reverse-engineering` ; compilateur du stock (AOSP clang 6.0.2

@@ -1,4 +1,4 @@
-# Noyau AC8257 LibreHU (branche `main`, base Autochips)
+# Noyau AC8257 LibreHU (branche `LibreHU-main`, base Autochips)
 
 Documentation du noyau de travail de l'UJC201 (Jancar, Autochips AC8257) construit sur les **sources GPL
 officielles d'Autochips** (branche `autochips-gpl`), auxquelles on rapporte les modifications utiles du noyau
@@ -16,10 +16,10 @@ reconstruit (branche `reverse-engineering`).
 |---|---|
 | `autochips-gpl` | paquet GPL Autochips tel que recu (SIXWIN / Jancar, 19/10/2026), jamais modifie |
 | `reverse-engineering` | noyau reconstruit (base publique MediaTek MT6761 + reverse engineering) ; reference |
-| `main` | **branche de travail** : `autochips-gpl` + nos modifications |
+| `LibreHU-main` | **branche de travail** : `autochips-gpl` + nos modifications |
 
 Un nouvel envoi de Jancar (pilotes manquants) est ajoute tel quel sur `autochips-gpl`, puis
-`git merge autochips-gpl` sur `main`.
+`git merge autochips-gpl` sur `LibreHU-main`.
 
 ## Ce qui manque encore aux sources Autochips
 Pilotes et modifications Jancar (`CONFIG_JANCAR_SOLUTION`, `CONFIG_JANCAR_GPIOS`, pilote LCM `jac_*`,

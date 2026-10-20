@@ -6,11 +6,11 @@ name: Build AC8257 kernel
 #  - recovery_test_ac8257.img: 32 MiB, recovery vbmeta, for the recovery test
 #    method of docs/BUILD.md (fastboot flash recovery + fastboot oem reboot-recovery)
 #  - boot_ac8257.img: 10 MiB, boot vbmeta (normal boot partition)
-# Branch main: AutoChips GPL kernel (autochips-gpl) + the LibreHU changes ported from reverse-engineering.
+# Branch LibreHU-main: AutoChips GPL kernel (autochips-gpl) + the LibreHU changes ported from reverse-engineering.
 
 on:
   push:
-    branches: [main]
+    branches: [LibreHU-main]
     paths-ignore:
       - '**.md'
       - 'docs/**'

@@ -1,9 +1,9 @@
-# Etat du noyau `main` sur l'UJC201
+# Etat du noyau `LibreHU-main` sur l'UJC201
 
 Aucun test sur l'unite pour l'instant. Colonne « reverse-engineering » : etat atteint par le noyau reconstruit
 (son `README.md`), pour comparaison.
 
-| Fonction | `main` (Autochips) | `reverse-engineering` | Notes pour `main` |
+| Fonction | `LibreHU-main` (Autochips) | `reverse-engineering` | Notes pour `LibreHU-main` |
 |---|---|---|---|
 | Compilation CI | **OK** (run 40, `710d83310`) | OK | `Image.gz-dtb` 9,7 Mo (stock 10,3 Mo : pilotes Jancar absents) ; mises au point de l'environnement : [BUILD.md](BUILD.md) |
 | Demarrage jusqu'a l'interface Android | non teste | OK | DT `ac8257` d'Autochips au lieu du DT stock decompile |
