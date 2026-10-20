@@ -1336,6 +1336,17 @@ static void ac8257_apply_soft_max(unsigned int i)
 		p->idx_opp_ppm_limit = soft;
 	if (p->idx_opp_ppm_base != -1 && p->idx_opp_ppm_base < soft)
 		p->idx_opp_ppm_base = soft;
+	/*
+	 * Concrete bounds for the SSPM, never -1: the SSPM sends them back and its receive thread
+	 * (mtk_cpufreq_hybrid.c) turns them into policy->min / max. And the floor never above the
+	 * ceiling (a scaling_min_freq above a PPM / thermal limit): the limit wins.
+	 */
+	if (p->idx_opp_ppm_limit < 0 || p->idx_opp_ppm_limit > p->nr_opp_tbl - 1)
+		p->idx_opp_ppm_limit = 0;
+	if (p->idx_opp_ppm_base < 0 || p->idx_opp_ppm_base > p->nr_opp_tbl - 1)
+		p->idx_opp_ppm_base = p->nr_opp_tbl - 1;
+	if (p->idx_opp_ppm_base < p->idx_opp_ppm_limit)
+		p->idx_opp_ppm_base = p->idx_opp_ppm_limit;
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	/* the SSPM applies the limits: give it the capped indexes */
 	cpuhvfs_set_min_max(i, p->idx_opp_ppm_base, p->idx_opp_ppm_limit);
@@ -1723,6 +1734,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 			if (p->idx_opp_ppm_limit < idx)
 				p->idx_opp_ppm_limit = idx;
+			/* the boot maximum is the user maximum until the policy notifier runs */
+			ac8257_pol_max_khz = cpu_dvfs_get_freq_by_idx(p, idx);
 		}
 #endif
 		policy->max = cpu_dvfs_get_freq_by_idx(p,

@@ -243,6 +243,23 @@ int Ripi_cpu_dvfs_thread(void *data)
 	(int)(log_box_parsed[num_log - 1].cluster_opp_cfg[i].limit_idx);
 				p->idx_opp_ppm_base =
 	(int)(log_box_parsed[num_log - 1].cluster_opp_cfg[i].base_idx);
+#ifdef CONFIG_MACH_AC8257
+				/*
+				 * The bounds index opp_tbl below: keep them within it (a -1, no limit, read
+				 * opp_tbl[-1] and gave random policy min / max), the floor not above the
+				 * ceiling.
+				 */
+				if (p->idx_opp_ppm_limit < 0 ||
+				    p->idx_opp_ppm_limit > p->nr_opp_tbl - 1)
+					p->idx_opp_ppm_limit = 0;
+				if (p->idx_opp_ppm_base < 0 ||
+				    p->idx_opp_ppm_base > p->nr_opp_tbl - 1)
+					p->idx_opp_ppm_base = p->nr_opp_tbl - 1;
+				if (p->idx_opp_ppm_base < p->idx_opp_ppm_limit)
+					p->idx_opp_ppm_base = p->idx_opp_ppm_limit;
+				if (j < 0 || j > p->nr_opp_tbl - 1)
+					j = p->nr_opp_tbl - 1;
+#endif
 
 				if (j < p->idx_opp_ppm_limit)
 					j = p->idx_opp_ppm_limit;

@@ -21,6 +21,7 @@
 #include <linux/module.h>
 #include <linux/ktime.h>
 #include <linux/io.h>
+#include <linux/math64.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/sched.h>
@@ -219,6 +220,81 @@ static void upower_scale_l_cap(void)
  * power tbl.                                       *
  ***************************************************/
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * LibreHU: power table of the CPU overclock table (CPU_LEVEL_3, cpufreq_v1 mach/ac8257 opp table, 16 OPPs
+ * up to 2601 MHz). There is no upower table for it: without this the FY table was used, read by OPP
+ * index (upower_get_power: row = 15 - opp), so OPP 0 at 2.6 GHz got the power of 2.0 GHz and the PPM
+ * power / thermal budget and the scheduler energy model underestimated the high OPPs (too high, then
+ * hard thermal throttling). Rows of the frequencies the FY table has are copied from it; above 2001 MHz
+ * they are extrapolated from the 2001 MHz row: capacity ~ f, dynamic power ~ f.V^2, leakage ~ V^3
+ * (on the high side, so that the PPM throttles early rather than late). Capacities are then rescaled so
+ * that the highest OPP is 1024, the end of the scheduler capacity scale.
+ */
+#define AC8257_OC_LEVEL		3
+static const unsigned int ac8257_fy_mhz[UPOWER_OPP_NUM] = {	/* FY table, OPP 0 first */
+	2001, 1917, 1834, 1767, 1700, 1633, 1533, 1466, 1400, 1308, 1216, 1125, 1056, 987, 918, 850,
+};
+static const unsigned int ac8257_oc_mhz[UPOWER_OPP_NUM] = {	/* CPU_DVFS_FREQx_LL_OC */
+	2601, 2501, 2401, 2301, 2201, 2101, 2001, 1917, 1834, 1700, 1533, 1400, 1308, 1216, 1125, 987,
+};
+static const unsigned int ac8257_oc_volt[UPOWER_OPP_NUM] = {	/* CPU_DVFS_VOLTx_VPROC_LL_OC, 10 uV */
+	110000, 107500, 105000, 102500, 102500, 102500, 102500, 99375,
+	96250, 91250, 85000, 80000, 77500, 75000, 72500, 68750,
+};
+static struct upower_tbl ac8257_oc_upower_tbl[NR_UPOWER_BANK];
+static struct upower_tbl_info ac8257_oc_upower_tbl_list[NR_UPOWER_BANK];
+
+static void ac8257_build_oc_upower_tbl(void)
+{
+	unsigned int b, j, k, d;
+
+	for (b = 0; b < NR_UPOWER_BANK; b++) {
+		const struct upower_tbl *fy = upower_tbl_list[0][b].p_upower_tbl;
+		struct upower_tbl *oc = &ac8257_oc_upower_tbl[b];
+		const struct upower_tbl_row *top = &fy->row[UPOWER_OPP_NUM - 1];	/* 2001 MHz */
+		unsigned long long v0 = top->volt ? top->volt : 102500;
+
+		*oc = *fy;
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
+			struct upower_tbl_row *r = &oc->row[UPOWER_OPP_NUM - 1 - j];
+			unsigned long long f = ac8257_oc_mhz[j], v = ac8257_oc_volt[j];
+
+			for (k = 0; k < UPOWER_OPP_NUM; k++)
+				if (ac8257_fy_mhz[k] == ac8257_oc_mhz[j])
+					break;
+			if (k < UPOWER_OPP_NUM) {
+				*r = fy->row[UPOWER_OPP_NUM - 1 - k];
+			} else {
+				/* one factor at a time: no 64-bit overflow (power < 2^32 uW, V < 2^17) */
+				unsigned long long x;
+
+				r->cap = div64_u64(top->cap * f, ac8257_fy_mhz[0]);
+				x = div64_u64((u64)top->dyn_pwr * f, ac8257_fy_mhz[0]);
+				x = div64_u64(x * v, v0);
+				r->dyn_pwr = (unsigned int)div64_u64(x * v, v0);
+				for (d = 0; d < NR_UPOWER_DEGREE; d++) {
+					x = div64_u64((u64)top->lkg_pwr[d] * v, v0);
+					x = div64_u64(x * v, v0);
+					r->lkg_pwr[d] = (unsigned int)div64_u64(x * v, v0);
+				}
+			}
+			r->volt = ac8257_oc_volt[j];
+		}
+		/* the scheduler capacity scale ends at 1024: the highest OPP gets it */
+		{
+			unsigned long long top_cap = oc->row[UPOWER_OPP_NUM - 1].cap;
+
+			if (top_cap > 1024)
+				for (j = 0; j < UPOWER_OPP_NUM; j++)
+					oc->row[j].cap = div64_u64(oc->row[j].cap * 1024, top_cap);
+		}
+		ac8257_oc_upower_tbl_list[b].name = upower_tbl_list[0][b].name;
+		ac8257_oc_upower_tbl_list[b].p_upower_tbl = oc;
+	}
+}
+#endif
+
 void get_original_table(void)
 {
 	/* unsigned int bin = 0; */
@@ -228,9 +304,17 @@ void get_original_table(void)
 	idx = mt_cpufreq_get_cpu_level();
 	upower_debug("idx = %d", idx);
 	/* get location of reference table */
-	if (idx >= NR_UPOWER_TBL_LIST)
-		idx = 0;
-	upower_tbl_infos = &upower_tbl_list[idx][0];
+#ifdef CONFIG_MACH_AC8257
+	if (idx == AC8257_OC_LEVEL) {
+		ac8257_build_oc_upower_tbl();
+		upower_tbl_infos = &ac8257_oc_upower_tbl_list[0];
+	} else
+#endif
+	{
+		if (idx >= NR_UPOWER_TBL_LIST)
+			idx = 0;
+		upower_tbl_infos = &upower_tbl_list[idx][0];
+	}
 
 	/* get location of target table */
 	upower_tbl_ref = &final_upower_tbl[0];
