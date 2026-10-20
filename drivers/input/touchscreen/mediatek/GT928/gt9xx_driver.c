@@ -13,6 +13,7 @@
 /* #include <linux/mmprofile.h> */
 #include <linux/device.h>
 #include <linux/proc_fs.h>	/*proc */
+#include <linux/math64.h>
 
 
 #include <linux/gpio.h>
@@ -299,8 +300,50 @@ static ssize_t store_refresh_rate(struct device *dev, struct device_attribute *a
 
 static DEVICE_ATTR(tpd_refresh_rate, 0664, show_refresh_rate, store_refresh_rate);
 
+#ifdef CONFIG_JANCAR_SOLUTION
+/*
+ * Calibration of the Jancar UJC201 stock kernel, written by its factory app and by LibreHU-service through
+ * /sys/devices/platform/touch/gt9xx_props as "A B C D E F Div":
+ * x' = (A*x + B*y + C) / Div, y' = (D*x + E*y + F) / Div, on the coordinates read from the panel.
+ */
+static int gt9xx_ccal[7] = { 1, 0, 0, 0, 1, 0, 1 };
+
+static ssize_t gt9xx_props_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d %d %d %d %d %d %d", gt9xx_ccal[0], gt9xx_ccal[1], gt9xx_ccal[2],
+		       gt9xx_ccal[3], gt9xx_ccal[4], gt9xx_ccal[5], gt9xx_ccal[6]);
+}
+
+static ssize_t gt9xx_props_store(struct device *dev, struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	int c[7];
+	int ret = sscanf(buf, "%d %d %d %d %d %d %d", &c[0], &c[1], &c[2], &c[3], &c[4], &c[5], &c[6]);
+
+	pr_info("ctp calibration: nr=%d, count=%d, ccal[0]%d\n", ret, (int)count, c[0]);
+	if (ret != 7 || c[6] == 0)
+		return -EINVAL;
+	memcpy(gt9xx_ccal, c, sizeof(c));
+	return count;
+}
+
+static DEVICE_ATTR(gt9xx_props, 0664, gt9xx_props_show, gt9xx_props_store);
+
+static void gt9xx_calibrate(s32 *x, s32 *y)
+{
+	s64 cx = (s64)gt9xx_ccal[0] * *x + (s64)gt9xx_ccal[1] * *y + gt9xx_ccal[2];
+	s64 cy = (s64)gt9xx_ccal[3] * *x + (s64)gt9xx_ccal[4] * *y + gt9xx_ccal[5];
+
+	*x = div_s64(cx, gt9xx_ccal[6]);
+	*y = div_s64(cy, gt9xx_ccal[6]);
+}
+#endif
+
 static struct device_attribute *gt9xx_attrs[] = {
 	&dev_attr_tpd_refresh_rate,
+#ifdef CONFIG_JANCAR_SOLUTION
+	&dev_attr_gt9xx_props,
+#endif
 };
 
 /* ============================================================= */
@@ -1746,6 +1789,9 @@ static int touch_event_handler(void *unused)
 				input_x = TPD_WARP_X(abs_x_max, input_x);
 				input_y = TPD_WARP_Y(abs_y_max, input_y);
 				//tpd_calibrate_driver(&input_x, &input_y);
+#ifdef CONFIG_JANCAR_SOLUTION
+				gt9xx_calibrate(&input_x, &input_y);
+#endif
 
 
 				//GTP_DEBUG("Touch point after calibration: [X:%04d, Y:%04d]",

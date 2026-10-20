@@ -12,13 +12,23 @@ d'enregistrement de la SSPM, qui applique le DVFS) :
 
 | MHz | Tension | Etat |
 |---|---|---|
-| 2601 | 1,100 V | **au-dessus du stock, non teste** |
-| 2501 | 1,075 V | **au-dessus du stock, non teste** |
-| 2401 | 1,050 V | **au-dessus du stock, non teste** |
-| 2301 | 1,025 V | **stable** (noyau `reverse-engineering`) ; **maximum au demarrage** |
-| 2201 | 1,025 V | stable |
-| 2101 | 1,025 V | teste |
-| 2001 ... 987 | tensions stock (table FY) | maximum stock 2001 MHz |
+| 2601 | 1,11875 V | au-dessus du stock ; **instable a 1,10 V** (20/10/2026) ; 1,11875 V = tension la plus haute du MT6765 |
+| 2501 | 1,100 V | au-dessus du stock, non teste |
+| 2401 | 1,08125 V | au-dessus du stock, non teste |
+| 2301 | 1,0625 V | **stable a 1,025 V** (`reverse-engineering`) ; **maximum au demarrage** |
+| 2201 | 1,050 V | stable a 1,025 V |
+| 2101 | 1,0375 V | teste a 1,025 V |
+| 2001 ... 987 | tensions stock (table FY) | maximum stock 2001 MHz, 1,025 V |
+
+Tensions au-dessus de 2,0 GHz : progressives, a partir de la tension stock de 2,0 GHz (1,025 V) :
+- jusqu'a 2,3 GHz, +12,5 mV par 100 MHz. C'est de la marge : 2,3 GHz a tenu a 1,025 V sur l'unite ; elle sert par
+  temps chaud, au prix d'environ 7 % de puissance dynamique en plus a 2,3 GHz ((1,0625 / 1,025)^2).
+- au-dessus, +18,75 mV par 100 MHz, jusqu'a **1,11875 V** a 2,6 GHz, jamais plus.
+Reference : le MediaTek MT6765 (Helio P35 : memes Cortex-A53, 12 nm, meme PMIC MT6357) monte de 0,95 V a 2,033 GHz
+a 1,11875 V a 2,351 GHz (puces FY), 2,501 GHz pour les meilleures (SB), soit environ +44 mV par 80 a 100 MHz, avec
+des limites `MAX_VPROC_VOLT` / `MAX_VSRAM_VOLT` de 1,12 V (`mtk_cpufreq_opp_table.h` et `mtk_cpufreq_platform.h`
+du noyau MT6765 de la Galaxy Tab A7 Lite, [gta7lite/android_kernel_samsung_mt6765](https://github.com/gta7lite/android_kernel_samsung_mt6765)).
+L'AC8257 est donne pour 2,0 GHz : rien ne garantit 2,5 ou 2,6 GHz, meme a 1,11875 V.
 
 Le stock tourne a 2,0 GHz maximum (table FY, 1,025 V). 1400 MHz / 0,80 V reste l'OPP de calibration de l'EEM
 (PTPOD).
@@ -32,10 +42,16 @@ Parametres (`/sys/module/ac8257_cpufreq/parameters/`, ou `ac8257_cpufreq.<nom>=`
 | `volt_uv` | table | les 16 tensions en uV, frequence la plus haute d'abord ; ecrire 16 valeurs separees par des virgules, 0 = valeur de la table |
 | `volt_offset_uv` | 0 | decalage ajoute a toutes les tensions (negatif = sous-tension) |
 
-Chaque tension est arrondie au pas du PMIC (6,25 mV) et gardee entre **0,65 et 1,10 V** (le regulateur Vproc
+Chaque tension est arrondie au pas du PMIC (6,25 mV) et gardee entre **0,65 et 1,11875 V** (le regulateur Vproc
 accepte jusqu'a 1,3125 V ; la limite est volontairement plus basse). La nouvelle table est envoyee a la SSPM
 comme le fait l'EEM (`cpuhvfs_update_volt`). L'EEM est desactivee avec la table OC (elle est calibree pour la
 table stock). `ac8257_cpu_oc=0` sur la ligne de commande : tables stock, EEM active, pas de reglage de tension.
+
+Essais sur l'unite (noyau `LibreHU-main`, tensions par defaut) :
+- 2,3 GHz : stable (deja valide avec `reverse-engineering`) ; c'est le maximum au demarrage.
+- **2,6 GHz a 1,10 V : instable.** Le 20/10/2026 (run 59), apres environ 14 min, le coeur CPU 0 s'est fige
+  (chien de garde materiel : `Qwdt`, `kick=0x0e check=0x0f`, `Non-crashing CPUs did not react to IPI`), a
+  46 degres. Table relevee depuis (ci-dessus, 1,11875 V a 2,6 GHz) ; a retester, deconseille au quotidien.
 
 Exemples (root) :
 ```
