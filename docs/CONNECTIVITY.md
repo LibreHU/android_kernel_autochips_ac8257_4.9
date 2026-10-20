@@ -31,6 +31,18 @@ Linux 4.19), via [rsuntk-oss/mtk_connectivity_module](https://github.com/rsuntk-
    (`<module>: built into the kernel, module from vendor refused`, erreur `EEXIST`). Rien a modifier dans
    `/vendor`. Sans ce refus, les memes peripheriques seraient enregistres deux fois.
 
+## Taille du noyau (partition `boot` de 10 Mio)
+La partition `boot` fait 10 Mio (`0xa00000` dans la table de partitions stock). `LibreHU-main` y tient a 0,45 Mo
+pres (noyau de 10 031 811 octets) ; les pilotes integres ajoutent 1,29 Mo (run 54 : 11 325 597 octets, refuse par
+`repack_boot.py`). Pour tenir, sur cette branche seulement :
+- Wi-Fi : seuls les messages `ERROR` et `WARN` du pilote gen4m restent compiles (`DBG_BUILD_CLASS_MASK=0x3`) ;
+  WMT, Bluetooth, GPS et FM gardent tous leurs messages ;
+- `CONFIG_DYNAMIC_DEBUG` desactive : les `pr_debug` / `dev_dbg` du noyau ne sont plus compiles (ils etaient
+  coupes par defaut et ne s'activaient qu'a la main par `/sys/kernel/debug/dynamic_debug`) ;
+- la CI recompresse le meme `Image` avec zopfli (`pigz -11`) : flux gzip standard, lu par le LK comme avant,
+  environ 3,7 % plus petit que `gzip -9` (mesure sur le noyau stock : 10 187 690 → 9 811 640 octets).
+Les tailles obtenues sont dans le journal de la CI (etape *Pack images*).
+
 ## WPA2 / WPA3
 - WPA2 : gere comme avant, par `wpa_supplicant` et le firmware.
 - WPA3 (SAE) : toujours **non**. Le pilote sait le faire, mais il lui faut `NL80211_CMD_EXTERNAL_AUTH`, arrive

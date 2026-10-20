@@ -23,6 +23,8 @@ LibreHU changes (search "LibreHU"):
   WPA3 / external auth (4.17) left out, AKM suite values defined.
 - Adapters: trigger_assert_cb added to the platform bridge and to struct _CMB_STUB_CB_ (mt-plat header),
   only with CONFIG_MTK_COMBO_DRV_BUILD_IN.
+- Wi-Fi gen4m: only ERROR and WARN messages built in (DBG_BUILD_CLASS_MASK=0x3, include/debug.h), for the
+  10 MiB boot partition.
 - gps_mod_init no longer starts GPS_init when built in (do_gps_drv_init does it, from wmt_loader).
 - wmt_idc.c: MD_MOD_GMMGR absent from the AC8257 eccci headers (no modem).
 - kernel/module.c refuses wmt_drv, wmt_chrdev_wifi, wlan_drv_gen4m, bt_drv, gps_drv and fmradio_drv

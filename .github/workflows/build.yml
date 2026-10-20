@@ -55,6 +55,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends python2
           # AOSP clang-4691093 is linked against libtinfo.so.5
           sudo apt-get install -y --no-install-recommends libtinfo5
+          # connectivity-builtin: zopfli recompression of the kernel (pigz -11)
+          sudo apt-get install -y --no-install-recommends pigz
           sudo ln -sf /usr/bin/python2 /usr/bin/python
           /usr/bin/python --version
 
@@ -95,6 +97,15 @@ jobs:
         run: |
           mkdir -p dist
           K=out/arch/arm64/boot/Image.gz-dtb
+          # connectivity-builtin: the built-in Wi-Fi/BT/GPS/FM drivers make the kernel too big for the
+          # 10 MiB boot partition with gzip -9: same Image recompressed with zopfli (pigz -11), still a
+          # standard gzip stream for the LK, DTB appended as the kernel build does (docs/CONNECTIVITY.md)
+          echo "Image.gz-dtb (gzip -9): $(stat -c %s "$K") bytes"
+          pigz -11 -n -c out/arch/arm64/boot/Image > out/Image.zopfli.gz
+          gzip -t out/Image.zopfli.gz
+          cat out/Image.zopfli.gz out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb > out/Image.gz-dtb
+          K=out/Image.gz-dtb
+          echo "Image.gz-dtb (zopfli): $(stat -c %s "$K") bytes"
           T=tools/ac8257/stock/boot_template_250718.img
           python3 tools/ac8257/repack_boot.py "$T" "$K" dist/recovery_test_ac8257.img \
             --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \

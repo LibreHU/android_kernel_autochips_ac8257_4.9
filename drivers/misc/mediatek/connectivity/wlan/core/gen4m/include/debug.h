@@ -110,6 +110,12 @@ extern uint32_t get_wifi_standalone_log_mode(void);
 #define DBG_CLASS_LOUD          BIT(6)
 #define DBG_CLASS_TEMP          BIT(7)
 #define DBG_CLASS_MASK          BITS(0, 7)
+/* LibreHU: classes kept at build time (DBG_BUILD_CLASS_MASK=0x3: ERROR and WARN only,
+ * the others and their strings are left out of the kernel image)
+ */
+#ifndef DBG_BUILD_CLASS_MASK
+#define DBG_BUILD_CLASS_MASK    DBG_CLASS_MASK
+#endif
 
 #define DBG_LOG_LEVEL_DEFAULT \
 	(DBG_CLASS_ERROR | \
@@ -658,7 +664,8 @@ enum WAKE_DATA_TYPE {
 #else
 #define DBGLOG(_Mod, _Clz, _Fmt, ...) \
 	do { \
-		if ((aucDebugModule[DBG_##_Mod##_IDX] & \
+		if (!(DBG_BUILD_CLASS_MASK & DBG_CLASS_##_Clz) || \
+		    (aucDebugModule[DBG_##_Mod##_IDX] & \
 			 DBG_CLASS_##_Clz) == 0) \
 			break; \
 		LOG_FUNC("[%u]%s:(" #_Mod " " #_Clz ") " _Fmt, \
@@ -667,7 +674,8 @@ enum WAKE_DATA_TYPE {
 	} while (0)
 #define DBGLOG_LIMITED(_Mod, _Clz, _Fmt, ...) \
 	do { \
-		if ((aucDebugModule[DBG_##_Mod##_IDX] & \
+		if (!(DBG_BUILD_CLASS_MASK & DBG_CLASS_##_Clz) || \
+		    (aucDebugModule[DBG_##_Mod##_IDX] & \
 			 DBG_CLASS_##_Clz) == 0) \
 			break; \
 		LOG_FUNC_LIMITED("[%u]%s:(" #_Mod " " #_Clz ") " _Fmt, \
@@ -676,7 +684,8 @@ enum WAKE_DATA_TYPE {
 	} while (0)
 #define DBGFWLOG(_Mod, _Clz, _Fmt, ...) \
 	do { \
-		if ((aucDebugModule[DBG_##_Mod##_IDX] & \
+		if (!(DBG_BUILD_CLASS_MASK & DBG_CLASS_##_Clz) || \
+		    (aucDebugModule[DBG_##_Mod##_IDX] & \
 			 DBG_CLASS_##_Clz) == 0) \
 			break; \
 		wlanPrintFwLog(NULL, 0, DEBUG_MSG_TYPE_DRIVER, \
@@ -686,28 +695,32 @@ enum WAKE_DATA_TYPE {
 	} while (0)
 #define TOOL_PRINTLOG(_Mod, _Clz, _Fmt, ...) \
 	do { \
-		if ((aucDebugModule[DBG_##_Mod##_IDX] & \
+		if (!(DBG_BUILD_CLASS_MASK & DBG_CLASS_##_Clz) || \
+		    (aucDebugModule[DBG_##_Mod##_IDX] & \
 			 DBG_CLASS_##_Clz) == 0) \
 			break; \
 		LOG_FUNC(_Fmt, ##__VA_ARGS__); \
 	} while (0)
 #define DBGLOG_HEX(_Mod, _Clz, _Adr, _Len) \
 	{ \
-		if (aucDebugModule[DBG_##_Mod##_IDX] & DBG_CLASS_##_Clz) { \
+		if ((DBG_BUILD_CLASS_MASK & DBG_CLASS_##_Clz) && \
+		    (aucDebugModule[DBG_##_Mod##_IDX] & DBG_CLASS_##_Clz)) { \
 			LOG_FUNC("%s:(" #_Mod " " #_Clz ")\n", __func__); \
 			dumpHex((uint8_t *)(_Adr), (uint32_t)(_Len)); \
 		} \
 	}
 #define DBGLOG_MEM8(_Mod, _Clz, _Adr, _Len) \
 	{ \
-		if (aucDebugModule[DBG_##_Mod##_IDX] & DBG_CLASS_##_Clz) { \
+		if ((DBG_BUILD_CLASS_MASK & DBG_CLASS_##_Clz) && \
+		    (aucDebugModule[DBG_##_Mod##_IDX] & DBG_CLASS_##_Clz)) { \
 			LOG_FUNC("%s:(" #_Mod " " #_Clz ")\n", __func__); \
 			dumpMemory8((uint8_t *)(_Adr), (uint32_t)(_Len)); \
 		} \
 	}
 #define DBGLOG_MEM32(_Mod, _Clz, _Adr, _Len) \
 	{ \
-		if (aucDebugModule[DBG_##_Mod##_IDX] & DBG_CLASS_##_Clz) { \
+		if ((DBG_BUILD_CLASS_MASK & DBG_CLASS_##_Clz) && \
+		    (aucDebugModule[DBG_##_Mod##_IDX] & DBG_CLASS_##_Clz)) { \
 			LOG_FUNC("%s:(" #_Mod " " #_Clz ")\n", __func__); \
 			dumpMemory32((uint32_t *)(_Adr), (uint32_t)(_Len)); \
 		} \

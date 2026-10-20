@@ -8,6 +8,12 @@ ifeq ($(CONFIG_MTK_DISABLE_CONNECTIVITY_LOG),y)
 ccflags-y += -DDBG_DISABLE_ALL_LOG=1
 endif
 
+# LibreHU: built into the kernel, the boot partition is 10 MiB: Wi-Fi errors and
+# warnings only (docs/CONNECTIVITY.md)
+ifeq ($(CONFIG_MTK_COMBO_DRV_BUILD_IN),y)
+ccflags-y += -DDBG_BUILD_CLASS_MASK=0x3
+endif
+
 # ---------------------------------------------------
 # OS option
 # ---------------------------------------------------
