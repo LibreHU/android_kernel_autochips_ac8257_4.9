@@ -151,7 +151,8 @@ autochips-gpl ──(git merge autochips-gpl)──▶ LibreHU-main ◀──(re
   GCC 4.9) et les variables de `kenv.mk` du stock (`ATC_DISABLE_BATTERY_CHARGER=yes`, `ATC_FASTDISP_VERSION=2.0`) ;
   artefacts : `Image.gz-dtb`, `config`, `recovery_test_ac8257.img`, `boot_ac8257.img` et `boot_ac8257_bootmenu.img`
   (le meme noyau derriere le menu de demarrage TWRP / Android / Fastboot de l'arbre device, voir
-  [docs/BUILD.md](docs/BUILD.md)).
+  [docs/BUILD.md](docs/BUILD.md)) ; les memes dans la release `latest-<branche>` de chaque build, d'ou les zips TWRP de
+  [LibreHU-flashablesZips](https://github.com/LibreHU/LibreHU-flashablesZips) (LibreHU Apps, onglet Zips, categorie Noyau).
 - **defconfig de l'unite** `ac8257_ujc201_defconfig` = config complete du noyau stock #72, sans les options dont les
   sources manquent (overlay `UJC201_64`, une partie des tactiles d'autres ecrans), plus les ajouts ci-dessous.
 - **Device tree de l'unite** `mediatek/ac8257_ujc201` = le DT du noyau stock #72, decompile (recompile, il donne le
