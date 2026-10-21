@@ -226,31 +226,53 @@ Pas a reprendre :
 
 ## Compiler from scratch
 
-Sur un PC Linux x86-64 (Ubuntu 22.04 conseille : dernier Ubuntu avec un paquet `python2`), environ 10 Go libres.
-Memes etapes que la CI (`.github/workflows/build.yml`) ; details et pieges : [docs/BUILD.md](docs/BUILD.md).
+Sur un PC Linux x86-64, environ 10 Go libres. Memes etapes que la CI (`.github/workflows/build.yml`, runner
+Ubuntu 22.04) ; details et pieges : [docs/BUILD.md](docs/BUILD.md). Procedure **verifiee de bout en bout** (noyau
+compile, `boot_ac8257.img` produit) sur **Ubuntu 24.04** et **Ubuntu 26.04** (conteneurs propres, 21/10/2026).
+
+Deux choses manquent aux Ubuntu recents : le paquet **`python2`** (retire depuis Ubuntu 23.04) pour le generateur DTS
+d'Autochips `tools/dct/DrvGen.py` et le wrapper `bin/clang` du clang AOSP, et **`libtinfo5`** (absent de 24.04 et
+26.04 : `libtinfo.so.6` seulement) dont `clang-4691093` a besoin. Les etapes 1 et 2 different donc selon la version.
 
 ```bash
-# 1. Paquets (python2 : generateur DTS Autochips tools/dct/DrvGen.py ; libtinfo5 : clang AOSP)
+# 1. Paquets
+# - Ubuntu 22.04 :
 sudo apt install bc bison flex libssl-dev libelf-dev cpio git curl python3 python2 libtinfo5 build-essential
-sudo ln -sf /usr/bin/python2 /usr/bin/python      # DrvGen.py est lance par "#! /usr/bin/python"
+mkdir -p ~/ac8257-host && ln -sf /usr/bin/python2 ~/ac8257-host/python
+# - Ubuntu 24.04 / 26.04 :
+sudo apt install bc bison flex libssl-dev libelf-dev cpio git curl python3 build-essential
 
-# 2. Sources
+# 2. Ubuntu 24.04 / 26.04 seulement : Python 2.7.18 compile dans /opt/python2.7 (rien d'autre n'est touche),
+#    et libtinfo.so.5 = lien vers libtinfo.so.6 (assez pour clang-4691093), le tout dans ~/ac8257-host
+#    CFLAGS=-std=gnu11 : GCC 15 (Ubuntu 26.04) compile en C23 par defaut, ou false/true sont des mots-cles,
+#    ce qui casse Python 2.7 (« cannot use keyword 'false' as enumeration constant »)
+curl -fLO https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz
+tar xzf Python-2.7.18.tgz && cd Python-2.7.18
+./configure --prefix=/opt/python2.7 CFLAGS="-std=gnu11" && make -j"$(nproc)" && sudo make altinstall
+cd .. && mkdir -p ~/ac8257-host
+ln -sf /opt/python2.7/bin/python2.7 ~/ac8257-host/python
+ln -sf /opt/python2.7/bin/python2.7 ~/ac8257-host/python2
+ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 ~/ac8257-host/libtinfo.so.5
+
+# 3. Sources
 git clone -b LibreHU-main https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9 kernel
 cd kernel
 
-# 3. Chaine de compilation du noyau stock : binutils AOSP GCC 4.9 + AOSP clang 6.0.2 (clang-4691093)
+# 4. Chaine de compilation du noyau stock : binutils AOSP GCC 4.9 + AOSP clang 6.0.2 (clang-4691093)
 git clone --depth 1 -b lineage-17.1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 ../gcc49  # = a61b4b9, comme la CI
 mkdir -p ../clang && curl -fL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-9.0.0_r61/clang-4691093.tar.gz | tar xz -C ../clang
-export PATH="$PWD/../clang/bin:$PWD/../gcc49/bin:$PATH"
+# ~/ac8257-host en tete : "python" = Python 2 (wrapper bin/clang), libtinfo.so.5 (24.04 / 26.04)
+export PATH="$HOME/ac8257-host:$PWD/../clang/bin:$PWD/../gcc49/bin:$PATH" LD_LIBRARY_PATH="$HOME/ac8257-host"
+python --version                                    # doit afficher Python 2.7
 clang --version | grep 4691093                      # doit afficher clang-4691093
 
-# 4. Configuration et build
+# 5. Configuration et build ; python=python : DrvGen.py lance avec le Python 2 du PATH (sinon "#! /usr/bin/python")
 M='O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu-'
-M="$M ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0"
+M="$M ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0 python=python"
 make $M HOSTCC="gcc -fcommon" ac8257_ujc201_defconfig
 make $M HOSTCC="gcc -fcommon" -j"$(nproc)" Image.gz-dtb
 
-# 5. Images pour l'unite (gabarits et vbmeta du stock)
+# 6. Images pour l'unite (gabarits et vbmeta du stock)
 python3 tools/ac8257/repack_boot.py tools/ac8257/stock/boot_template_250718.img out/arch/arm64/boot/Image.gz-dtb \
     recovery_test_ac8257.img --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
     --cmdline-append "init=/init log_buf_len=8M"
