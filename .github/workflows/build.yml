@@ -32,6 +32,11 @@ env:
   # HOSTCC with -fcommon: the AutoChips scripts/dtc defines yylloc twice, which host GCC >= 10 refuses at link time
   # (fixed upstream by "scripts/dtc: Remove redundant YYLOC global declaration", present on reverse-engineering)
 
+# Release latest-<branch> of each build pushed (boot images), picked up by LibreHU-flashablesZips (TWRP zips,
+# LibreHU Apps).
+permissions:
+  contents: write
+
 jobs:
   build:
     # ubuntu-22.04: last runner image with a python2 package (the AutoChips DTS generator needs it)
@@ -113,6 +118,41 @@ jobs:
           name: ac8257-kernel-${{ github.sha }}
           path: dist/
           retention-days: 30
+
+      - name: Release of the branch (latest-<branch>)
+        # Pushes, and manual runs with the default command line (a custom one stays an artifact)
+        if: github.event_name == 'push' || github.event.inputs.cmdline_append == 'init=/init log_buf_len=8M'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          # One release per branch, tag latest-<branch>, replaced at each build: LibreHU-flashablesZips makes the TWRP
+          # zips of LibreHU Apps from its boot images and reads the version in release.txt. Only LibreHU-main is a
+          # full release; the other branches (connectivity-builtin...) are prereleases.
+          TAG="latest-$BRANCH"
+          NAME="r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
+          PRE=true; [ "$BRANCH" = LibreHU-main ] && PRE=false
+          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
+            "$GITHUB_RUN_NUMBER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.txt
+          {
+            echo "Noyau LibreHU de la branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9}) : $(git log -1 --pretty=%s)"
+            echo
+            echo "- \`boot_ac8257.img\` : partition boot (10 Mio, AVB du boot stock)"
+            echo "- \`boot_ac8257_bootmenu.img\` : le meme noyau derriere le menu de demarrage (TWRP / Android / Fastboot)"
+            echo "- \`recovery_test_ac8257.img\` : methode de test depuis la partition recovery (docs/BUILD.md)"
+            echo
+            echo "Zips TWRP et ecriture depuis Android : LibreHU Apps, onglet Zips (categorie Noyau), ou"
+            echo "\`fastboot flash boot boot_ac8257.img\`. vbmeta n'est pas touche."
+          } > notes.md
+          git tag -f "$TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$TAG"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "Noyau $BRANCH $NAME" --notes-file notes.md --prerelease=$PRE
+          else
+            gh release create "$TAG" --title "Noyau $BRANCH $NAME" --notes-file notes.md --prerelease=$PRE --verify-tag
+          fi
+          gh release upload "$TAG" dist/boot_ac8257.img dist/boot_ac8257_bootmenu.img dist/recovery_test_ac8257.img \
+            dist/Image.gz-dtb dist/config dist/BUILD_INFO.txt dist/release.txt --clobber
 
       - uses: actions/upload-artifact@v4
         if: failure()
