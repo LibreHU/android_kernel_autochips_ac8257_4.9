@@ -149,7 +149,9 @@ autochips-gpl ──(git merge autochips-gpl)──▶ LibreHU-main ◀──(re
 ### Pour compiler et demarrer l'unite (detail : [docs/BUILD.md](docs/BUILD.md))
 - **CI** (`.github/workflows/build.yml`) avec le compilateur du stock (AOSP clang 6.0.2 `clang-4691093` + binutils
   GCC 4.9) et les variables de `kenv.mk` du stock (`ATC_DISABLE_BATTERY_CHARGER=yes`, `ATC_FASTDISP_VERSION=2.0`) ;
-  artefacts : `Image.gz-dtb`, `config`, `recovery_test_ac8257.img`, `boot_ac8257.img`.
+  artefacts : `Image.gz-dtb`, `config`, `recovery_test_ac8257.img`, `boot_ac8257.img` et `boot_ac8257_bootmenu.img`
+  (le meme noyau derriere le menu de demarrage TWRP / Android / Fastboot de l'arbre device, voir
+  [docs/BUILD.md](docs/BUILD.md)).
 - **defconfig de l'unite** `ac8257_ujc201_defconfig` = config complete du noyau stock #72, sans les options dont les
   sources manquent (overlay `UJC201_64`, une partie des tactiles d'autres ecrans), plus les ajouts ci-dessous.
 - **Device tree de l'unite** `mediatek/ac8257_ujc201` = le DT du noyau stock #72, decompile (recompile, il donne le
@@ -171,7 +173,8 @@ points d'accroche.
 | Jancar `/dev/gpios_ioctl` | `CONFIG_JANCAR_GPIOS` (noms d'options du stock), reimplementation : la source Jancar manque au paquet | OK | ✅ |
 | KernelSU Next v3.4.0-legacy | hooks manuels, gestionnaire KernelSU Next v3.4.0 | OK | ✅ |
 | Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock | OK | ⬜ |
-| Outils de mise au point | console pstore precoce, panique minutee, interception des redemarrages, one-shot, retour en recovery, memoire SPM / SCP hors de Linux en boot recovery. **A desactiver pour l'usage quotidien** | OK | ✅ (panique minutee desarmable) |
+| Outils de mise au point | console pstore precoce et memoire SPM / SCP hors de Linux en boot recovery (actifs) ; panique minutee, interception des redemarrages, one-shot, retour en recovery (`CONFIG_AC8257_BRINGUP_PANIC`, **desactives** depuis le 21/10/2026) | OK | ✅ |
+| **Menu de demarrage** | image `boot_ac8257_bootmenu.img` : menu TWRP / Android / Fastboot de l'arbre device devant ce noyau (`tools/ac8257/bootmenu`, `bootmenu_image.py`) | en cours | ⬜ |
 | **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,3 GHz** | 16 OPP ; tensions progressives au-dessus de 2,0 GHz (1,0375 V a 2,1 GHz, jusqu'a 1,11875 V a 2,6 GHz, la tension maximale du MT6765) ; [docs/TUNING.md](docs/TUNING.md) | OK (runs 48, 61) | ✅ 2,3 et 2,4 GHz ; 2,6 GHz instable a 1,10 V |
 | **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,10 V, envoyees a la SSPM | OK (run 48) | ⬜ |
 | **GPU 730 MHz** et OPP intermediaires, **tensions VCORE reglables** | le GPU tourne sur VCORE (partagee avec le SoC) : `ac8257_gpufreq.vcore_uv`, 0,60-0,90 V | OK (run 48) | ⬜ |
