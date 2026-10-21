@@ -281,6 +281,7 @@
 #include <linux/fcntl.h>
 #include <linux/blkdev.h>
 #include <linux/times.h>
+#include <scsi/scsi_cmnd.h>	/* SCSI_SENSE_BUFFERSIZE */
 
 #include <asm/uaccess.h>
 
@@ -2172,6 +2173,7 @@ static int cdrom_read_cdda_bpc(struct cdrom_device_info *cdi, __u8 __user *ubuf,
 	struct bio *bio;
 	unsigned int len;
 	int nr, ret = 0;
+	unsigned char sense[SCSI_SENSE_BUFFERSIZE];
 
 	if (!q)
 		return -ENXIO;
@@ -2215,10 +2217,19 @@ static int cdrom_read_cdda_bpc(struct cdrom_device_info *cdi, __u8 __user *ubuf,
 		rq->timeout = 60 * HZ;
 		bio = rq->bio;
 
+		/*
+		 * LibreHU: own sense buffer. blk_execute_rq() only lends rq->sense one on its stack and
+		 * sets it back to NULL before returning, so after a failed READ CD rq->sense was NULL and
+		 * reading the sense key oopsed ("Accessing user space memory outside uaccess.h routines"
+		 * in mmc_ioctl_cdrom_read_audio, USB CD drive on the UJC201). Later kernels allocate the
+		 * sense buffer with the request (scsi_req).
+		 */
+		memset(sense, 0, sizeof(sense));
+		rq->sense = sense;
+		rq->sense_len = 0;
 		if (blk_execute_rq(q, cdi->disk, rq, 0)) {
-			struct request_sense *s = rq->sense;
 			ret = -EIO;
-			cdi->last_sense = s->sense_key;
+			cdi->last_sense = ((struct request_sense *)sense)->sense_key;
 		}
 
 		if (blk_rq_unmap_user(bio))
