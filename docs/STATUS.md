@@ -54,7 +54,8 @@ Source des branchements : ivi-services de Jancar (`Platform_AutoChips_8257_Base`
 | Tuner I2C (reset) | SoC | GPIO 112 | sortie | — | pas de tuner I2C (`jancar.radio.id = -1`), FM interne MT6631 |
 | Reset hub USB | SoC | GPIO 174 | sortie, impulsion 0 | ⬜ | a la coupure de l'ACC |
 | Inconnues | SoC | GPIO 164, 97 | sorties, 1 au demarrage | ⬜ | |
-| Liaison MCU | SoC | `/dev/ttyS1`, 115200 bauds | — | ✅ | MCU detecte |
+| Liaison MCU | SoC | `/dev/ttyS1`, 115200 bauds | — | ✅ | MCU detecte, commandes executees (AMP CONT) |
+| AMP CONT (allumage ampli externe / caisson) | MCU | commande `44` (`44 01` / `44 00`) | sortie | ✅ | coupee a l'ACC off par ivi-services / LibreHU-service |
 | Tactile GT911 | SoC | RST GPIO 45, INT GPIO 29, I2C 3 `0x5d` | — | ✅ | |
 | Recepteur IR | SoC | broche 4 (`gpio-333`) | entree, IRQ | ⬜ | aussi `backcar_hdavm_gpio` du DT |
 | Detection recul HD (`backcar`) | SoC | broche 1 (`gpio-330`) | entree | ⬜ | prise par le pilote `backcar` |
