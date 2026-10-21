@@ -58,6 +58,7 @@ pas · ⬜ pas encore teste.
 | Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte, commandes executees |
 | Vehicule | Marche arriere (GPIO 2 du SoC) | ✅ | active a l'etat bas |
 | Vehicule | Sortie AMP CONT (ampli / caisson) | ✅ | commande MCU `44` |
+| Vehicule | Frein a main, feux (ILL) | ✅ | trames MCU `04` et `0B` |
 | Vehicule | `/dev/gpios_ioctl` (Jancar) | ✅ | pilote le commutateur video CVBS |
 | Vehicule | Metazone `/dev/mtz` | ✅ | lecture (rotation, format camera) |
 | Vehicule | Telecommande IR | ⬜ | |
