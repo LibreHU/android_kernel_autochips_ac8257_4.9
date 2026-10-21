@@ -6,6 +6,10 @@
 - `Image.gz-dtb`, `config` ;
 - `recovery_test_ac8257.img` : 32 Mio, vbmeta du recovery stock, pour le test depuis la partition recovery ;
 - `boot_ac8257.img` : 10 Mio, vbmeta du boot (partition boot normale) ;
+- `boot_ac8257_bootmenu.img` : le meme noyau derriere le **menu de demarrage** (TWRP / Android / Fastboot a chaque
+  demarrage, Android au bout de 3 s ; toucher l'ecran met en pause) de l'arbre device (`tools/ac8257/bootmenu`, copie
+  de `tools/bootmenu`) : ramdisk dont `/init` est le menu, noyau patche `skip_initramfs` -> `want_initramfs` (sinon le
+  LK lui fait ignorer le ramdisk), `tools/ac8257/bootmenu_image.py` ; environ 290 Ko de marge dans les 10 Mio ;
 - `BUILD_INFO.txt` (commit, ligne de commande ajoutee, SHA-256).
 
 ## Particularites de l'arbre Autochips
@@ -44,5 +48,7 @@ Meme methode que `reverse-engineering` (`docs/BUILD.md` de cette branche, detail
    depuis `boot` ne se remplace qu'avec SP Flash Tool, qui efface la RAM et le journal.
 4. Regarder : `adb logcat`, `adb shell dmesg`, `/proc/last_kmsg`, console UART (`ttyS0`, 921600 8N1).
 
-Les outils de mise au point de `reverse-engineering` (console pstore precoce, panique minutee, retour en
-recovery) ne sont pas encore repris ici : voir [PORTING.md](PORTING.md).
+Outils de mise au point de `reverse-engineering` (`drivers/misc/librehu`) : la console pstore precoce reste ; la
+panique minutee, l'interception des redemarrages, le one-shot et le retour en recovery
+(`CONFIG_AC8257_BRINGUP_PANIC`) sont desactives depuis le 21/10/2026 (noyau utilise au quotidien) : a remettre a `y`
+dans le defconfig pour un noyau de test qui risque de bloquer.

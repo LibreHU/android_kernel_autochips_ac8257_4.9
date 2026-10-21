@@ -20,7 +20,7 @@ on:
       cmdline_append:
         description: 'Appended to the recovery test image command line'
         required: false
-        default: 'init=/init ac8257_panic_secs=600 log_buf_len=8M'
+        default: 'init=/init log_buf_len=8M'
 
 env:
   # LineageOS mirror of AOSP prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 (GCC 4.9.x 20150123)
@@ -93,7 +93,7 @@ jobs:
 
       - name: Pack images
         env:
-          CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init ac8257_panic_secs=600 log_buf_len=8M' }}
+          CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init log_buf_len=8M' }}
         run: |
           mkdir -p dist
           K=out/arch/arm64/boot/Image.gz-dtb
@@ -111,6 +111,9 @@ jobs:
             --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
             --cmdline-append "$CMDLINE_APPEND"
           python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257.img --size 10485760
+          # Same kernel behind the boot menu (TWRP / Android / Fastboot at each start): tools/ac8257/bootmenu_image.py
+          python3 tools/ac8257/bootmenu_image.py out/arch/arm64/boot/Image out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb \
+            "$T" dist/boot_ac8257_bootmenu.img
           cp "$K" dist/
           cp out/.config dist/config
           echo "commit ${GITHUB_SHA}" > dist/BUILD_INFO.txt

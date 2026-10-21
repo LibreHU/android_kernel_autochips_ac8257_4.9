@@ -5,6 +5,7 @@ cmdline, load addresses, header v1 recovery DTBO, OS version) byte for byte.
 
     tools/ac8257/repack_boot.py <stock boot.img> <out/arch/arm64/boot/Image.gz-dtb> <new boot.img>
                                 [--vbmeta <vbmeta blob>] [--size <partition bytes>] [--cmdline-append <args>]
+                                [--ramdisk <ramdisk.cpio.gz>]
 
 Android boot image header v0/v1 (system/tools/mkbootimg). The id field is the SHA-1 of the sections,
 recomputed as mkbootimg does.
@@ -51,6 +52,7 @@ def main():
     ap.add_argument("--vbmeta", help="vbmeta blob for the AVB footer (default: the stock image's own)")
     ap.add_argument("--size", type=int, help="partition size (default: size of the stock image)")
     ap.add_argument("--cmdline-append", default="", help="appended to the header command line")
+    ap.add_argument("--ramdisk", help="ramdisk to put in the image instead of the stock one (bootmenu_image.py)")
     a = ap.parse_args()
     stock = open(a.stock, "rb").read()
     kernel = open(a.kernel, "rb").read()
@@ -83,6 +85,8 @@ def main():
         rd_size, rd_offset, hdr_size = struct.unpack_from("<IQI", stock, 1632)
         recovery_dtbo = stock[o:o + rd_size]
     _, ramdisk, second = sections
+    if a.ramdisk:
+        ramdisk = open(a.ramdisk, "rb").read()
 
     sha = hashlib.sha1()
     for blob in (kernel, ramdisk, second) + ((recovery_dtbo,) if version == 1 else ()):
