@@ -7,7 +7,7 @@ Ce que montrent le noyau stock (`4.9.117+ #25` / `#72`), ses journaux et ceux de
 |---|---|---|---|
 | **Camera AHD** (recul, 720p / 1080p, 25 / 30 i/s) | **Techpoint TP9963** (sur le PCB) | MIPI CSI-2 → ISP de l'AC8257 ; capteur `MAIN2`, I2C `0x8a` (7 bits `0x45`) | `tp9963_yuv` (reconstruit, voir plus bas) ; recul rapide par l'**ARM2** au demarrage |
 | **CVBS IN 1 / CVBS IN 2** (RCA, video seule) et camera de recul CVBS | decodeur CVBS **integre a l'AC8257** (TVD) | commutateur video analogique (GPIO 167 / 165 du noeud `gpios_ioctl`), puis TVD | `drivers/misc/autochips` (`vss_tvd`, memoire `cvbs-ion`) |
-| **VIDEO OUT** (RCA) | puce d'affichage USB MacroSilicon | copie d'ecran envoyee en USB par l'appli Jancar `com.jancar.usbdisplay` | aucun pilote dedie (USB) |
+| **VIDEO OUT** (RCA) | puce d'affichage USB MacroSilicon (`534d:6021` / `345f:9132`) | copie d'ecran envoyee en USB par l'appli Jancar `com.jancar.usbdisplay` | aucun pilote dedie (USB) : le noyau stock n'a aucune chaine liee a cette sortie ; il suffit de l'USB hote |
 | Camera USB (webcam) | — | USB, UVC | `CONFIG_USB_VIDEO_CLASS=y` (comme le stock) |
 
 ## TP9963
@@ -25,6 +25,22 @@ Ce que montrent le noyau stock (`4.9.117+ #25` / `#72`), ses journaux et ceux de
   repond, comme le stock.
 - La HAL recoit une fenetre fixe de 1280 x 720 (comme le stock), l'etat du signal des canaux 0 et 1, et les
   reglages luminosite / contraste / saturation / teinte (registres `0x10` a `0x13` du canal).
+
+### Les autres decodeurs TP (TP2850, TP2854, TP2855, TP9951)
+Sur l'unite, seul le TP9963 repond, avec les deux noyaux :
+- **`LibreHU-main`** (run 64) : TP2850 (capteur 1) et TP2854 (capteur 2) : `I2C read failed`, identifiant `0x0` ;
+  TP9963 (capteur 2) : `0x2863`, trouve.
+- **Stock** : le pilote TP2850 lit `0x2863` (le TP9963, a la meme adresse I2C, deja alimente a ce moment) et le
+  refuse ; le pilote du 2e emplacement lit `0x0` ; seul le TP9963 est retenu.
+
+Ce que le stock sait faire en plus du paquet (symboles et code de son image) :
+- son pilote `tp2850_yuv` reconnait aussi le **TP9951** : `TP2850Open` appelle `TP9951_sensor_init` quand
+  l'identifiant lu vaut `0x2860` ; le paquet GPL n'a pas cette variante ;
+- son emplacement `tp2854_yuv` contient le code **TP2855** (`TP2855_GetSensorID`, `TP2855_Sensor_Init`...) ; le paquet
+  a un pilote `tp2855_yuv` separe, non declare dans `CONFIG_CUSTOM_KERNEL_IMGSENSOR`.
+
+Sans effet sur cette unite (TP9963) ; une autre serie d'UJC201 avec un TP9951 ou un TP2855 ne serait pas reconnue
+par `LibreHU-main` tant que ces deux variantes ne sont pas reprises.
 
 ### Reconstruction
 Le paquet GPL n'a pas la source du pilote. Il a ete reconstruit depuis l'image du noyau stock `#25` :
