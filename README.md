@@ -75,6 +75,36 @@ Points connus sans consequence : messages `bc_failed` du pilote `backcar` (le DT
 `gpios_ioctl` et au recepteur IR), avertissement `atc_alsa` en double au demarrage de l'audio, echecs `insmod` des
 modules Ethernet du stock (pilotes deja integres).
 
+## Broches et signaux du vehicule (MCU ou SoC)
+
+Source des branchements : ivi-services de Jancar (`Platform_AutoChips_8257_Base`, doc de LibreHU-service
+`docs/ivi-services/02-hardware.md`), DT stock. Numero global Linux = broche + 329 (`/sys/kernel/debug/gpio`).
+✅ OK · ❌ NOK · ⬜ non teste · — sans objet sur cette unite.
+
+| Signal | Relie a | Broche / trame | Sens | Etat | Note |
+|---|---|---|---|---|---|
+| Marche arriere | SoC | GPIO 2 (`gpio-331`) | entree, actif bas | ✅ | lue via `/dev/gpios_ioctl` ; aussi `backcar_sdbc_gpio` du DT (d'ou le refus `bc_failed`) |
+| Marche arriere par la box CAN | MCU / CAN | broadcast `action_backcar_notification` | — | ⬜ | voitures sans fil de marche arriere |
+| ACC | MCU | trame `00` | — | ⬜ | la GPIO 134 existe mais Jancar prend l'ACC sur le MCU |
+| Frein a main | MCU | trame `04` | — | ✅ | sens inverse si metazone 65952 = `0x5A5A5A51` |
+| Feux (ILL) | MCU | trame `0B` | — | ✅ | |
+| Clignotant gauche | SoC | GPIO 7 (`gpio-336`) | entree, actif bas | ⬜ | lue `lo` au repos : non branche ? |
+| Clignotant droit | SoC | GPIO 6 (`gpio-335`) | entree, actif bas | ⬜ | lue `hi` au repos |
+| Ecran allume / eteint | SoC | GPIO 5 (`gpio-334`) | sortie, 1 = allume | ✅ | `out hi` ; la luminosite est le PWM `lcd-backlight` |
+| Mute ampli | SoC | GPIO 166 (`gpio-495`) | sortie, 1 = muet | ✅ | `out lo`, son OK |
+| Commutateur video SW1 / SW2 | SoC | GPIO 167 / 165 (`gpio-496` / `gpio-494`) | sorties | ✅ | CVBS IN 1 (0/0), IN 2 (1/0), recul CVBS (1/1) OK |
+| Alimentation antenne radio | SoC + MCU | GPIO 110, commande MCU `43` | sortie | ✅ | FM recue avec RDS |
+| Tuner I2C (reset) | SoC | GPIO 112 | sortie | — | pas de tuner I2C (`jancar.radio.id = -1`), FM interne MT6631 |
+| Reset hub USB | SoC | GPIO 174 | sortie, impulsion 0 | ⬜ | a la coupure de l'ACC |
+| Inconnues | SoC | GPIO 164, 97 | sorties, 1 au demarrage | ⬜ | |
+| Liaison MCU | SoC | `/dev/ttyS1`, 115200 bauds | — | ✅ | MCU detecte, commandes executees (AMP CONT) |
+| AMP CONT (allumage ampli externe / caisson) | MCU | commande `44` (`44 01` / `44 00`) | sortie | ✅ | coupee a l'ACC off par ivi-services / LibreHU-service |
+| Tactile GT911 | SoC | RST GPIO 45, INT GPIO 29, I2C 3 `0x5d` | — | ✅ | |
+| Recepteur IR | SoC | broche 4 (`gpio-333`) | entree, IRQ | ⬜ | aussi `backcar_hdavm_gpio` du DT |
+| Detection recul HD (`backcar`) | SoC | broche 1 (`gpio-330`) | entree | ⬜ | prise par le pilote `backcar` |
+| Decodeur camera TP9963 | SoC | I2C `0x45`, PDN / RST | — | ✅ | repond (ID `0x2863`) |
+| Processeur audio BD37534 | SoC | I2C 6 `0x40` | — | ✅ | pilote par Android, son OK |
+
 ## Le SoC AC8257
 
 ![AC8257 : caracteristiques (AutoChips)](docs/img/ac8257_autochips_features.webp)
