@@ -28,6 +28,7 @@ a 2,4 GHz. Colonne « reverse-engineering » : etat atteint par le noyau reconst
 | spidev, UART2/3 | non teste | OK | `spi-ac82xx-dev` natif |
 | KernelSU Next, overclock, gouverneurs | **OK** : root (`su -c id`), 2,4 GHz stable (Geekbench 5) | OK (CPU 2,3 GHz, GPU 730 MHz) | repris ; CPU jusqu'a 2,6 GHz (2,3 au demarrage), tensions reglables : [TUNING.md](TUNING.md) |
 | Ethernet USB (RTL8152/8153, RNDIS, ipheth, AX88179...) | **OK** (RTL8152) ; quelques `Rx status -71` ; les `insmod` de `init.librehu_usbnet.rc` (modules du noyau stock) echouent, sans effet : pilotes integres | modules (`tools/ac8257/usbnet`) | integres au noyau |
+| Lecteur CD / DVD USB | non teste | absent | `CONFIG_BLK_DEV_SR`, `CONFIG_CHR_DEV_SG`, `CONFIG_UDF_FS` ajoutes (ISO 9660 / Joliet deja la) ; vold d'Android ne monte pas `/dev/block/sr0` : montage root |
 | Mise en veille / reprise | non teste | inconnu | |
 | Sondes de temperature | **OK** sauf batterie a 0 °C (pas de batterie, chargeur desactive `ATC_DISABLE_BATTERY_CHARGER` : a comparer au stock) | | |
 | Systeme de fichiers `/system` (`mmcblk0p31`) | compteur ext4 : 244 erreurs depuis le dernier fsck (premiere le 13/10, `__ext4_new_inode`, derniere `ext4_mb_generate_buddy`) : erreurs enregistrees, pas de nouvelle erreur d'E/S ; `e2fsck -fn` en lecture seule depuis TWRP pour voir l'etat | | |
