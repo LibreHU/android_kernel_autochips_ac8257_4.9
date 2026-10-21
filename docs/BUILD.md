@@ -52,3 +52,6 @@ Outils de mise au point de `reverse-engineering` (`drivers/misc/librehu`) : la c
 panique minutee, l'interception des redemarrages, le one-shot et le retour en recovery
 (`CONFIG_AC8257_BRINGUP_PANIC`) sont desactives depuis le 21/10/2026 (noyau utilise au quotidien) : a remettre a `y`
 dans le defconfig pour un noyau de test qui risque de bloquer.
+Avec ces outils actifs (noyaux d'avant le 21/10/2026), `adb reboot recovery` et `adb reboot bootloader` deviennent
+une panique et l'unite redemarre sur Android. Pour redemarrer normalement sur un tel noyau :
+`adb shell su -c "echo 0 > /sys/module/ac8257_bringup/parameters/intercept_reboot"`, puis la commande `adb reboot`.
