@@ -99,7 +99,6 @@ refroidissement, puces presentes).
 | **`LibreHU-main`** (par defaut) | `autochips-gpl` + nos modifications | **branche de travail** : tout nouveau travail sur le noyau arrive ici |
 | `connectivity-builtin` | `LibreHU-main` + Wi-Fi, Bluetooth, GPS et FM integres au noyau (plus de modules `/vendor/lib/modules`) | essai, non teste sur l'unite ; voir [docs/CONNECTIVITY.md](docs/CONNECTIVITY.md) |
 | `autochips-gpl` | paquet GPL Autochips **tel que recu** (`kernel-4.9.tgz`, SHA-256 `f0303951…d83c577`) | jamais modifiee ; un nouvel envoi de Jancar y est ajoute tel quel |
-| `connectivity-builtin` | `LibreHU-main` + Wi-Fi / BT / GPS / FM integres au noyau (sources GPL MediaTek adaptees), au lieu des modules vendor | suit `LibreHU-main` par fusion ; voir [docs/CONNECTIVITY.md](docs/CONNECTIVITY.md) sur cette branche |
 | `reverse-engineering` | noyau reconstruit sans les sources Autochips (base publique MediaTek MT6761 + reverse engineering) ; demarre la ROM stock | reference : on y reprend les modifications ; garde aussi les notes de l'appareil (`docs/ujc201/`) et les outils `tools/ac8257/` (usbnet, audio, dump) |
 
 ```
