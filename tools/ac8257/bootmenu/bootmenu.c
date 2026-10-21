@@ -128,9 +128,9 @@ static int fb_open(void){
 /* ------------------------------------------------------------------ tactile */
 struct ev{s64 sec,usec;u16 type,code;s32 value;};
 #define IOC(d,t,n,s) (((d)<<30)|((s)<<16)|((t)<<8)|(n))
-static int tp_open(void){
+static int tp_open(int tries,int quiet){
  char p[64],nm[64];
- for(int t=0;t<25;t++){
+ for(int t=0;t<tries;t++){
   for(int i=0;i<16;i++){
    char*o=pstr(p,"/sys/class/input/event");o=pnum(o,i);pstr(o,"/device/name");
    if(rdfile(p,nm,sizeof nm)<=0||!streq(nm,"mtk-tpd"))continue;
@@ -140,8 +140,8 @@ static int tp_open(void){
     char n[40];o=pstr(n,testmode?"/tmp/bm_ev":"/dev/input/event");pnum(o,i);
     if(mknode(p,n,0020000)==0)fd=op(n,O_RDONLY|O_NONBLOCK|O_CLOEXEC);}
    if(fd>=0){klog("tactile : ",d);return fd;}}
-  msleep(40);}
- klog("mtk-tpd introuvable (demarrage auto seulement)",0);return -1;}
+  if(t+1<tries)msleep(40);}
+ if(!quiet)klog("mtk-tpd pas encore la, recherche continue",0);return -1;}
 
 /* ------------------------------------------------------------------ actions */
 enum{A_NONE=-1,A_TWRP=0,A_ANDROID=1,A_FASTBOOT=2};
@@ -223,15 +223,19 @@ static void run(void){
  int tp=-1,have_fb=fb_open()==0;
  if(!have_fb){klog("pas d'affichage : Android direct",0);boot_android();do_reboot("recovery");}
  t0=tlast=now_ms();draw(t0);
- tp=tp_open();
+ tp=tp_open(25,0);
  /* reveil tactile (notification ecran allume, sans extinction) : apres ouverture de mtk-tpd */
  wrfile("/sys/class/graphics/fb0/blank","0");
  t0=tlast=now_ms();
+ /* tactile cree plus tard (noyau LibreHU : file de travail mtk-tpd retardee) : recherche toutes les 250 ms */
+ s64 tpt=t0,tpscan=t0;
  const int KEYX=1030,RX=1024,RY=600;
  struct ev e[64];s32 rx=0,ry=0;int contact=0,down=0,hit=-1,keyheld=0,woke=0,seen=0;
  for(;;){
   s64 now=now_ms();
-  if(!woke&&!seen&&now-t0>1500){woke=1;wrfile("/sys/class/graphics/fb0/blank","0");}  /* 2e reveil, comme touchfix */
+  if(tp<0&&now-tpscan>=250){tpscan=now;tp=tp_open(1,1);
+   if(tp>=0){wrfile("/sys/class/graphics/fb0/blank","0");tpt=now;woke=0;seen=0;}}
+  if(tp>=0&&!woke&&!seen&&now-tpt>1500){woke=1;wrfile("/sys/class/graphics/fb0/blank","0");}  /* 2e reveil, comme touchfix */
   if(!paused){s64 rem=AUTOBOOT_S*1000-(now-t0);if(rem<=0)choose(A_ANDROID);
    int m=AUTOBOOT_S-(int)((rem+999)/1000);if(m<0)m=0;msg=m;}
   else if(now-tlast>60000)choose(A_ANDROID);            /* oubli : Android au bout d'une minute */
