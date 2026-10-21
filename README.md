@@ -55,7 +55,9 @@ pas · ⬜ pas encore teste.
 | USB / reseau | USB 1 et USB 2 en hote | ✅ | |
 | USB / reseau | Ethernet USB RTL8152 | ✅ | quelques `Rx status -71` (erreur de protocole USB) |
 | USB / reseau | Autres adaptateurs Ethernet (RNDIS, iPhone, AX88179...) | ⬜ | pilotes integres |
-| Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte |
+| Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte, commandes executees |
+| Vehicule | Marche arriere (GPIO 2 du SoC) | ✅ | active a l'etat bas |
+| Vehicule | Sortie AMP CONT (ampli / caisson) | ✅ | commande MCU `44` |
 | Vehicule | `/dev/gpios_ioctl` (Jancar) | ✅ | pilote le commutateur video CVBS |
 | Vehicule | Metazone `/dev/mtz` | ✅ | lecture (rotation, format camera) |
 | Vehicule | Telecommande IR | ⬜ | |
