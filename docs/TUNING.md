@@ -2,8 +2,9 @@
 
 Tables d'overclock chargees par defaut, plafonnees au demarrage, reglables a chaud (root) depuis
 `/sys/module/...` ou une appli de reglage (Kernel Adiutor, SmartPack Kernel Manager, onglet Tweaks de
-LibreHU-service). **Pas encore teste avec ce noyau** : les valeurs « testees » sont celles de la branche
-`reverse-engineering` sur l'UJC201.
+LibreHU-service). Sur l'unite avec ce noyau (21/10/2026) : 2,3 GHz au demarrage et 2,4 GHz stables (Geekbench 5),
+2,6 GHz instable a l'ancienne tension de 1,10 V ; les autres valeurs « testees » viennent de la branche
+`reverse-engineering`.
 
 ## CPU (4 x Cortex-A53, un seul cluster)
 
@@ -14,7 +15,7 @@ d'enregistrement de la SSPM, qui applique le DVFS) :
 |---|---|---|
 | 2601 | 1,11875 V | au-dessus du stock ; **instable a 1,10 V** (20/10/2026) ; 1,11875 V = tension la plus haute du MT6765 |
 | 2501 | 1,100 V | au-dessus du stock, non teste |
-| 2401 | 1,08125 V | au-dessus du stock, non teste |
+| 2401 | 1,08125 V | au-dessus du stock ; **stable** (Geekbench 5, 21/10/2026) |
 | 2301 | 1,0625 V | **stable a 1,025 V** (`reverse-engineering`) ; **maximum au demarrage** |
 | 2201 | 1,050 V | stable a 1,025 V |
 | 2101 | 1,0375 V | teste a 1,025 V |

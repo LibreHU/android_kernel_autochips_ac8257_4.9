@@ -3,11 +3,74 @@
 Noyau Linux 4.9.117 de l'autoradio Jancar UJC201 (SoC Autochips AC8257), construit sur les **sources GPL officielles
 d'Autochips** recues de SIXWIN / Jancar le 19/10/2026, auxquelles on ajoute les modifications LibreHU.
 
-**Etat** : compile en CI (`Image.gz-dtb`, images boot et recovery de test). **Pas encore teste sur l'unite.**
+**Etat** (21/10/2026, CI run 64, `f678cd166`) : **utilisable au quotidien sur l'unite**, depuis la partition
+recovery comme depuis `boot` : ROM stock jusqu'au launcher, tactile, audio, Wi-Fi, Bluetooth, FM, USB, Ethernet,
+camera de recul et entrees CVBS, root, 2,4 GHz stable. Detail fonction par fonction :
+[Ce qui marche](#ce-qui-marche-sur-lunite) et [docs/STATUS.md](docs/STATUS.md).
 
 > Les modifications de `reverse-engineering` sont reprises (voir [Modifications LibreHU](#modifications-librehu)),
 > plus l'overclock jusqu'a 2,6 GHz avec tensions reglables, l'Ethernet USB integre et le pilote du decodeur camera
 > TP9963, absent du paquet, reconstruit depuis le noyau stock.
+
+## Ce qui marche sur l'unite
+
+Tests sur l'UJC201 de l'auteur (dalle Goodix GT911, decodeur camera TP9963, ROM stock Jancar Android 9), kernel
+`LibreHU-main` run 64 (`f678cd166`) sauf mention. ✅ fonctionne · 🟡 fonctionne avec une reserve · ❌ ne fonctionne
+pas · ⬜ pas encore teste.
+
+| Domaine | Fonction | Etat | Detail |
+|---|---|---|---|
+| Demarrage | Compilation CI | ✅ | `Image.gz-dtb`, images recovery et boot (runs 64 et 65 pour les deux branches) |
+| Demarrage | Demarrage depuis la partition recovery | ✅ | jusqu'au launcher de la ROM stock |
+| Demarrage | Demarrage depuis `boot` | ✅ | sans artefact ni glitch |
+| Demarrage | Stabilite | ✅ | 40 min d'usage sans plantage, Geekbench 5 termine |
+| Stockage | eMMC, `/data` | ✅ | |
+| Stockage | Ecriture sur `/system` (`adb remount`) | ✅ | corrige : le noyau ne cree plus `mmc0/sw_wp_en` (absent du stock), qui faisait refuser les ecritures (EXT4 I/O error) |
+| Stockage | Etat du systeme de fichiers `/system` | 🟡 | 244 erreurs ext4 anciennes enregistrees (depuis le 13/10), aucune nouvelle ; `e2fsck -fn` (lecture seule) a faire depuis TWRP |
+| Systeme | Root KernelSU Next | ✅ | `su -c id` |
+| Systeme | Mise en veille / reprise | ⬜ | |
+| Affichage | Ecran 1280 x 720, rotation | ✅ | rotation lue dans la metazone (`persist.sf.hwrotation=90`) |
+| Affichage | GPU PowerVR GE8300 | ✅ | OpenGL ES 3.2, meme pilote que le stock |
+| Affichage | Retro-eclairage ecran et touches | ✅ | luminosite maximale plus haute que le stock |
+| Affichage | Ecran externe / second ecran | ⬜ | |
+| Tactile | Dalle Goodix GT911 | ✅ | calibration Jancar `gt9xx_props` et identifiant de dalle reproduits du stock |
+| Tactile | Touches virtuelles hors ecran | ✅ | apres une calibration dans LibreHU-service |
+| Tactile | Autres dalles (FocalTech, ILITEK, Himax, Hynitron) | ⬜ | pilotes presents, pas de telles dalles sur l'unite de test |
+| CPU / GPU | 2,3 GHz au demarrage | ✅ | |
+| CPU / GPU | 2,4 GHz | ✅ | stable, Geekbench 5 |
+| CPU / GPU | 2,5 GHz | ⬜ | |
+| CPU / GPU | 2,6 GHz | ⬜ | **instable a l'ancienne tension 1,10 V** (watchdog materiel apres 14 min) ; a retester a 1,11875 V |
+| CPU / GPU | GPU 730 MHz, tensions reglables | ⬜ | |
+| CPU / GPU | Sondes de temperature | 🟡 | toutes OK sauf « batterie » a 0 °C (l'unite n'a pas de batterie ; a comparer au stock) |
+| Audio | Sortie audio (RCA) | ✅ | |
+| Audio | Lecture sous forte charge CPU | 🟡 | quelques « data underflow » pendant Geekbench |
+| Audio | Appel mains libres Bluetooth | ⬜ | |
+| Connectivite | Wi-Fi client | ✅ | -59 dBm, 65 Mbit/s en 2,4 GHz |
+| Connectivite | Point d'acces, Wi-Fi Direct | ✅ | |
+| Connectivite | Bluetooth | ✅ | detection a distance, appairage, A2DP |
+| Connectivite | Radio FM | ✅ | avec RDS |
+| Connectivite | GPS | 🟡 | le moteur demarre, pas de position a l'interieur : a tester dehors |
+| Connectivite | Branche `connectivity-builtin` (pilotes integres au noyau) | ⬜ | CI verte (run 65), pas encore flashee |
+| USB / reseau | adb, USB peripherique | ✅ | |
+| USB / reseau | USB 1 et USB 2 en hote | ✅ | |
+| USB / reseau | Ethernet USB RTL8152 | ✅ | quelques `Rx status -71` (erreur de protocole USB) |
+| USB / reseau | Autres adaptateurs Ethernet (RNDIS, iPhone, AX88179...) | ⬜ | pilotes integres |
+| Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte |
+| Vehicule | `/dev/gpios_ioctl` (Jancar) | ✅ | pilote le commutateur video CVBS |
+| Vehicule | Metazone `/dev/mtz` | ✅ | lecture (rotation, format camera) |
+| Vehicule | Telecommande IR | ⬜ | |
+| Vehicule | spidev, UART2 / UART3 | ⬜ | |
+| Video | CVBS IN 1 | ✅ | position AV (0/0) du commutateur |
+| Video | CVBS IN 2 | ✅ | position 1/0 |
+| Video | Camera de recul CVBS | ✅ | vue de recul LibreHU-service, 720 x 576 |
+| Video | Camera de recul AHD (TP9963) | 🟡 | puce detectee (ID `0x2863`), image non testee faute de camera AHD |
+| Video | Recul rapide ARM2 au demarrage | ⬜ | l'ARM2 rend bien la main a Linux (`arm2 status 2`) |
+| Video | VIDEO OUT (puce USB MacroSilicon) | ⬜ | aucun pilote noyau necessaire, USB hote |
+| Video | Decodeurs TP9951 / TP2855 d'autres series d'UJC201 | ❌ | reconnus par le stock, absents du paquet GPL ; sans effet sur une unite a TP9963 |
+
+Points connus sans consequence : messages `bc_failed` du pilote `backcar` (le DT stock donne ses GPIO a
+`gpios_ioctl` et au recepteur IR), avertissement `atc_alsa` en double au demarrage de l'audio, echecs `insmod` des
+modules Ethernet du stock (pilotes deja integres).
 
 ## Le SoC AC8257
 
@@ -35,6 +98,7 @@ refroidissement, puces presentes).
 |---|---|---|
 | **`LibreHU-main`** (par defaut) | `autochips-gpl` + nos modifications | **branche de travail** : tout nouveau travail sur le noyau arrive ici |
 | `autochips-gpl` | paquet GPL Autochips **tel que recu** (`kernel-4.9.tgz`, SHA-256 `f0303951…d83c577`) | jamais modifiee ; un nouvel envoi de Jancar y est ajoute tel quel |
+| `connectivity-builtin` | `LibreHU-main` + Wi-Fi / BT / GPS / FM integres au noyau (sources GPL MediaTek adaptees), au lieu des modules vendor | suit `LibreHU-main` par fusion ; voir [docs/CONNECTIVITY.md](docs/CONNECTIVITY.md) sur cette branche |
 | `reverse-engineering` | noyau reconstruit sans les sources Autochips (base publique MediaTek MT6761 + reverse engineering) ; demarre la ROM stock | reference : on y reprend les modifications ; garde aussi les notes de l'appareil (`docs/ujc201/`) et les outils `tools/ac8257/` (usbnet, audio, dump) |
 
 ```
@@ -68,42 +132,45 @@ Reprises de `reverse-engineering` (commits d'origine et suivi : [docs/PORTING.md
 Code LibreHU dans `drivers/misc/librehu` et `drivers/misc/jancar` ; le code Autochips n'est touche que par les
 points d'accroche.
 
-| Modification | Detail | CI |
-|---|---|---|
-| Jancar `/dev/gpios_ioctl` | `CONFIG_JANCAR_GPIOS` (noms d'options du stock), reimplementation : la source Jancar manque au paquet | OK |
-| KernelSU Next v3.4.0-legacy | hooks manuels, gestionnaire KernelSU Next v3.4.0 | OK |
-| Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock | OK |
-| Outils de mise au point | console pstore precoce, panique minutee, interception des redemarrages, one-shot, retour en recovery, memoire SPM / SCP hors de Linux en boot recovery. **A desactiver pour l'usage quotidien** | OK |
-| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,3 GHz** | 16 OPP ; 2,1-2,3 GHz a 1,025 V (stables sur `reverse-engineering`), 2,4-2,6 GHz a 1,05-1,10 V (non testes) ; [docs/TUNING.md](docs/TUNING.md) | OK (run 48) |
-| **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,10 V, envoyees a la SSPM | OK (run 48) |
-| **GPU 730 MHz** et OPP intermediaires, **tensions VCORE reglables** | le GPU tourne sur VCORE (partagee avec le SoC) : `ac8257_gpufreq.vcore_uv`, 0,60-0,90 V | OK (run 48) |
-| **Decodeur camera TP9963** (camera AHD) | pilote `tp9963_yuv` absent du paquet, **reconstruit depuis le noyau stock** (registres, metazones, reponses a la HAL camera) et recoupe avec les pilotes GPL OpenIPC et Allwinner du meme TP9963 ; [docs/VIDEO.md](docs/VIDEO.md) | OK (run 49) |
-| **Tactiles des autres dalles** | FocalTech FT8201, ILITEK TDDI, Himax HX83102, Hynitron CST340 : pilotes GPL publics les plus proches du stock, essayes apres le GT928 (rien ne change sur une unite a GT911) ; references des dalles et ce qui manque (Synaptics, Sitronix, Jadard) : [docs/TOUCH.md](docs/TOUCH.md) | OK (run 51) |
-| **Telecommande IR** (`rc-jancar`) | table absente du paquet, relue dans le noyau stock : table identite, codes NEC 0x001-0x2FF = touches 1-767 (Jancar fait la correspondance cote Android) ; sans elle, la telecommande ne donne rien | OK (run 53) |
-| Tactile : pas d'inversion de l'axe X | le pilote GT928 du paquet inverse X pour une dalle annoncant X_MAX = 1080 (celle de l'unite) ; le stock ne le fait pas : desactive pour `CONFIG_JANCAR_SOLUTION` | OK (run 49) |
-| **Ethernet USB integre** | RTL8152/8153, RNDIS (partage de connexion Android), iPhone, LAN78xx, SMSC, DM9601, SR9700/9800, MCS7830, CH9200, RTL8150, Pegasus, CDC EEM (en plus d'AX88179, CDC Ether, CDC NCM du stock) | OK (run 48) |
+| Modification | Detail | CI | Sur l'unite |
+|---|---|---|---|
+| Jancar `/dev/gpios_ioctl` | `CONFIG_JANCAR_GPIOS` (noms d'options du stock), reimplementation : la source Jancar manque au paquet | OK | ✅ |
+| KernelSU Next v3.4.0-legacy | hooks manuels, gestionnaire KernelSU Next v3.4.0 | OK | ✅ |
+| Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock | OK | ⬜ |
+| Outils de mise au point | console pstore precoce, panique minutee, interception des redemarrages, one-shot, retour en recovery, memoire SPM / SCP hors de Linux en boot recovery. **A desactiver pour l'usage quotidien** | OK | ✅ (panique minutee desarmable) |
+| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,3 GHz** | 16 OPP ; tensions progressives au-dessus de 2,0 GHz (1,0375 V a 2,1 GHz, jusqu'a 1,11875 V a 2,6 GHz, la tension maximale du MT6765) ; [docs/TUNING.md](docs/TUNING.md) | OK (runs 48, 61) | ✅ 2,3 et 2,4 GHz ; 2,6 GHz instable a 1,10 V |
+| **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,10 V, envoyees a la SSPM | OK (run 48) | ⬜ |
+| **GPU 730 MHz** et OPP intermediaires, **tensions VCORE reglables** | le GPU tourne sur VCORE (partagee avec le SoC) : `ac8257_gpufreq.vcore_uv`, 0,60-0,90 V | OK (run 48) | ⬜ |
+| **Decodeur camera TP9963** (camera AHD) | pilote `tp9963_yuv` absent du paquet, **reconstruit depuis le noyau stock** (registres, metazones, reponses a la HAL camera) et recoupe avec les pilotes GPL OpenIPC et Allwinner du meme TP9963 ; [docs/VIDEO.md](docs/VIDEO.md) | OK (run 49) | 🟡 detecte, image non testee |
+| **Tactiles des autres dalles** | FocalTech FT8201, ILITEK TDDI, Himax HX83102, Hynitron CST340 : pilotes GPL publics les plus proches du stock, essayes apres le GT928 (rien ne change sur une unite a GT911) ; references des dalles et ce qui manque (Synaptics, Sitronix, Jadard) : [docs/TOUCH.md](docs/TOUCH.md) | OK (run 51) | ⬜ |
+| **Telecommande IR** (`rc-jancar`) | table absente du paquet, relue dans le noyau stock : table identite, codes NEC 0x001-0x2FF = touches 1-767 (Jancar fait la correspondance cote Android) ; sans elle, la telecommande ne donne rien | OK (run 53) | ⬜ |
+| Tactile : pas d'inversion de l'axe X | le pilote GT928 du paquet inverse X pour une dalle annoncant X_MAX = 1080 (celle de l'unite) ; le stock ne le fait pas : desactive pour `CONFIG_JANCAR_SOLUTION` | OK (run 49) | ✅ |
+| **Calibration tactile Jancar** | `/sys/devices/platform/touch/gt9xx_props` (matrice `A B C D E F Div`) et identifiant de dalle en tete de `/proc/gt9xx_config`, comme le stock : sans eux, LibreHU-service / ivi-services ne trouvent pas la calibration et le tactile est hors cadre ; [docs/TOUCH.md](docs/TOUCH.md) | OK (runs 62, 64) | ✅ |
+| **Pas de TDA7729** | le paquet ajoute les controles ALSA d'un processeur audio TDA7729 absent de l'UJC201 (son processeur est un BD37534 pilote par Android) ; la HAL audio y ecrivait : panique a 6,5 s | OK (run 57) | ✅ |
+| **Alimentation des decodeurs camera** comme le stock | sequences TP2850 / TP2854 relues dans l'image stock (GPIO seulement) au lieu de regulateurs absents ; pointeurs d'erreur des regulateurs traites comme absents : panique a 26 s | OK (run 59) | ✅ |
+| **Pas de `mmc0/sw_wp_en`** | la protection logicielle d'Autochips rendait `/system` non inscriptible (le vendor y ecrit 1 au demarrage ; le stock n'a pas ce fichier) | OK (run 59) | ✅ |
+| **Wi-Fi / BT / GPS / FM integres** (branche `connectivity-builtin`) | pilotes de connectivite GPL MediaTek (consys MT6761, gen4m) adaptes a l'AC8257, compiles dans le noyau ; les modules vendor sont refuses | OK (run 65) | ⬜ |
+| **Ethernet USB integre** | RTL8152/8153, RNDIS (partage de connexion Android), iPhone, LAN78xx, SMSC, DM9601, SR9700/9800, MCS7830, CH9200, RTL8150, Pegasus, CDC EEM (en plus d'AX88179, CDC Ether, CDC NCM du stock) | OK (run 48) | ✅ RTL8152 |
 
 Pas a reprendre :
 - **tactile** : la reconstruction adaptait le `goodix.c` generique ; ici, comme le stock, `goodix.c` d'Autochips
   sonde d'abord puis abandonne, et c'est le pilote MediaTek `GT928` (`gt9xx_driver.c`, peripherique `mtk-tpd`,
   RST GPIO 45, INT GPIO 29) qui pilote la dalle Goodix **GT911** de l'unite (firmware 1060, 1080 x 600) ;
 - **USB** (connexion au premier pull-up) et **IRQ d'affichage** : deja dans les pilotes Autochips ;
-- **export des CRC du noyau stock** : seulement si les modules vendor (Wi-Fi, BT, GPS, FM) refusent de se charger ;
-  avec le meme compilateur que le stock, les CRC natifs devraient correspondre.
+- **export des CRC du noyau stock** : inutile : les CRC natifs des symboles utilises par les modules vendor
+  correspondent au stock, et les modules Wi-Fi, BT, GPS, FM se chargent sur l'unite.
 
 ## Roadmap
 
 1. **Compilation** — ✅ fait (CI run 40, 20/10/2026).
-2. **Premier demarrage** de ce noyau « presque stock » depuis la partition recovery : affichage, tactile, eMMC,
-   `/data`, adb ; comparer la config produite (artefact `config`) avec celle du stock et le DT `ac8257` avec le DT
-   stock.
-3. **Parite avec le stock** : modules vendor (Wi-Fi, BT, GPS, FM), metazone, audio, touches, IR, MCU / CAN ; puis ce
-   que la reconstruction n'a jamais fait marcher et dont les pilotes Autochips sont ici : **camera de recul, AV-in,
-   AVM** (TVD, DI, NR, WCH, backcar), **ARM2** (`dualarm`, affichage rapide) et le decodeur `tp9963` reconstruit.
-4. **Ajouts LibreHU** — repris en CI (20/10/2026) : `/dev/gpios_ioctl`, KernelSU Next, gouverneurs, overclock et
-   tensions, boost tactile, zram, I/O, Ethernet USB ; a tester sur l'unite.
-5. **Usage quotidien** : installation dans la partition `boot` (et plus seulement le test recovery), retrait des
-   options de mise au point, images publiees en release.
+2. **Premier demarrage** depuis la partition recovery — ✅ fait (run 57, 20/10/2026 ; launcher au run 64).
+3. **Parite avec le stock** — en grande partie faite (21/10/2026) : modules vendor (Wi-Fi, BT, GPS, FM), metazone,
+   audio, tactile, MCU, camera de recul et entrees CVBS, que la reconstruction n'avait jamais fait marcher. Reste :
+   IR, veille, ARM2 au demarrage, camera AHD, VIDEO OUT, GPS dehors.
+4. **Ajouts LibreHU** — en CI depuis le 20/10/2026 ; sur l'unite : `/dev/gpios_ioctl`, KernelSU Next, overclock
+   (2,4 GHz), Ethernet USB OK ; reste a tester : tensions reglables, GPU 730 MHz, gouverneurs, boost tactile.
+5. **Usage quotidien** : installation dans `boot` — ✅ testee (21/10/2026) ; reste le retrait des options de mise au
+   point et les images publiees en release.
 
 ## Futurs ajouts (pistes)
 
