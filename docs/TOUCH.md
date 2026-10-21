@@ -68,3 +68,9 @@ Aucun pilote ajoute n'ecrit dans la puce au demarrage :
 
 Non teste sur une unite a dalle autre que GT911 : ces pilotes sont la au cas ou, ils compilent en CI et ne
 changent rien sur une unite a GT911.
+
+## Moment ou le tactile apparait
+`mtk_tpd.c` enregistre ses pilotes dans une file de travail retardee de `CONFIG_DELAY_QUEUE_TIME` secondes apres le
+`late_initcall` : avec 5 (valeur de la defconfig), le peripherique `mtk-tpd` n'apparaissait que vers 6 s, apres le
+demarrage d'un `/init` comme le menu de demarrage. Le noyau stock le cree vers 2,4 s (`input: mtk-tpd as
+/devices/virtual/input/input2` a 2,45 s dans ses journaux) : la defconfig de `LibreHU-main` met 1 s.
