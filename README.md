@@ -55,6 +55,7 @@ pas · ⬜ pas encore teste.
 | USB / reseau | USB 1 et USB 2 en hote | ✅ | |
 | USB / reseau | Ethernet USB RTL8152 | ✅ | quelques `Rx status -71` (erreur de protocole USB) |
 | USB / reseau | Autres adaptateurs Ethernet (RNDIS, iPhone, AX88179...) | ⬜ | pilotes integres |
+| USB / reseau | Lecteur CD / DVD USB | ⬜ | pilotes ajoutes (`sr`, `sg`, UDF) ; montage a faire a la main (root) pour l'instant |
 | Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte, commandes executees |
 | Vehicule | Marche arriere (GPIO 2 du SoC) | ✅ | active a l'etat bas |
 | Vehicule | Sortie AMP CONT (ampli / caisson) | ✅ | commande MCU `44` |
@@ -183,6 +184,7 @@ points d'accroche.
 | **Alimentation des decodeurs camera** comme le stock | sequences TP2850 / TP2854 relues dans l'image stock (GPIO seulement) au lieu de regulateurs absents ; pointeurs d'erreur des regulateurs traites comme absents : panique a 26 s | OK (run 59) | ✅ |
 | **Pas de `mmc0/sw_wp_en`** | la protection logicielle d'Autochips rendait `/system` non inscriptible (le vendor y ecrit 1 au demarrage ; le stock n'a pas ce fichier) | OK (run 59) | ✅ |
 | **Wi-Fi / BT / GPS / FM integres** (branche `connectivity-builtin`) | pilotes de connectivite GPL MediaTek (consys MT6761, gen4m) adaptes a l'AC8257, compiles dans le noyau ; les modules vendor sont refuses | OK (run 65) | ⬜ |
+| **Lecteurs CD / DVD USB** | `CONFIG_BLK_DEV_SR` (lecteur optique SCSI / USB, `/dev/block/sr0`), `CONFIG_CHR_DEV_SG` (commandes brutes : CD audio, `/dev/sg*`), `CONFIG_UDF_FS` (DVD) ; ISO 9660 / Joliet deja la. Le montage (Android ne monte pas `sr0`) et la lecture des CD audio sont cote espace utilisateur | en cours | ⬜ |
 | **Ethernet USB integre** | RTL8152/8153, RNDIS (partage de connexion Android), iPhone, LAN78xx, SMSC, DM9601, SR9700/9800, MCS7830, CH9200, RTL8150, Pegasus, CDC EEM (en plus d'AX88179, CDC Ether, CDC NCM du stock) | OK (run 48) | ✅ RTL8152 |
 
 Pas a reprendre :
