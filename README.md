@@ -58,7 +58,7 @@ pas · ⬜ pas encore teste.
 | Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte, commandes executees |
 | Vehicule | Marche arriere (GPIO 2 du SoC) | ✅ | active a l'etat bas |
 | Vehicule | Sortie AMP CONT (ampli / caisson) | ✅ | commande MCU `44` |
-| Vehicule | Frein a main, feux (ILL) | ✅ | trames MCU `04` et `0B` |
+| Vehicule | Frein a main, feux (ILL), ACC | ✅ | trames MCU `04`, `0B`, `00` |
 | Vehicule | `/dev/gpios_ioctl` (Jancar) | ✅ | pilote le commutateur video CVBS |
 | Vehicule | Metazone `/dev/mtz` | ✅ | lecture (rotation, format camera) |
 | Vehicule | Telecommande IR | ⬜ | |
@@ -84,11 +84,11 @@ Source des branchements : ivi-services de Jancar (`Platform_AutoChips_8257_Base`
 | Signal | Relie a | Broche / trame | Sens | Etat | Note |
 |---|---|---|---|---|---|
 | Marche arriere | SoC | GPIO 2 (`gpio-331`) | entree, actif bas | ✅ | lue via `/dev/gpios_ioctl` ; aussi `backcar_sdbc_gpio` du DT (d'ou le refus `bc_failed`) |
-| Marche arriere par la box CAN | MCU / CAN | broadcast `action_backcar_notification` | — | ⬜ | voitures sans fil de marche arriere |
-| ACC | MCU | trame `00` | — | ⬜ | la GPIO 134 existe mais Jancar prend l'ACC sur le MCU |
+| Marche arriere par la box CAN | MCU / CAN | broadcast `action_backcar_notification` | — | — | box Hiworld non compatible avec la Clio 3 de test ; le fil (GPIO 2) suffit |
+| ACC | MCU | trame `00` | — | ✅ | la GPIO 134 existe mais Jancar prend l'ACC sur le MCU |
 | Frein a main | MCU | trame `04` | — | ✅ | sens inverse si metazone 65952 = `0x5A5A5A51` |
 | Feux (ILL) | MCU | trame `0B` | — | ✅ | |
-| Clignotant gauche | SoC | GPIO 7 (`gpio-336`) | entree, actif bas | ⬜ | lue `lo` au repos : non branche ? |
+| Clignotant gauche | SoC | GPIO 7 (`gpio-336`) | entree, actif bas | ⬜ | lue `lo` au repos : non branche ? fil du faisceau non documente |
 | Clignotant droit | SoC | GPIO 6 (`gpio-335`) | entree, actif bas | ⬜ | lue `hi` au repos |
 | Ecran allume / eteint | SoC | GPIO 5 (`gpio-334`) | sortie, 1 = allume | ✅ | `out hi` ; la luminosite est le PWM `lcd-backlight` |
 | Mute ampli | SoC | GPIO 166 (`gpio-495`) | sortie, 1 = muet | ✅ | `out lo`, son OK |
