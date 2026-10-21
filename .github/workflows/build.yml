@@ -113,7 +113,7 @@ jobs:
           python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257.img --size 10485760
           # Same kernel behind the boot menu (TWRP / Android / Fastboot at each start): tools/ac8257/bootmenu_image.py
           python3 tools/ac8257/bootmenu_image.py out/arch/arm64/boot/Image out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb \
-            "$T" dist/boot_ac8257_bootmenu.img
+            "$T" dist/boot_ac8257_bootmenu.img --zopfli
           cp "$K" dist/
           cp out/.config dist/config
           echo "commit ${GITHUB_SHA}" > dist/BUILD_INFO.txt
