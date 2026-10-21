@@ -88,8 +88,8 @@ Source des branchements : ivi-services de Jancar (`Platform_AutoChips_8257_Base`
 | ACC | MCU | trame `00` | — | ✅ | la GPIO 134 existe mais Jancar prend l'ACC sur le MCU |
 | Frein a main | MCU | trame `04` | — | ✅ | sens inverse si metazone 65952 = `0x5A5A5A51` |
 | Feux (ILL) | MCU | trame `0B` | — | ✅ | |
-| Clignotant gauche | SoC | GPIO 7 (`gpio-336`) | entree, actif bas | ⬜ | lue `lo` au repos : non branche ? fil du faisceau non documente |
-| Clignotant droit | SoC | GPIO 6 (`gpio-335`) | entree, actif bas | ⬜ | lue `hi` au repos |
+| Clignotant gauche | SoC (selon ivi-services) | GPIO 7 (`gpio-336`) ; faisceau B1 « L-TURN » | entree, actif bas | — | lue `lo` au repos, inchangee avec B1 a la masse ou a +12 V (via 1 kΩ) : non cable sur cette unite |
+| Clignotant droit | SoC (selon ivi-services) | GPIO 6 (`gpio-335`) ; faisceau B2 « R-TURN » | entree, actif bas | — | lue `hi` au repos, inchangee avec B2 a la masse ou a +12 V : non cable sur cette unite |
 | Ecran allume / eteint | SoC | GPIO 5 (`gpio-334`) | sortie, 1 = allume | ✅ | `out hi` ; la luminosite est le PWM `lcd-backlight` |
 | Mute ampli | SoC | GPIO 166 (`gpio-495`) | sortie, 1 = muet | ✅ | `out lo`, son OK |
 | Commutateur video SW1 / SW2 | SoC | GPIO 167 / 165 (`gpio-496` / `gpio-494`) | sorties | ✅ | CVBS IN 1 (0/0), IN 2 (1/0), recul CVBS (1/1) OK |
