@@ -49,7 +49,7 @@ pas · ⬜ pas encore teste.
 | Connectivite | Point d'acces, Wi-Fi Direct | ✅ | |
 | Connectivite | Bluetooth | ✅ | detection a distance, appairage, A2DP |
 | Connectivite | Radio FM | ✅ | avec RDS |
-| Connectivite | GPS | 🟡 | le moteur demarre, pas de position a l'interieur : a tester dehors |
+| Connectivite | GPS | ✅ | position a ±4 m, 21 satellites utilises (GPS, GLONASS, Galileo, BeiDou) |
 | Connectivite | Branche `connectivity-builtin` (pilotes integres au noyau) | ⬜ | CI verte (run 65), pas encore flashee |
 | USB / reseau | adb, USB peripherique | ✅ | |
 | USB / reseau | USB 1 et USB 2 en hote | ✅ | |
@@ -166,7 +166,7 @@ Pas a reprendre :
 2. **Premier demarrage** depuis la partition recovery — ✅ fait (run 57, 20/10/2026 ; launcher au run 64).
 3. **Parite avec le stock** — en grande partie faite (21/10/2026) : modules vendor (Wi-Fi, BT, GPS, FM), metazone,
    audio, tactile, MCU, camera de recul et entrees CVBS, que la reconstruction n'avait jamais fait marcher. Reste :
-   IR, veille, ARM2 au demarrage, camera AHD, VIDEO OUT, GPS dehors.
+   IR, veille, ARM2 au demarrage, camera AHD, VIDEO OUT.
 4. **Ajouts LibreHU** — en CI depuis le 20/10/2026 ; sur l'unite : `/dev/gpios_ioctl`, KernelSU Next, overclock
    (2,4 GHz), Ethernet USB OK ; reste a tester : tensions reglables, GPU 730 MHz, gouverneurs, boost tactile.
 5. **Usage quotidien** : installation dans `boot` — ✅ testee (21/10/2026) ; reste le retrait des options de mise au
