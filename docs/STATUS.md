@@ -43,8 +43,8 @@ Source des branchements : ivi-services de Jancar (`Platform_AutoChips_8257_Base`
 | Marche arriere | SoC | GPIO 2 (`gpio-331`) | entree, actif bas | ✅ | lue via `/dev/gpios_ioctl` ; aussi `backcar_sdbc_gpio` du DT (d'ou le refus `bc_failed`) |
 | Marche arriere par la box CAN | MCU / CAN | broadcast `action_backcar_notification` | — | ⬜ | voitures sans fil de marche arriere |
 | ACC | MCU | trame `00` | — | ⬜ | la GPIO 134 existe mais Jancar prend l'ACC sur le MCU |
-| Frein a main | MCU | trame `04` | — | ⬜ | sens inverse si metazone 65952 = `0x5A5A5A51` |
-| Feux | MCU | trame `0B` | — | ⬜ | |
+| Frein a main | MCU | trame `04` | — | ✅ | sens inverse si metazone 65952 = `0x5A5A5A51` |
+| Feux (ILL) | MCU | trame `0B` | — | ✅ | |
 | Clignotant gauche | SoC | GPIO 7 (`gpio-336`) | entree, actif bas | ⬜ | lue `lo` au repos : non branche ? |
 | Clignotant droit | SoC | GPIO 6 (`gpio-335`) | entree, actif bas | ⬜ | lue `hi` au repos |
 | Ecran allume / eteint | SoC | GPIO 5 (`gpio-334`) | sortie, 1 = allume | ✅ | `out hi` ; la luminosite est le PWM `lcd-backlight` |
