@@ -177,6 +177,11 @@ GPS : pas encore teste (antenne non branchee). Adresse MAC Wi-Fi : generee (`Usi
 address`), la NVRAM ayant ete envoyee par `wlan_assistant` avant le chargement manuel du pilote : a revoir au
 demarrage normal.
 
+### Troisieme essai (26/10/2026, modules `b6dfc1aa88` charges a la main)
+**Wi-Fi, partage de connexion (`ap0`, 5 GHz canal 36), Bluetooth et radio FM : OK.** GPS : `mnld` allume la puce
+GPS (`g:2`), position a verifier avec l'antenne. Reste : adresse MAC Wi-Fi generee a chaque demarrage
+(`00:08:22:...`, la MAC de la NVRAM est vide) ; installation durable (zip TWRP ou module KernelSU).
+
 ### A tester sur l'unite
 Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac8257.img` de la prerelease
 `latest-stable-4.9.150`, `fastboot flash recovery recovery_test_ac8257.img` puis `fastboot oem reboot-recovery`
