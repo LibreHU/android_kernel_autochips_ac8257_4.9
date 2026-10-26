@@ -10,7 +10,7 @@ name: Build AC8257 kernel
 
 on:
   push:
-    branches: [LibreHU-main]
+    branches: [LibreHU-main, 'stable-4.9.*']
     paths-ignore:
       - '**.md'
       - 'docs/**'
