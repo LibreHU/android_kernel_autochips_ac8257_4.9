@@ -17,6 +17,7 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
 	select MPILIB
 	select CRYPTO_HASH_INFO
 	select CRYPTO_AKCIPHER
+	select CRYPTO_HASH
 	default y
 	help
 	  This option provides support for asymmetric public key type handling.
@@ -40,6 +41,7 @@ config PKCS7_MESSAGE_PARSER
 	tristate "PKCS#7 message parser"
 	depends on X509_CERTIFICATE_PARSER
 	depends on ENABLE_AB_UPDATE="yes"
+	select CRYPTO_HASH
 	select ASN1
 	select OID_REGISTRY
 	default y
