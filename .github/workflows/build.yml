@@ -92,6 +92,10 @@ jobs:
         run: |
           set -o pipefail
           make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" Image.gz-dtb 2>&1 | tee build.log
+          # stable-4.9.* branches: the connectivity drivers as modules (CONFIG_LIBREHU_CONN_MODULES, docs/STABLE.md)
+          if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then
+            make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" modules 2>&1 | tee -a build.log
+          fi
 
       - name: Pack images
         env:
@@ -109,6 +113,10 @@ jobs:
             "$T" dist/boot_ac8257_bootmenu.img
           cp "$K" dist/
           cp out/.config dist/config
+          # KernelSU module with the connectivity drivers built with this kernel (stable-4.9.* branches)
+          if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then
+            sh tools/stable/conn_ksu_module.sh out dist/librehu_connectivity_ksu.zip "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
+          fi
           echo "commit ${GITHUB_SHA}" > dist/BUILD_INFO.txt
           echo "recovery cmdline append: $CMDLINE_APPEND" >> dist/BUILD_INFO.txt
           sha256sum dist/* | tee -a dist/BUILD_INFO.txt
@@ -143,6 +151,12 @@ jobs:
             echo
             echo "Zips TWRP et ecriture depuis Android : LibreHU Apps, onglet Zips (categorie Noyau), ou"
             echo "\`fastboot flash boot boot_ac8257.img\`. vbmeta n'est pas touche."
+            if [ -f dist/librehu_connectivity_ksu.zip ]; then
+              echo
+              echo "- \`librehu_connectivity_ksu.zip\` : module KernelSU (Wi-Fi, BT, GPS, FM recompiles avec CE noyau ; les modules"
+              echo "  du vendor ne se chargent plus sur une branche linux-stable). A installer dans KernelSU Next puis redemarrer ;"
+              echo "  ne fait rien avec un autre noyau. Journal : /data/adb/modules/librehu_connectivity/last.log (docs/STABLE.md)."
+            fi
           } > notes.md
           git tag -f "$TAG" "$GITHUB_SHA"
           git push -f origin "refs/tags/$TAG"
@@ -153,6 +167,7 @@ jobs:
           fi
           gh release upload "$TAG" dist/boot_ac8257.img dist/boot_ac8257_bootmenu.img dist/recovery_test_ac8257.img \
             dist/Image.gz-dtb dist/config dist/BUILD_INFO.txt dist/release.txt --clobber
+          [ -f dist/librehu_connectivity_ksu.zip ] && gh release upload "$TAG" dist/librehu_connectivity_ksu.zip --clobber || true
 
       - uses: actions/upload-artifact@v4
         if: failure()
