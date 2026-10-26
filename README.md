@@ -133,7 +133,7 @@ refroidissement, puces presentes).
 | **`LibreHU-main`** (par defaut) | `autochips-gpl` + nos modifications | **branche de travail** : tout nouveau travail sur le noyau arrive ici |
 | `autochips-gpl` | paquet GPL Autochips **tel que recu** (`kernel-4.9.tgz`, SHA-256 `f0303951…d83c577`) | jamais modifiee ; un nouvel envoi de Jancar y est ajoute tel quel |
 | `connectivity-builtin` | `LibreHU-main` + Wi-Fi / BT / GPS / FM integres au noyau (sources GPL MediaTek adaptees), au lieu des modules vendor | suit `LibreHU-main` par fusion ; voir [docs/CONNECTIVITY.md](docs/CONNECTIVITY.md) sur cette branche |
-| `stable-4.9.*` | `LibreHU-main` + correctifs officiels linux-stable 4.9.118 -> 4.9.337, **un lot par branche** (`stable-4.9.150`, `stable-4.9.200`...), empilees | chaque lot est teste sur l'unite avant le suivant, puis fusionne dans `LibreHU-main` ; methode et bilan : [docs/STABLE.md](docs/STABLE.md) |
+| `stable-4.9.*` | `LibreHU-main` + correctifs officiels linux-stable 4.9.118 -> 4.9.337, **un lot par branche** (`stable-4.9.150`, `stable-4.9.200`, `stable-4.9.225`, `stable-4.9.250`, `stable-4.9.300`, `stable-4.9.319`, `stable-4.9.337`), empilees | les 7 lots sont appliques et compiles ; lot 1 valide sur l'unite, lot 2 demarre, les autres sont a tester ; fusion dans `LibreHU-main` une fois valides ; methode, bilan et audit : [docs/STABLE.md](docs/STABLE.md) |
 | `reverse-engineering` | noyau reconstruit sans les sources Autochips (base publique MediaTek MT6761 + reverse engineering) ; demarre la ROM stock | reference : on y reprend les modifications ; garde aussi les notes de l'appareil (`docs/ujc201/`) et les outils `tools/ac8257/` (usbnet, audio, dump) |
 
 ```
