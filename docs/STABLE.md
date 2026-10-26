@@ -73,7 +73,7 @@ regulation des images par seconde du service de performance MediaTek.
 | `stable-4.9.225` | 4.9.201 -> 4.9.225 | applique, compile ; **a tester sur l'unite** |
 | `stable-4.9.250` | 4.9.226 -> 4.9.250 | applique, compile ; **a tester sur l'unite** |
 | `stable-4.9.300` | 4.9.251 -> 4.9.300 | applique, compile ; **a tester sur l'unite** (CVE-2021-0920 af_unix, binder CVE-2021-39686) |
-| `stable-4.9.319` | 4.9.301 -> 4.9.319 | a faire |
+| `stable-4.9.319` | 4.9.301 -> 4.9.319 | applique, compile ; **a tester sur l'unite** (Spectre-BHB arm64) |
 | `stable-4.9.337` | 4.9.320 -> 4.9.337 | a faire (reecriture de `random.c` en 4.9.320) |
 
 ## Lot 1 : `stable-4.9.150` (4.9.118 -> 4.9.150)
@@ -338,3 +338,35 @@ gadget (ep0) ; Bluetooth.
 ### A tester sur l'unite
 Comme le lot 4, en insistant sur tout ce qui passe par binder et ION (demarrage complet, camera de recul, video,
 applications), le stockage eMMC (changement de partition : demarrage, OTA) et le Bluetooth.
+
+## Lot 6 : `stable-4.9.319` (4.9.301 -> 4.9.319)
+
+Branche empilee sur `stable-4.9.300`. 843 commits linux-stable : **829 appliques tels quels**, 7 avec un conflit
+resolu a la main, 1 avec un conflit dont les lignes amont etaient deja la, 1 deja present, 1 non repris (forme
+MediaTek gardee), 4 ignores (conflit seulement dans du code non compile). Detail complet :
+[stable/lot6-4.9.301-319.tsv](stable/lot6-4.9.301-319.tsv).
+
+Contenu principal : la serie arm64 **Spectre-BHB** (CVE-2022-23960 ; le Cortex-A53 de l'AC8257 n'est pas dans la
+liste des coeurs touches, la serie change surtout l'infrastructure des capacites CPU et des vecteurs d'exception),
+`exec` avec `argv` vide (noyau, **CVE-2021-4034**), USB gadget `rndis` (verrou de la file de reponses : partage de
+connexion USB), dm-verity marque `DM_TARGET_IMMUTABLE` (verity reste actif, rien n'est desactive).
+
+### Conflits resolus a la main (choix)
+- `arch/arm64/kernel/entry.S`, `cpufeature.c` : vecteurs et trampoline amont, `__nocfi` (CFI de l'ACK) garde ;
+- `drivers/usb/gadget/function/rndis.c` : `resp_lock` amont pose sur les parcours MediaTek de la file ;
+- `drivers/md/dm-verity-target.c` : `DM_TARGET_IMMUTABLE` ajoute, version 1.4.0 (Android) gardee ;
+- `include/linux/bpf.h` : fonctions Android et `unprivileged_ebpf_enabled()` gardees ;
+- `pinctrl-mtk-common.c` (fuite d'une reference `of_node` au demarrage) : version MediaTek gardee.
+
+### Corrections apres application
+- `arch/arm64/kernel/cpu_errata.c` : l'entree ACK de l'erratum 855873 (Cortex-A53 r0p0 a r0p4, donc l'AC8257)
+  passe a la nouvelle macro `ERRATA_MIDR_REV_RANGE`, meme plage ;
+- `drivers/clocksource/Kconfig` : `tools/stable/apply.py` comptait les `Kconfig` / `Makefile` hors du code compile
+  et avait laisse de cote le symbole `ARM_ARCH_TIMER_OOL_WORKAROUND` (le code du timer le reference) : ajoute comme en
+  amont. `apply.py` traite maintenant les `Kconfig`, `Makefile` et `Kbuild` des repertoires compiles, de `arch/arm64`
+  et de `scripts` comme du code compile. Releve des lots precedents : seuls des fichiers x86 / EFI / KASAN et trois
+  remaniements de `scripts/` (lot 1, la compilation n'en depend pas) avaient ete laisses ainsi.
+
+### A tester sur l'unite
+Comme le lot 5, en insistant sur la mise en veille / reprise (vecteurs d'exception), le partage de connexion USB
+(`rndis`) et le demarrage avec dm-verity actif.

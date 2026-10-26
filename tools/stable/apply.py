@@ -16,7 +16,11 @@ def rel(f):
     if f.endswith(".h") and not f.startswith(DENY):
         d = os.path.dirname(f)
         return d in cdirs or d in ("include/linux", "include/uapi/linux", "include/net", "include/asm-generic", "include/uapi/asm-generic") or f.startswith("arch/arm64/include")
-    return f in ("Makefile",)
+    # build files of compiled directories (a skipped Kconfig hunk left CONFIG_ARM_ARCH_TIMER_OOL_WORKAROUND undefined)
+    if os.path.basename(f).startswith(("Kconfig", "Makefile", "Kbuild")):
+        d = os.path.dirname(f)
+        return d in cdirs or d == "" or d.startswith(("arch/arm64", "scripts"))
+    return False
 def g(*a, inp=None, check=False):
     r = subprocess.run(["git", *a], cwd=K, capture_output=True, text=True, input=inp)
     if check and r.returncode: sys.exit(f"git {' '.join(a)}: {r.stderr}")
