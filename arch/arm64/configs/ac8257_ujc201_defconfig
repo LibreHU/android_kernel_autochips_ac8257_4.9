@@ -4856,7 +4856,7 @@ CONFIG_ARCH_HAS_SG_CHAIN=y
 CONFIG_SBITMAP=y
 
 #
-# LibreHU: KernelSU Next v3.4.0-legacy (drivers/kernelsu), manual hooks (no kprobes)
+# LibreHU: KernelSU Next v3.4.2-legacy (drivers/kernelsu, API 5), manual hooks (no kprobes)
 #
 CONFIG_KSU=y
 CONFIG_KSU_MANUAL_HOOK=y

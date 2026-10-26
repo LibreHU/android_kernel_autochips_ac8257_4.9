@@ -1,7 +1,8 @@
-# AC8257: KernelSU-Next v3.4.0-legacy (8af3d4fec33be32fa5d3f8dae4f380fac45bf2cd) vendored without its git history: pin the version the
-# upstream Kbuild derives from it (30000 + commit count + 289), so the manager recognises the driver.
-KSU_VERSION_OVERRIDE ?= 33294
-KSU_VERSION_TAG_OVERRIDE ?= v3.4.0-legacy
+# AC8257: KernelSU-Next legacy 465490a2 (+ 165b87fa, Linux 4.9 build fixes) vendored without its git history: pin the
+# version the upstream Kbuild derives from it (30000 + commit count + 289), so the manager recognises the driver
+# (UAPI 5, the one of the v3.4.2 manager).
+KSU_VERSION_OVERRIDE ?= 33314
+KSU_VERSION_TAG_OVERRIDE ?= v3.4.2-legacy
 
 kernelsu-objs := core/init.o
 
@@ -9,6 +10,7 @@ kernelsu-objs += compat/kernel_compat.o
 kernelsu-objs += feature/kernel_umount.o
 kernelsu-objs += feature/sulog.o
 kernelsu-objs += feature/sucompat.o
+kernelsu-objs += feature/shell_su_adb_only.o
 
 kernelsu-objs += hook/hook_manager.o
 kernelsu-objs += hook/lsm_hooks.o
@@ -68,7 +70,7 @@ else
 KSU_KERNEL_DIR := $(src)
 endif
 
-ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include
+ccflags-y += -I$(KSU_KERNEL_DIR) -iquote $(KSU_KERNEL_DIR)/include
 # AC8257 (Linux 4.9): headers and helpers of newer kernels (compat/k49)
 ccflags-y += -I$(KSU_KERNEL_DIR)/compat/k49 -include $(KSU_KERNEL_DIR)/compat/k49/ksu_k49.h
 

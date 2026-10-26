@@ -12,9 +12,14 @@
 #include <linux/printk.h>
 #include <linux/slab.h>
 #include <linux/types.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 #include <linux/compiler_types.h>
+#endif
 #include <linux/hashtable.h>
 #include <linux/kref.h>
+#include <linux/namei.h>
+#include <linux/err.h>
 
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
@@ -22,6 +27,7 @@
 #include "runtime/ksud_boot.h"
 #include "selinux/selinux.h"
 #include "policy/allowlist.h"
+#include "feature/shell_su_adb_only.h"
 #include "manager/manager_identity.h"
 #include "infra/su_mount_ns.h"
 
@@ -285,13 +291,21 @@ bool __ksu_is_allow_uid(uid_t uid)
 	return false;
 }
 
-bool __ksu_is_allow_uid_for_current(uid_t uid)
+bool ksu_is_uid_granted_root(uid_t uid)
 {
 	if (unlikely(uid == 0)) {
 		// already root, but only allow our domain.
 		return is_ksu_domain();
 	}
 	return __ksu_is_allow_uid(uid);
+}
+
+bool __ksu_is_allow_uid_for_current(uid_t uid)
+{
+	if (unlikely(uid == SHELL_UID) && !ksu_shell_su_allowed_for_current()) {
+		return false;
+	}
+	return ksu_is_uid_granted_root(uid);
 }
 
 bool ksu_uid_should_umount(uid_t uid)
@@ -413,6 +427,25 @@ bool ksu_get_allow_list(int *array, u16 length, u16 *out_length, u16 *out_total,
 }
 
 // TODO: move to kernel thread or work queue
+static void allowlist_discard_partial_file(const char *path_str)
+{
+	struct path path;
+
+	if (kern_path(path_str, LOOKUP_FOLLOW, &path))
+		return;
+
+	/*
+	 * d_parent is the only portable spelling here: dentry_parent() does
+	 * not exist on 4.14, and IS_ROOT() covers the self-referential root
+	 * so we never try to unlink "/".
+	 */
+	if (!d_is_dir(path.dentry) && !IS_ROOT(path.dentry) &&
+	    d_inode(path.dentry) && d_inode(path.dentry->d_parent))
+		vfs_unlink(d_inode(path.dentry->d_parent), path.dentry, NULL);
+
+	path_put(&path);
+}
+
 static void do_persistent_allow_list(struct callback_head *_cb)
 {
     u32 magic = FILE_MAGIC;
@@ -430,12 +463,14 @@ static void do_persistent_allow_list(struct callback_head *_cb)
     }
 
 	// store magic and version
-	if (kernel_write(fp, &magic, sizeof(magic), &off) != sizeof(magic)) {
+	if (ksu_kernel_write_compat(fp, &magic, sizeof(magic), &off) !=
+	    sizeof(magic)) {
 		pr_err("save_allow_list write magic failed.\n");
 		goto close_file;
 	}
 
-	if (kernel_write(fp, &version, sizeof(version), &off) != sizeof(version)) {
+	if (ksu_kernel_write_compat(fp, &version, sizeof(version), &off) !=
+	    sizeof(version)) {
 		pr_err("save_allow_list write version failed.\n");
 		goto close_file;
 	}
@@ -445,7 +480,20 @@ static void do_persistent_allow_list(struct callback_head *_cb)
         pr_info("save allow list, name: %s uid :%d, allow: %d\n", p->profile.key, p->profile.curr_uid,
                 p->profile.allow_su);
 
-        kernel_write(fp, &p->profile, sizeof(p->profile), &off);
+        /*
+         * The file was opened with O_TRUNC, so a short write (ENOSPC/EIO)
+         * leaves a still-magic-valid but truncated list that the next boot
+         * happily parses - silently dropping every profile after the failure
+         * point. Bail out and unlink instead of persisting a partial list.
+         */
+        if (ksu_kernel_write_compat(fp, &p->profile, sizeof(p->profile), &off) !=
+            sizeof(p->profile)) {
+            pr_err("save_allow_list write profile failed, list truncated\n");
+            mutex_unlock(&allowlist_mutex);
+            filp_close(fp, 0);
+            allowlist_discard_partial_file(KERNEL_SU_ALLOWLIST);
+            goto out;
+        }
     }
     mutex_unlock(&allowlist_mutex);
 
@@ -495,7 +543,7 @@ static void migrate_profile(u32 version, struct app_profile *profile)
         if (profile->allow_su) {
             domain = profile->rp_config.profile.selinux_domain;
             if (strncmp(domain, "u:r:su:s0", domain_len) == 0) {
-                strscpy_pad(domain, KSU_DEFAULT_SELINUX_DOMAIN, domain_len);
+                __strscpy_pad(domain, KSU_DEFAULT_SELINUX_DOMAIN, domain_len);
                 pr_info("migrated domain of profile: %s\n", profile->key);
             }
         }
