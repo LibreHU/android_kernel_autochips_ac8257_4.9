@@ -21,7 +21,7 @@ def g(*a, inp=None, check=False):
     r = subprocess.run(["git", *a], cwd=K, capture_output=True, text=True, input=inp)
     if check and r.returncode: sys.exit(f"git {' '.join(a)}: {r.stderr}")
     return r
-done = set(re.findall(r"linux-stable commit ([0-9a-f]{40})", g("log", "--format=%B", "-n", "4000").stdout))
+done = set(re.findall(r"linux-stable commit ([0-9a-f]{40})", g("log", "--format=%B", "--grep=linux-stable commit").stdout))
 todo = g("rev-list", "--reverse", END).stdout.split()
 # Decisions already logged in this batch or in an earlier one (docs/stable/*.tsv): "already present", "ignored"
 # and "not taken" commits leave no commit in the branch
