@@ -1,0 +1,2178 @@
+e364f1a2ccc1	appliqué	ipv4: remove BUG_ON() from fib_compute_spec_dst	
+6fff429df7c5	appliqué	net: ena: Fix use of uninitialized DMA address bits field	
+31a9d4dd8528	appliqué	net: fix amd-xgbe flow-control issue	
+a9deaa19715d	appliqué	net: lan78xx: fix rx handling before first packet is send	
+32363930dfd2	appliqué	net: mdio-mux: bcm-iproc: fix wrong getter and setter pair	
+f6488f40a8e4	appliqué	NET: stmmac: align DMA stuff to largest cache line length	
+b3e349fd557f	appliqué	tcp_bbr: fix bw probing to raise in-flight data for very small BDPs	
+b03ca669d5c1	appliqué	xen-netfront: wait xenbus state change when load module manually	
+8ca41e4efcfe	appliqué	tcp: do not force quickack when receiving out-of-order packets	
+90cf17d66500	appliqué	tcp: add max_quickacks param to tcp_incr_quickack and tcp_enter_quickack_mode	
+65d986cb5e14	appliqué	tcp: do not aggressively quick ack after ECN events	
+095ab5f46c0e	appliqué	tcp: refactor tcp_ecn_check_ce to remove sk type cast	
+019ea5193fe4	appliqué	tcp: add one more quick ack after after ECN events	
+d4c9c7c1eef0	appliqué	pinctrl: intel: Read back TX buffer state	
+047f9d6a5672	appliqué	sched/wait: Remove the lockless swait_active() check in swake_up*()	
+7142fdb6a924	appliqué	bonding: avoid lockdep confusion in bond_get_stats()	
+c5282a032fa2	déjà présent (identique)	inet: frag: enforce memory limits earlier	git am : patch déjà appliqué
+d59dcdf13ee5	déjà présent (identique)	ipv4: frags: handle possible skb truesize change	git am : patch déjà appliqué
+ab9a0f80bce7	appliqué	net: dsa: Do not suspend/resume closed slave_dev	
+67f0a2887bcb	appliqué	netlink: Fix spectre v1 gadget in netlink_create()	
+c9bd4fd4b744	appliqué	net: stmmac: Fix WoL for PCI-based setups	
+3abef06039cb	ignoré (conflit hors code compilé)	squashfs: more metadata hardening	fs/squashfs/block.c
+52cd8f3790cf	appliqué	squashfs: more metadata hardenings	
+18d971807db5	appliqué	can: ems_usb: Fix memory leak on ems_usb_disconnect()	
+9a492f8c7164	appliqué	net: socket: fix potential spectre v1 gadget in socketcall	
+1d433144592d	appliqué	virtio_balloon: fix another race between migration and ballooning	
+020a90f653dd	appliqué	kvm: x86: vmx: fix vpid leak	
+804f510bf218	appliqué	crypto: padlock-aes - Fix Nano workaround data corruption	
+e79a2db21eec	appliqué	drm/vc4: Reset ->{x, y}_scaling[1] when dealing with uniplanar formats	
+0ff94fb99e0b	appliqué	scsi: sg: fix minor memory leak in error path	
+e01202b36f03	appliqué	Linux 4.9.118	
+f71d13c397b2	appliqué	scsi: qla2xxx: Fix ISP recovery on unload	
+24b79a95b2cb	appliqué	scsi: qla2xxx: Return error when TMF returns	
+eecd08afb0d4	appliqué	genirq: Make force irq threading setup more robust	
+f4a9db57e7db	appliqué	nohz: Fix local_timer_softirq_pending()	
+4f08437d6cc3	appliqué	netlink: Do not subscribe to non-existent groups	
+4d502572ea7d	appliqué	netlink: Don't shift with UB on nlk->ngroups	
+c68c772262d9	appliqué	netlink: Don't shift on 64 for ngroups	
+9bf8d5bf5051	appliqué	ext4: fix false negatives *and* false positives in ext4_check_descriptors()	
+b209a097ca39	appliqué	ACPI / PCI: Bail early in acpi_pci_add_bus() if there is no ACPI handle	
+a26030a63e04	appliqué	ring_buffer: tracing: Inherit the tracing setting to next ring buffer	
+7f8d5ff5eadc	appliqué	i2c: imx: Fix reinit_completion() use	
+b2486a81f6c1	appliqué	Btrfs: fix file data corruption after cloning a range and fsync	
+36ee106e8441	appliqué	tcp: add tcp_ooo_try_coalesce() helper	
+885b49b4f31f	appliqué	kmemleak: clear stale pointers from task stacks	
+6a19e26f11fb	appliqué	fork: unconditionally clear stack on fork	
+34a5bbbb6ded	appliqué	IB/hfi1: Fix incorrect mixing of ERR_PTR and NULL return values	
+240d46556d59	appliqué	jfs: Fix inconsistency between memory allocation and ea_buf->max_size	
+8f21ecb4249a	appliqué	Linux 4.9.119	
+954e572ae2f2	déjà présent (identique)	ext4: fix check to prevent initializing reserved inodes	git am : patch déjà appliqué
+1d4167a818e6	appliqué	tpm: fix race condition in tpm_common_write()	
+5f394c9ef672	appliqué	parisc: Enable CONFIG_MLONGCALLS by default	
+2106b21a8a59	appliqué	parisc: Define mb() and add memory barriers to assembler unlock sequences	
+50bed434ad9c	déjà présent (forme Android/MediaTek)	kasan: add no_sanitize attribute for clang builds	KASAN_ABI_VERSION / no_sanitize déjà dans compiler-clang.h (ACK)
+fbf12e19c9f1	sans objet	Mark HI and TASKLET softirq synchronous	ksoftirqd_running() absent : le noyau Android a retiré le report des softirqs vers ksoftirqd, HI/TASKLET déjà synchrones
+af3bd8d6a9ef	appliqué	xen/netfront: don't cache skb_shinfo()	
+51b3938e399b	appliqué	ACPI / LPSS: Add missing prv_offset setting for byt/cht PWM devices	
+bcf447f808b5	appliqué	scsi: sr: Avoid that opening a CD-ROM hangs with runtime power management enabled	
+6bb53ee170c4	appliqué	init: rename and re-order boot_cpu_state_init()	
+cfac7df7dc10	déjà présent (identique)	root dentries need RCU-delayed freeing	git am : patch déjà appliqué
+59199c04b746	appliqué	make sure that __dentry_kill() always invalidates d_seq, unhashed or not	
+87a2d84d2ff4	déjà présent (forme Android/MediaTek)	fix mntput/mntput race	mntput_no_expire déjà corrigé (avec le smp_mb du correctif suivant)
+e31578c6fb0b	déjà présent (identique)	fix __legitimize_mnt()/mntput() race	git am : patch déjà appliqué
+b96e215e5395	appliqué	proc/sysctl: prune stale dentries during unregistering	
+631f93a6fe84	appliqué	proc/sysctl: Don't grab i_lock under sysctl_lock.	
+a3a7b992b240	appliqué	proc: Fix proc_sys_prune_dcache to hold a sb reference	
+11410f99982c	appliqué	IB/core: Make testing MR flags for writability a static inline function	
+e2ba7bf19727	appliqué	IB/mlx4: Mark user MR as writable if actual virtual memory is writable	
+5ee45fc998a3	appliqué	mtd: nand: qcom: Add a NULL check for devm_kasprintf()	
+27250cf83def	appliqué	IB/ocrdma: fix out of bounds access to local buffer	
+16aeb3f175a1	appliqué	ARM: dts: imx6sx: fix irq for pcie bridge	
+640fe070d801	appliqué	x86/paravirt: Fix spectre-v2 mitigations for paravirt guests	
+6455f41db520	appliqué	x86/speculation: Protect against userspace-userspace spectreRSB	
+a92daabdfc87	appliqué	kprobes/x86: Fix %p uses in error messages	
+329d81566737	appliqué	x86/irqflags: Provide a declaration for native_save_fl	
+bbd07cbb1076	appliqué	x86/speculation/l1tf: Increase 32bit PAE __PHYSICAL_PAGE_SHIFT	
+1a4922e0f01d	appliqué	mm: x86: move _PAGE_SWP_SOFT_DIRTY from bit 7 to bit 1	
+2c9b57e4474d	appliqué	x86/speculation/l1tf: Change order of offset/type in swap entry	
+60712274887f	appliqué	x86/speculation/l1tf: Protect swap entries against L1TF	
+33182fe97add	appliqué	x86/speculation/l1tf: Protect PROT_NONE PTEs against speculation	
+5b2ec92f70f6	appliqué	x86/speculation/l1tf: Make sure the first page is always reserved	
+432e99b34066	appliqué	x86/speculation/l1tf: Add sysfs reporting for l1tf	
+7c5b42f82c13	appliqué	x86/speculation/l1tf: Disallow non privileged high MMIO PROT_NONE mappings	
+e3923475ebb1	appliqué	x86/speculation/l1tf: Limit swap file size to MAX_PA/2	
+1ac1dc14671f	appliqué	x86/bugs: Move the l1tf function and define pr_fmt properly	
+7b69a96e5a32	appliqué	x86/smp: Provide topology_is_primary_thread()	
+16fd33cd353b	appliqué	x86/topology: Provide topology_smt_supported()	
+9333575fc4a3	appliqué	cpu/hotplug: Make bringup/teardown of smp threads symmetric	
+373b8def455e	appliqué	cpu/hotplug: Split do_cpu_down()	
+f37486c0a1d0	appliqué (conflit résolu)	cpu/hotplug: Provide knobs to control SMT	cpu.h : idle_notifier (Android) et cpuhp_smt_control gardés tous les deux
+e0439285c628	appliqué	x86/cpu: Remove the pointless CPU printout	
+a6d2fa5dd70a	appliqué	x86/cpu/AMD: Remove the pointless detect_ht() call	
+691997bff5ff	appliqué	x86/cpu/common: Provide detect_ht_early()	
+3b4f20ad3887	appliqué	x86/cpu/topology: Provide detect_extended_topology_early()	
+0ee6f3b23c04	appliqué	x86/cpu/intel: Evaluate smp_num_siblings early	
+112d243045c2	appliqué	x86/CPU/AMD: Do not check CPUID max ext level before parsing SMP info	
+ae76eb1198fb	appliqué	x86/cpu/AMD: Evaluate smp_num_siblings early	
+4a818f2c3542	appliqué	x86/apic: Ignore secondary threads if nosmt=force	
+c4b998c88f86	appliqué	x86/speculation/l1tf: Extend 64bit swap file size limit	
+a8358624a3ca	appliqué	x86/cpufeatures: Add detection of L1D cache flush support.	
+250f0aebe276	appliqué	x86/CPU/AMD: Move TOPOEXT reenablement before reading smp_num_siblings	
+53527af79dc9	appliqué	x86/speculation/l1tf: Protect PAE swap entries against L1TF	
+3f0eb66f652c	appliqué	x86/speculation/l1tf: Fix up pte->pfn conversion for PAE	
+fe2a955476f9	appliqué	Revert "x86/apic: Ignore secondary threads if nosmt=force"	
+8438e49bcac4	appliqué	cpu/hotplug: Boot HT siblings at least once	
+a0695af3406a	appliqué	x86/KVM: Warn user if KVM is loaded SMT and L1TF CPU bug being present	
+af6ce92977a2	appliqué	x86/KVM/VMX: Add module argument for L1TF mitigation	
+b3d648aefab5	appliqué	x86/KVM/VMX: Add L1D flush algorithm	
+acca8a70a5f6	appliqué	x86/KVM/VMX: Add L1D MSR based flush	
+b3dc63c4f43e	appliqué	x86/KVM/VMX: Add L1D flush logic	
+69c252523797	appliqué	kvm: nVMX: Update MSR load counts on a VMCS switch	
+57e3ada3e552	appliqué	x86/KVM/VMX: Split the VMX MSR LOAD structures to have an host/guest numbers	
+1555f9e8ed97	appliqué	x86/KVM/VMX: Add find_msr() helper function	
+5d3eaa2d3935	appliqué	x86/KVM/VMX: Separate the VMX AUTOLOAD guest/host number accounting	
+c45ff817e91b	appliqué	x86/KVM/VMX: Extend add_atomic_switch_msr() to allow VMENTER only MSRs	
+a8c14676a93d	appliqué	x86/KVM/VMX: Use MSR save list for IA32_FLUSH_CMD if required	
+e7cda2ffe127	appliqué	cpu/hotplug: Online siblings when SMT control is turned on	
+80e55b5ea4e9	appliqué	x86/litf: Introduce vmx status variable	
+31282cf43b9d	appliqué	x86/kvm: Drop L1TF MSR list approach	
+4186ae815556	appliqué	x86/l1tf: Handle EPT disabled state proper	
+641a211704f6	appliqué	x86/kvm: Move l1tf setup function	
+dff0982c5719	appliqué	x86/kvm: Add static key for flush always	
+6ccf633238db	appliqué	x86/kvm: Serialize L1D flush parameter setter	
+4797c2f3791e	appliqué	x86/kvm: Allow runtime control of L1D flush	
+a69c5e0706dc	appliqué	cpu/hotplug: Expose SMT control init function	
+929d3b2e9b13	appliqué	cpu/hotplug: Set CPU_SMT_NOT_SUPPORTED early	
+2decbf5264ea	appliqué	x86/bugs, kvm: Introduce boot-time control of L1TF mitigations	
+93aed2469df1	appliqué	Documentation: Add section about CPU vulnerabilities	
+587d499c8bd2	appliqué	x86/KVM/VMX: Initialize the vmx_l1d_flush_pages' content	
+03b3614d4d6f	appliqué	Documentation/l1tf: Fix typos	
+8b1969db5567	appliqué	cpu/hotplug: detect SMT disabled by BIOS	
+698ac1bc17c4	appliqué	x86/KVM/VMX: Don't set l1tf_flush_l1d to true from vmx_l1d_flush()	
+936f566260c2	appliqué	x86/KVM/VMX: Replace 'vmx_l1d_flush_always' with 'vmx_l1d_flush_cond'	
+90bc306b76b8	appliqué	x86/KVM/VMX: Move the l1tf_flush_l1d test to vmx_l1d_flush()	
+5766dc12985c	appliqué	x86/irq: Demote irq_cpustat_t::__softirq_pending to u16	
+e371c92e168d	appliqué	x86/KVM/VMX: Introduce per-host-cpu analogue of l1tf_flush_l1d	
+8574df1a8741	appliqué	x86: Don't include linux/irq.h from asm/hardirq.h	
+2c5a3a054740	appliqué	x86/irq: Let interrupt handlers set kvm_cpu_l1tf_flush_l1d	
+77a83b3a622a	appliqué	x86/KVM/VMX: Don't set l1tf_flush_l1d from vmx_handle_external_intr()	
+d9f378f64c0a	appliqué	Documentation/l1tf: Remove Yonah processors from not vulnerable list	
+62d88fc0fb6b	appliqué	KVM: x86: Add a framework for supporting MSR-based features	
+1a155ef3c958	appliqué	KVM: SVM: Add MSR-based feature support for serializing LFENCE	
+8a01dd38e5e1	appliqué	KVM: X86: Introduce kvm_get_msr_feature()	
+7a1eac80b512	appliqué	KVM: X86: Allow userspace to define the microcode version	
+ce2c755166f9	appliqué	KVM: VMX: support MSR_IA32_ARCH_CAPABILITIES as a feature MSR	
+ee782edd87b4	appliqué	x86/speculation: Simplify sysfs report of VMX L1TF vulnerability	
+383f160027af	appliqué	x86/speculation: Use ARCH_CAPABILITIES to skip L1D flush on vmentry	
+f56c8ee659c9	appliqué	KVM: VMX: Tell the nested hypervisor to skip L1D flush on vmentry	
+c504b9fce7ba	appliqué	cpu/hotplug: Fix SMT supported evaluation	
+4656dfb6b5dd	appliqué	x86/speculation/l1tf: Invert all not present mappings	
+5ebf3f8d5b56	appliqué	x86/speculation/l1tf: Make pmd/pud_mknotpresent() invert	
+7e464373357d	appliqué	x86/mm/pat: Make set_memory_np() L1TF safe	
+e79d049743f1	appliqué	x86/mm/kmmio: Make the tracer robust against L1TF	
+d21c27185b6f	appliqué	tools headers: Synchronise x86 cpufeatures.h for L1TF additions	
+760f9488c13b	appliqué	x86/microcode: Do not upload microcode if CPUs are offline	
+da540c063b06	appliqué	x86/microcode: Allow late microcode loading with SMT disabled	
+59a6e1f27602	appliqué	x86/smp: fix non-SMP broken build due to redefinition of apic_id_is_primary_thread	
+aee0861fbe95	appliqué	cpu/hotplug: Non-SMP machines do not make use of booted_once	
+16848eb10e9e	appliqué	x86/init: fix build with CONFIG_SWAP=n	
+b4f17de89e7a	appliqué	x86/speculation/l1tf: Unbreak !__HAVE_ARCH_PFN_MODIFY_ALLOWED architectures	
+4edf4ad2e7ee	appliqué	x86/cpu/amd: Limit cpu_core_id fixup to families older than F17h	
+7f5d090ffe9e	appliqué	x86/CPU/AMD: Have smp_num_siblings and cpu_llc_id always be present	
+93e02ae42001	appliqué	Linux 4.9.120	
+61341a364d55	appliqué	x86/l1tf: Fix build error seen if CONFIG_KVM_INTEL is disabled	
+cc83ba490dda	appliqué	x86: i8259: Add missing include file	
+2130e543ff1a	appliqué	x86/mm: Disable ioremap free page handling on x86-PAE	
+76b6f30f9443	appliqué en partie (conflit hors code compilé, notre version gardée)	kasan: don't emit builtin calls when sanitization is off	scripts/Makefile.kasan
+52b9b51a5f4f	appliqué	i2c: ismt: fix wrong device address when unmap the data buffer	
+2d43ff0ffcf4	appliqué	kbuild: verify that $DEPMOD is installed	
+e87485a55428	appliqué	crypto: x86/sha256-mb - fix digest copy in sha256_mb_mgr_get_comp_job_avx2()	
+371c35cb8c77	appliqué	crypto: vmac - require a block cipher with 128-bit block size	
+81ad8a8e8667	appliqué	crypto: vmac - separate tfm and request context	
+afd5c42dea3f	appliqué	crypto: blkcipher - fix crash flushing dcache in error path	
+b7c2b69911f8	appliqué	crypto: ablkcipher - fix crash flushing dcache in error path	
+5daf24711f65	appliqué	ASoC: Intel: cht_bsw_max98090_ti: Fix jack initialization	
+7c7940ffbaef	appliqué	Bluetooth: hidp: buffer overflow in hidp_process_report	
+6e6b637779d7	appliqué	ioremap: Update pgtable free interfaces with addr	
+e853786d3c72	appliqué	x86/mm: Add TLB purge to free pmd/pte page interfaces	
+d0e3227f31c5	appliqué	Linux 4.9.121	
+7e5cac813b40	appliqué	x86/speculation/l1tf: Exempt zeroed PTEs from inversion	
+ea101a702611	appliqué	Linux 4.9.122	
+4269a8f72efc	appliqué	dccp: fix undefined behavior with 'cwnd' shift in ccid2_cwnd_restart()	
+ae7d506b72db	appliqué	l2tp: use sk_dst_check() to avoid race on sk->sk_dst_cache	
+2ff9f0820dda	appliqué	llc: use refcount_inc_not_zero() for llc_sap_find()	
+f6b82768f92d	appliqué	vsock: split dwork to avoid reinitializations	
+87e7e8d40512	appliqué	ip6_tunnel: use the right value for ipv4 min mtu check in ip6_tnl_xmit	
+fa284d29d323	appliqué	net_sched: Fix missing res info when create new tc_index filter	
+ce494b382c83	appliqué	net_sched: fix NULL pointer dereference when delete tcindex filter	
+2d65d06d39c7	appliqué	ALSA: hda - Sleep for 10ms after entering D3 on Conexant codecs	
+e89ba2cfdb39	appliqué	ALSA: hda - Turn CX8200 into D3 as well upon reboot	
+5cb120335cf4	appliqué	ALSA: vx222: Fix invalid endian conversions	
+b1e4b1ca28ea	appliqué	ALSA: virmidi: Fix too long output trigger loop	
+6479c9e55354	appliqué	ALSA: cs5535audio: Fix invalid endian conversion	
+323cb0fa957b	appliqué	ALSA: hda: Correct Asrock B85M-ITX power_save blacklist entry	
+674ed567bf84	appliqué	ALSA: memalloc: Don't exceed over the requested size	
+cdd187871cad	appliqué	ALSA: vxpocket: Fix invalid endian conversions	
+4daf820df7b2	appliqué	isdn: Disable IIOCDBGVAR	
+c4db09a6f60a	appliqué	cls_matchall: fix tcf_unbind_filter missing	
+5823374e9c4b	appliqué	USB: serial: sierra: fix potential deadlock at close	
+f1fe79277146	appliqué	USB: option: add support for DW5821e	
+a469b811851e	appliqué	ACPI / PM: save NVS memory for ASUS 1025C laptop	
+c39998a1541e	appliqué	tty: serial: 8250: Revert NXP SC16C2552 workaround	
+86698956fcdb	appliqué	serial: 8250_dw: always set baud rate in dw8250_set_termios	
+0f9f323b82a6	appliqué	serial: 8250_dw: Add ACPI support for uart on Broadcom SoC	
+89c059b66a08	appliqué	x86/mm: Simplify p[g4um]d_page() macros	
+34a806bb5cdb	appliqué	Bluetooth: avoid killing an already killed socket	
+676054232ecf	appliqué	Linux 4.9.123	
+987156381c5f	appliqué	x86/entry/64: Remove %ebx handling from error_entry/exit	
+e7a0393b52bc	appliqué	ARC: Explicitly add -mmedium-calls to CFLAGS	
+00fb7e140472	appliqué	usb: dwc3: of-simple: fix use-after-free on remove	
+a677cc36431f	appliqué	netfilter: ipv6: nf_defrag: reduce struct net memory waste	
+879beb74aa08	appliqué	selftests: pstore: return Kselftest Skip code for skipped tests	
+ccb8eef63e31	appliqué	selftests: static_keys: return Kselftest Skip code for skipped tests	
+dbd816e10622	appliqué	selftests: user: return Kselftest Skip code for skipped tests	
+dd91188f5611	appliqué	selftests: zram: return Kselftest Skip code for skipped tests	
+0fab6c6dd55c	appliqué	selftests: sync: add config fragment for testing sync framework	
+31ceb5846b02	appliqué	ARM: dts: NSP: Fix i2c controller interrupt type	
+e63c10bc9b5a	appliqué	ARM: dts: NSP: Fix PCIe controllers interrupt types	
+7f9391ce4a6d	appliqué	ARM: dts: Cygnus: Fix I2C controller interrupt type	
+a5865bbc4cf4	appliqué	ARM: dts: Cygnus: Fix PCIe controller interrupt type	
+9eb1a106268e	appliqué	arm64: dts: ns2: Fix I2C controller interrupt type	
+fc1241bcd1a9	appliqué	drm: mali-dp: Enable Global SE interrupts mask for DP500	
+aad3fdc0468b	appliqué	IB/rxe: Fix missing completion for mem_reg work requests	
+5600d61e7d95	appliqué	libahci: Fix possible Spectre-v1 pmp indexing in ahci_led_store()	
+77569fc23d0a	appliqué	usb: dwc2: fix isoc split in transfer with no data	
+121621e73737	appliqué	usb: gadget: composite: fix delayed_status race condition when set_interface	
+44af104eabf9	appliqué	usb: gadget: dwc2: fix memory leak in gadget_init()	
+10a4d81876f3	appliqué	xen: add error handling for xenbus_printf	
+2941d96a731a	appliqué	scsi: xen-scsifront: add error handling for xenbus_printf	
+c0a01787462a	appliqué	xen/scsiback: add error handling for xenbus_printf	
+40137ff99323	appliqué	arm64: make secondary_start_kernel() notrace	
+4186504db3a9	appliqué	qed: Add sanity check for SIMD fastpath handler.	
+bed5acf33a65	appliqué	enic: initialize enic->rfs_h.lock in enic_probe	
+7694397e6951	appliqué	net: hamradio: use eth_broadcast_addr	
+53adf7365536	appliqué	net: propagate dev_get_valid_name return code	
+6f37f7b62baa	appliqué	net: stmmac: socfpga: add additional ocp reset line for Stratix10	
+313d65a648d0	appliqué	nvmet: reset keep alive timer in controller enable	
+8cc705155368	appliqué	ARC: Enable machine_desc->init_per_cpu for !CONFIG_SMP	
+69534ac30288	appliqué	net: davinci_emac: match the mdio device against its compatible if possible	
+ee838b3f825a	appliqué	KVM: arm/arm64: Drop resource size check for GICV window	
+a8b8e5276788	appliqué	locking/lockdep: Do not record IRQ state within lockdep code	
+f12a825bbd39	appliqué	ipv6: mcast: fix unsolicited report interval after receiving querys	
+ebc6dcb6de73	appliqué	Smack: Mark inode instant in smack_task_to_inode	
+b5f6a0ab2a21	appliqué	batman-adv: Fix bat_ogm_iv best gw refcnt after netlink dump	
+40ae32c6c487	appliqué	batman-adv: Fix bat_v best gw refcnt after netlink dump	
+6c500d00cc7b	appliqué	cxgb4: when disabling dcb set txq dcb priority to 0	
+b4164f8c69cf	appliqué	iio: pressure: bmp280: fix relative humidity unit	
+89efc936f85d	appliqué	brcmfmac: stop watchdog before detach and free everything	
+8982dcff5743	appliqué	ARM: dts: am437x: make edt-ft5x06 a wakeup source	
+2f483f92ce2a	appliqué	ALSA: seq: Fix UBSAN warning at SNDRV_SEQ_IOCTL_QUERY_NEXT_CLIENT ioctl	
+613c5948d919	appliqué	usb: xhci: remove the code build warning	
+d5ff711a000e	appliqué	usb: xhci: increase CRS timeout value	
+5113cb753af2	appliqué	NFC: pn533: Fix wrong GFP flag usage	
+241ad31f0944	appliqué	perf test session topology: Fix test on s390	
+dcc0fbf12d91	appliqué	perf report powerpc: Fix crash if callchain is empty	
+f6e22734fba1	appliqué	perf bench: Fix numa report output code	
+f6a67684626c	appliqué	netfilter: nf_log: fix uninit read in nf_log_proc_dostring	
+01d012fe089a	appliqué	ceph: fix dentry leak in splice_dentry()	
+bc53be37d3e8	appliqué	selftests/x86/sigreturn/64: Fix spurious failures on AMD CPUs	
+7aa92621b277	appliqué	selftests/x86/sigreturn: Do minor cleanups	
+680fc01a4a1e	appliqué	ARM: dts: da850: Fix interrups property for gpio	
+8c5fd3d56f87	appliqué	dmaengine: pl330: report BURST residue granularity	
+87aea47373e6	appliqué	dmaengine: k3dma: Off by one in k3_of_dma_simple_xlate()	
+e303840d5030	appliqué	md/raid10: fix that replacement cannot complete recovery after reassemble	
+15a7879dbcc7	appliqué	nl80211: relax ht operation checks for mesh	
+f17bac067e01	appliqué	drm/exynos: gsc: Fix support for NV16/61, YUV420/YVU420 and YUV422 modes	
+29d33ed42850	appliqué	drm/exynos: decon5433: Fix per-plane global alpha for XRGB modes	
+1db00def7103	appliqué	drm/exynos: decon5433: Fix WINCONx reset value	
+36b0779e9e28	appliqué	bpf, s390: fix potential memleak when later bpf_jit_prog fails	
+b61fc97ca5d5	appliqué	PCI: xilinx: Add missing of_node_put()	
+3b8eeaed767a	appliqué	PCI: xilinx-nwl: Add missing of_node_put()	
+21fe14fa3f42	appliqué	bnx2x: Fix receiving tx-timeout in error or recovery state.	
+23458d7f976c	appliqué	acpi/nfit: fix cmd_rc for acpi_nfit_ctl to always return a value	
+b9ce3ceff7fa	appliqué	m68k: fix "bad page state" oops on ColdFire boot	
+ce94ead62008	appliqué	objtool: Support GCC 8 '-fnoreorder-functions'	
+377c72c803e8	appliqué	ipvlan: call dev_change_flags when ipvlan mode is reset	
+53a93eb7a824	appliqué	HID: wacom: Correct touch maximum XY of 2nd-gen Intuos	
+721476147fd2	appliqué	ARM: imx_v6_v7_defconfig: Select ULPI support	
+eaccc6f0b8ed	appliqué	ARM: imx_v4_v5_defconfig: Select ULPI support	
+bca139fc9b67	appliqué	tracing: Use __printf markup to silence compiler	
+2b7f885326c3	appliqué	kasan: fix shadow_size calculation error in kasan_module_alloc	
+667f0367f27c	appliqué	smsc75xx: Add workaround for gigabit link up hardware errata.	
+f4bc80f5a51d	appliqué	samples/bpf: add missing <linux/if_vlan.h>	
+fbfd753aebca	appliqué	samples/bpf: Check the error of write() and read()	
+1c7e225fa83e	appliqué	ieee802154: 6lowpan: set IFLA_LINK	
+894b753c4ee7	appliqué	netfilter: x_tables: set module owner for icmp(6) matches	
+8823c73bd719	appliqué	ipv6: make ipv6_renew_options() interrupt/kernel safe	
+865c4f9a0c33	appliqué	net: qrtr: Broadcast messages only from control port	
+e90f9f50bc03	appliqué	sh_eth: fix invalid context bug while calling auto-negotiation by ethtool	
+c5c80efb2b88	appliqué	sh_eth: fix invalid context bug while changing link options by ethtool	
+354077c09b58	appliqué	ravb: fix invalid context bug while calling auto-negotiation by ethtool	
+fb96d97a4af4	appliqué	ravb: fix invalid context bug while changing link options by ethtool	
+ecbef3e398c1	appliqué	ARM: pxa: irq: fix handling of ICMR registers in suspend/resume	
+7754ed7d9d3f	appliqué	net/sched: act_tunnel_key: fix NULL dereference when 'goto chain' is used	
+afb72ef0cc0e	appliqué	ieee802154: at86rf230: switch from BUG_ON() to WARN_ON() on problem	
+7a389e0d192a	appliqué	ieee802154: at86rf230: use __func__ macro for debug messages	
+f8b8e026d51d	appliqué	ieee802154: fakelb: switch from BUG_ON() to WARN_ON() on problem	
+b96834386f9e	appliqué	drm/armada: fix colorkey mode property	
+d8a77d118ccd	appliqué	netfilter: nf_conntrack: Fix possible possible crash on module loading.	
+6cfe79de46e8	appliqué	ARC: Improve cmpxchg syscall implementation	
+f4a1792da49f	appliqué	bnxt_en: Always set output parameters in bnxt_get_max_rings().	
+0bf550c07194	appliqué	bnxt_en: Fix for system hang if request_irq fails	
+b81825b74dd4	appliqué	perf llvm-utils: Remove bashism from kernel include fetch script	
+8e4449f431d8	appliqué	nfit: fix unchecked dereference in acpi_nfit_ctl	
+199b59a524af	appliqué	RDMA/mlx5: Fix memory leak in mlx5_ib_create_srq() error path	
+b1baa1168712	appliqué	ARM: 8780/1: ftrace: Only set kernel memory back to read-only after boot	
+66b29e23fba6	appliqué	ARM: DRA7/OMAP5: Enable ACTLR[0] (Enable invalidates of BTB) for secondary cores	
+c8c9e45f9225	appliqué	ARM: dts: am3517.dtsi: Disable reference to OMAP3 OTG controller	
+43db78fd44d7	appliqué	ixgbe: Be more careful when modifying MAC filters	
+faf0464e3330	appliqué	tools: build: Use HOSTLDFLAGS with fixdep	
+4770fdc63365	appliqué	packet: reset network header if packet shorter than ll reserved space	
+d793d5ba6b5f	appliqué	qlogic: check kstrtoul() for errors	
+d4efb85f5f5a	appliqué	tcp: remove DELAYED ACK events in DCTCP	
+6219a83d92f3	appliqué	pinctrl: nsp: off by ones in nsp_pinmux_enable()	
+3a2b9faaaca3	appliqué	pinctrl: nsp: Fix potential NULL dereference	
+700cbb69ed54	appliqué	drm/nouveau/gem: off by one bugs in nouveau_gem_pushbuf_reloc_apply()	
+d2a4505931ff	appliqué	net/ethernet/freescale/fman: fix cross-build error	
+97093827cd5e	appliqué	net: usb: rtl8150: demote allmulti message to dev_dbg()	
+3934e010d80d	appliqué	PCI: OF: Fix I/O space page leak	
+90788ea4ff75	appliqué	PCI: versatile: Fix I/O space page leak	
+167e93c3e131	appliqué	net: qca_spi: Avoid packet drop during initial sync	
+c8697ad8ec0e	appliqué	net: qca_spi: Make sure the QCA7000 reset is triggered	
+1e15542511f3	appliqué	net: qca_spi: Fix log level if probe fails	
+e63303e63cdc	appliqué	tcp: identify cryptic messages as TCP seq # bugs	
+1cd0c7d732b9	appliqué	KVM: irqfd: fix race between EPOLLHUP and irq_bypass_register_consumer	
+51ada1108360	appliqué	ext4: fix spectre gadget in ext4_mb_regular_allocator()	
+8725807e91e2	appliqué	parisc: Remove ordered stores from syscall.S	
+2038a9e1c7f0	appliqué	xfrm_user: prevent leaking 2 bytes of kernel memory	
+f29eb8ee4795	appliqué	netfilter: conntrack: dccp: treat SYNC/SYNCACK as invalid if no prior state	
+59629848737a	appliqué	packet: refine ring v3 block size test to hold one frame	
+eba0611e98f1	appliqué	parisc: Remove unnecessary barriers from spinlock.h	
+f2842452e21d	appliqué	PCI: hotplug: Don't leak pci_slot on registration failure	
+73aae596d106	appliqué	PCI: Skip MPS logic for Virtual Functions (VFs)	
+3fcdcdd50c1f	appliqué	PCI: pciehp: Fix use-after-free on unplug	
+86a3d597235d	appliqué	PCI: pciehp: Fix unprotected list iteration in IRQ handler	
+44745bd15116	appliqué	i2c: imx: Fix race condition in dma read	
+696d906b168d	appliqué	reiserfs: fix broken xattr handling (heap corruption, bad retval)	
+e8d49e4292d9	appliqué	Linux 4.9.124	
+ce723f865c98	appliqué	vti6: fix PMTU caching and reporting on xmit	
+590f312a78bf	appliqué	xfrm: fix missing dst_release() after policy blocking lbcast and multicast	
+301a6da4c8be	appliqué	xfrm: free skb if nlsk pointer is NULL	
+f1ddbb19469b	appliqué	mac80211: add stations tied to AP_VLANs during hw reconfig	
+4fd089723f6f	appliqué	nl80211: Add a missing break in parse_station_flags	
+fa1c6d2371b1	appliqué	drm/bridge: adv7511: Reset registers on hotplug	
+0a04fdb19d03	appliqué	scsi: libiscsi: fix possible NULL pointer dereference in case of TMF	
+cb94b5ea2455	appliqué	drm/imx: imx-ldb: disable LDB on driver bind	
+13f03bd19c9b	appliqué	drm/imx: imx-ldb: check if channel is enabled before printing warning	
+62dd6eda3641	appliqué	usb: gadget: r8a66597: Fix two possible sleep-in-atomic-context bugs in init_controller()	
+02e8b4fb4b50	appliqué	usb: gadget: r8a66597: Fix a possible sleep-in-atomic-context bugs in r8a66597_queue()	
+2b4fd19878c7	appliqué	usb/phy: fix PPC64 build errors in phy-fsl-usb.c	
+3b7c96a9b0ae	appliqué	tools: usb: ffs-test: Fix build on big endian systems	
+e2838a2262fd	appliqué	usb: gadget: f_uac2: fix endianness of 'struct cntrl_*_lay3'	
+6e9261aac3d8	appliqué	bpf, ppc64: fix unexpected r0=0 exit path inside bpf_xadd	
+354d5a345b91	appliqué	tools/power turbostat: fix -S on UP systems	
+eca9953f31a7	appliqué	net: caif: Add a missing rcu_read_unlock() in caif_flow_cb	
+4646860d187c	appliqué	qed: Fix possible race for the link state value.	
+13afaaecac6e	appliqué	qed: Correct Multicast API to reflect existence of 256 approximate buckets.	
+0924ac4e7b31	appliqué	atl1c: reserve min skb headroom	
+76a4e0e6c4e3	appliqué	net: prevent ISA drivers from building on PPC32	
+82ad267b27b8	appliqué	can: mpc5xxx_can: check of_iomap return before use	
+c5d7e5e83b2f	appliqué	i2c: davinci: Avoid zero value of CLKH	
+b3c250987250	appliqué	perf/x86/amd/ibs: Don't access non-started event	
+d3313fe179a2	appliqué	media: staging: omap4iss: Include asm/cacheflush.h after generic includes	
+32680dc030c1	appliqué	bnx2x: Fix invalid memory access in rss hash config path.	
+d638725a56a3	appliqué	qmi_wwan: fix interface number for DW5821e production firmware	
+88adb09fe826	appliqué	net: axienet: Fix double deregister of mdio	
+f3c28466520c	appliqué	x86/boot: Fix if_changed build flip/flop bug	
+1a0ffb530029	appliqué	fscache: Allow cancelled operations to be enqueued	
+75960a41a598	appliqué	cachefiles: Fix refcounting bug in backing-file read monitoring	
+6194fba249cd	appliqué	cachefiles: Wait rather than BUG'ing on "Unexpected object collision"	
+579381fca56b	appliqué	selftests/ftrace: Add snapshot and tracing_on test case	
+b55993f4b2eb	appliqué	zswap: re-check zswap_is_full() after do zswap_shrink()	
+d0995e103e19	appliqué	tools/power turbostat: Read extended processor family from CPUID	
+5f56ddcc078d	appliqué	Revert "MIPS: BCM47XX: Enable 74K Core ExternalSync for PCIe erratum"	
+9bf9e4ad5ebe	appliqué	enic: handle mtu change for vf properly	
+fcc80f8ed96d	appliqué	arc: [plat-eznps] fix data type errors in platform headers	
+6e6460912383	appliqué	arc: fix build errors in arc/include/asm/delay.h	
+8620db886d78	appliqué	arc: fix type warnings in arc/mm/cache.c	
+ab99a2bac2ea	appliqué en partie (conflit hors code compilé, notre version gardée)	squashfs metadata 2: electric boogaloo	fs/squashfs/file_direct.c
+6b9882c69ee1	ignoré (conflit hors code compilé)	Squashfs: Compute expected length from inode size rather than block length	fs/squashfs/file.c fs/squashfs/file_cache.c fs/squashfs/file_direct.c fs/squashfs/squashfs.h
+a6c6516eee15	appliqué	drivers: net: lmc: fix case value for target abort error	
+f108e46efaac	appliqué	memcg: remove memcg_cgroup::id from IDR on mem_cgroup_css_alloc() failure	
+cfbe3cabb589	appliqué	scsi: fcoe: drop frames in ELS LOGO error path	
+a8871571f356	appliqué	scsi: fcoe: clear FC_RP_STARTED flags when receiving a LOGO	
+b88f17ee2fe3	appliqué	scsi: vmw_pvscsi: Return DID_RESET for status SAM_STAT_COMMAND_TERMINATED	
+af669a0b2d16	appliqué	mm/memory.c: check return value of ioremap_prot	
+fe0034a08b49	appliqué	sched/sysctl: Check user input value of sysctl_sched_time_avg	
+e8e519f8ec33	appliqué	Cipso: cipso_v4_optptr enter infinite loop	
+b653d47ba52d	appliqué	mei: don't update offset in write	
+fbd314e29d27	appliqué	cifs: add missing debug entries for kconfig options	
+c773c4fbb22b	appliqué	cifs: check kmalloc before use	
+a94703ff8e36	appliqué	smb3: enumerating snapshots was leaving part of the data off end	
+707b0d2d9d3a	appliqué	smb3: Do not send SMB3 SET_INFO if nothing changed	
+893b282b7e4b	appliqué	smb3: don't request leases in symlink creation and query	
+52ea94f6b328	appliqué	kprobes/arm64: Fix %p uses in error messages	
+a96371149006	déjà présent (forme Android/MediaTek)	arm64: mm: check for upper PAGE_SHIFT bits in pfn_valid()	pfn_valid vérifie déjà les bits hauts (PFN_MASK)
+1ad409840b14	appliqué	s390/kvm: fix deadlock when killed by oom	
+9c2860f4564d	appliqué	ext4: check for NUL characters in extended attribute's name	
+e0cfc1c92e29	appliqué	ext4: sysfs: print ext4_super_block fields as little-endian	
+e85b9fbdf834	appliqué	ext4: reset error code in ext4_find_entry in fallback	
+3fedc0cd376b	appliqué (conflit résolu)	staging: android: ion: fix ION_IOC_{MAP,SHARE} use-after-free	ION_IOC_SHARE/MAP sous le verrou du client (correctif de sécurité), journaux et mmprofile MediaTek gardés ; ion_handle_get_by_id() gardé pour ion_drv_get_handle() de MediaTek
+a22bdef6b9f8	appliqué	KVM: arm/arm64: Skip updating PTE entry if no change	
+7fb227e97df9	appliqué	KVM: arm/arm64: Skip updating PMD entry if no change	
+cd4fdbb85e7f	appliqué	sparc: kernel/pcic: silence gcc 7.x warning in pcibios_fixup_bus()	
+fe0f40491bba	appliqué	x86/speculation/l1tf: Fix overflow in l1tf_pfn_limit() on 32bit	
+f8d42d5c0208	appliqué	x86/speculation/l1tf: Fix off-by-one error when warning that system has too much RAM	
+2421738c164f	appliqué	x86/speculation/l1tf: Suggest what to do on systems with too much RAM	
+62cfd81bcf54	appliqué	x86/process: Re-export start_thread()	
+cd4574c1b94c	appliqué	KVM: x86: SVM: Call x86_spec_ctrl_set_guest/host() with interrupts disabled	
+6a2346f32294	appliqué	x86/kvm/vmx: Remove duplicate l1d flush definitions	
+67a9e4870ce1	appliqué	fuse: Don't access pipe->buffers without pipe_lock()	
+68fbfcb7cd43	appliqué	fuse: fix initial parallel dirops	
+501c4caeb3e4	appliqué	fuse: fix double request_end()	
+c66025c1085c	appliqué	fuse: fix unlocked access to processing queue	
+6465d7688c2d	appliqué	fuse: umount should wait for all requests	
+263508c10106	appliqué	fuse: Fix oops at process_init_reply()	
+01f0772ad006	appliqué	fuse: Add missed unlock_page() to fuse_readpages_fill()	
+e0d786f7113b	appliqué	udl-kms: change down_interruptible to down	
+73aa57ac7cc3	appliqué	udl-kms: handle allocation failure	
+268143ee0b8d	appliqué	udl-kms: fix crash due to uninitialized memory	
+a8625b187d7e	appliqué	b43legacy/leds: Ensure NUL-termination of LED name string	
+4a92d74e4f31	appliqué	b43/leds: Ensure NUL-termination of LED name string	
+5304f2ac6b6b	appliqué	ASoC: dpcm: don't merge format from invalid codec dai	
+b71230cb5820	appliqué	ASoC: sirf: Fix potential NULL pointer dereference	
+597ea10b9247	appliqué	pinctrl: freescale: off by one in imx1_pinconf_group_dbg_show()	
+c148246b87ce	appliqué	x86/irqflags: Mark native_restore_fl extern inline	
+d8fa9ed041d3	appliqué	x86/spectre: Add missing family 6 check to microcode check	
+ef3d45c95764	appliqué	x86/speculation/l1tf: Increase l1tf memory limit for Nehalem+	
+ba064e81be70	appliqué	x86/entry/64: Wipe KASAN stack shadow before rewind_stack_do_exit()	
+33a9081eaa2c	appliqué	s390: fix br_r1_trampoline for machines without exrl	
+b9f66a2ba6e6	appliqué	s390/qdio: reset old sbal_state flags	
+d519aab009a1	appliqué	s390/numa: move initial setup of node_to_cpumask_map	
+664a64bd6df6	appliqué	s390/pci: fix out of bounds access during irq setup	
+5749cd622087	appliqué	kprobes: Make list and blacklist root user read only	
+eb3717fbcc3c	appliqué	MIPS: Correct the 64-bit DSP accumulator register size	
+a6b728be40ae	appliqué	MIPS: lib: Provide MIPS64r6 __multi3() for GCC < 7	
+8a5e02a0f46e	appliqué	scsi: sysfs: Introduce sysfs_{un,}break_active_protection()	
+6d70dea51130	appliqué	scsi: core: Avoid that SCSI device removal through sysfs triggers a deadlock	
+00ee0e07c68d	appliqué	iscsi target: fix session creation failure handling	
+072555e660f6	appliqué	clk: rockchip: fix clk_i2sout parent selection bits on rk3399	
+d8467a6b6ddd	appliqué	PM / clk: signedness bug in of_pm_clk_add_clks()	
+a3702bbac9e2	appliqué	power: generic-adc-battery: fix out-of-bounds write when copying channel properties	
+c1ebdbe4ccf1	appliqué	power: generic-adc-battery: check for duplicate properties copied from iio channels	
+b8c0e15469ba	appliqué	cdrom: Fix info leak/OOB read in cdrom_ioctl_drive_status	
+3af20bddda6f	appliqué	staging: android: ion: check for kref overflow	
+9eabacaf4ce5	appliqué	Linux 4.9.125	
+6aa4a723bd99	appliqué	net: 6lowpan: fix reserved space for single frames	
+41b2e6eff1da	appliqué	net: mac802154: tx: expand tailroom if necessary	
+5c45154990d5	appliqué	9p/net: Fix zero-copy path in the 9p virtio transport	
+ae8f22ed6f92	appliqué	spi: davinci: fix a NULL pointer dereference	
+9f16a87ffe00	appliqué	spi: spi-fsl-dspi: Fix imprecise abort on VF500 during probe	
+f916daa615e1	appliqué	drm/i915/userptr: reject zero user_size	
+64a2af0e69a5	appliqué	libertas: fix suspend and resume for SDIO connected cards	
+0fdb739af29e	appliqué	mailbox: xgene-slimpro: Fix potential NULL pointer dereference	
+1ae3174fb807	appliqué	powerpc/fadump: handle crash memory ranges array index overflow	
+89bdde280767	appliqué	powerpc/pseries: Fix endianness while restoring of r3 in MCE handler.	
+0eb725c141ac	appliqué	PCI: Add wrappers for dev_printk()	
+f8700e03c86c	appliqué	powerpc/powernv/pci: Work around races in PCI bridge enabling	
+6f329f276746	appliqué	cxl: Fix wrong comparison in cxl_adapter_context_get()	
+2c3c284b44ac	appliqué	ib_srpt: Fix a use-after-free in srpt_close_ch()	
+e4f531212d7b	appliqué	RDMA/rxe: Set wqe->status correctly if an unexpected response is received	
+684f5d9a1d98	appliqué	fs/9p/xattr.c: catch the error of p9_client_clunk when setting xattr failed	
+b69ef7c90e84	appliqué	9p/virtio: fix off-by-one error in sg list bounds check	
+c53310d06c6a	appliqué	net/9p/client.c: version pointer uninitialized	
+35c740d17746	appliqué	net/9p/trans_fd.c: fix race-condition by flushing workqueue before the kfree()	
+9a3f8fd5bd75	appliqué	dm thin: stop no_space_timeout worker when switching to write-mode	
+d08b58b5c3ca	appliqué	dm cache metadata: save in-core policy_hint_size to on-disk superblock	
+e5147bbfc320	appliqué	uart: fix race between uart_put_char() and uart_shutdown()	
+4e834c730df6	appliqué	iio: ad9523: Fix displayed phase	
+d4e5a9eda917	appliqué	iio: ad9523: Fix return value for ad952x_store()	
+0e0dd1a2298e	appliqué	vmw_balloon: fix inflation of 64-bit GFNs	
+fa51177bbc27	appliqué	vmw_balloon: do not use 2MB without batching	
+1893974d5dd4	appliqué	vmw_balloon: VMCI_DOORBELL_SET does not check status	
+604c8018beda	appliqué	vmw_balloon: fix VMCI use when balloon built into kernel	
+4e935c2eaec5	appliqué	rtc: omap: fix potential crash on power off	
+dc697314056c	appliqué	tracing: Do not call start/stop() functions when tracing_on does not change	
+941ca8dbf774	appliqué	tracing/blktrace: Fix to allow setting same value	
+0ef606320567	appliqué	uprobes: Use synchronize_rcu() not synchronize_sched()	
+262f38faadc4	appliqué	mfd: hi655x: Fix regmap area declared size for hi655x	
+3ac733eb641d	appliqué	9p: fix multiple NULL-pointer-dereferences	
+18c5d285a9d4	appliqué	PM / sleep: wakeup: Fix build error caused by missing SRCU support	
+8729412ca352	appliqué	KVM: VMX: fixes for vmentry_l1d_flush module parameter	
+e996a24db208	appliqué	xtensa: limit offsets in __loop_cache_{all,page}	
+7f2163b56e5e	appliqué	xtensa: increase ranges in ___invalidate_{i,d}cache_all	
+9ba1a9ea7cb7	appliqué	pnfs/blocklayout: off by one in bl_map_stripe()	
+b5bc39d4ffb5	appliqué	NFSv4 client live hangs after live data migration recovery	
+ba99ff79ac84	appliqué	ARM: tegra: Fix Tegra30 Cardhu PCA954x reset	
+40b08cdac9ae	appliqué	Replace magic for trusting the secondary keyring with #define	
+7c439bc2220d	appliqué	Fix kexec forbidding kernels signed with keys in the secondary keyring to boot	
+04d1d58c2749	appliqué	mm/tlb: Remove tlb_remove_table() non-concurrent condition	
+eada1b2246fc	appliqué	iommu/vt-d: Add definitions for PFSID	
+b68377cb57f2	appliqué	iommu/vt-d: Fix dev iotlb pfsid use	
+d2f96e17ca75	appliqué	osf_getdomainname(): use copy_to_user()	
+55463c60b7d5	appliqué	sys: don't hold uts_sem while accessing userspace memory	
+a56a15432ac8	appliqué	userns: move user access out of the mutex	
+0d1694b185ca	appliqué	ubifs: Fix memory leak in lprobs self-check	
+48e1148488b6	appliqué	Revert "UBIFS: Fix potential integer overflow in allocation"	
+1bc1f0f72992	appliqué	ubifs: Check data node size before truncate	
+36ac3a0116a5	appliqué	ubifs: Fix synced_i_size calculation for xattr inodes	
+8001317c0bdf	appliqué	pwm: tiehrpwm: Fix disabling of output of PWMs	
+3752de782d5b	appliqué	fb: fix lost console when the user unplugs a USB adapter	
+a328c4cec034	appliqué	udlfb: set optimal write delay	
+6fdad64a14f5	appliqué	getxattr: use correct xattr length	
+05a085c7c501	appliqué	libnvdimm: fix ars_status output length calculation	
+6c6d17485d2d	appliqué	printk/tracing: Do not trace printk_nmi_enter()	
+3ddf06cdf05a	appliqué	bcache: release dc->writeback_lock properly in bch_writeback_thread()	
+e0ec112e7eb1	appliqué	perf auxtrace: Fix queue resize	
+4a219e41a9db	appliqué	crypto: vmx - Fix sleep-in-atomic bugs	
+ac617410962f	appliqué	crypto: caam/jr - fix descriptor DMA unmapping	
+0515258e4776	appliqué	fs/quota: Fix spectre gadget in do_quotactl	
+66f5a871e598	appliqué	Linux 4.9.126	
+bc71f393d31c	appliqué	x86/speculation/l1tf: Fix up pte->pfn conversion for PAE	
+4fb15ff15b2c	appliqué	act_ife: fix a potential use-after-free	
+e801b695c3e7	appliqué	ipv4: tcp: send zero IPID for RST and ACK sent in SYN-RECV and TIME-WAIT state	
+89550ec53fce	appliqué	net: bcmgenet: use MAC link status for fixed phy	
+214339f16c3a	appliqué	net: sched: Fix memory exposure from short TCA_U32_SEL	
+142e7b5832c3	appliqué	qlge: Fix netdev features configuration.	
+35a90212011a	appliqué	r8169: add support for NCube 8168 network card	
+fe55bef40cd7	appliqué	tcp: do not restart timewait timer on rst reception	
+d669bd62756f	appliqué	vti6: remove !skb->ignore_df check from vti6_xmit()	
+36bf8bc54a59	appliqué	sctp: hold transport before accessing its asoc in sctp_transport_get_next	
+a21a39a9c37b	appliqué	vhost: correctly check the iova range when waking virtqueue	
+dfb2b5b8ed4f	appliqué	hv_netvsc: ignore devices that are not PCI	
+c892575c9726	appliqué	act_ife: move tcfa_lock down to where necessary	
+a93288c512cd	appliqué	act_ife: fix a potential deadlock	
+947c262a1495	appliqué	net: sched: action_ife: take reference to meta module	
+f440ea422c26	appliqué	cifs: check if SMB2 PDU size has been padded and suppress the warning	
+b570baff463a	appliqué	hfsplus: don't return 0 when fill_super() failed	
+a9d3f38e1da1	appliqué	hfs: prevent crash on exit from failed search	
+e9ec9111582c	appliqué	sunrpc: Don't use stack buffer with scatterlist	
+015fd7e0a66f	appliqué	fork: don't copy inconsistent signal handler state to child	
+b631562275be	appliqué	reiserfs: change j_timestamp type to time64_t	
+1cedd72d0f68	appliqué	hfsplus: fix NULL dereference in hfsplus_lookup()	
+b6e77fa4a741	appliqué	fat: validate ->i_start before using	
+94279fa683e9	appliqué	scripts: modpost: check memory allocation results	
+904728d7601e	appliqué	virtio: pci-legacy: Validate queue pfn	
+c5804ddfc3d3	appliqué	mm/fadvise.c: fix signed overflow UBSAN complaint	
+fc2afa806509	appliqué	fs/dcache.c: fix kmemcheck splat at take_dentry_name_snapshot()	
+2efb5989dd72	appliqué	platform/x86: intel_punit_ipc: fix build errors	
+74bc618db41c	appliqué	s390/kdump: Fix memleak in nt_vmcoreinfo	
+a3db0342deb9	appliqué	ipvs: fix race between ip_vs_conn_new() and ip_vs_del_dest()	
+e11e70c50892	appliqué	mfd: sm501: Set coherent_dma_mask when creating subdevices	
+345afadf16eb	appliqué	platform/x86: asus-nb-wmi: Add keymap entry for lid flip action on UX360	
+070492dd2053	appliqué	RDMA/hns: Fix usage of bitmap allocation functions return values	
+a8e5ec201e3a	appliqué	irqchip/bcm7038-l1: Hide cpu offline callback when building for !SMP	
+eb1ca07f4343	appliqué	net/9p/trans_fd.c: fix race by holding the lock	
+45b7e1d5f206	appliqué	net/9p: fix error path of p9_virtio_probe	
+c80c4c93e47e	appliqué	powerpc: Fix size calculation using resource_size()	
+6841830ae6e9	appliqué	perf probe powerpc: Fix trace event post-processing	
+bbab86e8918c	appliqué	block: bvec_nr_vecs() returns value for wrong slab	
+0eee05ce4372	appliqué	s390/dasd: fix hanging offline processing due to canceled worker	
+b84452f38e79	appliqué	s390/dasd: fix panic for failed online processing	
+51c849246ff7	appliqué	ACPI / scan: Initialize status to ACPI_STA_DEFAULT	
+c2842d10e7d2	appliqué	scsi: aic94xx: fix an error code in aic94xx_init()	
+e93d8210c776	appliqué	PCI: mvebu: Fix I/O space end address calculation	
+c2910ee6e72f	appliqué	dm kcopyd: avoid softlockup in run_complete_job	
+50f8c8e401f0	appliqué	staging: comedi: ni_mio_common: fix subdevice flags for PFI subdevice	
+82e1e872273b	appliqué	selftests/powerpc: Kill child processes on SIGINT	
+fdb52b4f48f1	appliqué	RDS: IB: fix 'passing zero to ERR_PTR()' warning	
+0da6c7d59a6f	appliqué	smb3: fix reset of bytes read and written stats	
+7aed5a52b85f	appliqué	SMB3: Number of requests sent should be displayed for SMB3 not just CIFS	
+5cb808572c23	appliqué	powerpc/pseries: Avoid using the size greater than RTAS_ERROR_LOG_MAX.	
+4678c00e9dd5	appliqué	clk: rockchip: Add pclk_rkpwm_pmu to PMU critical clocks in rk3399	
+e22b36a336fa	appliqué	btrfs: replace: Reset on-disk dev stats value after replace	
+93d960de56ce	appliqué	btrfs: relocation: Only remove reloc rb_trees if reloc control has been initialized	
+1249b6115236	appliqué	btrfs: Don't remove block group that still has pinned down bytes	
+04a24a7d6a8a	appliqué	arm64: rockchip: Force CONFIG_PM on Rockchip systems	
+36a7f0ad9405	appliqué	ARM: rockchip: Force CONFIG_PM on Rockchip systems	
+ee45a6792b26	appliqué	drm/edid: Add 6 bpc quirk for SDC panel in Lenovo B50-80	
+33d2811df75e	appliqué	tcp: Revert "tcp: tcp_probe: use spin_lock_bh()"	
+414bd73f37bd	ignoré (conflit hors code compilé)	debugobjects: Make stack check warning more informative	lib/debugobjects.c
+f3913ee267da	appliqué	x86/pae: use 64 bit atomic xchg function in native_ptep_get_and_clear	
+a75228044ef6	appliqué	kbuild: make missing $DEPMOD a Warning instead of an Error	
+ce54bf4aec59	appliqué	irda: Fix memory leak caused by repeated binds of irda socket	
+18d94895f505	appliqué	irda: Only insert new objects into the global database via setsockopt	
+55c6de19ec23	appliqué	Revert "ARM: imx_v6_v7_defconfig: Select ULPI support"	
+4438e9db9574	appliqué	enic: do not call enic_change_mtu in enic_probe	
+77d1a435f8c6	appliqué	Fixes: Commit 2aa6d036b716 ("mm: numa: avoid waiting on freed migrated pages")	
+951104e4805f	appliqué	sch_htb: fix crash on init failure	
+9db519dc7939	appliqué	sch_multiq: fix double free on init failure	
+bafe019d5ff6	appliqué	sch_hhf: fix null pointer dereference on init failure	
+977f75d5c361	appliqué	sch_netem: avoid null pointer deref on init failure	
+3d3432580911	appliqué	sch_tbf: fix two null pointer dereferences on init failure	
+c0b809985a7a	appliqué	mei: me: allow runtime pm for platform with D0i3	
+9e9792d3ffc8	appliqué	s390/lib: use expoline for all bcr instructions	
+d1f7cdc0db80	appliqué	ASoC: wm8994: Fix missing break in switch	
+d92fa5e18a42	appliqué	btrfs: use correct compare function of dirty_metadata_bytes	
+a6830095680b	appliqué	arm64: Fix mismatched cache line size detection	
+67badb25211c	appliqué	arm64: Handle mismatched cache type	
+927556eb3a72	appliqué	Linux 4.9.127	
+6c1a53fcf209	appliqué	i2c: xiic: Make the start and the byte count write atomic	
+0894c653c83a	appliqué	i2c: i801: fix DNV's SMBCTRL register offset	
+2fdd661abee3	appliqué	KVM: s390: vsie: copy wrapping keys to right place	
+50cad8ddc49d	appliqué	ALSA: hda - Fix cancel_work_sync() stall from jackpoll work	
+a4187e923f57	appliqué	cfq: Give a chance for arming slice idle timer in case of group_idle	
+a70e46bcead9	appliqué	kthread: Fix use-after-free if kthread fork fails	
+0d8f2274d5e7	appliqué	kthread: fix boot hang (regression) on MIPS/OpenRISC	
+11e085a7b9e8	appliqué	staging: rt5208: Fix a sleep-in-atomic bug in xd_copy_page	
+21a9426de89e	appliqué	staging/rts5208: Fix read overflow in memcpy	
+bb2f46aa43f2	appliqué	IB/rxe: do not copy extra stack memory to skb	
+07a6134db045	appliqué en partie (conflit hors code compilé, notre version gardée)	block,blkcg: use __GFP_NOWARN for best-effort allocations in blkcg	block/blk-cgroup.c
+4fa029fc3500	déjà présent (identique)	nl80211: fix null-ptr dereference on invalid mesh configuration	git am : patch déjà appliqué
+0cbde6c5b673	appliqué	locking/rwsem-xadd: Fix missed wakeup due to reordering of load	
+d1f534f11a39	appliqué	selinux: use GFP_NOWAIT in the AVC kmem_caches	
+2009f1797bdf	appliqué	locking/osq_lock: Fix osq_lock queue corruption	
+4f39381a02f8	appliqué	mm, vmscan: clear PGDAT_WRITEBACK when zone is balanced	
+bafc00f38958	appliqué	mm: remove seemingly spurious reclaimability check from laptop_mode gating	
+3b21adca3d15	appliqué	ARC: [plat-axs*]: Enable SWAP	
+ebce88a8a684	appliqué	misc: mic: SCIF Fix scif_get_new_port() error handling	
+45ad26e49927	appliqué	ethtool: Remove trailing semicolon for static inline	
+b5c98d8ca8f9	appliqué	Bluetooth: h5: Fix missing dependency on BT_HCIUART_SERDEV	
+d94bf3a4090b	appliqué	gpio: tegra: Move driver registration to subsys_init level	
+9e1a874f5277	appliqué	net: phy: Fix the register offsets in Broadcom iProc mdio mux driver	
+b5f497996aa1	appliqué	scsi: target: fix __transport_register_session locking	
+52ba71368e35	appliqué	md/raid5: fix data corruption of replacements after originals dropped	
+05cb385f95f3	appliqué	timers: Clear timer_base::must_forward_clk with timer_base::lock held	
+4795df607a0e	appliqué	misc: ti-st: Fix memory leak in the error path of probe()	
+2b6c7457d3e0	appliqué	uio: potential double frees if __uio_register_device() fails	
+31b9fa898b8f	appliqué	tty: rocket: Fix possible buffer overwrite on register_PCI	
+4af5560a8332	appliqué	f2fs: do not set free of current section	
+2a19b49acca3	appliqué	perf tools: Allow overriding MAX_NR_CPUS at compile time	
+4bd667d1fd9b	appliqué	NFSv4.0 fix client reference leak in callback	
+93411827d700	appliqué	macintosh/via-pmu: Add missing mmio accessors	
+6085dc4b592b	appliqué	ath9k: report tx status on EOSP	
+37438532b656	appliqué	ath9k_hw: fix channel maximum power level test	
+7ffd72b91451	appliqué	ath10k: prevent active scans on potential unusable channels	
+38fb233a47f5	appliqué	wlcore: Set rx_status boottime_ns field on rx	
+65d84b607140	appliqué	MIPS: Fix ISA virt/bus conversion for non-zero PHYS_OFFSET	
+c9b2ba4aed21	appliqué	ata: libahci: Correct setting of DEVSLP register	
+5563a9328527	appliqué	scsi: 3ware: fix return 0 on the error path of probe	
+4f588278587c	appliqué	ath10k: disable bundle mgmt tx completion event support	
+64a6f7bfb3bc	appliqué	Bluetooth: hidp: Fix handling of strncpy for hid->name information	
+7f6a39430c8f	appliqué	x86/mm: Remove in_nmi() warning from vmalloc_fault()	
+54216006bec6	appliqué	gpio: ml-ioh: Fix buffer underwrite on probe error path	
+c1a5920d394e	appliqué	net: mvneta: fix mtu change on port without link	
+ddeaf5abf5e0	appliqué	f2fs: try grabbing node page lock aggressively in sync scenario	
+d15c7c8ea02b	appliqué	f2fs: fix to skip GC if type in SSA and SIT is inconsistent	
+cd4ae0b05126	appliqué	tpm_tis_spi: Pass the SPI IRQ down to the driver	
+403c4772b150	appliqué	tpm/tpm_i2c_infineon: switch to i2c_lock_bus(..., I2C_LOCK_SEGMENT)	
+7e0782ceebaa	appliqué	f2fs: fix to do sanity check with reserved blkaddr of inline inode	
+819a8dae8e1b	appliqué	MIPS: Octeon: add missing of_node_put()	
+19bf03fdbdcb	appliqué	MIPS: generic: fix missing of_node_put()	
+e8a62a66aa82	appliqué	net: dcb: For wild-card lookups, use priority -1, not 0	
+593071cd4be5	appliqué	Input: atmel_mxt_ts - only use first T9 instance	
+2eea5a334428	appliqué	media: s5p-mfc: Fix buffer look up in s5p_mfc_handle_frame_{new, copy_time} functions	
+6bccef1e7525	appliqué	partitions/aix: append null character to print data from disk	
+a4b41559e5d0	appliqué	partitions/aix: fix usage of uninitialized lv_info and lvname structures	
+c1792b6d2b1d	appliqué	media: helene: fix xtal frequency setting at power on	
+363bb035cb1d	appliqué	f2fs: Fix uninitialized return in f2fs_ioc_shutdown()	
+5092edd3dbfe	appliqué	iommu/ipmmu-vmsa: Fix allocation in atomic context	
+1b6e019b0250	appliqué	mfd: ti_am335x_tscadc: Fix struct clk memory leak	
+a5ab2d3f810d	appliqué	f2fs: fix to do sanity check with {sit,nat}_ver_bitmap_bytesize	
+8d4d075495d5	appliqué	NFSv4.1: Fix a potential layoutget/layoutrecall deadlock	
+8d917cba1273	appliqué	MIPS: WARN_ON invalid DMA cache maintenance, not BUG_ON	
+64b40135e41f	appliqué	RDMA/cma: Do not ignore net namespace for unbound cm_id	
+2679c2231bc3	appliqué (conflit résolu)	xhci: Fix use-after-free in xhci_free_virt_device	xhci : virt_dev->udev = NULL toujours (Autochips le faisait sous CONFIG_ATC_AOSP_ENHANCEMENT)
+3ea051bcf2cd	appliqué	netfilter: x_tables: avoid stack-out-of-bounds read in xt_copy_counters_from_user	
+3fe958010928	appliqué	mtd: ubi: wl: Fix error return code in ubi_wl_init()	
+4e7f07396a5f	appliqué	autofs: fix autofs_sbi() does not check super block type	
+84580567f1f8	déjà présent (identique)	mm: get rid of vmacache_flush_all() entirely	git am : patch déjà appliqué
+70915e25e1cf	appliqué	Linux 4.9.128	
+bfb8799ab575	appliqué	be2net: Fix memory leak in be_cmd_get_profile_config()	
+53a3bad7e9e7	appliqué	rds: fix two RCU related problems	
+ccb89610b3aa	appliqué	net/mlx5: Fix use-after-free in self-healing flow	
+6d1659b35cd1	appliqué	net/mlx5: Fix debugfs cleanup in the device init/remove flow	
+bd08974f90fb	appliqué	iommu/arm-smmu-v3: sync the OVACKFLG to PRIQ consumer register	
+5993f94d351d	appliqué	ALSA: msnd: Fix the default sample sizes	
+f075b4bd3db7	appliqué	ALSA: usb-audio: Fix multiple definitions in AU0828_DEVICE() macro	
+af322ba0eb11	appliqué	xfrm: fix 'passing zero to ERR_PTR()' warning	
+1a1742883d49	appliqué	gfs2: Special-case rindex for gfs2_grow	
+59d4d41f4608	appliqué	clk: imx6ul: fix missing of_node_put()	
+c033654d34c3	appliqué	clk: clk-fixed-factor: Clear OF_POPULATED flag in case of failure	
+48a90a9e56a3	appliqué	kbuild: add .DELETE_ON_ERROR special target	
+8992a70297ed	appliqué	media: tw686x: Fix oops on buffer alloc failure	
+ddf00feadd40	appliqué	dmaengine: pl330: fix irq race with terminate_all	
+70ea6147c8ff	appliqué	MIPS: ath79: fix system restart	
+77e59fa1bffe	appliqué	media: videobuf2-core: check for q->error in vb2_core_qbuf()	
+a43cbd9b220b	appliqué	IB/rxe: Drop QP0 silently	
+4223d4b9a433	appliqué	mtd/maps: fix solutionengine.c printk format warnings	
+48c37aa37355	appliqué	perf test: Fix subtest number when showing results	
+ddeb9cb46166	appliqué	gfs2: Don't reject a supposedly full bitmap if we have blocks reserved	
+85d6635b637e	appliqué	fbdev: omapfb: off by one in omapfb_register_client()	
+d9f6ae2f49c8	appliqué	video: goldfishfb: fix memory leak on driver remove	
+e97220e28fe9	appliqué	fbdev/via: fix defined but not used warning	
+14f3d6519417	appliqué	perf powerpc: Fix callchain ip filtering when return address is in a register	
+1e5d820bc8d9	appliqué	video: fbdev: pxafb: clear allocated memory for video modes	
+6431fb7b5e54	appliqué	fbdev: Distinguish between interlaced and progressive modes	
+7aea78a5ae0b	appliqué	ARM: exynos: Clear global variable on init error path	
+24dc2f57053a	appliqué	perf powerpc: Fix callchain ip filtering	
+e15407a2a8fb	appliqué	powerpc/powernv: opal_put_chars partial write fix	
+f3f1e4380913	appliqué	MIPS: jz4740: Bump zload address	
+03758ba70b17	appliqué	mac80211: restrict delayed tailroom needed decrement	
+a64fa2731c60	appliqué	Smack: Fix handling of IPv4 traffic received by PF_INET6 sockets	
+f42caeadf02c	appliqué	wan/fsl_ucc_hdlc: use IS_ERR_VALUE() to check return value of qe_muram_alloc	
+be2338f3a57f	appliqué	efi/arm: preserve early mapping of UEFI memory map longer for BGRT	
+8e824a3c7ede	appliqué	nfp: avoid buffer leak when FW communication fails	
+21fa74886212	appliqué	xen-netfront: fix queue name setting	
+68bfa6eb2fb6	appliqué	arm64: dts: qcom: db410c: Fix Bluetooth LED trigger	
+ededee86c683	appliqué	ARM: dts: qcom: msm8974-hammerhead: increase load on l20 for sdhci	
+09d5c1415679	appliqué	s390/qeth: fix race in used-buffer accounting	
+d3638df9649b	appliqué	s390/qeth: reset layer2 attribute on layer switch	
+f51c345732ef	appliqué	platform/x86: toshiba_acpi: Fix defined but not used build warnings	
+0a10ce961bb3	appliqué	KVM: arm/arm64: Fix vgic init race	
+e6f55802bac4	appliqué	drivers/base: stop new probing during shutdown	
+0c8706ef5033	appliqué	dmaengine: mv_xor_v2: kill the tasklets upon exit	
+fd758513e8d6	appliqué	crypto: sharah - Unregister correct algorithms for SAHARA 3	
+9d47d0301ef5	appliqué	xen-netfront: fix warn message as irq device name has '/'	
+422013e4ee41	appliqué	RDMA/cma: Protect cma dev list with lock	
+7026e2457c5b	appliqué	pstore: Fix incorrect persistent ram buffer mapping	
+03ae5ff3460b	appliqué	xen/netfront: fix waiting for xenbus state change	
+542d6faada88	appliqué	IB/ipoib: Avoid a race condition between start_xmit and cm_rep_handler	
+590872d20109	appliqué	mmc: omap_hsmmc: fix wakeirq handling on removal	
+2516ead0aaf8	appliqué	Tools: hv: Fix a bug in the key delete code	
+76b61ead8f4d	appliqué	misc: hmc6352: fix potential Spectre v1	
+286a01c5d428	appliqué	usb: Don't die twice if PCI xhci host is not responding in resume	
+0737cf682a34	appliqué	mei: ignore not found client in the enumeration	
+d1a18f6e2069	appliqué	USB: Add quirk to support DJI CineSSD	
+cdddc62b2f0f	appliqué	usb: uas: add support for more quirk flags	
+c531c70d9e05	appliqué	usb: Avoid use-after-free by flushing endpoints early in usb_set_interface()	
+734893b83e30	appliqué	usb: host: u132-hcd: Fix a sleep-in-atomic-context bug in u132_get_frame()	
+09ab91a521db	appliqué	USB: add quirk for WORLDE Controller KS49 or Prodipe MIDI 49C USB controller	
+63af1f400f4d	appliqué	usb: gadget: udc: renesas_usb3: fix maxpacket size of ep0	
+4236e40a9d4f	appliqué	USB: net2280: Fix erroneous synchronization change	
+b1507f458d22	appliqué	USB: serial: io_ti: fix array underflow in completion handler	
+2ccd62789ef0	appliqué	usb: misc: uss720: Fix two sleep-in-atomic-context bugs	
+cd3005db7518	appliqué	USB: serial: ti_usb_3410_5052: fix array underflow in completion handler	
+71d2d4790cbd	appliqué	USB: yurex: Fix buffer over-read in yurex_write()	
+f7bf6ac32429	appliqué	usb: cdc-wdm: Fix a sleep-in-atomic-context bug in service_outstanding_interrupt()	
+2c8adbfa3283	appliqué	Revert "cdc-acm: implement put_char() and flush_chars()"	
+ca453b2406a6	appliqué	cifs: prevent integer overflow in nxt_dir_entry()	
+fe6198c27854	appliqué	CIFS: fix wrapping bugs in num_entries()	
+a64fbecec98a	appliqué	perf/core: Force USER_DS when recording user stack data	
+af412413c1d0	appliqué	NFSv4.1 fix infinite loop on I/O.	
+e0c7634f7370	appliqué	binfmt_elf: Respect error return from `regset->active'	
+4fe4e6d65f97	appliqué	audit: fix use-after-free in audit_add_watch	
+23bd97eaebc5	appliqué	mtdchar: fix overflows in adjustment of `count`	
+eddbab138484	appliqué	evm: Don't deadlock if a crypto algorithm is unavailable	
+bffe67b9fe9d	appliqué	MIPS: loongson64: cs5536: Fix PCI_OHCI_INT_REG reads	
+5e790d7b0966	appliqué	configfs: fix registered group removal	
+a2a380bcf446	appliqué	efi/esrt: Only call efi_mem_reserve() for boot services memory	
+38ee03553f50	appliqué	ARM: hisi: handle of_iomap and fix missing of_node_put	
+edce8b372f7a	appliqué	ARM: hisi: fix error handling and missing of_node_put	
+99bc75c30421	appliqué	ARM: hisi: check of_iomap and fix missing of_node_put	
+57726dfe96e8	appliqué	gpu: ipu-v3: csi: pass back mbus_code_to_bus_cfg error codes	
+330b72fc294d	appliqué	mmc: tegra: prevent HS200 on Tegra 3	
+7cca66510abd	appliqué	mmc: sdhci: do not try to use 3.3V signaling if not supported	
+c940c2c450e5	appliqué	drm/nouveau: tegra: Detach from ARM DMA/IOMMU mapping	
+96fda059e606	appliqué	parport: sunbpp: fix error return code	
+2887d528b19c	appliqué	coresight: Handle errors in finding input/output ports	
+eb543ccfb0bf	appliqué	coresight: tpiu: Fix disabling timeouts	
+9667a5eb5b12	appliqué	gpio: pxa: Fix potential NULL dereference	
+6dc47c5894c9	appliqué	gpiolib: Mark gpio_suffixes array with __maybe_unused	
+57da41400090	appliqué	mfd: 88pm860x-i2c: switch to i2c_lock_bus(..., I2C_LOCK_SEGMENT)	
+5cea0d301743	appliqué	input: rohm_bu21023: switch to i2c_lock_bus(..., I2C_LOCK_SEGMENT)	
+4dfa5ee4defd	appliqué	drm/amdkfd: Fix error codes in kfd_get_process	
+8e16e060a86f	appliqué	rtc: bq4802: add error handling for devm_ioremap	
+7b07e3d9855c	appliqué	ALSA: pcm: Fix snd_interval_refine first/last with open min/max	
+18e589f6a059	appliqué	selftest: timers: Tweak raw_skew to SKIP when ADJ_OFFSET/other clock adjustments are in progress	
+2c814276d1ef	appliqué	drm/panel: type promotion bug in s6e8aa0_read_mtp_id()	
+e8c398a69458	appliqué	pinctrl: qcom: spmi-gpio: Fix pmic_gpio_config_get() to be compliant	
+aad783193f92	appliqué	mei: bus: type promotion bug in mei_nfc_if_version()	
+bd65d7bf59d9	appliqué	MIPS: VDSO: Match data page cache colouring when D$ aliases	
+265d94561cb8	appliqué	e1000e: Remove Other from EIAC	
+dee927647b17	appliqué	Partial revert "e1000e: Avoid receiver overrun interrupt bursts"	
+22a10b606f62	appliqué	e1000e: Fix queue interrupt re-raising in Other interrupt	
+8f3fec813d11	appliqué	e1000e: Avoid missed interrupts following ICR read	
+f0e0b2cc8972	appliqué	Revert "e1000e: Separate signaling for link check/link up"	
+16d550a772db	appliqué	e1000e: Fix link check race condition	
+6ceccdf5ca9e	appliqué	Linux 4.9.129	
+67084e26579b	déjà présent (identique)	NFC: Fix possible memory corruption when handling SHDLC I-Frame commands	git am : patch déjà appliqué
+c4989a153631	appliqué	NFC: Fix the number of pipes	
+acd5455f8f88	appliqué	ASoC: cs4265: fix MMTLR Data switch control	
+cfedc16ac4f8	appliqué	ALSA: bebob: fix memory leak for M-Audio FW1814 and ProjectMix I/O at error path	
+cc6fc7b038b2	appliqué	ALSA: bebob: use address returned by kmalloc() instead of kernel stack for streaming DMA mapping	
+8a47a993db86	appliqué	ALSA: emu10k1: fix possible info leak to userspace on SNDRV_EMU10K1_IOCTL_INFO	
+effd213a4303	appliqué	ALSA: firewire-digi00x: fix memory leak of private data	
+454fd956d061	appliqué	ALSA: firewire-tascam: fix memory leak of private data	
+be6d42cd5c1e	appliqué	ALSA: fireworks: fix memory leak of response buffer at error path	
+e3d94870b39f	appliqué	ALSA: oxfw: fix memory leak for model-dependent data at error path	
+acee5c71ee45	appliqué	ALSA: oxfw: fix memory leak of discovered stream formats at error path	
+fd397f226d9f	appliqué	ALSA: oxfw: fix memory leak of private data	
+a2ddfe7209c0	appliqué	platform/x86: alienware-wmi: Correct a memory leak	
+29a6193c0d74	appliqué	xen/netfront: don't bug in case of too many frags	
+ecde7ed3e8fa	appliqué	xen/x86/vpmu: Zero struct pt_regs before calling into sample handling code	
+b406c133712d	appliqué	Revert "PCI: Add ACS quirk for Intel 300 series"	
+be910e74f63d	appliqué	ring-buffer: Allow for rescheduling when removing pages	
+6b1bd5ea7267	appliqué	mm: shmem.c: Correctly annotate new inodes for lockdep	
+2b797b65d8d9	appliqué	gso_segment: Reset skb->mac_len after modifying network header	
+76b338069f0d	appliqué	ipv6: fix possible use-after-free in ip6_xmit()	
+11f734283a98	appliqué	net/appletalk: fix minor pointer leak to userspace in SIOCFINDIPDDPRT	
+43e575023f1a	appliqué	net: hp100: fix always-true check for link up state	
+a8f8d5efc5dd	appliqué	udp4: fix IP_CMSG_CHECKSUM for connected sockets	
+e68a49c769e8	appliqué	neighbour: confirm neigh entries when ARP packet is received	
+5eeb39743ba1	appliqué	scsi: target: iscsi: Use hex2bin instead of a re-implementation	
+44ae7181db0a	appliqué	ocfs2: fix ocfs2 read block panic	
+2493cdf2f279	appliqué	drm/nouveau/drm/nouveau: Fix bogus drm_kms_helper_poll_enable() placement	
+c92dbafb5577	appliqué	drm/nouveau/drm/nouveau: Use pm_runtime_get_noresume() in connector_detect()	
+b1c150a64e44	appliqué	drm/nouveau/drm/nouveau: Prevent handling ACPI HPD events too early	
+9055276208e7	appliqué	drm/vc4: Fix the "no scaling" case on multi-planar YUV formats	
+0ec459ec1740	appliqué	tty: vt_ioctl: fix potential Spectre v1	
+23f57cb1f1a3	appliqué	ext4: check to make sure the rename(2)'s destination is not freed	
+acf32cf208b9	appliqué	ext4: avoid divide by zero fault when deleting corrupted inline directories	
+67770b40a351	appliqué	ext4: recalucate superblock checksum after updating free blocks/inodes	
+205dc0da96df	appliqué	ext4: fix online resize's handling of a too-small final block group	
+4ba9e687ed89	appliqué	ext4: fix online resizing for bigalloc file systems with a 1k block size	
+b344b3a7328b	appliqué	ext4: don't mark mmp buffer head dirty	
+797488ac4975	appliqué	ext4: show test_dummy_encryption mount option in /proc/mounts	
+fa7a13e71d2a	appliqué	sched/fair: Fix vruntime_normalized() for remote non-migration wakeup	
+f5ff43c8837a	appliqué (conflit résolu)	HID: sony: Update device ids	identifiants PS4 déjà dans hid_have_special_driver
+72386b22d61f	appliqué (conflit résolu)	HID: sony: Support DS4 dongle	identifiant DS4 dongle déjà présent
+1879f9cb5642	appliqué	PCI: aardvark: Size bridges before resources allocation	
+460f813b6171	appliqué	vmw_balloon: include asm/io.h	
+616d5119d4f7	appliqué	iw_cxgb4: only allow 1 flush on user qps	
+46f9f7c3c326	appliqué	Linux 4.9.130	
+581048527071	appliqué	crypto: skcipher - Fix -Wstringop-truncation warnings	
+8d2b8ae4ad7b	appliqué	tsl2550: fix lux1_input error in low light	
+37f43c12f59d	appliqué	vmci: type promotion bug in qp_host_get_user_memory()	
+8540af6de372	appliqué	x86/numa_emulation: Fix emulated-to-physical node mapping	
+16d5a6d9c689	appliqué	staging: rts5208: fix missing error check on call to rtsx_write_register	
+ee6dc27c5359	appliqué	uwb: hwa-rc: fix memory leak at probe	
+0830a976e5d5	appliqué	power: vexpress: fix corruption in notifier registration	
+5eb06bfce2ec	appliqué	iommu/amd: make sure TLB to be flushed before IOVA freed	
+f63d0c75f2aa	appliqué	Bluetooth: Add a new Realtek 8723DE ID 0bda:b009	
+ad560c0a5fcb	appliqué	USB: serial: kobil_sct: fix modem-status error handling	
+3e8e438d8a47	appliqué	6lowpan: iphc: reset mac_header after decompress to fix panic	
+2f412c555411	appliqué	s390/mm: correct allocate_pgste proc_handler callback	
+3ba28752cca7	appliqué	power: remove possible deadlock when unregistering power_supply	
+0e085b03e65f	appliqué	md-cluster: clear another node's suspend_area after the copy is finished	
+163f0fd4a067	appliqué	IB/core: type promotion bug in rdma_rw_init_one_mr()	
+88fd46e44a6c	appliqué	media: exynos4-is: Prevent NULL pointer dereference in __isp_video_try_fmt()	
+5735af39366e	appliqué	powerpc/kdump: Handle crashkernel memory reservation failure	
+9b22e7f5b2e4	appliqué	media: fsl-viu: fix error handling in viu_of_probe()	
+67d0b2f130a7	appliqué	x86/tsc: Add missing header to tsc_msr.c	
+8214da8ac260	appliqué	ARM: hwmod: RTC: Don't assume lock/unlock will be called with irq enabled	
+8a76e852e44a	appliqué	x86/entry/64: Add two more instruction suffixes	
+54cbe6e25b2b	appliqué	scsi: target/iscsi: Make iscsit_ta_authentication() respect the output buffer size	
+4a67b82250b4	appliqué	scsi: klist: Make it safe to use klists in atomic context	
+b789ac6c8eb2	appliqué	scsi: ibmvscsi: Improve strings handling	
+ad04608260af	appliqué	usb: wusbcore: security: cast sizeof to int for comparison	
+47dd06672f2c	appliqué	powerpc/powernv/ioda2: Reduce upper limit for DMA window size	
+747128e772dc	appliqué	alarmtimer: Prevent overflow for relative nanosleep	
+2d81291f7114	appliqué	s390/extmem: fix gcc 8 stringop-overflow warning	
+a1003fd88762	appliqué	ALSA: snd-aoa: add of_node_put() in error path	
+84d068c86465	appliqué	media: s3c-camif: ignore -ENOIOCTLCMD from v4l2_subdev_call for s_power	
+66459f5c1c53	appliqué	media: soc_camera: ov772x: correct setting of banding filter	
+3c2855f5c361	appliqué	media: omap3isp: zero-initialize the isp cam_xclk{a,b} initial data	
+d4d0edca5884	appliqué	staging: android: ashmem: Fix mmap size validation	
+0e215a3638f6	appliqué	drivers/tty: add error handling for pcmcia_loop_config	
+68fc12437bb3	appliqué	media: tm6000: add error handling for dvb_register_adapter	
+22b6598d3474	appliqué	ALSA: hda: Add AZX_DCAPS_PM_RUNTIME for AMD Raven Ridge	
+72233116f96d	appliqué	net: phy: xgmiitorgmii: Check read_status results	
+9d57fa81b2e4	appliqué	ath10k: protect ath10k_htt_rx_ring_free with rx_ring.lock	
+a5a849c9e8a6	appliqué	net: phy: xgmiitorgmii: Check phy_driver ready before accessing	
+7b4a09d167eb	appliqué	drm/sun4i: Fix releasing node when enumerating enpoints	
+f204945c20f9	appliqué	rndis_wlan: potential buffer overflow in rndis_wlan_auth_indication()	
+afeeecc76443	appliqué	wlcore: Add missing PM call for wlcore_cmd_wait_for_event_or_timeout()	
+2d95fb1df3bb	appliqué	ARM: mvebu: declare asm symbols as character arrays in pmsu.c	
+24ae7dcad377	appliqué	HID: hid-ntrig: add error handling for sysfs_create_group	
+5a206f159320	appliqué	perf/x86/intel/lbr: Fix incomplete LBR call stack	
+0c603de17d02	appliqué	scsi: bnx2i: add error handling for ioremap_nocache	
+4fa0de88105f	appliqué	scsi: megaraid_sas: Update controller info during resume	
+64e5837e85c7	appliqué	EDAC, i7core: Fix memleaks and use-after-free on probe and remove	
+dfbf508f3151	appliqué	ASoC: dapm: Fix potential DAI widget pointer deref when linking DAIs	
+f5b9595f033c	appliqué	module: exclude SHN_UNDEF symbols from kallsyms api	
+78448534ff1c	appliqué	gpio: Fix wrong rounding in gpio-menz127	
+cacafc212394	appliqué	nfsd: fix corrupted reply to badly ordered compound	
+b9ce6bd2971d	appliqué	EDAC: Fix memleak in module init error path	
+a5f1735d55e7	appliqué	ARM: dts: dra7: fix DCAN node addresses	
+3da4db1dfc21	appliqué	floppy: Do not copy a kernel pointer to user memory in FDGETPRM ioctl	
+c5347cd505fd	appliqué	tty: serial: lpuart: avoid leaking struct tty_struct	
+96d39a06a90e	appliqué	serial: cpm_uart: return immediately from console poll	
+072a82bd851a	appliqué	spi: tegra20-slink: explicitly enable/disable clock	
+228cc0731f40	appliqué	spi: sh-msiof: Fix invalid SPI use during system suspend	
+b6581ea1fd2e	appliqué	spi: sh-msiof: Fix handling of write value for SISTR register	
+afd56cd88311	appliqué	spi: rspi: Fix invalid SPI use during system suspend	
+49e062ef7bc1	appliqué	spi: rspi: Fix interrupted DMA transfers	
+720ecd058843	appliqué	regulator: fix crash caused by null driver data	
+49bdc6be0ffc	appliqué	USB: fix error handling in usb_driver_claim_interface()	
+08bbab4af04b	appliqué	USB: handle NULL config in usb_find_alt_setting()	
+b052d04aa3fe	appliqué	slub: make ->cpu_partial unsigned int	
+143c0f1ce18d	appliqué	media: uvcvideo: Support realtek's UVC 1.5 device	
+a2ecf4329fe1	appliqué	USB: usbdevfs: sanitize flags more	
+35d7a3bb6d5d	appliqué	USB: usbdevfs: restore warning for nonsensical flags	
+5c82d4a60c2f	appliqué	Revert "usb: cdc-wdm: Fix a sleep-in-atomic-context bug in service_outstanding_interrupt()"	
+56d298ab32fc	appliqué	USB: remove LPM management from usb_driver_claim_interface()	
+aa749266a940	appliqué	Input: elantech - enable middle button of touchpad on ThinkPad P72	
+94b7698c3d23	appliqué	IB/srp: Avoid that sg_reset -d ${srp_device} triggers an infinite loop	
+98ed866e260d	appliqué	IB/hfi1: Invalid user input can result in crash	
+b2e232022a95	appliqué	IB/hfi1: Fix context recovery when PBC has an UnsupportedVL	
+3d04174b0bcf	appliqué	scsi: target: iscsi: Use bin2hex instead of a re-implementation	
+61b5997ba333	appliqué	serial: imx: restore handshaking irq for imx1	
+7eb3b86dc7f0	appliqué	IB/hfi1: Fix SL array bounds check	
+bc769c0148cd	appliqué	arm64: KVM: Tighten guest core register access from userspace	
+3a282476161c	déjà présent (identique)	ext4: never move the system.data xattr out of the inode body	git am : patch déjà appliqué
+c92f3fd58489	appliqué	qed: Wait for ready indication before rereading the shmem	
+6972b6dfe7c8	appliqué	qed: Wait for MCP halt and resume commands to take place	
+6ad98847580c	appliqué	thermal: of-thermal: disable passive polling when thermal zone is disabled	
+44b4ae824845	appliqué	net: hns: fix length and page_offset overflow when CONFIG_ARM64_64K_PAGES	
+58c29919644d	appliqué	net: hns: fix skb->truesize underestimation	
+17c3ad93576e	appliqué	e1000: check on netif_running() before calling e1000_up()	
+1158961a593e	appliqué	e1000: ensure to free old tx/rx rings in set_ringparam()	
+fc63de901ec7	appliqué	hwmon: (ina2xx) fix sysfs shunt resistor read access	
+8ccd9e428f39	appliqué	hwmon: (adt7475) Make adt7475_read_word() return errors	
+d79d8b599188	appliqué	drm/amdgpu: Enable/disable gfx PG feature in rlc safe mode	
+2c83e77a3e35	appliqué	drm/amdgpu: Update power state at the end of smu hw_init.	
+e757c1e6e71b	appliqué (conflit résolu)	arm/arm64: smccc-1.1: Make return values unsigned long	SMCCC 1.1 : registres en unsigned long et a0 en (u32), reporté sur les macros SMCCC_REG de l'ACK (clang)
+4f689d02c0bf	appliqué (conflit résolu)	arm/arm64: smccc-1.1: Handle function result as parameters	SMCCC 1.1 : résultats de fonction évalués avant les registres (__aN), reporté sur SMCCC_REG (ACK, clang)
+563f2d01a1e8	appliqué	i2c: i801: Allow ACPI AML access I/O ports not reserved for SMBus	
+53819c17ecbe	appliqué	arm64: KVM: Sanitize PSTATE.M when being set from userspace	
+ec964c3c0045	appliqué	media: v4l: event: Prevent freeing event subscriptions while accessed	
+cdd48f386d7e	appliqué	Linux 4.9.131	
+ab0721893efd	appliqué	serial: mvebu-uart: Fix reporting of effective CSIZE to userspace	
+e7038f8eca7d	appliqué	time: Introduce jiffies64_to_nsecs()	
+0f9a80757252	appliqué	mac80211: Run TXQ teardown code before de-registering interfaces	
+59cce405706a	appliqué	KVM: PPC: Book3S HV: Don't truncate HPTE index in xlate function	
+167c4b4f4195	appliqué	mac80211: correct use of IEEE80211_VHT_CAP_RXSTBC_X	
+4bc130273f9c	appliqué	mac80211_hwsim: correct use of IEEE80211_VHT_CAP_RXSTBC_X	
+0cf963078ad5	appliqué	gpio: adp5588: Fix sleep-in-atomic-context bug	
+7c10ec1ddde1	appliqué	mac80211: mesh: fix HWMP sequence numbering to follow standard	
+5640e04fdc59	appliqué	net: hns: add netif_carrier_off before change speed and duplex	
+df19dc0390c7	appliqué	cfg80211: nl80211_update_ft_ies() to validate NL80211_ATTR_IE	
+3bb227b514ac	appliqué	gpio: Fix crash due to registration race	
+a0890a027250	appliqué	ARC: atomics: unbork atomic_fetch_##op()	
+26e2f55d1be0	appliqué	RAID10 BUG_ON in raise_barrier when force is true and conf->barrier is 0	
+46ceebc6a43c	appliqué	i2c: uniphier: issue STOP only for last message or I2C_M_STOP	
+c7eff55ddf1c	appliqué	i2c: uniphier-f: issue STOP only for last message or I2C_M_STOP	
+d3e419fb1a28	appliqué	net: cadence: Fix a sleep-in-atomic-context bug in macb_halt_tx()	
+34acac497b82	appliqué	fs/cifs: don't translate SFM_SLASH (U+F026) to backslash	
+b699bcb6c809	appliqué	cfg80211: fix a type issue in ieee80211_chandef_to_operating_class()	
+27272872f89c	appliqué	mac80211: fix a race between restart and CSA flows	
+2900bcc1b151	appliqué	mac80211: Fix station bandwidth setting after channel switch	
+57eff4d1c1e0	appliqué	mac80211: don't Tx a deauth frame if the AP forbade Tx	
+161a426a5065	appliqué	mac80211: shorten the IBSS debug messages	
+ef645b122e0a	appliqué	tools/vm/slabinfo.c: fix sign-compare warning	
+4beeb1128753	appliqué	tools/vm/page-types.c: fix "defined but not used" warning	
+00a28d94f99c	appliqué	mm: madvise(MADV_DODUMP): allow hugetlbfs pages	
+86d2b2f2eb21	appliqué	HID: add support for Apple Magic Keyboards	
+185261d7dd77	appliqué	usb: gadget: fotg210-udc: Fix memory leak of fotg210->ep[i]	
+a80e03b6c0e0	appliqué	HID: hid-saitek: Add device ID for RAT 7 Contagion	
+6040d231deea	appliqué	perf evsel: Fix potential null pointer dereference in perf_evsel__new_idx()	
+bce26ed05498	appliqué	perf probe powerpc: Ignore SyS symbols irrespective of endianness	
+2be8dc1994bb	appliqué	RDMA/ucma: check fd type in ucma_migrate_id()	
+1edf322a35f7	appliqué	USB: yurex: Check for truncation in yurex_read()	
+4483073ed3ff	appliqué	nvmet-rdma: fix possible bogus dereference under heavy load	
+338caef79028	appliqué	net/mlx5: Consider PCI domain in search for next dev	
+6a60c74a6877	appliqué	drm/nouveau/TBDdevinit: don't fail when PMU/PRE_OS is missing from VBIOS	
+ba650e7b6bca	appliqué	dm raid: fix rebuild of specific devices by updating superblock	
+7a0ee61df2d4	appliqué	fs/cifs: suppress a string overflow warning	
+3013499e8c1f	appliqué	net: ena: fix driver when PAGE_SIZE == 64kB	
+67c5d1e50a0a	appliqué	perf/x86/intel: Add support/quirk for the MISPREDICT bit on Knights Landing CPUs	
+a9537dbf7cc2	appliqué	dm thin metadata: try to avoid ever aborting transactions	
+0f48ac157181	appliqué	arch/hexagon: fix kernel/dma.c build warning	
+3c751807c9d2	appliqué	hexagon: modify ffs() and fls() to return int	
+d7ce4d564815	appliqué	arm64: jump_label.h: use asm_volatile_goto macro instead of "asm goto"	
+9fcb4509c99c	appliqué	r8169: Clear RTL_FLAG_TASK_*_PENDING when clearing RTL_FLAG_TASK_ENABLED	
+743f4a27e13e	appliqué	s390/qeth: use vzalloc for QUERY OAT buffer	
+82e9788a6934	appliqué	s390/qeth: don't dump past end of unknown HW header	
+3466db7bf72e	appliqué	cifs: read overflow in is_valid_oplock_break()	
+9e72ba07a630	appliqué	xen/manage: don't complain about an empty value in control/sysrq node	
+a571f897aa59	appliqué	xen: avoid crash in disable_hotplug_cpu	
+7f9787c06551	appliqué	xen: fix GCC warning and remove duplicate EVTCHN_ROW/EVTCHN_COL usage	
+8e9817c6ee3f	appliqué	sysfs: Do not return POSIX ACL xattrs via listxattr	
+575399119b11	appliqué	smb2: fix missing files in root share directory listing	
+685a8f97735c	appliqué	ALSA: hda/realtek - Cannot adjust speaker's volume on Dell XPS 27 7760	
+2ba794f9cc1d	appliqué	crypto: qat - Fix KASAN stack-out-of-bounds bug in adf_probe()	
+d49c7bb74ac6	appliqué	crypto: mxs-dcp - Fix wait logic on chan threads	
+e88ca677f325	appliqué	gpiolib: Free the last requested descriptor	
+3c5dc3f313cf	appliqué	proc: restrict kernel stack dumps to root	
+29b4641c9f7b	appliqué	ocfs2: fix locking for res->tracking and dlm->tracking_list	
+28e689148eee	appliqué	dm thin metadata: fix __udivdi3 undefined on 32-bit	
+3622426cc93a	appliqué	Linux 4.9.132	
+e308fb9f145a	appliqué	mm/vmstat.c: skip NR_TLB_REMOTE_FLUSH* properly	
+22feb4d4f454	appliqué	fbdev/omapfb: fix omapfb_memory_read infoleak	
+2962761863cb	appliqué	xen-netback: fix input validation in xenvif_set_hash_mapping()	
+9f14d89a1316	appliqué	x86/vdso: Fix asm constraints on vDSO syscall fallbacks	
+1bdd5e26bf24	appliqué	x86/vdso: Fix vDSO syscall fallback asm constraint regression	
+4c4cad25a9a6	appliqué	PCI: Reprogram bridge prefetch registers on resume	
+e487b5a79059	appliqué	mac80211: fix setting IEEE80211_KEY_FLAG_RX_MGMT for AP mode keys	
+75b66cc00943	appliqué (conflit auto : lignes amont déjà présentes)	PM / core: Clear the direct_complete flag on errors	drivers/base/power/main.c
+8bf0cc33eddc	appliqué	dm cache metadata: ignore hints array being too small during resize	
+47c085c51d35	appliqué	dm cache: fix resize crash if user doesn't reload cache table	
+90a7afb91bf0	appliqué	xhci: Add missing CAS workaround for Intel Sunrise Point xHCI	
+343ec21925bc	appliqué	usb: xhci-mtk: resume USB3 roothub first	
+71ef91bfe864	appliqué	USB: serial: simple: add Motorola Tetra MTP6550 id	
+381d8ecd1058	appliqué	tty: Drop tty->count on tty_reopen() failure	
+a57f5010e8e7	appliqué	of: unittest: Disable interrupt node tests for old world MAC systems	
+b469713e0c0c	déjà présent (forme Android/MediaTek)	ext4: add corruption check in ext4_xattr_set_entry()	CVE-2018-10879 : ext4_xattr_set_entry() vérifie déjà next >= s->end (ext4 plus récent dans l'ACK)
+0050338e0d3c	déjà présent (forme Android/MediaTek)	ext4: always verify the magic number in xattr blocks	auto : lignes amont déjà dans fs/ext4/xattr.c
+35b80e75a642	appliqué	cgroup: Fix deadlock in cpu hotplug path	
+bbb4cc291ccd	appliqué	ath10k: fix use-after-free in ath10k_wmi_cmd_send_nowait	
+0e9b8dfbc3f6	appliqué	ath10k: fix kernel panic issue during pci probe	
+d3d39d256e52	appliqué	powerpc/fadump: Return error when fadump registration fails	
+e82f7903a6b5	appliqué	ARC: clone syscall to setp r25 as thread pointer	
+3a8304b7ad2e	appliqué	x86/mm: Expand static page table for fixmap space	
+a87e1bd5d8f7	ignoré (conflit hors code compilé)	f2fs: fix invalid memory access	fs/f2fs/checkpoint.c
+9d66949b1a16	appliqué	ucma: fix a use-after-free in ucma_resolve_ip()	
+4b934d68ea13	appliqué	ubifs: Check for name being NULL while mounting	
+25f15a928344	appliqué	ath10k: fix scan crash due to incorrect length calculation	
+fcbd4cc28b19	appliqué	ebtables: arpreply: Add the standard target sanity check	
+0fd0aa780015	appliqué	x86/fpu: Remove use_eager_fpu()	
+60696d91bbd6	appliqué	x86/fpu: Remove struct fpu::counter	
+de8e1e51fd41	appliqué	Revert "perf: sync up x86/.../cpufeatures.h"	
+62dd223bec26	appliqué	x86/fpu: Finish excising 'eagerfpu'	
+deb3303f665b	appliqué	Linux 4.9.133	
+931c5e88ed73	appliqué	ASoC: wm8804: Add ACPI support	
+92110f1281e7	appliqué	ASoC: sigmadsp: safeload should not have lower byte limit	
+b5be6fb6ad4d	appliqué	selftests/efivarfs: add required kernel configs	
+7c73f0df4387	appliqué	selftests: memory-hotplug: add required configs	
+8e1233358505	appliqué	mfd: omap-usb-host: Fix dts probe of children	
+1a5d197564ba	appliqué	scsi: iscsi: target: Don't use stack buffer for scatterlist	
+fccf159614b2	appliqué	scsi: qla2xxx: Fix an endian bug in fcpcmd_is_corrupted()	
+f7b72327db31	appliqué	sound: enable interrupt after dma buffer initialization	
+a2e81ee80f40	appliqué	stmmac: fix valid numbers of unicast filter entries	
+4947996d9de5	appliqué	net: macb: disable scatter-gather for macb on sama5d3	
+3f724feca29a	appliqué	ARM: dts: at91: add new compatibility string for macb on sama5d3	
+08d2bf58afde	appliqué	x86/kvm/lapic: always disable MMIO interface in x2APIC mode	
+5b48d1a8ccad	appliqué	drm/amdgpu: Fix SDMA HQD destroy error on gfx_v7	
+a295ff4bff4c	déjà présent (identique)	ext4: Fix error code in ext4_xattr_set_entry()	git am : patch déjà appliqué
+44ccf71e9c13	appliqué	mm/vmstat.c: fix outdated vmstat_text	
+9f5095da2d8d	appliqué	mach64: detect the dot clock divider correctly on sparc	
+06dc8b34bb44	appliqué	perf script python: Fix export-to-postgresql.py occasional failure	
+c97b64bd3571	appliqué	i2c: i2c-scmi: fix for i2c_smbus_write_block_data	
+d5b33599b3fe	appliqué	xhci: Don't print a warning when setting link state for disabled ports	
+b2be15bb02b9	appliqué	bnxt_en: Fix TX timeout during netpoll.	
+22ad29373a7e	appliqué	bonding: avoid possible dead-lock	
+22c1e77811ae	appliqué	ip6_tunnel: be careful when accessing the inner header	
+2b7b2c4218a8	appliqué	ip_tunnel: be careful when accessing the inner header	
+c476a441f873	appliqué	ipv4: fix use-after-free in ip_cmsg_recv_dstaddr()	
+4ceb29cf0ee1	appliqué	ipv6: take rcu lock in rawv6_send_hdrinc()	
+d7720f5c2960	appliqué	net: dsa: bcm_sf2: Call setup during switch resume	
+af26ef11071a	appliqué	net: hns: fix for unmapping problem when SMMU is on	
+8d59c3a6376b	appliqué	net: ipv4: update fnhe_pmtu when first hop's MTU changes	
+ea14355a0066	appliqué	net/ipv6: Display all addresses in output of /proc/net/if_inet6	
+a7fa1e6b8cb3	appliqué	netlabel: check for IPV4MASK in addrinfo_get	
+91c41e3f77fb	appliqué	net/usb: cancel pending work when unbinding smsc75xx	
+902730f1ad06	appliqué	qlcnic: fix Tx descriptor corruption on 82xx devices	
+fef73013733f	appliqué	qmi_wwan: Added support for Gemalto's Cinterion ALASxx WWAN interface	
+68d6d3723acd	appliqué	team: Forbid enslaving team device to itself	
+7f10b7e254b3	appliqué	net: dsa: bcm_sf2: Fix unbind ordering	
+353825f2eae2	appliqué	net: mvpp2: Extract the correct ethtype from the skb for tx csum offload	
+c3291efb53cb	appliqué	net: systemport: Fix wake-up interrupt race during resume	
+069bb7fd6a27	appliqué	rtnl: limit IFLA_NUM_TX_QUEUES and IFLA_NUM_RX_QUEUES to 4096	
+4cded0a3a9c6	appliqué	tcp/dccp: fix lockdep issue when SYN is backlogged	
+6b2f36b94a0d	appliqué	inet: make sure to grab rcu_read_lock before using ireq->ireq_opt	
+7fca77153c5c	appliqué	inet: frags: change inet_frags_init_net() return value	
+2ffb1c363dfa	appliqué	inet: frags: add a pointer to struct netns_frags	
+bbf6d8604475	appliqué	inet: frags: refactor ipfrag_init()	
+dae73e7d73fc	appliqué	inet: frags: refactor ipv6_frag_init()	
+1b363f81f38f	appliqué	inet: frags: refactor lowpan_net_frag_init()	
+620018dd713d	appliqué	ipv6: export ip6 fragments sysctl to unprivileged users	
+fb19348bd709	appliqué	rhashtable: add schedule points	
+23ce9c5ce704	appliqué	inet: frags: use rhashtables for reassembly units	
+ea7496f018ad	appliqué	inet: frags: remove some helpers	
+49106f36c253	appliqué	inet: frags: get rif of inet_frag_evicting()	
+965e2adc5850	appliqué	inet: frags: remove inet_frag_maybe_warn_overflow()	
+7f6170683223	appliqué	inet: frags: break the 2GB limit for frags storage	
+7a87ec92d36a	appliqué	inet: frags: do not clone skb in ip_expire()	
+cbc45497b39c	appliqué	ipv6: frags: rewrite ip6_expire_frag_queue()	
+6060bcdcffab	appliqué	rhashtable: reorganize struct rhashtable layout	
+5b68fda0a455	appliqué	inet: frags: reorganize struct netns_frags	
+316986fe4dca	appliqué	inet: frags: get rid of ipfrag_skb_cb/FRAG_CB	
+d838486621c3	appliqué	inet: frags: fix ip6frag_low_thresh boundary	
+82f36cbc7459	appliqué	ip: discard IPv4 datagrams with overlapping segments.	
+f5d17b55f4be	appliqué	net: speed up skb_rbtree_purge()	
+871695951ec6	appliqué	net: modify skb_rbtree_purge to return the truesize of all purged skbs.	
+a8444b1ccb20	appliqué	ipv6: defrag: drop non-last frags smaller than min mtu	
+791521e2e377	appliqué	net: pskb_trim_rcsum() and CHECKSUM_COMPLETE are friends	
+b475cf3bf1e8	appliqué (conflit résolu)	net: add rb_to_skb() and other rb tree helpers	rb_to_skb() déjà présent : seules les macros skb_rb_* ajoutées
+10043954eada	appliqué	ip: use rb trees for IP frag queue.	
+e9e4ac488c01	appliqué	ip: add helpers to process in-order fragments faster.	
+4077ddb2cb48	appliqué	ip: process in-order fragments efficiently	
+85e59af99a7f	appliqué	ip: frags: fix crash in ip_do_fragment()	
+5a0f340f5ad6	appliqué	ipv4: frags: precedence bug in ip_expire()	
+1d326a94d103	appliqué	Linux 4.9.134	
+7c9a83360f1c	appliqué	media: af9035: prevent buffer overflow on write	
+92017857d656	appliqué	batman-adv: Fix segfault when writing to throughput_override	
+78364cd96c84	appliqué	batman-adv: Fix segfault when writing to sysfs elp_interval	
+2231ff0dcb30	appliqué	batman-adv: Prevent duplicated nc_node entry	
+49580031565e	appliqué	batman-adv: Prevent duplicated softif_vlan entry	
+8b7a4dffc2cb	appliqué	batman-adv: Prevent duplicated global TT entry	
+450db3d8652e	appliqué	batman-adv: Prevent duplicated tvlv handler	
+0b296f3d042a	appliqué	batman-adv: fix backbone_gw refcount on queue_work() failure	
+e7d758638117	appliqué	batman-adv: fix hardif_neigh refcount on queue_work() failure	
+8c15d1a5f909	appliqué	clocksource/drivers/ti-32k: Add CLOCK_SOURCE_SUSPEND_NONSTOP flag for non-am43 SoCs	
+83ab0f02992a	appliqué	scsi: ibmvscsis: Fix a stringop-overflow warning	
+89c3a401791e	appliqué	scsi: ibmvscsis: Ensure partition name is properly NUL terminated	
+aedfb5c77e84	appliqué	Input: atakbd - fix Atari keymap	
+e6c1b1555f98	appliqué	Input: atakbd - fix Atari CapsLock behaviour	
+51ddce702e50	appliqué	ravb: do not write 1 to reserved bits	
+c4cd341ac13b	appliqué	drm: mali-dp: Call drm_crtc_vblank_reset on device init	
+0c3973c7ca22	appliqué	scsi: sd: don't crash the host on invalid commands	
+39f289c179b4	appliqué	net/mlx4: Use cpumask_available for eq->affinity_mask	
+42c08c3675b0	appliqué	powerpc/tm: Fix userspace r13 corruption	
+16b07d3af640	appliqué	powerpc/tm: Avoid possible userspace r1 corruption on reclaim	
+792a9648aebf	appliqué	iommu/amd: Return devid as alias for ACPI HID devices	
+e34bd9a96704	déjà présent (identique)	mremap: properly flush TLB before releasing the page	git am : patch déjà appliqué
+3309ad2e08a5	appliqué	mm: Preserve _PAGE_DEVMAP across mprotect() calls	
+dc3f9ba43933	appliqué	netfilter: check for seqadj ext existence before adding it in nf_nat_setup_info	
+e4450e391ae3	appliqué	ARC: build: Get rid of toolchain check	
+5d4c6663ebf6	appliqué	ARC: build: Don't set CROSS_COMPILE in arch's Makefile	
+f01e8fee66fd	appliqué	HID: quirks: fix support for Apple Magic Keyboards	
+92811e276799	appliqué	usb: gadget: serial: fix oops when data rx'd after close	
+dbf9a0532e02	non repris (volontaire)	sched/cputime: Convert kcpustat to nsecs	série 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (désactivé chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime
+74d6f8eac6ea	non repris (volontaire)	macintosh/rack-meter: Convert cputime64_t use to u64	série 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (désactivé chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime
+034cd8a20fac	non repris (volontaire)	sched/cputime: Increment kcpustat directly on irqtime account	série 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (désactivé chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime
+aee0c9e837c2	non repris (volontaire)	sched/cputime: Fix ksoftirqd cputime accounting regression	série 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (désactivé chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime
+7dd55897f23c	déjà présent (identique)	ext4: avoid running out of journal credits when appending to an inline file	git am : patch déjà appliqué
+68747bc054d3	appliqué	HV: properly delay KVP packets when negotiation is in progress	
+b24c9962b179	appliqué	Linux 4.9.135	
+89cb86e9d42e	appliqué	xfrm: Validate address prefix lengths in the xfrm selector.	
+7faa369673bd	appliqué	xfrm6: call kfree_skb when skb is toobig	
+1e97d6b1f751	appliqué	mac80211: Always report TX status	
+411a3f2588d1	appliqué	cfg80211: reg: Init wiphy_idx in regulatory_hint_core()	
+147953b66723	appliqué	mac80211: fix pending queue hang due to TX_DROP	
+48741cac1a88	appliqué	cfg80211: Address some corner cases in scan result channel updating	
+e36e7b024a86	appliqué	mac80211: TDLS: fix skb queue/priority assignment	
+27171e1e33ce	appliqué	ARM: 8799/1: mm: fix pci_ioremap_io() offset check	
+de500b94790b	appliqué	xfrm: validate template mode	
+8114c2b28065	appliqué	ARM: dts: BCM63xx: Fix incorrect interrupt specifiers	
+05bdb6d96456	appliqué	net: macb: Clean 64b dma addresses if they are not detected	
+fce84f75e518	appliqué	soc: fsl: qbman: qman: avoid allocating from non existing gen_pool	
+83eb6dd71d24	appliqué	soc: fsl: qe: Fix copy/paste bug in ucc_get_tdm_sync_shift()	
+6e93cd9e17e0	appliqué	nl80211: Fix possible Spectre-v1 for NL80211_TXRATE_HT	
+5dfa0f7fd953	appliqué	mac80211_hwsim: do not omit multicast announce of first added radio	
+83e158f93d66	appliqué	Bluetooth: SMP: fix crash in unpairing	
+864170047753	appliqué	pxa168fb: prepare the clock	
+9afd2a2dbb08	appliqué	qed: Avoid implicit enum conversion in qed_roce_mode_to_flavor	
+207928c63451	appliqué	qed: Avoid constant logical operation warning in qed_vf_pf_acquire	
+0da746188405	appliqué	asix: Check for supported Wake-on-LAN modes	
+4a0b24576e9d	appliqué	ax88179_178a: Check for supported Wake-on-LAN modes	
+6226d311cd15	appliqué	lan78xx: Check for supported Wake-on-LAN modes	
+2ee87afc5b9b	appliqué	sr9800: Check for supported Wake-on-LAN modes	
+abbb3f1081f3	appliqué	r8152: Check for supported Wake-on-LAN Modes	
+8a1e903398bf	appliqué	smsc75xx: Check for Wake-on-LAN modes	
+9752f87b5851	appliqué	smsc95xx: Check for Wake-on-LAN modes	
+4d0836664071	appliqué	perf/ring_buffer: Prevent concurent ring buffer access	
+c1db12c42ad3	appliqué	perf/x86/intel/uncore: Fix PCI BDF address of M3UPI on SKX	
+2cdc244ad907	appliqué	net: fec: fix rare tx timeout	
+d130c0b8b974	appliqué	declance: Fix continuation with the adapter identification message	
+063cc21634ce	appliqué	net: cxgb3_main: fix a missing-check bug	
+698f6acd22d3	appliqué	perf symbols: Fix memory corruption because of zero length symbols	
+de4c175c6359	appliqué	mm/memory_hotplug.c: fix overflow in test_pages_in_a_zone()	
+416ca41754e2	appliqué	MIPS: microMIPS: Fix decoding of swsp16 instruction	
+8ca11792acba	appliqué	MIPS: Handle non word sized instructions when examining frame	
+a7e08447c3d8	appliqué	scsi: aacraid: Fix typo in blink status	
+adb298bcf45e	déjà présent (identique)	f2fs: fix multiple f2fs_add_link() having same name for inline dentry	git am : patch déjà appliqué
+8c9e873c73b1	appliqué	igb: Remove superfluous reset to PHY and page 0 selection	
+ccebc75e2e51	appliqué	ACPI: sysfs: Make ACPI GPE mask kernel parameter cover all GPEs	
+9e431e0ca947	appliqué	PCI: Disable MSI for HiSilicon Hip06/Hip07 only in Root Port mode	
+08ae439c95d1	appliqué	i2c: bcm2835: Avoid possible NULL ptr dereference	
+2d4260b280d0	appliqué	efi/fb: Correct PCI_STD_RESOURCE_END usage	
+23e983e27aaf	appliqué	ipv6: set rt6i_protocol properly in the route when it is installed	
+c5a92c4b4b07	appliqué	platform/x86: acer-wmi: setup accelerometer when ACPI device was found	
+9fd3be2cbb16	appliqué	IB/ipoib: Do not warn if IPoIB debugfs doesn't exist	
+01acd933d618	appliqué	IB/core: Fix the validations of a multicast LID in attach or detach operations	
+0da0e5172995	appliqué	orangefs: off by ones in xattr size checks	
+e7d5fa96ef7b	appliqué	rxe: Fix a sleep-in-atomic bug in post_one_send	
+3cd731e952df	appliqué	nvme-pci: fix CMB sysfs file removal in reset path	
+e35f29044594	appliqué	net: phy: marvell: Limit 88m1101 autoneg errata to 88E1145 as well.	
+b06b7882f7b4	appliqué	net/mlx5: Fix command completion after timeout access invalid structure	
+2185dbac9e81	appliqué	tipc: Fix tipc_sk_reinit handling of -EAGAIN	
+2f48581af308	appliqué	tipc: fix a race condition of releasing subscriber object	
+3e6250bcd163	appliqué	bnxt_en: Don't use rtnl lock to protect link change logic in workqueue.	
+451d498b7b10	appliqué	ath10k: fix NAPI enable/disable symmetry for AHB interface	
+311058153732	appliqué	ARM: dts: bcm283x: Reserve first page for firmware	
+4b1cfa2e9db6	appliqué	btrfs: fiemap: Cache and merge fiemap extent before submit it to user	
+fa0b7f94ce43	appliqué	ata: sata_rcar: Handle return value of clk_prepare_enable	
+5cb2faefc12a	appliqué	reset: hi6220: Set module license so that it can be loaded	
+c375d28caa73	appliqué	ASoC: Intel: Skylake: Fix to parse consecutive string tkns in manifest	
+942630bb4c9e	appliqué	arch/sparc: increase CONFIG_NODES_SHIFT on SPARC64 to 5	
+fd500b357b81	appliqué	mac80211: fix TX aggregation start/stop callback race	
+f9f4be67be83	appliqué	libata: fix error checking in in ata_parse_force_one()	
+23bf0b4ab024	appliqué	net: ethernet: stmmac: Fix altr_tse_pcs SGMII Initialization	
+2ba5909c8c7b	appliqué	qlcnic: Fix tunnel offload for 82xx adapters	
+d58f0b059948	appliqué	x86/cpu/cyrix: Add alternative Device ID of Geode GX1 SoC	
+7b5407843691	appliqué	ARM: 8677/1: boot/compressed: fix decompressor header layout for v7-M	
+6b51100d8ac5	appliqué	gpu: ipu-v3: Fix CSI selection for VDIC	
+03a1d0be64ba	appliqué	elevator: fix truncation of icq_cache_name	
+30037edd16f4	appliqué	net: stmmac: ensure jumbo_frm error return is correctly checked for -ve value	
+f33ed8438676	appliqué	Btrfs: clear EXTENT_DEFRAG bits in finish_ordered_io	
+538f9d939030	appliqué	ufs: we need to sync inode before freeing it	
+8013d43a0bf1	appliqué	net/mlx5e: Fix fixpoint divide exception in mlx5e_am_stats_compare	
+6fdeb3e0bb1d	appliqué	ip6_tunnel: Correct tos value in collect_md mode	
+3d28f9a3aeee	appliqué	net/mlx5: Fix driver load error flow when firmware is stuck	
+4d19a505207e	appliqué	perf evsel: Fix probing of precise_ip level for default cycles event	
+2cdc70f39bda	appliqué	perf probe: Fix probe definition for inlined functions	
+3dde6c974c50	appliqué	net/mlx5: Fix health work queue spin lock to IRQ safe	
+3dd952b45b3b	appliqué	usb: renesas_usbhs: gadget: fix spin_lock_init() for &uep->lock	
+7bbba613477f	appliqué	usb: renesas_usbhs: gadget: fix unused-but-set-variable warning	
+a34dcf51b8a6	appliqué	usb: dwc3: omap: remove IRQ_NOAUTOEN used with shared irq	
+503c394139c9	appliqué	clk: samsung: Fix m2m scaler clock on Exynos542x	
+7334e2856955	appliqué	ptr_ring: fix up after recent ptr_ring changes	
+c2c87f5bf212	appliqué	staging: wilc1000: Fix problem with wrong vif index	
+271b4a840228	appliqué	rds: ib: Fix missing call to rds_ib_dev_put in rds_ib_setup_qp	
+d0136b8acfee	appliqué	iio: adc: Revert "axp288: Drop bogus AXP288_ADC_TS_PIN_CTRL register modifications"	
+5f3005096fae	appliqué	qed: Warn PTT usage by wrong hw-function	
+855bf147245c	appliqué	ocfs2: fix deadlock caused by recursive locking in xattr	
+0ef75f51c5d5	appliqué	net: cdc_ncm: GetNtbFormat endian fix	
+54ad2bbe3480	appliqué	sctp: use right member as the param of list_for_each_entry	
+ddf39e0f3cc2	appliqué	ALSA: hda - No loopback on ALC299 codec	
+16bcf48aa374	appliqué	ath10k: convert warning about non-existent OTP board id to debug message	
+4a4d2c93ed19	appliqué	ipv6: fix cleanup ordering for ip6_mr failure	
+2e6474b25355	appliqué	IB/ipoib: Fix lockdep issue found on ipoib_ib_dev_heavy_flush	
+150b28b45a35	appliqué	IB/rxe: put the pool on allocation failure	
+4b7c09a5f74a	appliqué	nbd: only set MSG_MORE when we have more to send	
+a96406d43944	appliqué	mm/frame_vector.c: release a semaphore in 'get_vaddr_frames()'	
+d287f1dab98c	appliqué	IB/mlx5: Avoid passing an invalid QP type to firmware	
+9388bd235b27	appliqué	scsi: qla2xxx: Avoid double completion of abort command	
+1e6abb88d03e	appliqué	drm: bochs: Don't remove uninitialized fbdev framebuffer	
+78ba91de8325	appliqué	i40e: avoid NVM acquire deadlock during NVM update	
+9629cf8ef9ad	appliqué	Revert "IB/ipoib: Update broadcast object if PKey value was changed in index 0"	
+97d65c1b6e73	appliqué	Btrfs: incremental send, fix invalid memory access	
+c87dd592a766	appliqué	drm/msm: Fix possible null dereference on failure of get_pages()	
+dfdf8be7dcc2	appliqué	module: fix DEBUG_SET_MODULE_RONX typo	
+1680ca362dad	appliqué	iio: pressure: zpa2326: Remove always-true check which confuses gcc	
+65b05d03a578	appliqué	l2tp: remove configurable payload offset	
+5f6590d6fa99	appliqué	macsec: fix memory leaks when skb_to_sgvec fails	
+6279fc56944b	appliqué	perf/core: Fix locking for children siblings group read	
+a2b9a0def3e9	appliqué	cifs: Use ULL suffix for 64-bit constant	
+da92e8a2d986	appliqué	futex: futex_wake_op, do not fail on invalid op	
+dba8e960a541	appliqué	ALSA: hda - Fix incorrect usage of IS_REACHABLE()	
+acfbd2866fe9	appliqué	test_bpf: Fix testing with CONFIG_BPF_JIT_ALWAYS_ON=y on other arches	
+43bbab662dc9	appliqué	xen-netfront: Update features after registering netdev	
+24b71d1895f5	appliqué	sparc64: Fix regression in pmdp_invalidate().	
+8e697f95532d	appliqué	xen-netfront: Fix mismatched rtnl_unlock	
+8576adcc101d	appliqué	enic: do not overwrite error code	
+ba559a578e7f	appliqué	bonding: ratelimit failed speed/duplex update warning	
+f9dde4194610	appliqué	nvmet: fix space padding in serial number	
+f11f358460c9	appliqué	iio: buffer: fix the function signature to match implementation	
+72b33231a714	appliqué	x86/paravirt: Fix some warning messages	
+43832bec7647	appliqué	IB/mlx4: Fix an error handling path in 'mlx4_ib_rereg_user_mr()'	
+97d34e8ea071	appliqué	libertas: call into generic suspend code before turning off power	
+52f305530ab6	déjà présent (forme Android/MediaTek)	xhci: Fix USB3 NULL pointer dereference at logical disconnect.	auto : lignes amont déjà dans drivers/usb/host/xhci-hub.c
+2fc0fb03319a	appliqué	perf tests: Fix indexing when invoking subtests	
+fb1083d83fb5	appliqué	ARM: dts: imx53-qsb: disable 1.2GHz OPP	
+d9ec661f2dc8	appliqué	rxrpc: Don't check RXRPC_CALL_TX_LAST after calling rxrpc_rotate_tx_window()	
+2daa0b5ec296	appliqué	rxrpc: Only take the rwind and mtu values from latest ACK	
+7bdb3af6a953	appliqué	net: ena: fix NULL dereference due to untimely napi initialization	
+9dbac7caac2d	appliqué	fs/fat/fatent.c: add cond_resched() to fat_count_free_clusters()	
+31e29bafe914	appliqué	mtd: spi-nor: Add support for is25wp series chips	
+2edec22d1875	appliqué (conflit résolu)	Revert "netfilter: ipv6: nf_defrag: drop skb dst before queueing"	annulation stable de nf_defrag drop skb dst (repris dans l'ACK, problématique en 4.9) appliquée
+9a7f15eacc1f	appliqué	perf tools: Disable parallelism for 'make clean'	
+a4959af07741	appliqué	bridge: do not add port to router list when receives query with source 0.0.0.0	
+5f2d007016f3	appliqué	net: bridge: remove ipv6 zero address check in mcast queries	
+365212065872	appliqué	ipv6: mcast: fix a use-after-free in inet6_mc_check	
+510e6c3bd51a	appliqué	ipv6/ndisc: Preserve IPv6 control buffer if protocol error handlers are called	
+aa23c2207d29	appliqué	llc: set SOCK_RCU_FREE in llc_sap_add_socket()	
+f86c55c6d0d8	appliqué	net/ipv6: Fix index counter for unicast addresses in in6_dump_addrs	
+3628c3dddaf6	appliqué	net: sched: gred: pass the right attribute to gred_change_table_def()	
+f57ef24f811c	appliqué	net: socket: fix a missing-check bug	
+8b9a62c58d4d	appliqué	net: stmmac: Fix stmmac_mdio_reset() when building stmmac as modules	
+33424e7ca00c	appliqué	net: udp: fix handling of CHECKSUM_COMPLETE packets	
+01a2ff110120	appliqué	r8169: fix NAPI handling under high load	
+1b0bb7e515b2	appliqué	sctp: fix race on sctp_id2asoc	
+242e6f52a0cd	appliqué	vhost: Fix Spectre V1 vulnerability	
+f0223d1f78f5	appliqué	ethtool: fix a privilege escalation bug	
+210c21f1ffe1	appliqué	bonding: fix length of actor system	
+0376b839cc55	appliqué	net: drop skb on failure in ip_check_defrag()	
+0c49b5e584e0	appliqué	net: fix pskb_trim_rcsum_slow() with odd trim offset	
+9819741aeec7	appliqué	rtnetlink: Disallow FDB configuration for non-Ethernet device	
+ced272d8da20	appliqué	ip6_tunnel: Fix encapsulation layout	
+eba69ae2afef	appliqué	Revert "x86/mm: Expand static page table for fixmap space"	
+79d47dd686d0	appliqué	crypto: shash - Fix a sleep-in-atomic bug in shash_setkey_unaligned	
+29872c3eb6f7	appliqué	ahci: don't ignore result code of ahci_reset_controller()	
+ee74e3561a02	appliqué	gpio: mxs: Get rid of external API call	
+9bb68aaf6436	appliqué	xfs: truncate transaction does not modify the inobt	
+186c5856dc5a	appliqué	cachefiles: fix the race between cachefiles_bury_object() and rmdir(2)	
+4dd400eda5db	appliqué	ptp: fix Spectre v1 vulnerability	
+f1b2b8680bce	appliqué	drm/edid: Add 6 bpc quirk for BOE panel in HP Pavilion 15-n233sl	
+eacbd9c55f74	appliqué	RDMA/ucma: Fix Spectre v1 vulnerability	
+1fcfb1d41f8d	appliqué	IB/ucm: Fix Spectre v1 vulnerability	
+25c1b59c21dd	appliqué	cdc-acm: correct counting of UART states in serial state notification	
+4121be5950ea	appliqué	usb: gadget: storage: Fix Spectre v1 vulnerability	
+bdbb426f6e1c	appliqué	USB: fix the usbfs flag sanitization for control transfers	
+3ddf3c21ef27	appliqué	Input: elan_i2c - add ACPI ID for Lenovo IdeaPad 330-15IGM	
+bc1fccc7cd0a	appliqué	sched/fair: Fix throttle_list starvation with low CFS quota	
+4fad9fd1a6cc	appliqué	x86/percpu: Fix this_cpu_read()	
+b462075e089d	appliqué	x86/time: Correct the attribute on jiffies' definition	
+b0b77fb6c991	appliqué	net: fs_enet: do not call phy_stop() in interrupts	
+65cb24de03f1	appliqué	posix-timers: Sanitize overrun handling	
+0bb1a5e5aa17	appliqué	Linux 4.9.136	
+0d38b80894bf	appliqué	bcache: fix miss key refill->end in writeback	
+4f173e6911cd	appliqué	hwmon: (pmbus) Fix page count auto-detection.	
+6a6b41642a76	appliqué	jffs2: free jffs2_sb_info through jffs2_kill_sb()	
+c52a368de213	appliqué	pcmcia: Implement CLKRUN protocol disabling for Ricoh bridges	
+9aba7ddfc8cd	appliqué	ipmi: Fix timer race with module unload	
+662d2aef4cb1	appliqué	parisc: Fix address in HPMC IVA	
+d35b161d487e	appliqué	parisc: Fix map_pages() to not overwrite existing pte entries	
+17f333be9a67	appliqué	ALSA: hda - Add quirk for ASUS G751 laptop	
+3c09158a2d92	appliqué	ALSA: hda - Fix headphone pin config for ASUS G751	
+fe8d670a78aa	appliqué	ALSA: hda - Add mic quirk for the Lenovo G50-30 (17aa:3905)	
+edc9af2c38d3	appliqué	ALSA: ca0106: Disable IZD on SB0570 DAC to fix audio pops	
+66fe51cb35d9	appliqué	x86/speculation: Enable cross-hyperthread spectre v2 STIBP mitigation	
+382a263d6c04	appliqué	x86/corruption-check: Fix panic in memory_corruption_check() when boot option without value is provided	
+b0c054507634	appliqué	x86/speculation: Support Enhanced IBRS on future CPUs	
+f6bded890421	appliqué	bpf: do not blindly change rlimit in reuseport net selftest	
+9527bd3290b9	appliqué	Revert "perf tools: Fix PMU term format max value calculation"	
+9da255bbd108	appliqué	xfrm: policy: use hlist rcu variants on insert	
+4c04e74c6933	appliqué	sparc: Fix single-pcr perf event counter management.	
+6dc8764a316c	appliqué	sparc64: Make proc_id signed.	
+2530be540188	appliqué	sched/fair: Fix the min_vruntime update logic in dequeue_entity()	
+1c696b9797fb	appliqué	perf cpu_map: Align cpu map synthesized events properly.	
+52188404e175	appliqué	x86/fpu: Remove second definition of fpu in __fpu__restore_sig()	
+a99c6f69f8cb	appliqué	net: qla3xxx: Remove overflowing shift statement	
+d38bd3e9a880	appliqué	selftests: ftrace: Add synthetic event syntax testcase	
+8b110ef876ea	appliqué	i2c: rcar: cleanup DMA for all kinds of failure	
+81301a15a267	appliqué	locking/lockdep: Fix debug_locks off performance problem	
+0915f56236d9	appliqué	ataflop: fix error handling during setup	
+a2b544ef5e0f	appliqué	swim: fix cleanup on setup error	
+5f008fce1f27	appliqué	tun: Consistently configure generic netdev params via rtnetlink	
+fccb699cf361	appliqué	s390/sthyi: Fix machine name validity indication	
+912d51f20c55	appliqué	hwmon: (pwm-fan) Set fan speed to 0 on suspend	
+401bd18c7e41	appliqué	perf tools: Free temporary 'sys' string in read_event_files()	
+0af42d6754f3	appliqué	perf tools: Cleanup trace-event-info 'tdata' leak	
+af414f3468ed	appliqué	perf strbuf: Match va_{add,copy} with va_end	
+7e3f33199020	appliqué	mmc: sdhci-pci-o2micro: Add quirk for O2 Micro dev 0x8620 rev 0x01	
+3ba19f9676c5	appliqué	iwlwifi: pcie: avoid empty free RB queue	
+a25ba419eaf1	appliqué	x86/olpc: Indicate that legacy PC XO-1 platform should not register RTC	
+36cce138cad8	appliqué	cpufreq: dt: Try freeing static OPPs only if we have added them	
+21a5ff20aff5	appliqué	Bluetooth: btbcm: Add entry for BCM4335C0 UART bluetooth	
+24395d641d02	appliqué	x86: boot: Fix EFI stub alignment	
+8bcc01ae1a4a	appliqué	pinctrl: qcom: spmi-mpp: Fix err handling of pmic_mpp_set_mux	
+d5b19a438713	appliqué	brcmfmac: fix for proper support of 160MHz bandwidth	
+6c8b1db819e6	appliqué	kprobes: Return error if we fail to reuse kprobe instead of BUG_ON()	
+0b915343462e	appliqué	ACPI / LPSS: Add alternative ACPI HIDs for Cherry Trail DMA controllers	
+dbd7095badc3	appliqué	pinctrl: qcom: spmi-mpp: Fix drive strength setting	
+3b95f6491236	appliqué	pinctrl: spmi-mpp: Fix pmic_mpp_config_get() to be compliant	
+989335821b0e	appliqué	pinctrl: ssbi-gpio: Fix pm8xxx_pin_config_get() to be compliant	
+4444593f461c	appliqué	ixgbevf: VF2VF TCP RSS	
+771d03e4483e	appliqué	ath10k: schedule hardware restart if WMI command times out	
+3f413ec098fd	appliqué	cgroup, netclassid: add a preemption point to write_classid	
+57589690d423	appliqué	scsi: esp_scsi: Track residual for PIO transfers	
+b18de4e8bdc5	appliqué	scsi: megaraid_sas: fix a missing-check bug	
+2537f9adf511	appliqué	RDMA/core: Do not expose unsupported counters	
+a48a3a51cfd6	appliqué	IB/ipoib: Clear IPCB before icmp_send	
+e269ca1835c6	appliqué	tpm: suppress transmit cmd error logs when TPM 1.2 is disabled/deactivated	
+2b049a3ba40d	appliqué	VMCI: Resource wildcard match fixed	
+e9f5a3d1139e	appliqué	usb: gadget: udc: atmel: handle at91sam9rl PMC	
+44760d8aa8a4	appliqué	ext4: fix argument checking in EXT4_IOC_MOVE_EXT	
+4e1fabddcfcf	appliqué	MD: fix invalid stored role for a disk	
+a8433138c41b	appliqué	PCI/MSI: Warn and return error if driver enables MSI/MSI-X twice	
+2048b787ca65	appliqué	coresight: etb10: Fix handling of perf mode	
+ffa426d68b5b	appliqué	crypto: caam - fix implicit casts in endianness helpers	
+ae893bc61c0f	appliqué	usb: chipidea: Prevent unbalanced IRQ disable	
+479cd3e8ad91	appliqué	driver/dma/ioat: Call del_timer_sync() without holding prep_lock	
+e2274c76f8ea	appliqué	uio: ensure class is registered before devices	
+93feaa02a89b	appliqué	scsi: lpfc: Correct soft lockup when running mds diagnostics	
+ba277fec4cc5	appliqué	signal: Always deliver the kernel's SIGKILL and SIGSTOP to a pid namespace init	
+e0362b434cb0	appliqué	dmaengine: dma-jz4780: Return error if not probed from DT	
+430c63454a7f	appliqué	ALSA: hda: Check the non-cached stream buffers more explicitly	
+b5c33c25d23b	appliqué	ARM: dts: exynos: Remove "cooling-{min|max}-level" for CPU nodes	
+744ed1c1673f	appliqué	arm: dts: exynos: Add missing cooling device properties for CPUs	
+0c0996cd5a27	appliqué	ARM: dts: exynos: Convert exynos5250.dtsi to opp-v2 bindings	
+add34b8660fa	appliqué	ARM: dts: exynos: Mark 1 GHz CPU OPP as suspend OPP on Exynos5250	
+9b4cb632e1af	appliqué	xen-swiotlb: use actually allocated size on check physical continuous	
+5a5bc211dbbb	appliqué	tpm: Restore functionality to xen vtpm driver.	
+c29b0cc6378d	appliqué	xen/blkfront: avoid NULL blkfront_info dereference on device removal	
+95f5d10f99b4	appliqué	xen: fix race in xen_qlock_wait()	
+00893f46a2bd	appliqué	xen: make xen_qlock_wait() nestable	
+8eca5196991e	appliqué	libertas: don't set URB_ZERO_PACKET on IN USB transfer	
+37ef739a0aed	appliqué	usbip:vudc: BUG kmalloc-2048 (Not tainted): Poison overwritten	
+4579824bf9b8	appliqué	iwlwifi: mvm: check return value of rs_rate_from_ucode_rate()	
+b6b45bc40bd1	appliqué	net/ipv4: defensive cipso option parsing	
+3e63a7f25cc8	appliqué	libnvdimm: Hold reference on parent while scheduling async init	
+b85c6659a7f7	appliqué	ASoC: intel: skylake: Add missing break in skl_tplg_get_token()	
+2613e75968a0	appliqué	jbd2: fix use after free in jbd2_log_do_checkpoint()	
+4b347ab6ee3c	appliqué	gfs2_meta: ->mount() can get NULL dev_name	
+4c196200e6fa	appliqué	ext4: initialize retries variable in ext4_da_write_inline_data_begin()	
+8e30869fa329	appliqué	ext4: propagate error from dquot_initialize() in EXT4_IOC_FSSETXATTR	
+dd0ee8a4221b	appliqué	HID: hiddev: fix potential Spectre v1	
+d2afa597ff52	appliqué	EDAC, {i7core,sb,skx}_edac: Fix uncorrected error counting	
+4ef899b32843	appliqué	EDAC, skx_edac: Fix logical channel intermediate decoding	
+0a38f3a8260c	appliqué	PCI: Add Device IDs for Intel GPU "spurious interrupt" quirk	
+d699af340bfd	appliqué	signal/GenWQE: Fix sending of SIGKILL	
+b957cd4d7de6	appliqué	crypto: lrw - Fix out-of bounds access on counter overflow	
+491cd0629de3	appliqué	crypto: tcrypt - fix ghash-generic speed test	
+53de32d0417c	appliqué	ima: fix showing large 'violations' or 'runtime_measurements_count'	
+cbf05aa91c12	appliqué	hugetlbfs: dirty pages as they are added to pagecache	
+8b48ce1a3f28	appliqué	kbuild: fix kernel/bounds.c 'W=1' warning	
+e02771de4817	appliqué	iio: ad5064: Fix regulator handling	
+169a4398c855	appliqué	iio: adc: imx25-gcq: Fix leak of device_node in mx25_gcq_setup_cfgs()	
+be1898c25d77	appliqué	iio: adc: at91: fix acking DRDY irq on simple conversions	
+5feed0720dbe	appliqué	iio: adc: at91: fix wrong channel number in triggered buffer mode	
+dcfc7f2e6340	appliqué	w1: omap-hdq: fix missing bus unregister at removal	
+69922f7e47c8	appliqué	smb3: allow stats which track session and share reconnects to be reset	
+883f97972394	appliqué	smb3: do not attempt cifs operation in smb3 query info error path	
+8ad964c6cfb7	appliqué	smb3: on kerberos mount if server doesn't specify auth type use krb5	
+5aa66ca294e6	appliqué	printk: Fix panic caused by passing log_buf_len to command line	
+404a83aca909	appliqué	genirq: Fix race on spurious interrupt detection	
+65f27a3fac4c	appliqué	NFSv4.1: Fix the r/wsize checking	
+5727dbcd2628	appliqué	nfsd: Fix an Oops in free_session()	
+5c22b67bc29d	appliqué	lockd: fix access beyond unterminated strings in prints	
+6c446ad3622a	appliqué	dm ioctl: harden copy_params()'s copy_from_user() from malicious users	
+38b57496ae2c	appliqué	powerpc/msi: Fix compile error on mpc83xx	
+f579349a3c75	appliqué	MIPS: OCTEON: fix out of bounds array access on CN68XX	
+5378c0eac0b7	appliqué	TC: Set DMA masks for devices	
+c40015f3f338	appliqué	media: v4l2-tpg: fix kernel oops when enabling HFLIP and OSD	
+c90ea7d8b310	appliqué	kgdboc: Passing ekgdboc to command line causes panic	
+782512e5c5b9	appliqué	xen: fix xen_qlock_wait()	
+8e7c0fc9a06a	appliqué	media: em28xx: use a default format if TRY_FMT fails	
+78490e0ec071	appliqué	media: tvp5150: avoid going past array on v4l2_querymenu()	
+f294e26192de	appliqué	media: em28xx: fix input name for Terratec AV 350	
+72a364cb4991	appliqué	media: em28xx: make v4l2-compliance happier by starting sequence on zero	
+5fa09dbe0fd4	appliqué	arm64: lse: remove -fcall-used-x0 flag	
+245af7ee61ef	appliqué	rpmsg: smd: fix memory leak on channel create	
+aa52629c60b1	appliqué	Cramfs: fix abad comparison when wrap-arounds occur	
+cac77e1150df	appliqué	arm64: dts: stratix10: Correct System Manager register size	
+22a4f7ea5e3c	appliqué	soc/tegra: pmc: Fix child-node lookup	
+20d8180c6053	appliqué	btrfs: Handle owner mismatch gracefully when walking up tree	
+5125564ae8ee	appliqué	btrfs: locking: Add extra check in btrfs_init_new_buffer() to avoid deadlock	
+1bd7112bb931	appliqué	btrfs: fix error handling in free_log_tree	
+d87af98c5ab7	appliqué	btrfs: iterate all devices during trim, instead of fs_devices::alloc_list	
+391235fd9c3f	appliqué	btrfs: don't attempt to trim devices that don't support it	
+c160dae0a384	appliqué	btrfs: wait on caching when putting the bg cache	
+9ff40fbfd05a	appliqué	btrfs: reset max_extent_size on clear in a bitmap	
+4c7b9a461dcb	appliqué	btrfs: make sure we create all new block groups	
+6a0403a42c2d	appliqué	Btrfs: fix wrong dentries after fsync of file that got its parent replaced	
+91b3675e1122	appliqué	btrfs: qgroup: Dirty all qgroups before rescan	
+a088035d9935	appliqué	Btrfs: fix null pointer dereference on compressed write path error	
+f3bc71fa0e6a	appliqué	btrfs: set max_extent_size properly	
+627ab1faa16b	appliqué	MD: fix invalid stored role for a disk - try2	
+5552683784c9	appliqué	Linux 4.9.137	
+9bed31c93660	appliqué	powerpc/eeh: Fix possible null deref in eeh_dump_dev_log()	
+9206016ce407	appliqué	tty: check name length in tty_find_polling_driver()	
+427ccff8aabb	appliqué	ARM: imx_v6_v7_defconfig: Select CONFIG_TMPFS_POSIX_ACL	
+0e4dde1a6e30	appliqué	powerpc/nohash: fix undefined behaviour when testing page size support	
+4bdf5ec12d3c	appliqué	drm/omap: fix memory barrier bug in DMM driver	
+2a55f0985d48	appliqué	media: pci: cx23885: handle adding to list failure	
+12b49fd34b8c	appliqué	MIPS: kexec: Mark CPU offline before disabling local IRQ	
+76c386b3a826	appliqué	powerpc/boot: Ensure _zimage_start is a weak symbol	
+ff37c427fb4f	appliqué	MIPS/PCI: Call pcie_bus_configure_settings() to set MPS/MRRS	
+64a5369b7e7f	appliqué	sc16is7xx: Fix for multi-channel stall	
+c19136a6cd2e	appliqué	media: tvp5150: fix width alignment during set_selection()	
+abefbf42e465	appliqué	powerpc/selftests: Wait all threads to join	
+9e79094da01f	appliqué	9p locks: fix glock.client_id leak in do_lock	
+0cf4fa79920c	appliqué	9p: clear dangling pointers in p9stat_free	
+8dd745a8799e	appliqué	cdrom: fix improper type cast, which can leat to information leak.	
+0b6393523e59	appliqué	scsi: qla2xxx: Fix incorrect port speed being set for FC adapters	
+0dd45a4df3eb	appliqué	scsi: qla2xxx: shutdown chip if reset fail	
+7996b1c0eaef	appliqué	fuse: Fix use-after-free in fuse_dev_do_read()	
+0799a93d3058	appliqué	fuse: Fix use-after-free in fuse_dev_do_write()	
+7238fcbd6814	appliqué	fuse: fix blocked_waitq wakeup	
+c31ccf1fe8c7	appliqué	fuse: set FR_SENT while locked	
+1a55a71ed205	appliqué	mm: do not bug_on on incorrect length in __mm_populate()	
+55edbf1ce1bf	appliqué	e1000: avoid null pointer dereference on invalid stat type	
+e029b8379ed6	appliqué	e1000: fix race condition between e1000_down() and e1000_watchdog	
+3d67d62931d9	appliqué	bna: ethtool: Avoid reading past end of buffer	
+4d01ed83361c	appliqué	parisc: Align os_hpmc_size on word boundary	
+5a41c652134b	appliqué	parisc: Fix HPMC handler by increasing size to multiple of 16 bytes	
+b7706a824257	appliqué	parisc: Fix exported address of os_hpmc handler	
+83babf64c1c1	appliqué	MIPS: Loongson-3: Fix CPU UART irq delivery problem	
+fca93d34f3f9	appliqué	MIPS: Loongson-3: Fix BRIDGE irq delivery problem	
+c9226141c2e5	appliqué	xtensa: add NOTES section to the linker script	
+a10aa331aa02	appliqué	xtensa: make sure bFLT stack is 16 byte aligned	
+0dac028156c6	appliqué	xtensa: fix boot parameters address translation	
+0a468686faef	appliqué	clk: s2mps11: Fix matching when built as module and DT node contains compatible	
+79a3e118b016	appliqué	clk: at91: Fix division by zero in PLL recalc_rate()	
+ee27421c80df	appliqué	clk: rockchip: Fix static checker warning in rockchip_ddrclk_get_parent call	
+9efe04470a97	appliqué	libceph: bump CEPH_MSG_MAX_DATA_LEN	
+43e38372f9b1	appliqué	Revert "ceph: fix dentry leak in splice_dentry()"	
+6bd9b55243e6	appliqué	mach64: fix display corruption on big endian machines	
+7ecf24877ea8	appliqué	mach64: fix image corruption due to reading accelerator registers	
+e200279bb827	appliqué	reset: hisilicon: fix potential NULL pointer dereference	
+acdc6a723ea5	appliqué	vhost/scsi: truncate T10 PI iov_iter to prot_bytes	
+dd4c84ba2b3a	appliqué	ocfs2: fix a misuse a of brelse after failing ocfs2_check_dir_entry	
+818e584636d7	appliqué	mm: thp: relax __GFP_THISNODE for MADV_HUGEPAGE mappings	
+7e1e1956dcc7	appliqué	netfilter: conntrack: fix calculation of next bucket number in early_drop	
+d29a7b6f720d	appliqué	mtd: docg3: don't set conflicting BCH_CONST_PARAMS option	
+af86cb901c7f	appliqué	of, numa: Validate some distance map rules	
+4d18bea3de8e	appliqué	termios, tty/tty_baudrate.c: fix buffer overrun	
+53111ab29e0c	appliqué	arch/alpha, termios: implement BOTHER, IBSHIFT and termios2	
+3fe6b9aa5cd2	appliqué	Btrfs: fix cur_offset in the error case for nocow	
+800d8112ee7f	appliqué	Btrfs: fix data corruption due to cloning of eof block	
+f6939dbd8071	appliqué	clockevents/drivers/i8253: Add support for PIT shutdown quirk	
+b1341999bd39	appliqué	ext4: add missing brelse() update_backups()'s error path	
+771e8c73f26f	appliqué	ext4: add missing brelse() in set_flexbg_block_bitmap()'s error path	
+c484fd258cca	appliqué	ext4: add missing brelse() add_new_gdb_meta_bg()'s error path	
+05821678f265	appliqué	ext4: avoid potential extra brelse in setup_new_flex_group_blocks()	
+8a6a7dd7449d	appliqué	ext4: fix possible inode leak in the retry loop of ext4_resize_fs()	
+f30a52c9c5fa	appliqué	ext4: avoid buffer leak in ext4_orphan_add() after prior errors	
+142e0172e303	appliqué	ext4: fix missing cleanup if ext4_alloc_flex_bg_array() fails while resizing	
+11a2eb02e6d1	appliqué	ext4: avoid possible double brelse() in add_new_gdb() on error path	
+8547ff5d14c2	appliqué	ext4: fix possible leak of sbi->s_group_desc_leak in error path	
+6b436fb67e1f	appliqué	ext4: fix possible leak of s_journal_flag_rwsem in error path	
+b66102a457de	appliqué	ext4: release bs.bh before re-using in ext4_xattr_block_find()	
+82dfeb8d8254	appliqué	ext4: fix buffer leak in ext4_xattr_move_to_block() on error path	
+d450fcdb42e7	appliqué	ext4: fix buffer leak in __ext4_read_dirblock() on error path	
+fa14e9bddc7d	appliqué	mount: Retest MNT_LOCKED in do_umount	
+d7565180923e	appliqué	mount: Don't allow copying MNT_UNBINDABLE|MNT_LOCKED mounts	
+03004f416351	appliqué	mount: Prevent MNT_DETACH from disconnecting locked mounts	
+4d9d47c7e5bf	appliqué	sunrpc: correct the computation for page_ptr when truncating	
+7291d95a97fc	appliqué	nfsd: COPY and CLONE operations require the saved filehandle to be set	
+c616a9326b23	appliqué	rtc: hctosys: Add missing range error reporting	
+fdd93795b825	appliqué	fuse: fix use-after-free in fuse_direct_IO()	
+d180feedae04	appliqué	fuse: fix leaked notify reply	
+8f1756ad8ba4	appliqué	configfs: replace strncpy with memcpy	
+e133c33edf3b	appliqué	lib/ubsan.c: don't mark __ubsan_handle_builtin_unreachable as noreturn	
+f8d4c943f2cf	appliqué	hugetlbfs: fix kernel BUG at fs/hugetlbfs/inode.c:444!	
+9c34ad0ce3b3	appliqué	mm: migration: fix migration of huge PMD shared pages	
+fd2038380e2d	appliqué	drm/rockchip: Allow driver to be shutdown on reboot/kexec	
+9c926f10eaab	appliqué	drm/dp_mst: Check if primary mstb is null	
+232ed06fd179	appliqué	drm/i915/hdmi: Add HDMI 2.0 audio clock recovery N values	
+cc5bd86e271d	appliqué	drm/i915/execlists: Force write serialisation into context image vs execution	
+7088c66504c2	appliqué	KVM: arm64: Fix caching of host MDCR_EL2 value	
+7a4dc3f83997	appliqué	Linux 4.9.138	
+a09bd930e90a	appliqué	flow_dissector: do not dissect l4 ports for fragments	
+5367cdf3e158	appliqué	ip_tunnel: don't force DF when MTU is locked	
+4a80b1feaee7	appliqué	net-gro: reset skb->pkt_type in napi_reuse_skb()	
+6bab51ff62ce	appliqué	sctp: not allow to set asoc prsctp_enable by sockopt	
+91d3ddb8cb5f	appliqué	tg3: Add PHY reset for 5717/5719/5720 in change ring and flow control paths	
+262e7c9940e9	appliqué	usbnet: smsc95xx: disable carrier check while suspending	
+eb18330f4d7a	appliqué	inet: frags: better deal with smp races	
+3d26b729ddb2	appliqué (conflit résolu)	ipv6: Fix PMTU updates for UDP/raw sockets in presence of VRF	PMTU VRF : oif = maître l3mdev si non lié, sk_uid de l'ACK gardé
+7135c75e00ed	déjà présent (forme Android/MediaTek)	kbuild: Add better clang cross build support	support clang croisé déjà dans le Makefile (CLANG_TRIPLE de l'ACK)
+cd9a7644a3ea	déjà présent (identique)	kbuild: clang: add -no-integrated-as to KBUILD_[AC]FLAGS	git am : patch déjà appliqué
+89794183eea0	ignoré (conflit hors code compilé)	kbuild: Consolidate header generation from ASM offset information	scripts/Makefile.lib
+c36ae15ceb62	ignoré (conflit hors code compilé)	kbuild: consolidate redundant sed script ASM offset generation	scripts/Makefile.lib
+b53c7372d667	déjà présent (identique)	kbuild: fix asm-offset generation to work with clang	git am : patch déjà appliqué
+c466d17e3ab1	non repris (volontaire)	kbuild: drop -Wno-unknown-warning-option from clang options	options de compilation clang validées pour clang 6 (stock) et du code MediaTek en -Werror : -Wno-unknown-warning-option gardé
+14635231f81c	ignoré (conflit hors code compilé)	kbuild, LLVMLinux: Add -Werror to cc-option to support clang	scripts/Kbuild.include
+d438cec07374	déjà présent (identique)	kbuild: use -Oz instead of -Os when using clang	git am : patch déjà appliqué
+85ab13ffcc69	déjà présent (forme Android/MediaTek)	kbuild: Add support to generate LLVM assembly files	nettoyage *.symversions (ACK) gardé en plus des fichiers .ll
+e21538812d96	déjà présent (identique)	modules: mark __inittest/__exittest as __maybe_unused	git am : patch déjà appliqué
+a5819f2b08a7	déjà présent (identique)	x86/kbuild: Use cc-option to enable -falign-{jumps/loops}	git am : patch déjà appliqué
+83e0e2f16c65	déjà présent (identique)	crypto, x86: aesni - fix token pasting for clang	git am : patch déjà appliqué
+0605d5ebde70	déjà présent (identique)	kbuild: Add __cc-option macro	git am : patch déjà appliqué
+0dc4460a8364	ignoré (conflit hors code compilé)	x86/build: Use __cc-option for boot code compiler options	arch/x86/Makefile
+cf42c0b73444	ignoré (conflit hors code compilé)	x86/build: Specify stack alignment for clang	arch/x86/Makefile
+ebcc69a97a24	déjà présent (forme Android/MediaTek)	kbuild: clang: Disable 'address-of-packed-member' warning	auto : lignes amont déjà dans Makefile
+0a953c058f73	déjà présent (forme Android/MediaTek)	crypto: arm64/sha - avoid non-standard inline asm tricks	offsetof sha1/sha256 déjà exportés en constantes (ACK) : le correctif les dupliquait (erreur de compilation), retiré
+78e96f647d10	déjà présent (identique)	x86/boot: #undef memcpy() et al in string.c	git am : patch déjà appliqué
+61d920c3b21c	déjà présent (identique)	efi/libstub/arm64: Use hidden attribute for struct screen_info reference	git am : patch déjà appliqué
+94c47d419057	déjà présent (identique)	efi/libstub/arm64: Force 'hidden' visibility for section markers	git am : patch déjà appliqué
+6b66b2d89e8d	ignoré (conflit hors code compilé)	efi/libstub: Preserve .debug sections after absolute relocation check	drivers/firmware/efi/libstub/Makefile
+27b5ebf61818	ignoré (conflit hors code compilé)	efi/libstub/arm64: Set -fpie when building the EFI stub	drivers/firmware/efi/libstub/Makefile
+1f200e87ef3f	ignoré (conflit hors code compilé)	x86/build: Fix stack alignment for CLang	arch/x86/Makefile
+52c3adecfb2f	déjà présent (identique)	x86/build: Use cc-option to validate stack alignment parameter	git am : patch déjà appliqué
+86e514306bfb	appliqué (conflit auto : lignes amont déjà présentes)	Kbuild: use -fshort-wchar globally	drivers/xen/Makefile
+134db5b955b8	déjà présent (identique)	arm64: uaccess: suppress spurious clang warning	git am : patch déjà appliqué
+183a0d21e436	ignoré (conflit hors code compilé)	ARM: add more CPU part numbers for Cortex and Brahma B15 CPUs	arch/arm/include/asm/cputype.h
+b26c3c4bcdad	appliqué	ARM: bugs: prepare processor bug infrastructure	
+35293cc54366	appliqué	ARM: bugs: hook processor bug checking into SMP and suspend paths	
+901e325f772f	appliqué	ARM: bugs: add support for per-processor bug checking	
+eed96a3ce0a3	appliqué	ARM: spectre: add Kconfig symbol for CPUs vulnerable to Spectre	
+33efd46a0c02	appliqué	ARM: spectre-v2: harden branch predictor on context switches	
+9bc1ec1beb8c	appliqué	ARM: spectre-v2: add Cortex A8 and A15 validation of the IBE bit	
+26892e74dfd9	appliqué	ARM: spectre-v2: harden user aborts in kernel space	
+bf92464b7ede	appliqué	ARM: spectre-v2: add firmware based hardening	
+47571a907911	appliqué	ARM: spectre-v2: warn about incorrect context switching functions	
+51836963fa6f	appliqué	ARM: KVM: invalidate BTB on guest exit for Cortex-A12/A17	
+b7888c6a365a	appliqué	ARM: KVM: invalidate icache on guest exit for Cortex-A15	
+10c7b397cf5d	appliqué	ARM: spectre-v2: KVM: invalidate icache on guest exit for Brahma B15	
+b8940544118b	appliqué	ARM: KVM: Add SMCCC_ARCH_WORKAROUND_1 fast handling	
+3aa01740a26e	appliqué	ARM: KVM: report support for SMCCC_ARCH_WORKAROUND_1	
+abdeed7e61be	appliqué	ARM: spectre-v1: add speculation barrier (csdb) macros	
+8a4ae2876f6c	appliqué	ARM: spectre-v1: add array_index_mask_nospec() implementation	
+49b853905b9a	appliqué	ARM: spectre-v1: fix syscall entry	
+50f032cc506a	appliqué	ARM: signal: copy registers using __copy_from_user()	
+9c91b9687904	appliqué	ARM: vfp: use __copy_from_user() when restoring VFP state	
+d609e4aa5086	appliqué	ARM: oabi-compat: copy semops using __copy_from_user()	
+bdf0f17e4e11	appliqué	ARM: use __inttype() in get_user()	
+f4438f29bfbd	appliqué	ARM: spectre-v1: use get_user() for __get_user()	
+861f5387585e	appliqué	ARM: spectre-v1: mitigate user accesses	
+44caf8b34625	appliqué	Linux 4.9.139	
+0afb423b1d3f	appliqué	Revert "x86/speculation: Enable cross-hyperthread spectre v2 STIBP mitigation"	
+961323dd9478	appliqué	Revert "ipv6: set rt6i_protocol properly in the route when it is installed"	
+e186413178a3	appliqué	Linux 4.9.140	
+f89c9ff37458	appliqué	cifs: don't dereference smb_file_target before null check	
+6c35bb58c85a	appliqué	reiserfs: propagate errors from fill_with_dentries() properly	
+36b9d757247b	appliqué	hfs: prevent btree data loss on root split	
+8b275768a13b	appliqué	hfsplus: prevent btree data loss on root split	
+11832f3cfbda	appliqué	um: Give start_idle_thread() a return code	
+541f0aa32457	appliqué	drm/edid: Add 6 bpc quirk for BOE panel.	
+ebaf1e35da0f	appliqué	platform/x86: intel_telemetry: report debugfs failure	
+cde0628c2701	appliqué	clk: fixed-rate: fix of_node_get-put imbalance	
+ac270f140a28	appliqué	fs/exofs: fix potential memory leak in mount option parsing	
+a13a81d3ace7	appliqué	clk: samsung: exynos5420: Enable PERIS clocks for suspend	
+9c0f309d6eb2	appliqué	platform/x86: acerhdf: Add BIOS entry for Gateway LT31 v1.3307	
+3b9158aec72e	appliqué	arm64: percpu: Initialize ret in the default case	
+2636487a4766	appliqué	s390/vdso: add missing FORCE to build targets	
+919560afc21f	appliqué	netfilter: ipset: actually allow allowable CIDR 0 in hash:net,port,net	
+064cd456641a	appliqué	s390/mm: Fix ERROR: "__node_distance" undefined!	
+d8ccc61ce720	appliqué	netfilter: ipset: Correct rcu_dereference() call in ip_set_put_comment()	
+f184d303d10d	appliqué	netfilter: xt_IDLETIMER: add sysfs filename checking routine	
+f280735afb24	appliqué	s390/qeth: fix HiperSockets sniffer	
+d75d4fd8c718	appliqué	hwmon: (ibmpowernv) Remove bogus __init annotations	
+3fc19eac0f36	appliqué	clk: fixed-factor: fix of_node_get-put imbalance	
+d05e26d49ed3	appliqué	lib/raid6: Fix arm64 test build	
+897d6d429b6c	appliqué	qed: Fix memory/entry leak in qed_init_sp_request()	
+e90f343311c8	appliqué	qed: Fix blocking/unlimited SPQ entries leak	
+553a56136333	appliqué	zram: close udev startup race condition as default groups	
+a38ad671d1ca	appliqué	SUNRPC: drop pointless static qualifier in xdr_get_next_encode_buffer()	
+92b4499e795d	appliqué	gfs2: Put bitmap buffers in put_super	
+ad226b632b8d	appliqué	ACPI / watchdog: Prefer iTCO_wdt on Lenovo Z50-70	
+230c832a4e1b	appliqué	ACPI / watchdog: Prefer iTCO_wdt always when WDAT table uses RTC SRAM	
+fc43e4cd7f92	appliqué	btrfs: Enhance btrfs_trim_fs function to handle error better	
+4423e072fe37	appliqué	btrfs: Ensure btrfs_trim_fs can trim the whole filesystem	
+33f3f3bd7608	appliqué	btrfs: fix pinned underflow after transaction aborted	
+a540483bfefa	appliqué	Revert "media: videobuf2-core: don't call memop 'finish' when queueing"	
+93848099e77b	appliqué	Revert "Bluetooth: h5: Fix missing dependency on BT_HCIUART_SERDEV"	
+496f98c088f9	appliqué	media: v4l: event: Add subscription to list before calling "add" operation	
+bb5f531d73da	appliqué	uio: Fix an Oops on load	
+9f08cfeb966c	appliqué	usb: cdc-acm: add entry for Hiro (Conexant) modem	
+148b90c112f9	appliqué	USB: quirks: Add no-lpm quirk for Raydium touchscreens	
+305a97a9db73	appliqué	usb: quirks: Add delay-init quirk for Corsair K70 LUX RGB	
+f1b4d95e4d43	appliqué	misc: atmel-ssc: Fix section annotation on atmel_ssc_get_driver_data	
+fdddfd7fbe52	appliqué	USB: misc: appledisplay: add 20" Apple Cinema Display	
+7810fe9f2377	appliqué	drivers/misc/sgi-gru: fix Spectre v1 vulnerability	
+ea41e45381fb	appliqué	ACPI / platform: Add SMB0001 HID to forbidden_id_list	
+2cf6ba5b3d78	appliqué	new helper: uaccess_kernel()	
+ab26f7fd578a	appliqué	HID: uhid: forbid UHID_CREATE under KERNEL_DS or elevated privileges	
+c3ec4e5bda44	appliqué	libceph: fall back to sendmsg for slab pages	
+bb2d990b6fef	appliqué	Linux 4.9.141	
+b7e04483ba7c	appliqué	usb: core: Fix hub port connection events lost	
+6d5da206d6fa	appliqué	usb: dwc3: core: Clean up ULPI device	
+43bc9c671e5e	appliqué (conflit résolu)	usb: xhci: fix timeout for transition from RExit to U0	délai RExit→U0 en ms (XHCI_MAX_REXIT_TIMEOUT_MS), journal Autochips gardé
+1b90193990ac	appliqué	MAINTAINERS: Add Sasha as a stable branch maintainer	
+2e668d7f1ab5	appliqué	gpio: don't free unallocated ida on gpiochip_add_data_with_key() error path	
+91a292b850cb	appliqué	iwlwifi: mvm: support sta_statistics() even on older firmware	
+3d44c2953102	appliqué	iwlwifi: mvm: fix regulatory domain update when the firmware starts	
+a62e87afaaa8	appliqué	brcmfmac: fix reporting support for 160 MHz channels	
+8af78a66b255	appliqué	tools/power/cpupower: fix compilation with STATIC=true	
+3a0e8e358745	appliqué	v9fs_dir_readdir: fix double-free on p9stat_read error	
+47ff7629822e	appliqué	selinux: Add __GFP_NOWARN to allocation at str_read()	
+ecfcb85cd637	appliqué	bfs: add sanity check at bfs_fill_super()	
+e044554e97e8	appliqué	sctp: clear the transport of some out_chunk_list chunks in sctp_assoc_rm_peer	
+50c00054ebd9	appliqué	gfs2: Don't leave s_fs_info pointing to freed memory in init_sbd	
+2a1220041c3d	appliqué	llc: do not use sk_eat_skb()	
+789c6944efa0	appliqué	mm: don't warn about large allocations for slab	
+f1c32bab45f3	appliqué	drm/ast: change resolution may cause screen blurred	
+7fdaacc08451	appliqué	drm/ast: fixed cursor may disappear sometimes	
+0bf67de5daa4	appliqué	drm/ast: Remove existing framebuffers before loading driver	
+8bcd10db1c4f	appliqué	can: dev: can_get_echo_skb(): factor out non sending code to __can_get_echo_skb()	
+5adc1c548aa5	appliqué	can: dev: __can_get_echo_skb(): replace struct can_frame by canfd_frame to access frame length	
+8aa60a6d605d	appliqué	can: dev: __can_get_echo_skb(): Don't crash the kernel if can_priv::echo_skb is accessed out of bounds	
+c4c2c2870a8c	appliqué	can: dev: __can_get_echo_skb(): print error message, if trying to echo non existing skb	
+7f6a5410f541	appliqué	IB/core: Fix for core panic	
+415592434d91	appliqué	IB/hfi1: Eliminate races in the SDMA send error path	
+1a8174028d89	appliqué	usb: xhci: Prevent bus suspend if a port connect change or polling state is detected	
+0c7c4c4ae9fe	appliqué	pinctrl: meson: fix pinconf bias disable	
+c57911f06591	appliqué	KVM: PPC: Move and undef TRACE_INCLUDE_PATH/FILE	
+3955562527ee	appliqué	cpufreq: imx6q: add return value check for voltage scale	
+ab509b4f9507	appliqué	rtc: pcf2127: fix a kmemleak caused in pcf2127_i2c_gather_write	
+03781eb59c08	appliqué	floppy: fix race condition in __floppy_read_block_0()	
+99bfbe579c19	appliqué	powerpc/io: Fix the IO workarounds code to work with Radix	
+19b7cd1bc134	appliqué	perf/x86/intel/uncore: Add more IMC PCI IDs for KabyLake and CoffeeLake CPUs	
+35a0620fec6b	appliqué	SUNRPC: Fix a bogus get/put in generic_key_to_expire()	
+8f9b3dd5a72d	appliqué en partie (conflit hors code compilé, notre version gardée)	kdb: Use strscpy with destination buffer size	kernel/debug/kdb/kdb_io.c
+636374c50312	appliqué	powerpc/numa: Suppress "VPHN is not supported" messages	
+b57951ed2b6d	appliqué	efi/arm: Revert deferred unmap of early memmap mapping	
+d77eacdb1e30	appliqué	tmpfs: make lseek(SEEK_DATA/SEK_HOLE) return ENXIO with a negative offset	
+95cd1aacf9ce	appliqué	of: add helper to lookup compatible child node	
+b694d8d9ece3	appliqué	NFC: nfcmrvl_uart: fix OF child-node lookup	
+ab076d20c28c	appliqué	net: bcmgenet: fix OF child-node lookup	
+272991176af2	appliqué	arm64: remove no-op -p linker flag	
+5f0de882e77f	appliqué	ath10k: fix kernel panic due to race in accessing arvif list	
+d6418e121327	appliqué	Input: xpad - add product ID for Xbox One S pad	
+cf82f5ff4482	appliqué	Input: xpad - fix Xbox One rumble stopping after 2.5 secs	
+b05c3b911eb5	appliqué	Input: xpad - correctly sort vendor id's	
+69f7143da050	appliqué	Input: xpad - move reporting xbox one home button to common function	
+31abdb63b185	appliqué	Input: xpad - simplify error condition in init_output	
+82e3ce0fd874	appliqué	Input: xpad - don't depend on endpoint order	
+e9c7ce1389f0	appliqué	Input: xpad - fix stuck mode button on Xbox One S pad	
+51b54b80fbc0	appliqué	Input: xpad - restore LED state after device resume	
+574d843969d4	appliqué	Input: xpad - support some quirky Xbox One pads	
+5ff2a1a88102	appliqué	Input: xpad - sort supported devices by USB ID	
+c5b83f357f30	appliqué	Input: xpad - sync supported devices with xboxdrv	
+34784d6d7ec7	appliqué	Input: xpad - add USB IDs for Mad Catz Brawlstick and Razer Sabertooth	
+e7bb7516b6d8	appliqué	Input: xpad - sync supported devices with 360Controller	
+70f356afc465	appliqué	Input: xpad - sync supported devices with XBCD	
+8b20c25842c9	appliqué	Input: xpad - constify usb_device_id	
+7d6d5fc8b657	appliqué	Input: xpad - fix PowerA init quirk for some gamepad models	
+ac8f836e6d6d	appliqué	Input: xpad - validate USB endpoint type during probe	
+edcfecdc9a3d	appliqué	Input: xpad - add support for PDP Xbox One controllers	
+7044e32b333f	appliqué	Input: xpad - add PDP device id 0x02a4	
+cade531f0a82	appliqué	Input: xpad - fix some coding style issues	
+ad897a4649df	appliqué	Input: xpad - avoid using __set_bit() for capabilities	
+dd15a17fd023	appliqué	Input: xpad - add GPD Win 2 Controller USB IDs	
+29956d84355e	appliqué	Input: xpad - fix GPD Win 2 controller name	
+bf390abe940e	appliqué	Input: xpad - add support for Xbox1 PDP Camo series gamepad	
+2091b8cd4b4b	appliqué	cw1200: Don't leak memory if krealloc failes	
+b4f8e4c870b7	appliqué	mwifiex: prevent register accesses after host is sleeping	
+c34774ea1bc3	appliqué	mwifiex: report error to PCIe for suspend failure	
+c8144277c0ad	appliqué	mwifiex: Fix NULL pointer dereference in skb_dequeue()	
+6bea268e0c3c	appliqué	mwifiex: fix p2p device doesn't find in scan problem	
+675d91966d1a	appliqué en partie (conflit hors code compilé, notre version gardée)	scsi: ufs: fix bugs related to null pointer access and array size	drivers/scsi/ufs/ufshcd.c
+0967f4de8e46	appliqué	scsi: ufshcd: Fix race between clk scaling and ungate work	
+99a3bd3d00a1	appliqué	scsi: ufs: fix race between clock gating and devfreq scaling work	
+f8c66aba27fa	appliqué (conflit auto : lignes amont déjà présentes)	scsi: ufshcd: release resources if probe fails	drivers/scsi/ufs/ufshcd.c
+674004e6c4fc	appliqué	include/linux/pfn_t.h: force '~' to be parsed as an unary operator	
+3540460e924b	appliqué	tty: wipe buffer.	
+e2e3a814194c	appliqué	tty: wipe buffer if not echoing data	
+0c9aa4da4530	appliqué	usb: xhci: fix uninitialized completion when USB3 port got wrong status	
+5a416ed93d0b	appliqué	sched/core: Allow __sched_setscheduler() in interrupts when PI is not used	
+0c41beebcdf9	appliqué	namei: allow restricted O_CREAT of FIFOs and regular files	
+a1b53b1b06be	appliqué	lan78xx: Read MAC address from DT if present	
+2188cf062e56	appliqué	s390/mm: Check for valid vma before zapping in gmap_discard	
+a49f03472b50	appliqué	net: ieee802154: 6lowpan: fix frag reassembly	
+5fed1ff84587	appliqué	Revert "evm: Translate user/group ids relative to s_user_ns when computing HMAC"	
+5f9fb1a0a59a	appliqué	ima: always measure and audit files in policy	
+87043e4ca018	appliqué	EVM: Add support for portable signature format	
+166f4542ec59	appliqué	ima: re-introduce own integrity cache lock	
+1f89834896bb	appliqué	ima: re-initialize iint->atomic_flags	
+68ae960f6d2a	appliqué	Linux 4.9.142	
+b48c29b1ddff	appliqué	mm/huge_memory: rename freeze_page() to unmap_page()	
+fb732e62bf37	appliqué	mm/huge_memory.c: reorder operations in __split_huge_page_tail()	
+ffdad597ccfc	appliqué	mm/huge_memory: splitting set mapping+index before unfreeze	
+b59b24fed59d	appliqué	mm/huge_memory: fix lockdep complaint on 32-bit i_size_read()	
+10e458e6eb59	appliqué	mm/khugepaged: collapse_shmem() stop if punched or truncated	
+cae7ed256d77	appliqué	shmem: shmem_charge: verify max_block is not exceeded before inode update	
+9815b0fcec67	appliqué	shmem: introduce shmem_inode_acct_block	
+0dba3e54920b	appliqué	mm/khugepaged: fix crashes due to misaccounted holes	
+5c0ecc2ba542	appliqué	mm/khugepaged: collapse_shmem() remember to clear holes	
+c2ca73b7ab3d	appliqué	mm/khugepaged: minor reorderings in collapse_shmem()	
+8dcbb5f21567	appliqué	mm/khugepaged: collapse_shmem() without freezing new_page	
+dc62803e271d	appliqué	mm/khugepaged: collapse_shmem() do not crash on Compound	
+6fc74d9f9b41	appliqué	media: em28xx: Fix use-after-free when disconnecting	
+ad0ee4f58533	appliqué	Revert "wlcore: Add missing PM call for wlcore_cmd_wait_for_event_or_timeout()"	
+d39ebd199a63	appliqué	net: skb_scrub_packet(): Scrub offload_fwd_mark	
+13a3d8908e54	appliqué	rapidio/rionet: do not free skb before reading its length	
+1d3891c724da	appliqué	s390/qeth: fix length check in SNMP processing	
+ff67a7d34bc5	appliqué	usbnet: ipheth: fix potential recvmsg bug and recvmsg bug 2	
+aa716434a059	appliqué	kvm: mmu: Fix race in emulated page table writes	
+43dd9f48871e	appliqué	kvm: svm: Ensure an IBPB on all affected CPUs when freeing a vmcb	
+3a468e8e5a61	appliqué	KVM: X86: Fix scan ioapic use-before-initialization	
+c26e3c6c2dc4	appliqué	xtensa: enable coprocessors that are being flushed	
+f403887502a8	appliqué	xtensa: fix coprocessor context offset definitions	
+6e1210e2850d	appliqué	Btrfs: ensure path name is null terminated at btrfs_control_ioctl	
+08c133e86be2	appliqué	perf/x86/intel: Move branch tracing setup to the Intel-specific source file	
+54f738293d30	appliqué	perf/x86/intel: Add generic branch tracing check to intel_pmu_has_bts()	
+55eb06b7728f	appliqué	fs: fix lost error code in dio_complete	
+12b2efff8874	appliqué	ALSA: wss: Fix invalid snd_free_pages() at error path	
+5d3201bbffe0	appliqué	ALSA: ac97: Fix incorrect bit shift at AC97-SPSA control write	
+e3ff60d897dd	appliqué	ALSA: control: Fix race between adding and removing a user element	
+9c4a8f6f627c	appliqué	ALSA: sparc: Fix invalid snd_free_pages() at error path	
+4e443d70a1b3	appliqué	ext2: fix potential use after free	
+0daa7fc2c50d	appliqué	dmaengine: at_hdmac: fix memory leak in at_dma_xlate()	
+07d8abace810	appliqué	dmaengine: at_hdmac: fix module unloading	
+36d8dbf23fc7	appliqué	btrfs: release metadata before running delayed refs	
+72c6bc47e0b5	appliqué	USB: usb-storage: Add new IDs to ums-realtek	
+0f887c668676	appliqué	usb: core: quirks: add RESET_RESUME quirk for Cherry G230 Stream series	
+4a978cfe599f	appliqué	Revert "usb: dwc3: gadget: skip Set/Clear Halt when invalid"	
+06c2233ac246	appliqué	iio:st_magn: Fix enable device after trigger	
+3c470638b6a6	appliqué	mm: use swp_offset as key in shmem_replace_page()	
+140ee9b7aec9	appliqué	Drivers: hv: vmbus: check the creation_status in vmbus_establish_gpadl()	
+c4c29e1b347a	appliqué	misc: mic/scif: fix copy-paste error in scif_create_remote_lookup	
+fb660794cd61	ignoré (conflit hors code compilé)	efi/libstub: arm: support building with clang	drivers/firmware/efi/libstub/Makefile
+61cc8587f8e1	appliqué	ARM: 8766/1: drop no-thumb-interwork in EABI mode	
+10479075c094	appliqué	ARM: 8767/1: add support for building ARM kernel with clang	
+b874a8751f91	appliqué	bus: arm-cci: remove unnecessary unreachable()	
+1e5b5cb7bf1e	appliqué	ARM: trusted_foundations: do not use naked function	
+6f35b5bd0c0d	appliqué	workqueue: avoid clang warning	
+6d075d215b5b	appliqué	efi/libstub: Make file I/O chunking x86-specific	
+740f140b5dc4	appliqué (conflit auto : lignes amont déjà présentes)	kbuild: Set KBUILD_CFLAGS before incl. arch Makefile	Makefile
+b136f0e9e9d7	appliqué	Linux 4.9.143	
+dfb64b8c3d26	appliqué	Kbuild: suppress packed-not-aligned warning for default setting only	
+5e2669c978b2	appliqué	disable stringop truncation warnings for now	
+d041ed258e58	appliqué	test_hexdump: use memcpy instead of strncpy	
+cd39e296c4d6	appliqué	kobject: Replace strncpy with memcpy	
+0d4a2de44713	appliqué	unifdef: use memcpy instead of strncpy	
+52fc8c7243f3	appliqué	kernfs: Replace strncpy with memcpy	
+5569c10858be	appliqué	ip_tunnel: Fix name string concatenate in __ip_tunnel_create()	
+0470662c9e56	appliqué	drm: gma500: fix logic error	
+2de75633886a	appliqué	scsi: bfa: convert to strlcpy/strlcat	
+e9490d7a727b	appliqué	staging: rts5208: fix gcc-8 logic error warning	
+21761c703436	appliqué	kdb: use memmove instead of overlapping memcpy	
+ad3af650aabd	appliqué	x86/power/64: Use char arrays for asm function names	
+66739379d5c8	appliqué	iser: set sector for ambiguous mr status errors	
+0b58d902bfdd	appliqué	uprobes: Fix handle_swbp() vs. unregister() + register() race once more	
+1eef40b39f82	appliqué	MIPS: ralink: Fix mt7620 nd_sd pinmux	
+26c128748b17	appliqué	mips: fix mips_get_syscall_arg o32 check	
+23aa2d8f26e8	appliqué	IB/mlx5: Avoid load failure due to unknown link width	
+96562b885dda	appliqué	drm/ast: Fix incorrect free on ioregs	
+de8268d0fe98	appliqué	drm: set is_master to 0 upon drm_new_set_master() failure	
+5f41f8cacf64	appliqué	scsi: scsi_devinfo: cleanly zero-pad devinfo strings	
+b2b936317693	appliqué	ALSA: trident: Suppress gcc string warning	
+0256f875f23a	appliqué	scsi: csiostor: Avoid content leaks and casts	
+d0bf1cbeeb8e	appliqué	kgdboc: Fix restrict error	
+412091e27d29	appliqué	kgdboc: Fix warning with module build	
+c0d75dacffb9	déjà présent (forme Android/MediaTek)	binder: fix proc->files use-after-free	binder MediaTek : files_lock protège déjà proc->files (task_get_unused_fd_flags, task_fd_install, task_close_fd, mmap, deferred)
+8e9de89fedfc	appliqué	svm: Add mutex_lock to protect apic_access_page_done on AMD systems	
+d0095c5211b9	ignoré (conflit hors code compilé)	drm/mediatek: fix OF sibling-node lookup	drivers/gpu/drm/mediatek/mtk_hdmi.c
+3ea71da2203d	appliqué	Input: xpad - quirk all PDP Xbox One gamepads	
+81bedda8a375	appliqué	Input: matrix_keypad - check for errors from of_get_named_gpio()	
+d5cb3f341c48	appliqué	Input: elan_i2c - add ELAN0620 to the ACPI table	
+0d70ce8c392a	appliqué	Input: elan_i2c - add ACPI ID for Lenovo IdeaPad 330-15ARR	
+b5e2333efe45	appliqué	Input: elan_i2c - add support for ELAN0621 touchpad	
+c50ccf2c755e	appliqué	btrfs: Always try all copies when reading extent buffers	
+ddc07d59fae3	appliqué	Btrfs: fix use-after-free when dumping free space	
+abbeacc0d353	appliqué	ARC: change defconfig defaults to ARCv2	
+84fa7fcc557e	appliqué	arc: [devboards] Add support of NFSv3 ACL	
+47fb2ff8acf2	appliqué	udf: Allow mounting volumes with incorrect identification strings	
+ca58e3b2fc54	appliqué	reset: make optional functions really optional	
+d4b89ecc2951	appliqué	reset: core: fix reset_control_put	
+7be26008ef17	appliqué	reset: fix optional reset_control_get stubs to return NULL	
+ee6e7fba7f45	appliqué	reset: add exported __reset_control_get, return NULL if optional	
+f109deb22ee0	appliqué	reset: make device_reset_optional() really optional	
+0e67f1cd9658	appliqué	reset: remove remaining WARN_ON() in <linux/reset.h>	
+60b3d44f05c1	appliqué	mm: cleancache: fix corruption on missed inode invalidation	
+f3e31bbef6ed	appliqué	usb: gadget: dummy: fix nonsensical comparisons	
+11de2fae3441	appliqué	net: qed: use correct strncpy() size	
+5acc58cd9948	appliqué	tipc: use destination length for copy string	
+9041d1e200c7	appliqué	libceph: drop len argument of *verify_authorizer_reply()	
+bd180ec81f73	appliqué	libceph: no need to drop con->mutex for ->get_authorizer()	
+08115452f865	appliqué	libceph: store ceph_auth_handshake pointer in ceph_connection	
+2617cd5743c6	appliqué	libceph: factor out __prepare_write_connect()	
+9da9bb4a0ff6	appliqué	libceph: factor out __ceph_x_decrypt()	
+2e901ea8b448	appliqué	libceph: factor out encrypt_authorizer()	
+06e925920d4d	appliqué	libceph: add authorizer challenge	
+18a23fb26320	appliqué	libceph: implement CEPHX_V2 calculation mode	
+985a55126453	appliqué	libceph: weaken sizeof check in ceph_x_verify_authorizer_reply()	
+e190b826f93c	appliqué	libceph: check authorizer reply/challenge length before reading	
+9c33b84ba0c4	appliqué	bpf/verifier: Add spi variable to check_stack_write()	
+62e0865f2015	appliqué	bpf/verifier: Pass instruction index to check_mem_access() and check_xadd()	
+def8c1d045a0	appliqué	bpf: Prevent memory disambiguation attack	
+35db4d1ed8a3	appliqué	wil6210: missing length check in wmi_set_ie	
+e5deaa544138	appliqué	mm/hugetlb.c: don't call region_abort if region_chg fails	
+3d101f33acb2	appliqué	hugetlbfs: fix offset overflow in hugetlbfs mmap	
+447effd30f9d	appliqué	hugetlbfs: check for pgoff value overflow	
+3c77b07dc365	appliqué	btrfs: validate type when reading a chunk	
+23eb2f435a07	appliqué	btrfs: Verify that every chunk has corresponding block group at mount time	
+b0a67e43dc53	appliqué	btrfs: Refactor check_leaf function for later expansion	
+ece4bb551be6	appliqué	btrfs: Check if item pointer overlaps with the item itself	
+c5b29071313f	appliqué	btrfs: Add sanity check for EXTENT_DATA when reading out leaf	
+dc564649a291	appliqué	btrfs: Add checker for EXTENT_CSUM	
+90eb4c02418b	appliqué	btrfs: Move leaf and node validation checker to tree-checker.c	
+20b304155136	appliqué	btrfs: struct-funcs, constify readers	
+f4209d9db395	appliqué	btrfs: tree-checker: Enhance btrfs_check_node output	
+f7438e62370b	appliqué	btrfs: tree-checker: Fix false panic for sanity test	
+e48e62f5a097	appliqué	btrfs: tree-checker: Add checker for dir item	
+6b66f518c57d	appliqué	btrfs: tree-checker: use %zu format string for size_t	
+db438c333743	appliqué	btrfs: tree-check: reduce stack consumption in check_dir_item	
+058e388e42c8	appliqué	btrfs: tree-checker: Verify block_group_item	
+6f33d3d8dca8	appliqué	btrfs: tree-checker: Detect invalid and empty essential trees	
+7a72f918825d	appliqué	btrfs: Check that each block group has corresponding chunk at mount time	
+fbf8bd363066	appliqué	btrfs: tree-checker: Check level for leaves and nodes	
+d558df73f9be	appliqué	btrfs: tree-checker: Fix misleading group system information	
+3b19f961d260	ignoré (conflit hors code compilé)	f2fs: fix a panic caused by NULL flush_cmd_control	fs/f2fs/segment.c
+cb9b1d4ec206	ignoré (conflit hors code compilé)	f2fs: fix race condition in between free nid allocator/initializer	fs/f2fs/node.c
+240ceff482be	déjà présent (identique)	f2fs: detect wrong layout	git am : patch déjà appliqué
+3fd962048098	ignoré (conflit hors code compilé)	f2fs: return error during fill_super	fs/f2fs/segment.c
+89d78cf58f27	ignoré (conflit hors code compilé)	f2fs: check blkaddr more accuratly before issue a bio	fs/f2fs/checkpoint.c fs/f2fs/f2fs.h fs/f2fs/segment.h
+6e182e91c722	appliqué	f2fs: sanity check on sit entry	
+65e1055a6987	appliqué	f2fs: enhance sanity_check_raw_super() to avoid potential overflow	
+6012d18d4bf6	appliqué en partie (conflit hors code compilé, notre version gardée)	f2fs: clean up with is_valid_blkaddr()	fs/f2fs/data.c fs/f2fs/f2fs.h fs/f2fs/segment.c fs/f2fs/segment.h
+d45118813501	appliqué en partie (conflit hors code compilé, notre version gardée)	f2fs: introduce and spread verify_blkaddr	fs/f2fs/data.c fs/f2fs/f2fs.h fs/f2fs/segment.c fs/f2fs/segment.h
+a3dccfacd3a5	appliqué	f2fs: fix to do sanity check with secs_per_zone	
+06e606acedaf	appliqué	f2fs: fix to do sanity check with user_block_count	
+fd8c7d35bd13	ignoré (conflit hors code compilé)	f2fs: Add sanity_check_inode() function	fs/f2fs/inode.c
+1c87980591a1	ignoré (conflit hors code compilé)	f2fs: fix to do sanity check with node footer and iblocks	fs/f2fs/inode.c
+aafb37157516	appliqué en partie (conflit hors code compilé, notre version gardée)	f2fs: fix to do sanity check with block address in main area	fs/f2fs/checkpoint.c fs/f2fs/data.c fs/f2fs/f2fs.h fs/f2fs/node.c fs/f2fs/segment.h
+e33c1e29d4c3	ignoré (conflit hors code compilé)	f2fs: fix missing up_read	fs/f2fs/node.c
+b10a6ac262f8	ignoré (conflit hors code compilé)	f2fs: fix to do sanity check with block address in main area v2	fs/f2fs/data.c fs/f2fs/inode.c
+2c605dd1ad23	déjà présent (identique)	f2fs: free meta pages if sanity check for ckpt is failed	git am : patch déjà appliqué
+91fe514bedf4	appliqué	f2fs: fix to do sanity check with cp_pack_start_sum	
+4ec44e98ab08	appliqué	xfs: don't fail when converting shortform attr to long form during ATTR_REPLACE	
+0c82bca7cd1a	appliqué	hugetlbfs: fix bug in pgoff overflow checking	
+1aa861ff238e	appliqué	Linux 4.9.144	
+b49bb7d4e6a3	appliqué	media: omap3isp: Unregister media device as first	
+19c60745cb1f	appliqué	iommu/vt-d: Fix NULL pointer dereference in prq_event_thread()	
+04e7ceeea56e	appliqué	brcmutil: really fix decoding channel info for 160 MHz bandwidth	
+06144feb5104	appliqué	iommu/ipmmu-vmsa: Fix crash on early domain free	
+9f4928c2ba0a	appliqué	can: rcar_can: Fix erroneous registration	
+8d6dfd2ce1a4	appliqué	HID: input: Ignore battery reported by Symbol DS4308	
+dc08fb597a8a	appliqué	batman-adv: Expand merged fragment buffer for full packet	
+897e370d1408	appliqué	bnx2x: Assign unique DMAE channel number for FW DMAE transactions.	
+37a73ddd1d51	appliqué	qed: Fix PTT leak in qed_drain()	
+a1597daab7e9	appliqué	qed: Fix reading wrong value in loop condition	
+aa4a6a1848a1	appliqué	net/mlx4_core: Zero out lkey field in SW2HW_MPT fw command	
+6485f65edc7c	appliqué	net/mlx4_core: Fix uninitialized variable compilation warning	
+89860d2ca033	appliqué	net/mlx4: Fix UBSAN warning of signed integer overflow	
+fc70b21fdbab	appliqué	mtd: rawnand: qcom: Namespace prefix some commands	
+94d9befeaabe	appliqué	net: faraday: ftmac100: remove netif_running(netdev) check before disabling interrupts	
+782d0b84cf2c	appliqué	iommu/vt-d: Use memunmap to free memremap	
+1c0d7303b2a0	appliqué	team: no need to do team_notify_peers or team_mcast_rejoin when disabling port	
+52c872554bc5	appliqué	net: amd: add missing of_node_put()	
+fbb78e978a13	appliqué	mm: don't warn about allocations which stall for too long	
+a6e441a6bc3b	appliqué	ARC: [zebu] Remove CONFIG_INITRAMFS_SOURCE from defconfigs	
+2457aa820d3b	appliqué	usb: quirk: add no-LPM quirk on SanDisk Ultra Flair device	
+c037e8873e92	appliqué	usb: appledisplay: Add 27" Apple Cinema Display	
+fe26b8d06e96	appliqué	USB: check usb_get_extra_descriptor for proper size	
+73000a4cec93	appliqué	ALSA: usb-audio: Fix UAF decrement if card has no live interfaces in card.c	
+46da53f3b79f	appliqué	ALSA: hda: Add support for AMD Stoney Ridge	
+ee8dce2bced1	appliqué	ALSA: pcm: Fix starvation on down_write_nonblock()	
+ba9890ac551a	appliqué	ALSA: pcm: Call snd_pcm_unlink() conditionally at closing	
+1474395b4f97	appliqué	ALSA: pcm: Fix interval evaluation with openmin/max	
+5e51318e088c	appliqué	ALSA: hda/realtek - Fix speaker output regression on Thinkpad T570	
+92054f4de90b	appliqué	virtio/s390: avoid race on vcdev->config	
+95e3e514c752	appliqué	virtio/s390: fix race in ccw_io_helper()	
+ce4a99ac9017	appliqué	SUNRPC: Fix leak of krb5p encode pages	
+1f7170700fb2	appliqué	dmaengine: cppi41: delete channel from pending list when stop channel	
+d65afda688f3	appliqué	xhci: Prevent U1/U2 link pm states if exit latency is too long	
+cb101349f516	appliqué	sr: pass down correctly sized SCSI sense buffer	
+adcc5726f140	appliqué	swiotlb: clean up reporting	
+2d5a1b31799e	appliqué	vsock: lookup and setup guest_cid inside vhost_vsock_lock	
+569fc4ffb5de	appliqué	vhost/vsock: fix use-after-free in network stack callers	
+2f5b76794a49	appliqué	Staging: lustre: remove two build warnings	
+fcfc76397dbd	appliqué	cifs: Fix separator when building path from dentry	
+902d410d3dbe	appliqué	staging: rtl8712: Fix possible buffer overrun	
+32445bd5c72b	non repris (volontaire)	tty: serial: 8250_mtk: always resume the device in probe.	8250_mtk très modifié par MediaTek/Jancar (UART de la MCU, ttyS1) : ordre pm_runtime du probe d'origine gardé
+9696ca9071f3	appliqué	tty: do not set TTY_IO_ERROR flag if console port	
+6d86192748a9	déjà présent (identique)	kgdboc: fix KASAN global-out-of-bounds bug in param_set_kgdboc_var()	git am : patch déjà appliqué
+3a492ce1b6d5	appliqué	mac80211_hwsim: Timer should be initialized before device registered	
+554eac28f83e	appliqué	mac80211: Clear beacon_int in ieee80211_do_stop	
+7df29ead86c5	appliqué	mac80211: ignore tx status for PS stations in ieee80211_tx_status_ext	
+db32c245a486	appliqué	mac80211: fix reordering of buffered broadcast packets	
+fd54ea7049bd	appliqué	mac80211: ignore NullFunc frames in the duplicate detection	
+51d137cab5c7	appliqué	kbuild: fix linker feature test macros when cross compiling with Clang	
+4c219af48b1e	appliqué	kbuild: allow to use GCC toolchain not in Clang search path	
+9c2f007c3c5e	appliqué	Linux 4.9.145	
+901936a1eab8	appliqué	ipv6: Check available headroom in ip6_xmit() even without options	
+25a445d3292b	appliqué	net: 8139cp: fix a BUG triggered by changing mtu with network traffic	
+5765610c932d	appliqué	net/mlx4_core: Correctly set PFC param if global pause is turned off.	
+4f384d942738	appliqué	net: phy: don't allow __set_phy_supported to add unsupported modes	
+8dd57cc3007a	appliqué	net: Prevent invalid access to skb->prev in __qdisc_drop_all	
+fe25279da73b	appliqué	rtnetlink: ndo_dflt_fdb_dump() only work for ARPHRD_ETHER devices	
+bd3fa7e1a603	appliqué	tcp: fix NULL ref in tail loss probe	
+b28c2c74a503	appliqué	tun: forbid iface creation with rtnl ops	
+5873b2c7b5e3	appliqué	neighbour: Avoid writing before skb->head in neigh_hh_output()	
+e6b4f360d2fc	appliqué	ARM: OMAP2+: prm44xx: Fix section annotation on omap44xx_prm_enable_io_wakeup	
+2e6ef7e360b0	appliqué	ARM: dts: logicpd-somlv: Fix interrupt on mmc3_dat1	
+e0242093e59a	appliqué	ARM: OMAP1: ams-delta: Fix possible use of uninitialized field	
+c36dff34c4ee	appliqué	sysv: return 'err' instead of 0 in __sysv_write_inode	
+fc000b5374db	appliqué	selftests: add script to stress-test nft packet path vs. control plane	
+696c3ede894e	appliqué	s390/cpum_cf: Reject request for sampling in event initialization	
+526bbd2c6a18	appliqué	hwmon: (ina2xx) Fix current value calculation	
+fd92adfbfdcd	appliqué	ASoC: omap-abe-twl6040: Fix missing audio card caused by deferred probing	
+4c4ab8d5fa2e	appliqué	ASoC: dapm: Recalculate audio map forcely when card instantiated	
+da7e373e0478	appliqué	hwmon: (w83795) temp4_type has writable permission	
+63bc6364fb57	appliqué	objtool: Fix double-free in .cold detection error path	
+779f4eecbcec	appliqué	objtool: Fix segfault in .cold detection with -ffunction-sections	
+aeda9163eb66	appliqué	Btrfs: send, fix infinite loop due to directory rename dependencies	
+454892c34bb8	appliqué	RDMA/mlx5: Fix fence type for IB_WR_LOCAL_INV WR	
+0dbabe0fb231	appliqué	ASoC: omap-mcpdm: Add pm_qos handling to avoid under/overruns with CPU_IDLE	
+476a607331b7	appliqué	ASoC: omap-dmic: Add pm_qos handling to avoid overruns with CPU_IDLE	
+d2139ee71c89	appliqué	exportfs: do not read dentry after free	
+98547af24768	appliqué	bpf: fix check of allowed specifiers in bpf_trace_printk	
+3d7eec166f65	appliqué	ipvs: call ip_vs_dst_notifier earlier than ipv6_dev_notf	
+2c37b2f49ba7	appliqué	USB: omap_udc: use devm_request_irq()	
+a2aa761a5cd6	appliqué	USB: omap_udc: fix crashes on probe error and module removal	
+42aea74fcc4d	appliqué	USB: omap_udc: fix omap_udc_start() on 15xx machines	
+def38db5290b	appliqué	USB: omap_udc: fix USB gadget functionality on Palm Tungsten E	
+eadd53572060	appliqué	KVM: x86: fix empty-body warnings	
+0c4d57aa1869	appliqué	x86/kvm/vmx: fix old-style function declaration	
+f05ca3e46f0e	appliqué	net: thunderx: fix NULL pointer dereference in nic_remove	
+5e3cd966e61e	appliqué	cachefiles: Fix page leak in cachefiles_read_backing_file while vmscan is active	
+f30f32d609b5	appliqué	igb: fix uninitialized variables	
+992963c693c5	appliqué	ixgbe: recognize 1000BaseLX SFP modules as 1Gbps	
+1bb6e0ccbc4d	appliqué	net: hisilicon: remove unexpected free_netdev	
+9e5c74f0c372	appliqué	drm/ast: fixed reading monitor EDID not stable issue	
+c5ca49a59f62	appliqué	xen: xlate_mmu: add missing header to fix 'W=1' warning	
+7a821a9a2f86	appliqué	fscache: fix race between enablement and dropping of object	
+f23fc42a3d4c	appliqué	fscache, cachefiles: remove redundant variable 'cache'	
+12daef1de358	appliqué	ocfs2: fix deadlock caused by ocfs2_defrag_extent()	
+5cf41549e60a	appliqué	hfs: do not free node before using	
+7f0a62fb6ee3	appliqué	hfsplus: do not free node before using	
+f4d2afe28f53	appliqué	debugobjects: avoid recursive calls with kmemleak	
+1b5620ca618f	appliqué	ocfs2: fix potential use after free	
+5c35dc008c6b	appliqué	pstore: Convert console write to use ->write_buf	
+df62280ba8ac	appliqué	staging: speakup: Replace strncpy with memcpy	
+0cff89461d55	appliqué	Linux 4.9.146	
+1e7066a4540b	appliqué	signal: Introduce COMPAT_SIGMINSTKSZ for use in compat_sys_sigaltstack	
+c114bdd5842b	appliqué	lib/interval_tree_test.c: make test options module parameters	
+5e03c490303c	appliqué	lib/interval_tree_test.c: allow full tree search	
+b7d8b9cb820e	appliqué	lib/rbtree_test.c: make input module parameters	
+c07f4060708d	appliqué	lib/rbtree-test: lower default params	
+36c9eca096a7	appliqué	lib/interval_tree_test.c: allow users to limit scope of endpoint	
+1098aad93c4a	appliqué	timer/debug: Change /proc/timer_list from 0444 to 0400	
+4cf3b84a10ea	appliqué	pinctrl: sunxi: a83t: Fix IRQ offset typo for PH11	
+3a7bac902691	appliqué	aio: fix spectre gadget in lookup_ioctx	
+5c2590dc3e25	appliqué	MMC: OMAP: fix broken MMC on OMAP15XX/OMAP5910/OMAP310	
+6c4fbbd96b3d	appliqué	ARM: mmp/mmp2: fix cpu_is_mmp2() on mmp2-dt	
+5e8e777a42e8	appliqué	tracing: Fix memory leak in set_trigger_filter()	
+326c9e17c120	appliqué	tracing: Fix memory leak of instance function hash filters	
+b0daf4e6324f	appliqué	powerpc/msi: Fix NULL pointer access in teardown code	
+af20483dbd7c	appliqué	Revert "drm/rockchip: Allow driver to be shutdown on reboot/kexec"	
+02366eccf81f	appliqué	drm/i915/execlists: Apply a full mb before execution for Braswell	
+7a4b56ae85f6	appliqué	mac80211: don't WARN on bad WMM parameters from buggy APs	
+0715895a55b4	appliqué	mac80211: Fix condition validating WMM IE	
+d395117fac79	appliqué	IB/hfi1: Remove race conditions in user_sdma send path	
+c3b6e79fbf29	appliqué	locking: Remove smp_read_barrier_depends() from queued_spin_lock_slowpath()	
+48c42d4dfec4	appliqué	locking/qspinlock: Ensure node is initialised before updating prev->next	
+8e5b3bcc5291	appliqué	locking/qspinlock: Bound spinning on pending->locked transition in slowpath	
+60668f3cddf1	appliqué	locking/qspinlock: Merge 'struct __qspinlock' into 'struct qspinlock'	
+9b5884372c79	appliqué	locking/qspinlock: Remove unbounded cmpxchg() loop from locking slowpath	
+0f28d5f4ce39	appliqué	locking/qspinlock: Remove duplicate clear_pending() function from PV code	
+0952e8f0e624	appliqué	locking/qspinlock: Kill cmpxchg() loop when claiming lock from head of queue	
+f650bdcabf56	appliqué	locking/qspinlock: Re-order code	
+8ae5642df23d	appliqué	locking/qspinlock/x86: Increase _Q_PENDING_LOOPS upper bound	
+88ce30fb88a1	appliqué	locking/qspinlock, x86: Provide liveness guarantee	
+c6bcf40f7692	appliqué	locking/qspinlock: Fix build for anonymous union in older GCC compilers	
+3e5d4c14a742	appliqué	mac80211_hwsim: fix module init error paths for netlink	
+2ee718b1c537	appliqué	scsi: libiscsi: Fix NULL pointer dereference in iscsi_eh_session_reset	
+7f928ef277bb	appliqué	scsi: vmw_pscsi: Rearrange code to avoid multiple calls to free_irq during unload	
+01edb9812380	appliqué	x86/earlyprintk/efi: Fix infinite loop on some screen widths	
+945d5195c612	appliqué	drm/msm: Grab a vblank reference when waiting for commit_done	
+beab9a76d491	appliqué	ARC: io.h: Implement reads{x}()/writes{x}()	
+2eb7e6fd37fb	appliqué	bonding: fix 802.3ad state sent to partner when unbinding slave	
+de42cd219802	appliqué	nfs: don't dirty kernel pages read by direct-io	
+5ba8d8b5a27c	appliqué	SUNRPC: Fix a potential race in xprt_connect()	
+38d3f5fb60ce	appliqué	sbus: char: add of_node_put()	
+076bb557eeac	appliqué	drivers/sbus/char: add of_node_put()	
+f969b24ec770	appliqué	drivers/tty: add missing of_node_put()	
+6ecd4ae6760c	appliqué	ide: pmac: add of_node_put()	
+38391d6b1144	appliqué	clk: mvebu: Off by one bugs in cp110_of_clk_get()	
+4ff9a2f211ea	appliqué	clk: mmp: Off by one in mmp_clk_add()	
+6ceb38129394	appliqué	Input: omap-keypad - fix keyboard debounce configuration	
+6705f748b0a2	appliqué	libata: whitelist all SAMSUNG MZ7KM* solid-state disks	
+24ed8c530258	appliqué	mv88e6060: disable hardware level MAC learning	
+2b8b723ccf94	appliqué	net/mlx4_en: Fix build break when CONFIG_INET is off	
+ae30c98dcffd	appliqué	bpf: check pending signals while verifying programs	
+c711ec9a0f72	appliqué	ARM: 8814/1: mm: improve/fix ARM v7_dma_inv_range() unaligned address handling	
+493a06d37a28	appliqué	ARM: 8815/1: V7M: align v7m_dma_inv_range() with v7 counterpart	
+2198eb1229c2	appliqué	ethernet: fman: fix wrong of_node_put() in probe function	
+ba89274f0ec3	appliqué	drm/ast: Fix connector leak during driver unload	
+4cd376638c89	appliqué	cifs: In Kconfig CONFIG_CIFS_POSIX needs depends on legacy (insecure cifs)	
+06ec6679fe12	appliqué	vhost/vsock: fix reset orphans race with close timeout	
+ebf838c7a160	appliqué	i2c: axxia: properly handle master timeout	
+89efcfc544ee	appliqué	i2c: scmi: Fix probe error on devices with an empty SMB0001 ACPI device node	
+36764b4a4363	appliqué	nvmet-rdma: fix response use after free	
+54dbda74475e	appliqué	rtc: snvs: add a missing write sync	
+1228a3336d90	appliqué	rtc: snvs: Add timeouts to avoid kernel lockups	
+bbfc30f29cb3	appliqué	Linux 4.9.147	
+f5cecc055048	appliqué	block: break discard submissions into the user defined size	
+5af2d106ca7b	appliqué	block: fix infinite loop if the device loses discard capability	
+6f59058927cb	appliqué	ib_srpt: Fix a use-after-free in __srpt_close_all_ch()	
+5501175cb197	appliqué	USB: hso: Fix OOB memory access in hso_probe/hso_get_config_data	
+e953031c6d83	appliqué	xhci: Don't prevent USB2 bus suspend in state check intended for USB3 only	
+a3c90858c1be	appliqué	USB: serial: option: add GosunCn ZTE WeLink ME3630	
+673187ceced1	appliqué	USB: serial: option: add HP lt4132	
+8284907c981f	appliqué	USB: serial: option: add Simcom SIM7500/SIM7600 (MBIM mode)	
+ce1e78c7b0fd	appliqué	USB: serial: option: add Fibocom NL668 series	
+baecfd917845	appliqué	USB: serial: option: add Telit LN940 series	
+68f3ea1d87eb	appliqué	mmc: core: Reset HPI enabled state during re-init and in case of errors	
+71383ffbf2e7	appliqué	mmc: core: Allow BKOPS and CACHE ctrl even if no HPI support	
+b102595e99df	appliqué	mmc: core: Use a minimum 1600ms timeout when enabling CACHE ctrl	
+78d2d2762c6f	appliqué	mmc: omap_hsmmc: fix DMA API warning	
+1d060fede295	appliqué	gpio: max7301: fix driver for use with CONFIG_VMAP_STACK	
+dac731412750	appliqué	Drivers: hv: vmbus: Return -EINVAL for the sys files for unopened channels	
+0d5fec5bda27	appliqué	x86/mtrr: Don't copy uninitialized gentry fields back to userspace	
+d3741e039028	appliqué	x86/fpu: Disable bottom halves while loading FPU registers	
+3926df1fb56c	appliqué	ubifs: Handle re-linking of inodes correctly while recovery	
+6c976b42dc15	appliqué	panic: avoid deadlocks in re-entrant console drivers	
+4d5741aa2aaa	appliqué	proc/sysctl: don't return ENOMEM on lookup when a table is unregistering	
+00279b505289	appliqué	drm/ioctl: Fix Spectre v1 vulnerabilities	
+d99748864fa9	appliqué	Linux 4.9.148	
+afb85b1bbe4f	appliqué	NFC: nxp-nci: Include unaligned.h instead of access_ok.h	
+5d9a7965b157	appliqué	ip6mr: Fix potential Spectre v1 vulnerability	
+35775cc415d2	appliqué	ipv4: Fix potential Spectre v1 vulnerability	
+c39b8fd4997b	appliqué	ax25: fix a use-after-free in ax25_fillin_cb()	
+b3ebeeb7efe0	appliqué	ibmveth: fix DMA unmap error in ibmveth_xmit_start error path	
+1a6cd598c827	appliqué	ieee802154: lowpan_header_create check must check daddr	
+41743ce604da	appliqué	ipv6: explicitly initialize udp6_addr in udp_sock_create6()	
+818b3f7fa002	appliqué	ipv6: tunnels: fix two use-after-free	
+401b5f3d4869	appliqué	isdn: fix kernel-infoleak in capi_unlocked_ioctl	
+122aeb4a1990	appliqué	net: ipv4: do not handle duplicate fragments as overlapping	
+99519a6d546c	appliqué	net: phy: Fix the issue that netif always links up after resuming	
+aa9f3a0f2b5d	appliqué	netrom: fix locking in nr_find_socket()	
+0ca2635b418c	appliqué	net/wan: fix a double free in x25_asy_open_tty()	
+3ddf35c6983b	appliqué	packet: validate address length	
+84e1bfdecaaf	appliqué	packet: validate address length if non-zero	
+aa0c48d16195	appliqué	sctp: initialize sin6_flowinfo for ipv6 addrs in sctp_inet6addr_event	
+336e822a0d48	appliqué	tipc: fix a double kfree_skb()	
+bd50de33ca4c	appliqué	vhost: make sure used idx is seen before log in vhost_add_used_n()	
+d2ea9f12c45e	appliqué	VSOCK: Send reset control packet when socket is partially bound	
+ba0b3c189365	appliqué	xen/netfront: tolerate frags with no data	
+8dd36f18decc	appliqué	tipc: use lock_sock() in tipc_sk_reinit()	
+60216788e4e3	appliqué	tipc: compare remote and local protocols in tipc_udp_enable()	
+52f563ef53f4	appliqué	gro_cell: add napi_disable in gro_cells_destroy	
+82b8fa5e32aa	appliqué	net/mlx5e: Remove the false indication of software timestamping support	
+cf7640671ad2	appliqué	net/mlx5: Typo fix in del_sw_hw_rule	
+7abb7f747bd0	appliqué	sock: Make sock->sk_stamp thread-safe	
+ce8ec03171c6	appliqué	ptr_ring: wrap back ->producer in __ptr_ring_swap_queue()	
+f2f87232dbf1	appliqué	ALSA: rme9652: Fix potential Spectre v1 vulnerability	
+b9b881e05362	appliqué	ALSA: emu10k1: Fix potential Spectre v1 vulnerabilities	
+7455acac681d	appliqué	ALSA: pcm: Fix potential Spectre v1 vulnerability	
+0e71e6cee4a3	appliqué	ALSA: emux: Fix potential Spectre v1 vulnerabilities	
+542a4304f043	appliqué	mtd: atmel-quadspi: disallow building on ebsa110	
+119199f04b33	appliqué	ALSA: hda: add mute LED support for HP EliteBook 840 G4	
+29a4c8dd0fb2	appliqué	ALSA: hda/tegra: clear pending irq handlers	
+f3e8dfa394ad	appliqué	USB: serial: pl2303: add ids for Hewlett-Packard HP POS pole displays	
+6703c3e8d5d1	appliqué	USB: serial: option: add Fibocom NL678 series	
+8b22ef661019	appliqué	usb: r8a66597: Fix a possible concurrency use-after-free bug in r8a66597_endpoint_disable()	
+6e18378e8cc1	appliqué	staging: wilc1000: fix missing read_write setting when reading data	
+d050458dd70a	appliqué	qmi_wwan: apply SET_DTR quirk to the SIMCOM shared device ID	
+597929da47a9	appliqué	Input: elan_i2c - add ACPI ID for touchpad in ASUS Aspire F5-573G	
+7b4a3e9d8d0e	appliqué	KVM: x86: Use jmp to invoke kvm_spurious_fault() from .fixup	
+e50db95d6eb6	appliqué	platform-msi: Free descriptors in platform_msi_domain_free()	
+fdb2f4c79a86	appliqué	perf pmu: Suppress potential format-truncation warning	
+836bf269c56f	appliqué	ext4: fix possible use after free in ext4_quota_enable	
+eaec103eb0c3	appliqué	ext4: missing unlock/put_page() in ext4_try_to_write_inline_data()	
+c72f56c5ae2a	appliqué	ext4: fix EXT4_IOC_GROUP_ADD ioctl	
+2eb64177787d	appliqué	ext4: include terminating u32 in size of xattr entries when expanding inodes	
+40a19e58f205	appliqué	ext4: force inode writes when nfsd calls commit_metadata()	
+708f742ea556	appliqué	spi: bcm2835: Fix race on DMA termination	
+a0049c05f7c1	appliqué	spi: bcm2835: Fix book-keeping of DMA termination	
+31115f50aa7a	appliqué	spi: bcm2835: Avoid finishing transfer prematurely in IRQ mode	
+751fcd0f1d6c	appliqué	clk: rockchip: fix typo in rk3188 spdif_frac parent	
+252098084eac	appliqué	cdc-acm: fix abnormal DATA RX issue for Mediatek Preloader.	
+362e8cbc7c72	appliqué	f2fs: fix validation of the block count in sanity_check_raw_super	
+468b4fb53fe8	appliqué	serial: uartps: Fix interrupt mask issue to handle the RX interrupts properly	
+c8d550daa042	appliqué	media: vivid: free bitmap_cap when updating std/timings/etc.	
+b21535727613	appliqué	media: v4l2-tpg: array index could become negative	
+eaca94b0a613	appliqué	MIPS: Ensure pmd_present() returns false after pmd_mknotpresent()	
+93cf55e2835d	appliqué	MIPS: Align kernel load address to 64KB	
+855feca99019	appliqué	MIPS: OCTEON: mark RGMII interface disabled on OCTEON III	
+40738b6a0428	appliqué	CIFS: Fix error mapping for SMB2_LOCK command which caused OFD lock problem	
+737dcb98a359	appliqué	x86/kvm/vmx: do not use vm-exit instruction length for fast MMIO when running nested	
+c1348e03c15b	appliqué	arm64: KVM: Avoid setting the upper 32 bits of VTCR_EL2 to 1	
+6e2ecb4f2ae6	appliqué	rtc: m41t80: Correct alarm month range with RTC reads	
+7dd6d0d40f13	appliqué	tpm: tpm_i2c_nuvoton: use correct command duration for TPM 2.x	
+0b7a78688a4c	appliqué	spi: bcm2835: Unbreak the build of esoteric configs	
+8a12358ba0e2	appliqué	Linux 4.9.149	
+609a4c7977ff	appliqué	pinctrl: meson: fix pull enable register calculation	
+1837a06a163b	appliqué	powerpc: Fix COFF zImage booting on old powermacs	
+559ddc885a5e	appliqué	ARM: imx: update the cpu power up timing setting on i.mx6sx	
+752d39ee1bef	appliqué	ARM: dts: imx7d-nitrogen7: Fix the description of the Wifi clock	
+e34040279333	appliqué	Input: restore EV_ABS ABS_RESERVED	
+38886b1d0592	appliqué	checkstack.pl: fix for aarch64	
+bcbc7da1e372	appliqué	xfrm: Fix bucket count reported to userspace	
+d013a1cd9c1d	appliqué	netfilter: seqadj: re-load tcp header pointer after possible head reallocation	
+627fdfac7808	appliqué	scsi: bnx2fc: Fix NULL dereference in error handling	
+48a732cbd425	appliqué	Input: omap-keypad - fix idle configuration to not block SoC idle states	
+1231e259d43a	appliqué	netfilter: ipset: do not call ipset_nest_end after nla_nest_cancel	
+40790571fbc5	appliqué	bnx2x: Clear fip MAC when fcoe offload support is disabled	
+e7c8e00eb776	appliqué	bnx2x: Remove configured vlans as part of unload sequence.	
+0c8afaa83988	appliqué	bnx2x: Send update-svid ramrod with retry/poll flags enabled	
+8323aafe67b3	appliqué	scsi: target: iscsi: cxgbit: fix csk leak	
+eb7bd2fdb6b0	appliqué	scsi: target: iscsi: cxgbit: add missing spin_lock_init()	
+ec3947acec29	appliqué	drivers: net: xgene: Remove unnecessary forward declarations	
+225219d7edf8	appliqué	w90p910_ether: remove incorrect __init annotation	
+c4cb69d23c27	appliqué	net: hns: Incorrect offset address used for some registers.	
+f079768d690c	appliqué	net: hns: All ports can not work when insmod hns ko after rmmod.	
+bf27509b03d9	appliqué	net: hns: Some registers use wrong address according to the datasheet.	
+1d6bde50667d	appliqué	net: hns: Fixed bug that netdev was opened twice	
+c2a11c3dc459	appliqué	net: hns: Clean rx fbd when ae stopped.	
+03b2d56bda1e	appliqué	net: hns: Free irq when exit from abnormal branch	
+2f603000560e	appliqué	net: hns: Avoid net reset caused by pause frames storm	
+c3c903113683	appliqué	net: hns: Fix ntuple-filters status error.	
+3f2c31043c44	appliqué	net: hns: Add mac pcs config when enable|disable mac	
+6b464ecc3eea	appliqué	SUNRPC: Fix a race with XPRT_CONNECTING	
+253b944c1598	appliqué	lan78xx: Resolve issue with changing MAC address	
+5d036c3ad4bc	appliqué	vxge: ensure data0 is initialized in when fetching firmware version information	
+154b7716f9aa	appliqué	net: netxen: fix a missing check and an uninitialized use	
+8ebaa4f2e66b	appliqué	serial/sunsu: fix refcount leak	
+5d1a7cebad58	appliqué	scsi: zfcp: fix posting too many status read buffers leading to adapter shutdown	
+90b7f9481243	appliqué	libceph: fix CEPH_FEATURE_CEPHX_V2 check in calc_signature()	
+0ea6030b5558	appliqué	fork: record start_time late	
+cb1206e85df2	appliqué	hwpoison, memory_hotplug: allow hwpoisoned pages to be offlined	
+8f62cf80a309	appliqué	mm, devm_memremap_pages: mark devm_memremap_pages() EXPORT_SYMBOL_GPL	
+298cf9b3308c	appliqué	mm, devm_memremap_pages: kill mapping "System RAM" support	
+9369b7dd1019	appliqué	sunrpc: fix cache_head leak due to queued request	
+4faef7aee9a9	appliqué	sunrpc: use SVC_NET() in svcauth_gss_* functions	
+f12e01b3c64d	appliqué	MIPS: math-emu: Write-protect delay slot emulation pages	
+ce8ca305b49b	appliqué	crypto: x86/chacha20 - avoid sleeping with preemption disabled	
+258d8549b55e	appliqué	vhost/vsock: fix uninitialized vhost_vsock->guest_cid	
+dbf1c67c19b5	appliqué	IB/hfi1: Incorrect sizing of sge for PIO will OOPs	
+4cdad05eb6f7	appliqué	ALSA: cs46xx: Potential NULL dereference in probe	
+beab6f305f4f	appliqué	ALSA: usb-audio: Avoid access before bLength check in build_audio_procunit()	
+46f5376ca672	appliqué	ALSA: usb-audio: Fix an out-of-bound read in create_composite_quirks	
+5dbe8ebf8a9c	appliqué	dlm: fixed memory leaks after failed ls_remove_names allocation	
+4e28e1e18dbd	appliqué	dlm: possible memory leak on error path in create_lkb()	
+0f090eb97008	appliqué	dlm: lost put_lkb on error path in receive_convert() and receive_unlock()	
+579d0aacc4f5	appliqué	dlm: memory leaks on error path in dlm_user_request()	
+02b03b2c3059	appliqué	gfs2: Get rid of potential double-freeing in gfs2_create_inode	
+b854c7b3c683	appliqué	gfs2: Fix loop in gfs2_rbm_find	
+0e36c79c6c00	appliqué	b43: Fix error in cordic routine	
+49edda5952ae	appliqué	powerpc/tm: Set MSR[TS] just prior to recheckpoint	
+00f0194cfeb9	appliqué	9p/net: put a lower bound on msize	
+093392ecdb5a	appliqué	rxe: fix error completion wr_id and qp_num	
+da4b7ae4caff	appliqué	iommu/vt-d: Handle domain agaw being less than iommu agaw	
+6fa22a7d5ef9	appliqué	ceph: don't update importing cap's mseq when handing cap export	
+49edc8313def	appliqué	genwqe: Fix size check	
+8fcfb8fc0f7c	appliqué	intel_th: msu: Fix an off-by-one in attribute store	
+8abd786766ff	appliqué	power: supply: olpc_battery: correct the temperature units	
+484cb974027a	appliqué	drm/vc4: Set ->is_yuv to false when num_planes == 1	
+b54c67cec5fa	appliqué	bnx2x: Fix NULL pointer dereference in bnx2x_del_all_vlans() on some hw	
+df6062688e38	appliqué	Linux 4.9.150	

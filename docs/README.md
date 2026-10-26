@@ -11,6 +11,7 @@ reconstruit (branche `reverse-engineering`).
 | [TUNING.md](TUNING.md) | frequences et tensions CPU / GPU (overclock, sous-tension), parametres |
 | [TOUCH.md](TOUCH.md) | dalles tactiles : references, pilotes du stock et de LibreHU, sources |
 | [VIDEO.md](VIDEO.md) | camera AHD (TP9963), CVBS IN, VIDEO OUT, ARM2 ; reconstruction du pilote TP9963 |
+| [STABLE.md](STABLE.md) | mises a jour linux-stable 4.9.118 -> 4.9.337 par lots (branches `stable-4.9.*`) : methode, plan, bilan et decisions de chaque lot, tests |
 | [PORTING.md](PORTING.md) | modifications de `reverse-engineering` : deja natives chez Autochips, a verifier, a reprendre ; suivi |
 | [../README.md](../README.md) | presentation, branches, roadmap |
 | [../README_LIBREHU.md](../README_LIBREHU.md) | les trois branches, provenance du paquet Autochips et ce qui y manque |
@@ -21,6 +22,7 @@ reconstruit (branche `reverse-engineering`).
 | `autochips-gpl` | paquet GPL Autochips tel que recu (SIXWIN / Jancar, 19/10/2026), jamais modifie |
 | `reverse-engineering` | noyau reconstruit (base publique MediaTek MT6761 + reverse engineering) ; reference |
 | `LibreHU-main` | **branche de travail** : `autochips-gpl` + nos modifications |
+| `stable-4.9.*` | `LibreHU-main` + correctifs linux-stable par lots ([STABLE.md](STABLE.md)) |
 
 Un nouvel envoi de Jancar (pilotes manquants) est ajoute tel quel sur `autochips-gpl`, puis
 `git merge autochips-gpl` sur `LibreHU-main`.

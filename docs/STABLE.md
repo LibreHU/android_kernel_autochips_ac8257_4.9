@@ -1,0 +1,144 @@
+# Mises a jour linux-stable 4.9.y (branches `stable-4.9.*`)
+
+Le paquet Autochips est un Linux **4.9.117** (aout 2018) ; la branche 4.9 s'est arretee a **4.9.337** (7 janvier 2023,
+derniere version de Greg Kroah-Hartman). On rattrape les 220 versions par lots, une branche par lot, testee sur
+l'unite avant la suivante, puis tout revient dans `LibreHU-main`.
+
+## Methode
+- **Branches empilees** : `stable-4.9.150` part de `LibreHU-main`, `stable-4.9.200` de `stable-4.9.150`, etc. On ne
+  cree la suivante qu'une fois la precedente validee sur l'unite ; une correction dans un lot est fusionnee dans les
+  suivants. La CI construit toute branche `stable-4.9.*` et publie la prerelease `latest-<branche>` (pas de zip dans
+  LibreHU Apps : flashablesZips ne prend que les branches declarees).
+- **Source** : les commits officiels de linux-stable (`git fetch stable` sur
+  `https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git`, tags `v4.9.117`..`v4.9.337`), appliques un par
+  un dans l'ordre par `tools/stable/apply.py` avec `git am -3` (fusion a trois voies). Auteur et message d'origine
+  gardes, avec `(linux-stable commit <hash>)` ajoute ; les commits `Linux 4.9.N` font monter `SUBLEVEL`.
+- **Decisions** (journal `docs/stable/lot*.tsv`, une ligne par commit) :
+  - conflit dans un fichier **non compile** avec `ac8257_ujc201_defconfig` (`tools/stable/compiled.py`) : notre
+    version est gardee, le reste du correctif applique (ou le correctif ignore s'il ne reste rien) ;
+  - conflit ou les lignes amont sont **deja presentes** : notre version gardee ;
+  - autre conflit : **resolu a la main**, le commit porte `[LibreHU: conflit resolu ... ]` ;
+  - correctif deja la sous une autre forme (noyau commun Android, MediaTek) ou sans objet : non applique, raison notee.
+- **Controles** : compilation locale complete (meme chaine que la CI) ; `tools/stable/dupaudit.py` cherche les blocs
+  qu'un correctif aurait ajoutes une deuxieme fois (code deja present ailleurs dans le fichier) en comparant au
+  fichier amont ; comparaison des CRC de `Module.symvers` avec `LibreHU-main` et le noyau stock.
+
+## Modules du vendor : recompiles avec le noyau (module KernelSU)
+`CONFIG_MODVERSIONS=y` : le numero de version (4.9.117 -> 4.9.150) n'empeche pas le chargement (`same_magic()` ignore
+la version quand les CRC sont presents), mais les CRC des symboles, oui. `LibreHU-main` a le CRC du stock pour
+9 635 des 9 643 symboles communs ; apres le lot 1, 5 776 seulement : des structures centrales changent pour
+genksyms (`sk_buff` : union `sk` / `ip_defrag_offset` ; `net` / `netns_frags` : defragmentation IP passee en
+rhashtable, FragmentSmack ; `ctl_table_header`, `kmem_cache`). Les modules Wi-Fi, BT, GPS et FM de
+`/vendor/lib/modules` seraient refuses (`disagrees about version of symbol`), et masquer ces changements a genksyms
+ne serait pas sur (la disposition de `struct net` change vraiment).
+
+Donc, sur les branches `stable-4.9.*` (`CONFIG_LIBREHU_CONN_MODULES=y`), ces pilotes sont **recompiles avec le
+noyau, en modules** : memes sources GPL MediaTek que `connectivity-builtin` (`drivers/misc/mediatek/connectivity`,
+`README.librehu`), memes noms que ceux du stock (`wmt_drv`, `wmt_chrdev_wifi`, `wlan_drv_gen4m`, `bt_drv`,
+`gps_drv`, `fmradio_drv`). Le noyau ne grossit pas (ils ne sont pas dans la partition `boot`).
+
+La CI publie `librehu_connectivity_ksu.zip` dans la prerelease : un module **KernelSU** (KernelSU Next -> Modules ->
+Installer, puis redemarrer). Son `post-fs-data.sh` (etape bloquante, avant le demarrage de `wmt_loader`) charge les
+six modules dans l'ordre des dependances, **seulement si `/proc/version` est exactement celui du noyau compile dans
+le meme run** : avec un autre noyau (retour a `LibreHU-main`), il ne fait rien et les modules du vendor servent comme
+avant. `/vendor` n'est pas touche. Si un script init du vendor charge ses modules plus tard, ils sont refuses (meme
+nom deja charge) ; s'il le fait avant, ils echouent sur les CRC et les notres prennent le relais. Journal :
+`/data/adb/modules/librehu_connectivity/last.log`. Outil : `tools/stable/conn_ksu_module.sh`.
+
+`fpsgo` (module de performance du vendor, sans sources ici) ne se chargera pas non plus : pas d'effet attendu hors
+regulation des images par seconde du service de performance MediaTek.
+
+## Plan des lots
+
+| Branche | Versions | Etat |
+|---|---|---|
+| `stable-4.9.150` | 4.9.118 -> 4.9.150 | applique, compile (noyau + modules de connectivite) ; **a tester sur l'unite** |
+| `stable-4.9.200` | 4.9.151 -> 4.9.200 | a faire |
+| `stable-4.9.225` | 4.9.201 -> 4.9.225 | a faire |
+| `stable-4.9.250` | 4.9.226 -> 4.9.250 | a faire |
+| `stable-4.9.300` | 4.9.251 -> 4.9.300 | a faire (CVE-2021-0920 af_unix) |
+| `stable-4.9.319` | 4.9.301 -> 4.9.319 | a faire |
+| `stable-4.9.337` | 4.9.320 -> 4.9.337 | a faire (reecriture de `random.c` en 4.9.320) |
+
+## Lot 1 : `stable-4.9.150` (4.9.118 -> 4.9.150)
+
+2178 commits linux-stable : **2086 appliques tels quels**, 11 avec un conflit resolu a la
+main, 4 avec un conflit dont les lignes amont etaient deja la,
+8 en partie (conflit dans un fichier non compile),
+39 deja presents, 23 ignores (conflit
+seulement dans du code non compile), 7 non repris volontairement ou sans objet.
+Detail complet : [stable/lot1-4.9.118-150.tsv](stable/lot1-4.9.118-150.tsv).
+
+Correctifs utiles a l'unite dans ce lot : fuites d'information du pilote CD-ROM (CVE-2018-10940, CVE-2018-16658,
+`cdrom_ioctl_drive_status`), `sr` (ouverture d'un CD-ROM bloquee avec la gestion d'energie, taille du tampon de
+sense), use-after-free ION (`ION_IOC_SHARE` / `ION_IOC_MAP`), ashmem (taille du mmap), ext4 (CVE-2018-10880 / 10883
+deja presents, les autres appliques), FragmentSmack (CVE-2018-5391), r8152, `protected_fifos` / `protected_regular`.
+
+### Corrections apres application
+- `crypto: arm64/sha - avoid non-standard inline asm tricks` (`0a953c058f73`) : applique sans conflit, mais les
+  constantes `sha1/sha256_ce_offsetof_*` existaient deja ailleurs dans le fichier (noyau commun Android) : definies
+  deux fois, erreur de compilation. Commit retire de la branche (seule duplication trouvee par `dupaudit.py`).
+- Makefile : `kbuild: Set KBUILD_CFLAGS before incl. arch Makefile` ajoutait un deuxieme bloc clang (deux cibles
+  passees a clang). Un seul bloc, a la place amont, avec le triplet et les avertissements du noyau Android.
+- Effet voulu de ce bloc et de `kbuild: fix linker feature test macros when cross compiling with Clang` : les tests
+  `ld-option` / `cc-option` marchent enfin avec clang. `--fix-cortex-a53-843419` (erratum du Cortex-A53, notre CPU)
+  et `--no-apply-dynamic-relocs` sont reellement passes a l'editeur de liens (ils ne l'etaient pas sur
+  `LibreHU-main`), d'ou une image compressee plus petite (9,68 Mo contre 10,11 Mo) ; `-fshort-wchar`,
+  `-DCONFIG_AS_LSE=1` (atomiques LSE choisies au demarrage selon le CPU : LL/SC sur l'A53) en plus.
+
+### Conflits resolus a la main
+| Commit linux-stable | Correctif | Decision |
+|---|---|---|
+| `f37486c0a1d0` | cpu/hotplug: Provide knobs to control SMT | cpu.h : idle_notifier (Android) et cpuhp_smt_control gardes tous les deux |
+| `3fedc0cd376b` | staging: android: ion: fix ION_IOC_{MAP,SHARE} use-after-free | ION_IOC_SHARE/MAP sous le verrou du client (correctif de securite), journaux et mmprofile MediaTek gardes ; ion_handle_get_by_id() garde pour ion_drv_get_handle() de MediaTek |
+| `2679c2231bc3` | xhci: Fix use-after-free in xhci_free_virt_device | xhci : virt_dev->udev = NULL toujours (Autochips le faisait sous CONFIG_ATC_AOSP_ENHANCEMENT) |
+| `f5ff43c8837a` | HID: sony: Update device ids | identifiants PS4 deja dans hid_have_special_driver |
+| `72386b22d61f` | HID: sony: Support DS4 dongle | identifiant DS4 dongle deja present |
+| `e757c1e6e71b` | arm/arm64: smccc-1.1: Make return values unsigned long | SMCCC 1.1 : registres en unsigned long et a0 en (u32), reporte sur les macros SMCCC_REG de l'ACK (clang) |
+| `4f689d02c0bf` | arm/arm64: smccc-1.1: Handle function result as parameters | SMCCC 1.1 : resultats de fonction evalues avant les registres (__aN), reporte sur SMCCC_REG (ACK, clang) |
+| `b475cf3bf1e8` | net: add rb_to_skb() and other rb tree helpers | rb_to_skb() deja present : seules les macros skb_rb_* ajoutees |
+| `2edec22d1875` | Revert "netfilter: ipv6: nf_defrag: drop skb dst before queueing" | annulation stable de nf_defrag drop skb dst (repris dans l'ACK, problematique en 4.9) appliquee |
+| `3d26b729ddb2` | ipv6: Fix PMTU updates for UDP/raw sockets in presence of VRF | PMTU VRF : oif = maitre l3mdev si non lie, sk_uid de l'ACK garde |
+| `43bc9c671e5e` | usb: xhci: fix timeout for transition from RExit to U0 | delai RExit->U0 en ms (XHCI_MAX_REXIT_TIMEOUT_MS), journal Autochips garde |
+
+### Non repris volontairement ou sans objet
+| Commit linux-stable | Correctif | Decision |
+|---|---|---|
+| `fbf12e19c9f1` | Mark HI and TASKLET softirq synchronous | ksoftirqd_running() absent : le noyau Android a retire le report des softirqs vers ksoftirqd, HI/TASKLET deja synchrones |
+| `dbf9a0532e02` | sched/cputime: Convert kcpustat to nsecs | serie 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (desactive chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime |
+| `74d6f8eac6ea` | macintosh/rack-meter: Convert cputime64_t use to u64 | serie 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (desactive chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime |
+| `034cd8a20fac` | sched/cputime: Increment kcpustat directly on irqtime account | serie 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (desactive chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime |
+| `aee0c9e837c2` | sched/cputime: Fix ksoftirqd cputime accounting regression | serie 4.9.135 kcpustat en ns : corrige le comptage de ksoftirqd avec CONFIG_IRQ_TIME_ACCOUNTING (desactive chez nous) et fausserait rq_stats, mtk_thermal_platform et blocktag de MediaTek qui lisent kcpustat en cputime |
+| `c466d17e3ab1` | kbuild: drop -Wno-unknown-warning-option from clang options | options de compilation clang validees pour clang 6 (stock) et du code MediaTek en -Werror : -Wno-unknown-warning-option garde |
+| `32445bd5c72b` | tty: serial: 8250_mtk: always resume the device in probe. | 8250_mtk tres modifie par MediaTek/Jancar (UART de la MCU, ttyS1) : ordre pm_runtime du probe d'origine garde |
+
+### Deja presents sous une autre forme (noyau commun Android, MediaTek)
+| Commit linux-stable | Correctif | Decision |
+|---|---|---|
+| `50bed434ad9c` | kasan: add no_sanitize attribute for clang builds | KASAN_ABI_VERSION / no_sanitize deja dans compiler-clang.h (ACK) |
+| `87a2d84d2ff4` | fix mntput/mntput race | mntput_no_expire deja corrige (avec le smp_mb du correctif suivant) |
+| `a96371149006` | arm64: mm: check for upper PAGE_SHIFT bits in pfn_valid() | pfn_valid verifie deja les bits hauts (PFN_MASK) |
+| `b469713e0c0c` | ext4: add corruption check in ext4_xattr_set_entry() | CVE-2018-10879 : ext4_xattr_set_entry() verifie deja next >= s->end (ext4 plus recent dans l'ACK) |
+| `0050338e0d3c` | ext4: always verify the magic number in xattr blocks | auto : lignes amont deja dans fs/ext4/xattr.c |
+| `52f305530ab6` | xhci: Fix USB3 NULL pointer dereference at logical disconnect. | auto : lignes amont deja dans drivers/usb/host/xhci-hub.c |
+| `7135c75e00ed` | kbuild: Add better clang cross build support | support clang croise deja dans le Makefile (CLANG_TRIPLE de l'ACK) |
+| `85ab13ffcc69` | kbuild: Add support to generate LLVM assembly files | nettoyage *.symversions (ACK) garde en plus des fichiers .ll |
+| `ebcc69a97a24` | kbuild: clang: Disable 'address-of-packed-member' warning | auto : lignes amont deja dans Makefile |
+| `0a953c058f73` | crypto: arm64/sha - avoid non-standard inline asm tricks | offsetof sha1/sha256 deja exportes en constantes (ACK) : le correctif les dupliquait (erreur de compilation), retire |
+| `c0d75dacffb9` | binder: fix proc->files use-after-free | binder MediaTek : files_lock protege deja proc->files (task_get_unused_fd_flags, task_fd_install, task_close_fd, mmap, deferred) |
+
+### A tester sur l'unite
+Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac8257.img` de la prerelease
+`latest-stable-4.9.150`, `fastboot flash recovery recovery_test_ac8257.img` puis `fastboot oem reboot-recovery`
+([BUILD.md](BUILD.md)). Un redemarrage normal revient au noyau du boot.
+
+- installer `librehu_connectivity_ksu.zip` de la meme prerelease dans KernelSU Next, puis redemarrer (avec la methode
+  recovery : redemarrer par `fastboot oem reboot-recovery` pour rester sur ce noyau) ;
+- demarrage, `uname -r` = `4.9.150+` ;
+- `cat /data/adb/modules/librehu_connectivity/last.log` : six `loaded` ; `lsmod` ; `dmesg | grep -iE "wmt|wlan|disagrees"` ;
+- ecran, tactile, son, Wi-Fi, Bluetooth (appairage, A2DP, appel), GPS, radio FM ;
+- MCU / CAN (touches volant, marche arriere), camera de recul ;
+- USB : cle, Ethernet RTL8152, lecteur CD / DVD (LibreHU Disc), adb ;
+- mise en veille / reprise si possible.
+
+Resultat a reporter ici et dans [STATUS.md](STATUS.md).
