@@ -72,7 +72,7 @@ regulation des images par seconde du service de performance MediaTek.
 | `stable-4.9.200` | 4.9.151 -> 4.9.200 | applique, compile (noyau + modules de connectivite) ; **a tester sur l'unite** |
 | `stable-4.9.225` | 4.9.201 -> 4.9.225 | applique, compile ; **a tester sur l'unite** |
 | `stable-4.9.250` | 4.9.226 -> 4.9.250 | applique, compile ; **a tester sur l'unite** |
-| `stable-4.9.300` | 4.9.251 -> 4.9.300 | a faire (CVE-2021-0920 af_unix) |
+| `stable-4.9.300` | 4.9.251 -> 4.9.300 | applique, compile ; **a tester sur l'unite** (CVE-2021-0920 af_unix, binder CVE-2021-39686) |
 | `stable-4.9.319` | 4.9.301 -> 4.9.319 | a faire |
 | `stable-4.9.337` | 4.9.320 -> 4.9.337 | a faire (reecriture de `random.c` en 4.9.320) |
 
@@ -297,3 +297,44 @@ chaud.
 ### A tester sur l'unite
 Comme le lot 3, en insistant sur la MCU (touches au volant, CAN : UART 8250) et le Wi-Fi / partage de connexion
 (`af_packet`).
+
+## Lot 5 : `stable-4.9.300` (4.9.251 -> 4.9.300)
+
+Branche empilee sur `stable-4.9.250`. 2693 commits linux-stable : **2659 appliques tels quels**, 15 avec un conflit
+resolu a la main, 3 avec un conflit dont les lignes amont etaient deja la, 1 en partie, 4 deja presents, 11 ignores
+(9 conflits seulement dans du code non compile, 2 correctifs d'un pilote absent). Detail complet :
+[stable/lot5-4.9.251-300.tsv](stable/lot5-4.9.251-300.tsv).
+
+Securite (parties compilees chez nous) : ramasse-miettes `af_unix` contre `MSG_PEEK` (**CVE-2021-0920**, exploitee
+sur Android) ; binder : controles SELinux et euid par les identifiants du processus (**CVE-2021-39686**), reportes a
+la main sur le binder MediaTek ; boucle `LDXR/STXR` bornee dans les futex arm64 ; `fget` contre la fermeture
+concurrente ; compteur de references utilisateur des handles ION ; `wake_up_pollfree()` (binder, signalfd) ; USB
+gadget (ep0) ; Bluetooth.
+
+### Conflits resolus a la main (choix)
+- `drivers/android/binder.c` (binder MediaTek, nouveau binder) : `proc->cred` pris a l'ouverture et rendu dans
+  `binder_free_proc()`, `security_binder_transaction` / `transfer_binder` / `transfer_file` avec les `cred` (comme
+  la version amont 4.14+) ; `wake_up_pollfree()` sous le verrou interne ;
+- `arch/arm64/include/asm/futex.h` : boucle bornee (`loops`, `-EAGAIN`) avec `uaccess_enable()` / `uaccess_disable()`
+  de l'ACK a la place des `ALTERNATIVE` PAN ;
+- ION (`ion-ioctl.c`, `ion.c`, `ion_system_heap.c`) : compteur utilisateur des handles et ordre des references
+  amont, journaux MediaTek et `ion_handle_get_by_id()` (pour `ion_drv_get_handle()`) gardes ; les ioctl MediaTek ne
+  creent pas de handle ;
+- `drivers/mmc/core/mmc.c` (**eMMC**) : delai de changement de partition x4 de MediaTek garde, minimum et repli sur
+  `GENERIC_CMD6_TIME` amont ;
+- `fs/ext4/ioctl.c` : argument `flags` (discard securise, Android) garde ; `fs/crypto/fname.c` : `hash` et
+  `minor_hash` toujours copies dans la forme Android ; `include/net/sock.h` : `sk_uid` (Android) et `sk_peer_lock` ;
+  `vmlinux.lds.h`, `thread_info.h`, `composite.c`, `configfs.c`, `usbstring.c` : voir le journal.
+
+### Corrections apres application
+- `drivers/spi/spi-ac82xx.c` : deux correctifs de `spi-mt65xx.c` (absent ici) avaient ete poses sur le pilote SPI
+  AutoChips par la detection de renommage de `git am -3` ; « Fix fifo transfer » cassait la compilation : annule ;
+  « Avoid NULL pointer crash in interrupt » garde (sans effet de bord ici). `tools/stable/apply.py` applique
+  maintenant sans detection de renommage et s'arrete si un commit touche d'autres fichiers que l'original ;
+  `tools/stable/renameaudit.py` verifie une branche (lots 1 a 5 : seul ce cas) ;
+- `fs/fs-writeback.c` : appel MediaTek a `block_dump___mark_inode_dirty()` retire avec la fonction ;
+- `drivers/block/zram/zram_drv.c` : `pages_compacted` est un `atomic_long_t` (fichier proc MediaTek).
+
+### A tester sur l'unite
+Comme le lot 4, en insistant sur tout ce qui passe par binder et ION (demarrage complet, camera de recul, video,
+applications), le stockage eMMC (changement de partition : demarrage, OTA) et le Bluetooth.

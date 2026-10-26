@@ -50,15 +50,20 @@ for h in todo:
     patch = g("format-patch", "-1", "--stdout", "--no-signature", "-k", h).stdout
     patch = re.sub(r"\n---\n", f"\n\n(linux-stable commit {h})\n---\n", patch, count=1)
     before = g("rev-parse", "HEAD").stdout.strip()
-    r = g("am", "-3", "-k", "--keep-cr", inp=patch)
+    # no rename detection: it moved fixes for drivers absent here (spi-mt65xx.c) onto vendor ones (spi-ac82xx.c)
+    r = g("-c", "merge.renames=false", "am", "-3", "-k", "--keep-cr", inp=patch)
     if r.returncode == 0:
         if g("rev-parse", "HEAD").stdout.strip() == before:
             note(h, "déjà présent (identique)", "git am : patch déjà appliqué"); continue
+        other = set(g("diff-tree", "--no-commit-id", "--name-only", "-r", "--no-renames", "HEAD").stdout.split()) - \
+            set(g("diff-tree", "--no-commit-id", "--name-only", "-r", "--no-renames", h).stdout.split())
+        if other:
+            note(h, "appliqué"); print(f"STOP {h[:12]} applied to files the original does not touch: {sorted(other)}"); sys.exit(3)
         note(h, "appliqué"); n += 1; continue
     out = r.stdout + r.stderr
     st = g("diff", "--name-only", "--diff-filter=U").stdout.split()
     if not st and ("No changes" in out or "already applied" in out or "patch does not apply" not in out and not g("diff", "--cached", "--name-only").stdout.strip()):
-        g("am", "--skip"); note(h, "déjà présent"); continue
+        g("am", "--skip"); note(h, "déjà présent (identique)", "git am : aucun changement"); continue
     if st and all(rel(f) for f in st) is not None:
         auto = []
         for f in st:
