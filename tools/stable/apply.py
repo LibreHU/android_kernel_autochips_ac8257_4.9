@@ -86,7 +86,7 @@ for h in todo:
             else:
                 g("rm", "-q", "--cached", f); 
                 if os.path.exists(os.path.join(K, f)): os.remove(os.path.join(K, f))
-        if not g("diff", "--cached", "--name-only").stdout.strip() and not g("diff", "HEAD", "--name-only").stdout.strip():
+        if not g("diff", "--cached", "--name-only").stdout.strip() and not g("diff", "HEAD", "--name-only", "--", *st).stdout.strip():
             g("am", "--skip"); note(h, "ignoré (conflit hors code compilé)", " ".join(st)); continue
         g("add", "-A", "--", *st)
         r2 = g("am", "--continue")
