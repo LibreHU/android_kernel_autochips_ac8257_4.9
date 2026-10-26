@@ -800,6 +800,12 @@ INT32 mtk_wcn_consys_detect_adie_chipid(UINT32 co_clock_type)
 {
 	INT32 chipid = 0;
 
+	/* LibreHU: g_adie_chipid_lock is initialised by the probe */
+	if (!atomic_read(&g_probe_called)) {
+		WMT_PLAT_PR_ERR("consys probe not done, no a-die detection\n");
+		return 0;
+	}
+
 	if (osal_lock_sleepable_lock(&g_adie_chipid_lock))
 		return 0;
 
@@ -987,6 +993,12 @@ INT32 mtk_wcn_consys_hw_restore(struct device *device)
 INT32 mtk_wcn_consys_hw_init(VOID)
 {
 	INT32 iRet = -1, retry = 0;
+	/* LibreHU: called by do_common_drv_init and by COMBO_IOCTL_CONNSYS_SOC_HW_INIT, register only once */
+	static INT32 registered;
+
+	if (registered)
+		return atomic_read(&g_probe_called) ? 0 : -1;
+	registered = 1;
 
 	iRet = platform_driver_register(&mtk_wmt_dev_drv);
 	if (iRet)
@@ -996,6 +1008,11 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 			osal_sleep_ms(50);
 			retry++;
 			WMT_PLAT_PR_INFO("g_probe_called = 0, retry = %d\n", retry);
+		}
+		/* LibreHU: no probe (device tree, clock, EMI): stop here instead of running without it */
+		if (atomic_read(&g_probe_called) == 0) {
+			WMT_PLAT_PR_ERR("consys probe not done, connectivity disabled\n");
+			iRet = -1;
 		}
 	}
 

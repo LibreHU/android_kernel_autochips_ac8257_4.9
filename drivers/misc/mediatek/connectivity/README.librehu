@@ -28,6 +28,10 @@ LibreHU changes (search "LibreHU"):
 - Wi-Fi gen4m: only ERROR and WARN messages built in (DBG_BUILD_CLASS_MASK=0x3, include/debug.h), for the
   10 MiB boot partition.
 - gps_mod_init no longer starts GPS_init when built in (do_gps_drv_init does it, from wmt_loader).
+- Consys platform driver registered by do_common_drv_init (once, mtk_wcn_consys_hw_init): the AC8257 wmt_loader
+  sends SET_CHIP_ID, MODULE_CLEANUP and DO_MODULE_INIT but not COMBO_IOCTL_CONNSYS_SOC_HW_INIT (newer loaders);
+  without the probe, wmt_plat_init locked the uninitialised g_adie_chipid_lock (NULL pointer oops in
+  mtk_wcn_consys_detect_adie_chipid, first test on the unit, 26/10/2026). A failed probe now stops the init.
 - wmt_idc.c: MD_MOD_GMMGR absent from the AC8257 eccci headers (no modem).
 - kernel/module.c refuses wmt_drv, wmt_chrdev_wifi, wlan_drv_gen4m, bt_drv, gps_drv and fmradio_drv
   (-EEXIST), still loaded by the stock vendor init scripts.

@@ -35,6 +35,18 @@ int do_common_drv_init(int chip_id)
 	i_ret += i_ret_tmp;
 	WMT_DETECT_PR_DBG("HIF-SDIO driver init, i_ret:%d\n", i_ret);
 
+	/* LibreHU: the AC8257 wmt_loader (older than these sources) sends SET_CHIP_ID, MODULE_CLEANUP and
+	 * DO_MODULE_INIT but never COMBO_IOCTL_CONNSYS_SOC_HW_INIT: without it the consys platform driver is not
+	 * registered, wmt_plat_init runs before any probe and locks an uninitialised mutex (kernel oops). Register
+	 * it here (mtk_wcn_consys_hw_init does it only once).
+	 */
+	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
+		i_ret_tmp = wmt_plat_consys_hw_init();
+		WMT_DETECT_PR_INFO("CONSYS HW init, i_ret:%d\n", i_ret_tmp);
+		if (i_ret_tmp)
+			return i_ret_tmp;
+	}
+
 	/* WMT driver init */
 	i_ret_tmp = mtk_wcn_common_drv_init();
 	i_ret += i_ret_tmp;

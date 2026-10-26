@@ -143,6 +143,16 @@ deja presents, les autres appliques), FragmentSmack (CVE-2018-5391), r8152, `pro
 | `0a953c058f73` | crypto: arm64/sha - avoid non-standard inline asm tricks | offsetof sha1/sha256 deja exportes en constantes (ACK) : le correctif les dupliquait (erreur de compilation), retire |
 | `c0d75dacffb9` | binder: fix proc->files use-after-free | binder MediaTek : files_lock protege deja proc->files (task_get_unused_fd_flags, task_fd_install, task_close_fd, mmap, deferred) |
 
+### Premier essai sur l'unite (26/10/2026)
+Noyau `r77` : demarre (methode recovery, puis `boot` avec et sans menu). Pilotes de connectivite : **oops** des que
+`wmt_drv` est charge (zip TWRP : boucle de demarrage ; a la main : panique), dans
+`mtk_wcn_consys_detect_adie_chipid` appele par `wmt_loader` (`COMBO_IOCTL_DO_MODULE_INIT`) : le `wmt_loader` de
+l'AC8257 n'envoie pas `COMBO_IOCTL_CONNSYS_SOC_HW_INIT`, le pilote de plateforme consys n'etait pas enregistre et
+un verrou non initialise etait pris. Corrige (`README.librehu`) : enregistrement dans `do_common_drv_init`, arret
+propre si la sonde echoue. Le module KernelSU ne s'etait pas active (reste dans `modules_update`) : a revoir.
+Tant que les pilotes ne sont pas valides a la main (`insmod` un par un, `dmesg -w`), ne pas installer le zip TWRP
+`conn-modules-stable` ni le module KernelSU.
+
 ### A tester sur l'unite
 Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac8257.img` de la prerelease
 `latest-stable-4.9.150`, `fastboot flash recovery recovery_test_ac8257.img` puis `fastboot oem reboot-recovery`
