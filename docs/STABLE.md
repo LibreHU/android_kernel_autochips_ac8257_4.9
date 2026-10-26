@@ -70,7 +70,7 @@ regulation des images par seconde du service de performance MediaTek.
 |---|---|---|
 | `stable-4.9.150` | 4.9.118 -> 4.9.150 | **valide sur l'unite** (demarrage, Wi-Fi, partage de connexion, Bluetooth, FM ; installation durable) |
 | `stable-4.9.200` | 4.9.151 -> 4.9.200 | applique, compile (noyau + modules de connectivite) ; **a tester sur l'unite** |
-| `stable-4.9.225` | 4.9.201 -> 4.9.225 | a faire |
+| `stable-4.9.225` | 4.9.201 -> 4.9.225 | applique, compile ; **a tester sur l'unite** |
 | `stable-4.9.250` | 4.9.226 -> 4.9.250 | a faire |
 | `stable-4.9.300` | 4.9.251 -> 4.9.300 | a faire (CVE-2021-0920 af_unix) |
 | `stable-4.9.319` | 4.9.301 -> 4.9.319 | a faire |
@@ -236,3 +236,35 @@ maintenant son `<linux/overflow.h>` (sans `struct_size()`), repli dans `compat/k
 Meme methode que le lot 1 (`recovery_test`, puis `boot` + zip des modules de connectivite du meme run), puis :
 demarrage ; MCU / CAN et touches au volant (UART 8250) ; mise en veille et reprise (`proc.S`) ; Wi-Fi, partage de
 connexion, Bluetooth, FM, GPS ; USB (adb, cle, Ethernet, lecteur CD/DVD) ; camera de recul ; son.
+
+## Lot 3 : `stable-4.9.225` (4.9.201 -> 4.9.225)
+
+Branche empilee sur `stable-4.9.200` (avec la mise a jour KernelSU Next v3.4.2-legacy). 2552 commits linux-stable :
+**2529 appliques tels quels**, 12 avec un conflit resolu a la main, 1 avec un conflit dont les lignes amont etaient
+deja la, 2 deja presents (1 identique, 1 sous une forme Android), 8 ignores (conflit seulement dans du code non
+compile). Detail complet : [stable/lot3-4.9.201-225.tsv](stable/lot3-4.9.201-225.tsv).
+
+Securite (parties compilees chez nous) : ext4 (**CVE-2019-19037**), selection de la console virtuelle
+(**CVE-2020-8648**), course `pivot_root` / montages (**CVE-2020-12114**) ; nombreux correctifs USB gadget (adb,
+CarPlay en NCM), reseau, f2fs, ALSA, hrtimer, thermal.
+
+### Conflits resolus a la main (choix)
+- `drivers/usb/gadget/configfs.c` (gadget USB : adb, MTP, CarPlay) : verrou `gi->spinlock` et drapeau `unbind`
+  ajoutes ; avec `CONFIG_USB_CONFIGFS_UEVENT` (notre cas) `android_setup` / `android_disconnect` restent les
+  fonctions du gadget, comme dans android-4.9 ; suspend / resume passent par les versions protegees ;
+- `drivers/usb/gadget/function/f_ncm.c` (CarPlay) : compteur `notify_count` amont, tests NULL et journaux Jancar
+  gardes ;
+- `drivers/thermal/thermal_core.c` : version amont (`cancel_delayed_work_sync` a la suppression d'une zone ;
+  MediaTek avait mis cet arret en commentaire) ;
+- `kernel/time/hrtimer.c` : etat `PINNED` MediaTek garde, ecritures de `timer->state` en `WRITE_ONCE` ;
+- `sound/core/rawmidi.c` : `realloc_mutex` Android garde, compteur de reference du tampon amont ;
+- `kernel/cpu.c`, `printk.c`, `spidev.c`, `xhci-hub.c`, `mmu.c`, `dm.c`, `ext4.h` : voir le journal.
+
+### Corrections apres application
+`configfs.c` : `configfs_composite_setup` / `_disconnect` seulement sans `CONFIG_USB_CONFIGFS_UEVENT` (fonctions
+inutilisees sinon, erreur en `-Werror`). `tools/stable/apply.py` cherchait les commits deja appliques dans les 4000
+derniers seulement : toute la branche maintenant.
+
+### A tester sur l'unite
+Comme le lot 2, en insistant sur l'USB (adb, CarPlay, cle, Ethernet), la mise en veille, la temperature (zones
+thermiques) et le son.
