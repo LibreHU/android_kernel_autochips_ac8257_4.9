@@ -41,4 +41,10 @@ static inline ssize_t ksu_k49_strscpy_pad(char *dest, const char *src, size_t co
 }
 #define strscpy_pad(d, s, c) ksu_k49_strscpy_pad(d, s, c)
 #endif
+/* linux-stable 4.9.1xx has its own <linux/overflow.h> (found before compat/k49), without struct_size() (4.18) */
+#include <linux/overflow.h>
+#ifndef struct_size
+#define struct_size(p, member, n)		\
+	(sizeof(*(p)) + (size_t)(n) * sizeof(*(p)->member))
+#endif
 #endif

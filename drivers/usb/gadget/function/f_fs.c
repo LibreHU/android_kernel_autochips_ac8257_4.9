@@ -1151,8 +1151,8 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			if (epfile->ep == ep) {
 				usb_ep_dequeue(ep->ep, req);
 				spin_unlock_irq(&epfile->ffs->eps_lock);
-				/* linux-stable: wait for the completion, req and done are on this stack */
-				wait_for_completion(&done);
+				/* linux-stable: wait for the completion of the dequeued request before going on */
+				wait_for_completion(done);
 				interrupted = ep->status < 0;
 			} else {
 				spin_unlock_irq(&epfile->ffs->eps_lock);

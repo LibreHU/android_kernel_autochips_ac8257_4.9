@@ -159,6 +159,12 @@ static inline sector_t logical_to_sectors(struct scsi_device *sdev, sector_t blo
 	return blocks << (ilog2(sdev->sector_size) - 9);
 }
 
+/* LibreHU: from linux-stable ("scsi: sd: Optimal I/O size should be a multiple of physical block size" uses it) */
+static inline unsigned int logical_to_bytes(struct scsi_device *sdev, sector_t blocks)
+{
+	return blocks * sdev->sector_size;
+}
+
 /*
  * Look up the DIX operation based on whether the command is read or
  * write and whether dix and dif are enabled.
