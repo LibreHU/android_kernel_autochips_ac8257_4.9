@@ -188,7 +188,11 @@ void mtk_wcn_consys_gps_memory_reserve(void)
 
 INT32 gps_emi_mpu_set_region_protection(INT32 region)
 {
-#if EMI_MPU_PROTECTION_IS_READY
+#if defined(CONFIG_MACH_AC8257)
+	/* LibreHU: the stock AC8257 gps_drv.ko does not program an EMI MPU region for the GPS share memory (its
+	 * gps_emi_mpu_set_region_protection returns 0); region 29 is left as the platform set it.
+	 */
+#elif EMI_MPU_PROTECTION_IS_READY
 #if defined(GPS_EMI_NEW_API)
 	struct emimpu_region_t region_info;
 	int emimpu_ret1, emimpu_ret2, emimpu_ret3, emimpu_ret4, emimpu_ret5, emimpu_ret6;

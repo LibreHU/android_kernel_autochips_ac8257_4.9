@@ -159,7 +159,8 @@ Comparaison avec les modules stock (symboles et desassemblage des `.ko` de `/ven
   `open_stp`, `srh_patch`, `srh_rom_patch`), noeuds `/dev/stpbt`, `/dev/stpgps`, `/dev/wmtWifi`, `/dev/fm`,
   commandes Wi-Fi (`0`, `1`, `S`, `P`, `A`) et dependances des modules : identiques ;
 - plateforme consys (reset, alimentation, AFE, EMI, broches, decalages EMI `0xf0068000`...) : celle de `mt6761.c` ;
-  seule difference, les registres PMIC `MT6357_LDO_VCN18_OP_EN` / `VCN33_OP_EN` ecrits par le stock : ajoutes ;
+  differences : les registres PMIC `MT6357_LDO_VCN18_OP_EN` / `VCN33_OP_EN` ecrits par le stock (ajoutes) et la
+  region MPU EMI du GPS, que le `gps_drv.ko` stock ne programme pas (retiree pour l'AC8257) ;
 - `bt_drv`, `wmt_chrdev_wifi`, `fmradio_drv` et `wlan_drv_gen4m` n'avaient **pas de `module_init`** (charges, ils ne
   faisaient rien) et `fmradio_drv` pas de licence : corrige ;
 - module KernelSU : `wmt_drv` en post-fs-data, les autres dans `service.sh` une fois `vendor.connsys.driver.ready=yes`
