@@ -68,8 +68,8 @@ regulation des images par seconde du service de performance MediaTek.
 
 | Branche | Versions | Etat |
 |---|---|---|
-| `stable-4.9.150` | 4.9.118 -> 4.9.150 | applique, compile (noyau + modules de connectivite) ; **a tester sur l'unite** |
-| `stable-4.9.200` | 4.9.151 -> 4.9.200 | a faire |
+| `stable-4.9.150` | 4.9.118 -> 4.9.150 | **valide sur l'unite** (demarrage, Wi-Fi, partage de connexion, Bluetooth, FM ; installation durable) |
+| `stable-4.9.200` | 4.9.151 -> 4.9.200 | applique, compile (noyau + modules de connectivite) ; **a tester sur l'unite** |
 | `stable-4.9.225` | 4.9.201 -> 4.9.225 | a faire |
 | `stable-4.9.250` | 4.9.226 -> 4.9.250 | a faire |
 | `stable-4.9.300` | 4.9.251 -> 4.9.300 | a faire (CVE-2021-0920 af_unix) |
@@ -202,3 +202,37 @@ Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac825
 - mise en veille / reprise si possible.
 
 Resultat a reporter ici et dans [STATUS.md](STATUS.md).
+
+## Lot 2 : `stable-4.9.200` (4.9.151 -> 4.9.200)
+
+Branche empilee sur `stable-4.9.150` (correctifs de connectivite compris). 3043 commits linux-stable :
+**2975 appliques tels quels**, 21 avec un conflit resolu a la main, 4 avec un conflit dont les lignes amont etaient
+deja la, 2 en partie (conflit dans un fichier non compile), 18 deja presents (9 identiques, 9 sous une forme
+Android / MediaTek), 23 ignores (conflit seulement dans du code non compile ou fichier absent du noyau Jancar).
+Detail complet : [stable/lot2-4.9.151-200.tsv](stable/lot2-4.9.151-200.tsv).
+
+Securite : la faille binder **CVE-2019-2215** (« Bad Binder ») etait deja corrigee dans le binder MediaTek
+(`BINDER_LOOPER_STATE_POLL`, `POLLFREE`, `synchronize_rcu`) ; course coredump / `mmget_not_zero()`
+(**CVE-2019-11599**) appliquee, partie binder reportee dans `binder_alloc.c` ; nombreux correctifs reseau (ipv6,
+tunnels, netfilter), ext4, f2fs, USB, `mitigations=`.
+
+### Conflits resolus a la main (choix)
+- `Makefile` : bloc clang deplace apres le Makefile d'architecture (amont) avec nos options Android, `CLANG_FLAGS`
+  (amont) avec le triplet Android `CLANG_TRIPLE`, `GCC_TOOLCHAIN_DIR` depuis `elfedit` (present dans la chaine AOSP) ;
+- `arch/arm64/kernel/traps.c` `die()` : logique MediaTek gardee (trylock, `die_owner`, AEE), principe amont reporte
+  (etat des IRQ sauvegarde / restaure, deverrouillage apres les `panic()`, attente avec IRQ actives) ;
+- `arch/arm64/mm/proc.S` : `osdlr_el1` sauvegarde dans l'emplacement libre, `tpidr_el1` / `sp_el0` Android gardes,
+  meme disposition dans `cpu_do_suspend` et `cpu_do_resume` ;
+- `drivers/tty/serial/8250/8250_port.c` : annulation amont de « Don't service RX FIFO if interrupts are disabled »
+  prise (bloc AutoChips garde). **UART de la MCU : a verifier en priorite** (touches volant, boitier CAN) ;
+- `f_fs.c` (gadget USB, adb) : forme MediaTek + attente de la requete annulee ; `fault.c`, `vdso.c`, `sd.c`, `ext4`,
+  `fscrypt`, `bpf`, `ip6_tunnel`, `fib_rules` (Android UID gardes) : voir le journal.
+
+### Corrections apres application
+`sd.h` : `logical_to_bytes()` ; `f_fs.c` : la completion MediaTek est dans `ffs_data` ; KernelSU : linux-stable a
+maintenant son `<linux/overflow.h>` (sans `struct_size()`), repli dans `compat/k49/ksu_k49.h`.
+
+### A tester sur l'unite
+Meme methode que le lot 1 (`recovery_test`, puis `boot` + zip des modules de connectivite du meme run), puis :
+demarrage ; MCU / CAN et touches au volant (UART 8250) ; mise en veille et reprise (`proc.S`) ; Wi-Fi, partage de
+connexion, Bluetooth, FM, GPS ; USB (adb, cle, Ethernet, lecteur CD/DVD) ; camera de recul ; son.
