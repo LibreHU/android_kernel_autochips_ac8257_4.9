@@ -1860,7 +1860,7 @@ static int  update_memory_perf_data(unsigned long pfn, unsigned long nr_pages)
 	mutex_lock(&zonelists_mutex);
 	/* All zone presented page has been populated*/
 	if (!populated_zone(zone)) {
-		build_all_zonelists(NULL, zone);
+		build_all_zonelists(NULL, zone, true);
 	}
 
 	/* Keep all range is ram, adjustment*/
