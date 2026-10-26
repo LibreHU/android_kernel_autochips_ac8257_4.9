@@ -45,11 +45,16 @@ avant. `/vendor` n'est pas touche. Si un script init du vendor charge ses module
 nom deja charge) ; s'il le fait avant, ils echouent sur les CRC et les notres prennent le relais. Journal :
 `/data/adb/modules/librehu_connectivity/last.log`. Outil : `tools/stable/conn_ksu_module.sh`.
 
-**Sans KernelSU : zip TWRP** `conn-modules-stable` du depot
-[LibreHU-flashablesZips](https://github.com/LibreHU/LibreHU-flashablesZips) (LibreHU Apps -> Zips -> Noyau). Pour une
-installation durable, une fois le noyau flashe dans `boot` (`boot_ac8257.img` ou `boot_ac8257_bootmenu.img` de
-`latest-stable-4.9.150`) : il remplace les six modules de `/vendor/lib/modules` par ceux-ci.
-- verifie d'abord que la section noyau de la partition `boot` a l'empreinte de l'une de ces deux images, sinon s'arrete
+**Sans KernelSU : zips TWRP** du depot [LibreHU-flashablesZips](https://github.com/LibreHU/LibreHU-flashablesZips)
+(LibreHU Apps -> Zips -> Noyau), deux par branche `stable-4.9.<N>` (150, 200, 225, 250, 300, 319, 337), faits depuis
+sa release `latest-stable-4.9.<N>` :
+- `kernel-stable-4.9.<N>` : le noyau (`boot_ac8257_bootmenu.img`) **et** ses modules en une fois ; tout est verifie
+  avant d'ecrire (empreintes, noyau de l'image = celui des modules, dm-verity, memoire interne), `boot` sauvegarde ;
+- `conn-modules-stable-4.9.<N>` : **modules seuls**, une fois ce noyau dans `boot` (`boot_ac8257.img` ou
+  `boot_ac8257_bootmenu.img` de la release) ; il remplace les six modules de `/vendor/lib/modules` par ceux-ci.
+
+Pour les modules :
+- les modules seuls verifient d'abord que la section noyau de la partition `boot` a l'empreinte de l'une de ces deux images, sinon s'arrete
   sans rien modifier (la methode `recovery_test` ne convient donc pas : utiliser le module KernelSU) ;
 - s'arrete si dm-verity est actif sur `/vendor` (`fastboot --disable-verity flash vbmeta vbmeta.img`, a faire soi-meme) ;
 - sauvegarde les modules d'origine une seule fois dans `/sdcard/LibreHU/backup/conn-modules-orig` (jamais ecrasee),
