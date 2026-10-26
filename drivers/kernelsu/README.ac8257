@@ -1,6 +1,16 @@
 KernelSU-Next kernel driver, https://github.com/KernelSU-Next/KernelSU-Next
-tag v3.4.0-legacy, commit 8af3d4fec33be32fa5d3f8dae4f380fac45bf2cd (kernel/ directory; setup/build scripts removed).
+branch legacy, commit 465490a2 plus 165b87fa ("legacy: fix build errors on Linux 4.9 kernels"), kernel/ directory
+(setup/build scripts removed). Userspace API version 5, the one of the v3.4.2 manager (the manager refuses a
+kernel whose API version differs from its own). Reported version 33314, tag v3.4.2-legacy (KSU_VERSION_OVERRIDE
+and KSU_VERSION_TAG_OVERRIDE in Kbuild: no git repository here to count commits).
 Manual hook mode (CONFIG_KSU_MANUAL_HOOK, no kprobes on this 4.9 kernel); the hooks are in
 fs/exec.c, fs/open.c, fs/read_write.c, fs/stat.c, drivers/input/input.c, kernel/reboot.c and
-security/selinux/avc.c, under CONFIG_KSU. Manager: the KernelSU-Next app matching this version.
+security/selinux/avc.c, under CONFIG_KSU. Manager: KernelSU Next v3.4.2.
 (include/uapi is the top-level uapi/ directory of the repository, copied instead of the symlink.)
+
+Changes for this kernel (compat/k49 is LibreHU code, forced with -include from Kbuild):
+- selinux/sepolicy.c: before 5.1 the avtab hash table, type_attr_map_array and type_val_to_struct_array are
+  flex_arrays (the upstream branch for kernels older than 4.10 uses plain arrays, which this tree does not have);
+- compat/kernel_compat.c and .h: the 4.9 kernel_read/kernel_write prototypes come from compat/k49;
+- hook/patch_memory.h: no x86 code on arm64; infra/su_mount_ns.c: ns_get_path returns a pointer before 4.11;
+- Kbuild: no seccomp sed on the kernel tree, warnings not fatal.

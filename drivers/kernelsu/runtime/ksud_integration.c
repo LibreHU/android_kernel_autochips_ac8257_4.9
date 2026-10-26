@@ -43,6 +43,7 @@
 #include "ksud_boot.h"
 #include "feature/selinux_hide.h"
 #include "selinux/selinux.h"
+#include "policy/feature.h"
 #include "compat/kernel_compat.h"
 
 static const char KERNEL_SU_RC[] =
@@ -180,17 +181,6 @@ bool ksu_input_hook __read_mostly = true;
 bool ksu_execveat_hook __read_mostly = true;
 
 #define MAX_ARG_STRINGS 0x7FFFFFFF
-struct user_arg_ptr {
-#ifdef CONFIG_COMPAT
-	bool is_compat;
-#endif
-	union {
-		const char __user *const __user *native;
-#ifdef CONFIG_COMPAT
-		const compat_uptr_t __user *compat;
-#endif
-	} ptr;
-};
 
 static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 {
@@ -280,6 +270,7 @@ static void ksu_initialize_selinux_tw_func(struct callback_head *cb)
 {
 	ksu_selinux_hide_handle_second_stage();
 	apply_kernelsu_rules();
+	ksu_feature_apply_forced();
 	cache_sid();
 	setup_ksu_cred();
 	kfree(cb);
@@ -592,13 +583,15 @@ static bool is_init_rc(struct file *fp)
 static void ksu_apply_init_rc_proxy(struct file *file)
 {
     // we only process the first read
+    // READ_ONCE/WRITE_ONCE: this runs from the read(2) path and can be
+    // entered concurrently on two descriptors of init.rc.
     static bool rc_hooked = false;
-    if (rc_hooked) {
+    if (READ_ONCE(rc_hooked)) {
         // we don't need these kprobe, unregister it!
         stop_init_rc_hook();
         return;
     }
-    rc_hooked = true;
+    WRITE_ONCE(rc_hooked, true);
 
     // now we can sure that the init process is reading
     // `/system/etc/init/init.rc`
@@ -630,7 +623,19 @@ static void ksu_apply_init_rc_proxy(struct file *file)
 
 void ksu_handle_sys_read(unsigned int fd)
 {
-    struct file *file = fget(fd);
+    struct file *file;
+
+    /*
+     * The manual hook in fs/read_write.c calls us for every read(2) for the
+     * lifetime of the boot; stop_init_rc_hook() flips this flag so the
+     * proxy can be torn down again.
+     */
+#ifndef KSU_KPROBES_HOOK
+    if (likely(!ksu_init_rc_hook))
+        return;
+#endif
+
+    file = fget(fd);
     if (!file) return;
 
     if (is_init_rc(file)) {
@@ -940,6 +945,9 @@ int __maybe_unused ksu_handle_vfs_read(struct file **file_ptr, char __user **buf
                 size_t *count_ptr, loff_t **pos)
 {
     struct file *file = *file_ptr;
+
+    if (likely(!ksu_init_rc_hook))
+        return 0;
 
     if (IS_ERR_OR_NULL(file)) return 0;
 
