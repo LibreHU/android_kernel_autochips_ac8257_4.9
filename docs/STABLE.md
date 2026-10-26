@@ -182,6 +182,10 @@ demarrage normal.
 GPS (`g:2`), position a verifier avec l'antenne. Reste : adresse MAC Wi-Fi generee a chaque demarrage
 (`00:08:22:...`, la MAC de la NVRAM est vide) ; installation durable (zip TWRP ou module KernelSU).
 
+### Installation durable (26/10/2026)
+`boot_ac8257_bootmenu.img` de `r81` + zip TWRP `conn-modules-stable` `r81-b6dfc1aa8` : demarre, pilotes charges par
+les scripts du vendor (meme ordre qu'a la main). Lot 1 valide pour la connectivite ; lot 2 lance.
+
 ### A tester sur l'unite
 Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac8257.img` de la prerelease
 `latest-stable-4.9.150`, `fastboot flash recovery recovery_test_ac8257.img` puis `fastboot oem reboot-recovery`
