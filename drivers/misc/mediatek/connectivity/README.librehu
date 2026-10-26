@@ -48,3 +48,5 @@ LibreHU changes (search "LibreHU"):
   before regulator_enable, as the stock wmt_drv.ko (0x1a5a, 0x1b1e) and mt6768.c / mt6771.c with the MT6358.
 - gps_emi.c: no EMI MPU region programmed for the GPS share memory on the AC8257, as the stock gps_drv.ko (its
   gps_emi_mpu_set_region_protection returns 0); same GPS EMI offset (0x281000) and size (0x17e000).
+- gl_p2p_init.c: hotspot interface "ap%d" (stock wlan_drv_gen4m.ko, wifi.tethering.interface=ap0) instead of the
+  Samsung "swlan%d": the hotspot did not start.

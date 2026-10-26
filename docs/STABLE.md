@@ -168,6 +168,15 @@ Comparaison avec les modules stock (symboles et desassemblage des `.ko` de `/ven
 Tant que les pilotes ne sont pas valides a la main (`insmod` un par un, `dmesg -w`), ne pas installer le zip TWRP
 `conn-modules-stable` ni le module KernelSU.
 
+### Deuxieme essai (26/10/2026, modules charges a la main, noyau r77)
+`insmod` des six modules dans l'ordre du vendor : aucun plantage. Consys allume (version `0x10020300`, HW/FW
+`0x8a00`), ROM patch et patch MCU telecharges, calibration faite. **Wi-Fi** : firmware `WIFI_RAM_CODE_soc1_0_1_1.bin`
+charge, `wlan0`, scan et connexion WPA2 OK. **Bluetooth** : allume, scan OK. **Radio FM** : OK (appli LibreHU FM).
+**Partage de connexion** : ne demarrait pas, interface nommee `swlan0` (nom Samsung) au lieu de `ap0` : corrige.
+GPS : pas encore teste (antenne non branchee). Adresse MAC Wi-Fi : generee (`Using dynamically generated MAC
+address`), la NVRAM ayant ete envoyee par `wlan_assistant` avant le chargement manuel du pilote : a revoir au
+demarrage normal.
+
 ### A tester sur l'unite
 Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac8257.img` de la prerelease
 `latest-stable-4.9.150`, `fastboot flash recovery recovery_test_ac8257.img` puis `fastboot oem reboot-recovery`

@@ -80,7 +80,10 @@
 
 #define P2P_INF_NAME "p2p%d"
 
-#define AP_INF_NAME  "swlan%d"
+/* LibreHU: "ap%d" as the stock AC8257 wlan_drv_gen4m.ko and wifi.tethering.interface=ap0 of the ROM ("swlan%d"
+ * is the Samsung name these sources came with: Android could not start the hotspot)
+ */
+#define AP_INF_NAME  "ap%d"
 
 /******************************************************************************
  *                             D A T A   T Y P E S
