@@ -4,8 +4,10 @@
 #include <linux/capability.h>
 #include <linux/cred.h>
 #include <linux/sched.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/user.h>
 #include <linux/sched/signal.h>
+#endif
 #include <linux/seccomp.h>
 #include <linux/slab.h>
 #include <linux/thread_info.h>
@@ -157,11 +159,13 @@ int escape_with_root_profile(void)
 
     if (cred->euid.val == 0) {
         pr_warn("Already root, don't escape!\n");
+        ret = -EALREADY;
         goto out_abort_creds;
     }
 
     if (test_thread_flag(TIF_KSU_DISABLE_ESCAPE_WITH_ROOT)) {
         pr_warn("TIF_KSU_DISABLE_ESCAPE_WITH_ROOT found, don't escape!\n");
+        ret = -EPERM;
         goto out_abort_creds;
     }
 
