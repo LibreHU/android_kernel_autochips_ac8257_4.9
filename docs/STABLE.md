@@ -71,7 +71,7 @@ regulation des images par seconde du service de performance MediaTek.
 | `stable-4.9.150` | 4.9.118 -> 4.9.150 | **valide sur l'unite** (demarrage, Wi-Fi, partage de connexion, Bluetooth, FM ; installation durable) |
 | `stable-4.9.200` | 4.9.151 -> 4.9.200 | applique, compile (noyau + modules de connectivite) ; **a tester sur l'unite** |
 | `stable-4.9.225` | 4.9.201 -> 4.9.225 | applique, compile ; **a tester sur l'unite** |
-| `stable-4.9.250` | 4.9.226 -> 4.9.250 | a faire |
+| `stable-4.9.250` | 4.9.226 -> 4.9.250 | applique, compile ; **a tester sur l'unite** |
 | `stable-4.9.300` | 4.9.251 -> 4.9.300 | a faire (CVE-2021-0920 af_unix) |
 | `stable-4.9.319` | 4.9.301 -> 4.9.319 | a faire |
 | `stable-4.9.337` | 4.9.320 -> 4.9.337 | a faire (reecriture de `random.c` en 4.9.320) |
@@ -268,3 +268,32 @@ derniers seulement : toute la branche maintenant.
 ### A tester sur l'unite
 Comme le lot 2, en insistant sur l'USB (adb, CarPlay, cle, Ethernet), la mise en veille, la temperature (zones
 thermiques) et le son.
+
+## Lot 4 : `stable-4.9.250` (4.9.226 -> 4.9.250)
+
+Branche empilee sur `stable-4.9.225`. 1956 commits linux-stable : **1948 appliques tels quels**, 2 avec un conflit
+resolu a la main, 1 en partie (conflit dans un fichier non compile), 3 deja presents (1 identique, 2 sous une forme
+Android), 2 ignores (conflit seulement dans du code non compile). Detail complet :
+[stable/lot4-4.9.226-250.tsv](stable/lot4-4.9.226-250.tsv).
+
+Securite (parties compilees chez nous) : `af_packet` (**CVE-2020-14386**, ecriture hors limites depuis un socket
+paquet), `mremap` (**CVE-2020-10757**), clavier de la console virtuelle (**CVE-2020-25656**) ; binder : le
+gestionnaire de contexte ne peut plus prendre de reference sur lui-meme.
+
+### Conflits resolus a la main (choix)
+- `drivers/android/binder.c` : le correctif amont vise l'ancien binder ; reporte sur le binder MediaTek (nouveau
+  binder) comme sa version pour 4.14 : `BC_INCREFS` / `BC_ACQUIRE` sur la reference 0 refuse au gestionnaire de
+  contexte lui-meme ; le refus d'une transaction vers son propre gestionnaire existait deja ;
+- `drivers/tty/serial/8250/8250_port.c` (**UART de la MCU**) : bloc AutoChips garde, `skip_rx` amont ajoute. Il
+  n'agit qu'avec le controle de flux materiel automatique (`UPSTAT_AUTOCTS` / `UPSTAT_AUTORTS`) ;
+- serie fscrypt de 4.9.2xx (`fscrypto: move ioctl processing...`, `use EEXIST...`) : deja dans le fscrypt plus
+  recent du noyau Android.
+
+### Corrections apres application
+`mm/memblock.c` (code MediaTek de mise en ligne de memoire) : `build_all_zonelists()` prend maintenant un troisieme
+argument (`mm: Avoid calling build_all_zonelists_init under hotplug context`), `true` comme les autres appels a
+chaud.
+
+### A tester sur l'unite
+Comme le lot 3, en insistant sur la MCU (touches au volant, CAN : UART 8250) et le Wi-Fi / partage de connexion
+(`af_packet`).
