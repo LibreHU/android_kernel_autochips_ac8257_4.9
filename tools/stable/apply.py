@@ -23,7 +23,12 @@ def g(*a, inp=None, check=False):
     return r
 done = set(re.findall(r"linux-stable commit ([0-9a-f]{40})", g("log", "--format=%B", "-n", "4000").stdout))
 todo = g("rev-list", "--reverse", END).stdout.split()
-logged = {l.split("\t")[0] for l in open(LOG)} if os.path.exists(LOG) else set()
+# Decisions already logged in this batch or in an earlier one (docs/stable/*.tsv): "already present", "ignored"
+# and "not taken" commits leave no commit in the branch
+logged = set()
+for t in {LOG} | {os.path.join(K, "docs/stable", f) for f in os.listdir(os.path.join(K, "docs/stable")) if f.endswith(".tsv")}:
+    if os.path.exists(t):
+        logged |= {l.split("\t")[0] for l in open(t)}
 log = open(LOG, "a")
 def note(h, what, detail=""):
     s = g("log", "-1", "--format=%s", h).stdout.strip()
