@@ -23,7 +23,7 @@ l'unite avant la suivante, puis tout revient dans `LibreHU-main`.
   qu'un correctif aurait ajoutes une deuxieme fois (code deja present ailleurs dans le fichier) en comparant au
   fichier amont ; comparaison des CRC de `Module.symvers` avec `LibreHU-main` et le noyau stock.
 
-## Modules du vendor : recompiles avec le noyau (module KernelSU)
+## Modules du vendor : recompiles avec le noyau (module KernelSU ou zip TWRP)
 `CONFIG_MODVERSIONS=y` : le numero de version (4.9.117 -> 4.9.150) n'empeche pas le chargement (`same_magic()` ignore
 la version quand les CRC sont presents), mais les CRC des symboles, oui. `LibreHU-main` a le CRC du stock pour
 9 635 des 9 643 symboles communs ; apres le lot 1, 5 776 seulement : des structures centrales changent pour
@@ -44,6 +44,22 @@ le meme run** : avec un autre noyau (retour a `LibreHU-main`), il ne fait rien e
 avant. `/vendor` n'est pas touche. Si un script init du vendor charge ses modules plus tard, ils sont refuses (meme
 nom deja charge) ; s'il le fait avant, ils echouent sur les CRC et les notres prennent le relais. Journal :
 `/data/adb/modules/librehu_connectivity/last.log`. Outil : `tools/stable/conn_ksu_module.sh`.
+
+**Sans KernelSU : zip TWRP** `conn-modules-stable` du depot
+[LibreHU-flashablesZips](https://github.com/LibreHU/LibreHU-flashablesZips) (LibreHU Apps -> Zips -> Noyau). Pour une
+installation durable, une fois le noyau flashe dans `boot` (`boot_ac8257.img` ou `boot_ac8257_bootmenu.img` de
+`latest-stable-4.9.150`) : il remplace les six modules de `/vendor/lib/modules` par ceux-ci.
+- verifie d'abord que la section noyau de la partition `boot` a l'empreinte de l'une de ces deux images, sinon s'arrete
+  sans rien modifier (la methode `recovery_test` ne convient donc pas : utiliser le module KernelSU) ;
+- s'arrete si dm-verity est actif sur `/vendor` (`fastboot --disable-verity flash vbmeta vbmeta.img`, a faire soi-meme) ;
+- sauvegarde les modules d'origine une seule fois dans `/sdcard/LibreHU/backup/conn-modules-orig` (jamais ecrasee),
+  et l'etat d'avant chaque passage dans `conn-modules-<date>` (fichiers, droits, proprietaire, contexte SELinux,
+  empreintes) ; ecrit chaque module a cote, relit son empreinte, puis renomme ; marqueur `/vendor/lib/modules/.librehu_conn` ;
+- **retour arriere** : zip `conn-modules-stable-restore` (remet les originaux, empreintes verifiees avant toute
+  modification), a flasher **avant** de revenir a `LibreHU-main` ou au noyau stock, sinon Wi-Fi, BT, GPS et FM ne
+  marchent plus avec ce noyau-la.
+
+Un seul des deux suffit ; ensemble, ils chargent les memes fichiers et le second voit les modules deja charges (sans effet).
 
 `fpsgo` (module de performance du vendor, sans sources ici) ne se chargera pas non plus : pas d'effet attendu hors
 regulation des images par seconde du service de performance MediaTek.
@@ -133,7 +149,8 @@ Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac825
 ([BUILD.md](BUILD.md)). Un redemarrage normal revient au noyau du boot.
 
 - installer `librehu_connectivity_ksu.zip` de la meme prerelease dans KernelSU Next, puis redemarrer (avec la methode
-  recovery : redemarrer par `fastboot oem reboot-recovery` pour rester sur ce noyau) ;
+  recovery : redemarrer par `fastboot oem reboot-recovery` pour rester sur ce noyau) ; ou, noyau flashe dans `boot`,
+  le zip TWRP `conn-modules-stable` (voir plus haut) ;
 - demarrage, `uname -r` = `4.9.150+` ;
 - `cat /data/adb/modules/librehu_connectivity/last.log` : six `loaded` ; `lsmod` ; `dmesg | grep -iE "wmt|wlan|disagrees"` ;
 - ecran, tactile, son, Wi-Fi, Bluetooth (appairage, A2DP, appel), GPS, radio FM ;
