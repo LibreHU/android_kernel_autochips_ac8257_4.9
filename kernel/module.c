@@ -3613,6 +3613,28 @@ static int unknown_module_param_cb(char *param, char *val, const char *modname,
 
 /* Allocate and load the module: note that size of section 0 is always
    zero, and we rely on this for optional sections. */
+/*
+ * LibreHU: with CONFIG_MTK_COMBO_DRV_BUILD_IN the MediaTek connectivity
+ * drivers are built in, but the stock vendor init scripts still insmod
+ * them from /vendor/lib/modules: loading them a second time would register
+ * the same devices twice.
+ */
+static bool conn_builtin_module(const char *name)
+{
+#ifdef CONFIG_MTK_COMBO_DRV_BUILD_IN
+	static const char * const names[] = {
+		"wmt_drv", "wmt_chrdev_wifi", "wlan_drv_gen4m",
+		"bt_drv", "gps_drv", "fmradio_drv",
+	};
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(names); i++)
+		if (!strcmp(name, names[i]))
+			return true;
+#endif
+	return false;
+}
+
 static int load_module(struct load_info *info, const char __user *uargs,
 		       int flags)
 {
@@ -3633,6 +3655,13 @@ static int load_module(struct load_info *info, const char __user *uargs,
 	if (IS_ERR(mod)) {
 		err = PTR_ERR(mod);
 		goto free_copy;
+	}
+
+	if (conn_builtin_module(mod->name)) {
+		pr_info("%s: built into the kernel, module from vendor refused\n",
+			mod->name);
+		err = -EEXIST;
+		goto free_module;
 	}
 
 	/* Reserve our place in the list. */

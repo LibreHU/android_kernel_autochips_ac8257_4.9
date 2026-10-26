@@ -74,6 +74,9 @@ void wmt_export_platform_bridge_register(struct wmt_platform_bridge *cb)
 		return;
 	bridge.thermal_query_cb = cb->thermal_query_cb;
 	bridge.clock_fail_dump_cb = cb->clock_fail_dump_cb;
+#if defined(CONFIG_MTK_COMBO_DRV_BUILD_IN) || defined(CONFIG_LIBREHU_CONN_MODULES)
+	bridge.trigger_assert_cb = cb->trigger_assert_cb;
+#endif
 	CONNADP_INFO_FUNC("\n");
 }
 EXPORT_SYMBOL(wmt_export_platform_bridge_register);

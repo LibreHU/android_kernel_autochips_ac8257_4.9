@@ -250,3 +250,34 @@ config MTK_CONNSYS_DEDICATED_LOG_PATH
 	     (by EMI or other specific path)
 	  2. The scope may include (but not limited) Wi-Fi firmware log,
 	     BT firmware log, GPS firmware log etc.
+
+config LIBREHU_CONN_MODULES
+	bool "Build the connectivity drivers as modules named as the stock ones (LibreHU)"
+	depends on MTK_COMBO=y && MTK_COMBO_CHIP_CONSYS_8257 && MODULES && !MTK_COMBO_DRV_BUILD_IN
+	default n
+	help
+	  Build WMT, Wi-Fi (gen4m), Bluetooth, GPS and FM radio from the same
+	  GPL sources as MTK_COMBO_DRV_BUILD_IN, but as loadable modules with
+	  the stock names (wmt_drv, wmt_chrdev_wifi, wlan_drv_gen4m, bt_drv,
+	  gps_drv, fmradio_drv): for a kernel whose symbol CRCs no longer match
+	  the vendor modules of /vendor/lib/modules (linux-stable updates).
+	  They are loaded by a KernelSU module (docs/STABLE.md), /vendor is
+	  not touched.
+
+config MTK_COMBO_DRV_BUILD_IN
+	bool "Build the connectivity drivers into the kernel (LibreHU)"
+	depends on MTK_COMBO=y && MTK_COMBO_CHIP_CONSYS_8257
+	select MTK_COMBO_BT
+	select MTK_COMBO_WIFI
+	select MTK_COMBO_GPS
+	select MTK_GPS_SUPPORT
+	select MTK_FMRADIO
+	default n
+	help
+	  Build WMT, Wi-Fi (gen4m), Bluetooth, GPS and FM radio into the
+	  kernel instead of loading wmt_drv.ko, wmt_chrdev_wifi.ko,
+	  wlan_drv_gen4m.ko, bt_drv.ko, gps_drv.ko and fmradio_drv.ko from
+	  /vendor/lib/modules. The vendor init scripts still try to insmod
+	  them: the kernel refuses those modules (see kernel/module.c).
+	  Source: MediaTek vendor/mediatek/kernel_modules/connectivity
+	  (rsuntk-oss/mtk_connectivity_module), see README.librehu.

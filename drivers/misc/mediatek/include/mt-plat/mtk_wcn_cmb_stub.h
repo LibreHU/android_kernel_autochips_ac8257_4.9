@@ -103,6 +103,10 @@ typedef int (*wmt_func_do_reset) (unsigned int);
 typedef unsigned int (*wmt_get_drv_status)(unsigned int);
 #endif
 typedef void (*wmt_clock_fail_dump_cb) (void);
+#if defined(CONFIG_MTK_COMBO_DRV_BUILD_IN) || defined(CONFIG_LIBREHU_CONN_MODULES)
+/* LibreHU: newer in-tree connectivity drivers */
+typedef int (*wmt_trigger_assert_cb) (void);
+#endif
 
 typedef void (*msdc_sdio_irq_handler_t) (void *); /* external irq handler */
 typedef void (*pm_callback_t) (pm_message_t state, void *data);
@@ -128,6 +132,9 @@ struct _CMB_STUB_CB_ {
 	wmt_get_drv_status get_drv_status_cb;
 #endif
 	wmt_clock_fail_dump_cb clock_fail_dump_cb;
+#if defined(CONFIG_MTK_COMBO_DRV_BUILD_IN) || defined(CONFIG_LIBREHU_CONN_MODULES)
+	wmt_trigger_assert_cb trigger_assert_cb;
+#endif
 };
 
 /*******************************************************************************

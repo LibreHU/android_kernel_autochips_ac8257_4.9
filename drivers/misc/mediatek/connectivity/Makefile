@@ -32,53 +32,45 @@ ifneq ($(KERNELRELEASE),)
     $(MODULE_NAME)-objs += common/wmt_build_in_adapter.o
 
 
-    # Do build-in for Makefile checking
-    # export CONFIG_WLAN_DRV_BUILD_IN=y
+    # LibreHU: WMT, Wi-Fi, BT, GPS and FM built into the kernel, or as modules named as the stock ones
+    # (CONFIG_LIBREHU_CONN_MODULES) (README.librehu)
+    ifneq ($(CONFIG_MTK_COMBO_DRV_BUILD_IN)$(CONFIG_LIBREHU_CONN_MODULES),)
+        TOP := $(srctree)/drivers/misc/mediatek/connectivity
+        WMT_SRC_FOLDER := $(TOP)/common
+        TARGET_BUILD_VARIANT ?= user
+        export TOP WMT_SRC_FOLDER TARGET_BUILD_VARIANT
 
-    ifeq ($(CONFIG_WLAN_DRV_BUILD_IN),y)
-        PATH_TO_WMT_DRV      = vendor/mediatek/kernel_modules/connectivity/common
-        PATH_TO_WLAN_CHR_DRV = vendor/mediatek/kernel_modules/connectivity/wlan/adaptor
-        PATH_TO_WLAN_DRV     = vendor/mediatek/kernel_modules/connectivity/wlan/core/gen4m
+        # The AC8257 consys is the MT6761 one (same WMT platform code, same
+        # GPS EMI offset as the stock wmt_drv.ko / gps_drv.ko). Wi-Fi gen4m
+        # has no mt6761 platform folder: the mt6765 one is used, both are
+        # CONNAC 1.0 "soc1_0" (WIFI_RAM_CODE_soc1_0 firmware).
+        export MTK_COMBO_CHIP := CONNAC
+        export BT_PLATFORM := connac1x
+        export CONFIG_MTK_COMBO_WIFI_HIF := axi
+        export WLAN_CHIP_ID := 6765
+        export MTK_ANDROID_WMT := y
+        export MTK_ANDROID_EMI := y
+        export ADAPTOR_OPTS := CONNAC
+        export WIFI_IP_SET := 1
+        export CFG_BUILD_CONNAC2 := false
+        export CFG_FM_CHIP_ID := 6761
+        export CFG_FM_CHIP := mt6631
 
-        ABS_PATH_TO_WMT_DRV      = $(srctree)/../$(PATH_TO_WMT_DRV)
-        ABS_PATH_TO_WLAN_CHR_DRV = $(srctree)/../$(PATH_TO_WLAN_CHR_DRV)
-        ABS_PATH_TO_WLAN_DRV     = $(srctree)/../$(PATH_TO_WLAN_DRV)
-
-        # check wlan driver folder
-        ifeq (,$(wildcard $(ABS_PATH_TO_WMT_DRV)))
-            $(error $(ABS_PATH_TO_WMT_DRV) is not existed)
-        endif
-        ifeq (,$(wildcard $(ABS_PATH_TO_WLAN_CHR_DRV)))
-            $(error $(ABS_PATH_TO_WLAN_CHR_DRV) is not existed)
-        endif
-        ifeq (,$(wildcard $(ABS_PATH_TO_WLAN_DRV)))
-            $(error $(ABS_PATH_TO_WLAN_DRV) is not existed)
-        endif
-
-        $(warning symbolic link to $(PATH_TO_WMT_DRV))
-        $(warning symbolic link to $(PATH_TO_WLAN_CHR_DRV))
-        $(warning symbolic link to $(PATH_TO_WLAN_DRV))
-
-        $(shell unlink $(srctree)/$(src)/wmt_drv)
-        $(shell unlink $(srctree)/$(src)/wmt_chrdev_wifi)
-        $(shell unlink $(srctree)/$(src)/wlan_drv_gen4m)
-
-        $(shell ln -s $(ABS_PATH_TO_WMT_DRV)      $(srctree)/$(src)/wmt_drv)
-        $(shell ln -s $(ABS_PATH_TO_WLAN_CHR_DRV) $(srctree)/$(src)/wmt_chrdev_wifi)
-        $(shell ln -s $(ABS_PATH_TO_WLAN_DRV)     $(srctree)/$(src)/wlan_drv_gen4m)
-
-        # for gen4m options
-        export CONFIG_MTK_COMBO_WIFI_HIF=axi
-        export MTK_COMBO_CHIP=CONNAC
-        export WLAN_CHIP_ID=6765
-        export MTK_ANDROID_WMT=y
-
-        # Do build-in for xxx.c checking
+        ifeq ($(CONFIG_MTK_COMBO_DRV_BUILD_IN),y)
+        export LIBREHU_CONN_OBJ := y
         subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
         subdir-ccflags-y += -D MTK_WCN_BUILT_IN_DRIVER
-        obj-y += wmt_drv/
-        obj-y += wmt_chrdev_wifi/
-        obj-y += wlan_drv_gen4m/
+        else
+        export LIBREHU_CONN_OBJ := m
+        export LIBREHU_CONN_MODULES := y
+        endif
+
+        obj-y += common/
+        obj-y += wlan/adaptor/
+        obj-y += wlan/core/gen4m/
+        obj-y += gps/
+        obj-y += fmradio/
+        obj-y += bt/mt66xx/wmt/
     endif
 
 # Otherwise we were called directly from the command line;
