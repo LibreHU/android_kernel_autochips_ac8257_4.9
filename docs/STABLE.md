@@ -74,7 +74,7 @@ regulation des images par seconde du service de performance MediaTek.
 | `stable-4.9.250` | 4.9.226 -> 4.9.250 | applique, compile ; **a tester sur l'unite** |
 | `stable-4.9.300` | 4.9.251 -> 4.9.300 | applique, compile ; **a tester sur l'unite** (CVE-2021-0920 af_unix, binder CVE-2021-39686) |
 | `stable-4.9.319` | 4.9.301 -> 4.9.319 | applique, compile ; **a tester sur l'unite** (Spectre-BHB arm64) |
-| `stable-4.9.337` | 4.9.320 -> 4.9.337 | a faire (reecriture de `random.c` en 4.9.320) |
+| `stable-4.9.337` | 4.9.320 -> 4.9.337 | applique, compile ; **a tester sur l'unite** (reecriture de `random.c`) |
 
 ## Lot 1 : `stable-4.9.150` (4.9.118 -> 4.9.150)
 
@@ -309,7 +309,8 @@ Securite (parties compilees chez nous) : ramasse-miettes `af_unix` contre `MSG_P
 sur Android) ; binder : controles SELinux et euid par les identifiants du processus (**CVE-2021-39686**), reportes a
 la main sur le binder MediaTek ; boucle `LDXR/STXR` bornee dans les futex arm64 ; `fget` contre la fermeture
 concurrente ; compteur de references utilisateur des handles ION ; `wake_up_pollfree()` (binder, signalfd) ; USB
-gadget (ep0) ; Bluetooth.
+gadget (ep0). (Les correctifs Bluetooth de ce lot visent la pile Linux `CONFIG_BT`, non compilee ici : le
+Bluetooth de l'unite passe par le pilote MediaTek.)
 
 ### Conflits resolus a la main (choix)
 - `drivers/android/binder.c` (binder MediaTek, nouveau binder) : `proc->cred` pris a l'ouverture et rendu dans
@@ -337,7 +338,8 @@ gadget (ep0) ; Bluetooth.
 
 ### A tester sur l'unite
 Comme le lot 4, en insistant sur tout ce qui passe par binder et ION (demarrage complet, camera de recul, video,
-applications), le stockage eMMC (changement de partition : demarrage, OTA) et le Bluetooth.
+applications), le stockage eMMC (changement de partition : demarrage, OTA) et l'USB (cles, adb, CarPlay :
+voir l'audit du lot 7, `hub.c`).
 
 ## Lot 6 : `stable-4.9.319` (4.9.301 -> 4.9.319)
 
@@ -370,3 +372,47 @@ connexion USB), dm-verity marque `DM_TARGET_IMMUTABLE` (verity reste actif, rien
 ### A tester sur l'unite
 Comme le lot 5, en insistant sur la mise en veille / reprise (vecteurs d'exception), le partage de connexion USB
 (`rndis`) et le demarrage avec dm-verity actif.
+
+## Lot 7 : `stable-4.9.337` (4.9.320 -> 4.9.337, fin de la branche 4.9 amont)
+
+Branche empilee sur `stable-4.9.319`. 1259 commits linux-stable : **1250 appliques tels quels**, 5 avec un conflit
+resolu a la main, 1 avec un conflit resolu automatiquement (corrige ensuite, voir l'audit), 3 ignores (conflit
+seulement dans du code non compile). Detail complet : [stable/lot7-4.9.320-337.tsv](stable/lot7-4.9.320-337.tsv).
+
+Contenu principal : la **reecriture de `drivers/char/random.c`** (173 commits, BLAKE2s, graine du chargeur de
+demarrage par `rng-seed` du device tree) passee sans conflit ; verrou `isec->lock` de SELinux en spinlock ; FDT
+mappe en ecriture pendant `early_init_dt_scan()` puis en lecture seule. Les CVE citees par les commits de ce lot
+visent surtout Xen, `cls_route` (`CONFIG_NET_CLS_ROUTE4`, non compile) et la pile Bluetooth Linux (non compilee).
+
+### Conflits resolus a la main (choix)
+- `security/selinux/hooks.c` : `selinux_inode()` (ACK) garde, variables locales amont ; verrouillage de
+  `inode_doinit_with_dentry()` verifie (verrou relache pendant la lecture des attributs etendus) ;
+- `arch/arm64/kernel/setup.c` : FDT remappe en lecture seule apres le parcours (il l'etait deja avant),
+  `machine_desc_set()` MediaTek garde ;
+- `drivers/of/fdt.c` (graine `rng-seed`), `sound/usb/endpoint.c` (tampon en SRAM MediaTek garde),
+  `drivers/mmc/core/sdio_bus.c` (`embedded_sdio` Android et quirk amont) : voir le journal.
+
+### Corrections apres application
+- `drivers/char/Kconfig` : menu « Character devices » ferme deux fois (resolution automatique) ;
+- `mtk_idle.c` : `mtk_cpuidle_framework_init()` est `__init` et etait exportee ; `modpost` en fait maintenant une
+  erreur ; son seul appelant est dans le noyau : export retire.
+
+## Audit des resolutions automatiques (lots 1 a 7)
+
+`tools/stable/apply.py` resolvait seul un conflit quand toutes les lignes ajoutees par l'amont existaient deja
+quelque part dans le fichier, en gardant notre cote. Cela perdait les **suppressions** du commit amont, et une
+ligne « deja presente » pouvait l'etre ailleurs dans le fichier. Les 15 cas des 7 lots ont ete relus a la main :
+
+| Commit linux-stable | Lot | Fichier | Constat | Correction |
+|---|---|---|---|---|
+| `b13daa1c3d42` usb: hub: Fix usb enumeration issue due to address0 race | 5 | `drivers/usb/core/hub.c` | **`hub_port_init()` prenait encore `address0_mutex` deja tenu par ses appelants : blocage a chaque enumeration USB** | verrou retire (branches `stable-4.9.300` et suivantes) |
+| `32d782808b84` futex: Mark the begin of futex exit explicitly | 5 | `kernel/exit.c` | barriere `PF_EXITING` restee apres `exit_signals()` (redondante) | retiree comme en amont (300 et suivantes) |
+| `75b66cc00943` PM / core: Clear the direct_complete flag on errors | 1 | `drivers/base/power/main.c` | `direct_complete = false` manquait quand un reveil est en attente (contexte Android) | ajoute (toutes les branches) |
+| `796f458ad791` crypto: asymmetric_keys - select CRYPTO_HASH | 2 | `crypto/asymmetric_keys/Kconfig` | 2 `select` sur 3 manquaient (options non activees) | ajoutes (337) |
+| `df13e556eee4` block_dump: remove block_dump feature | 5 | `fs/fs-writeback.c` | appel MediaTek reste | corrige au lot 5 |
+| `1e0dacdd9366` random: credit cpu and bootloader seeds by default | 7 | `drivers/char/Kconfig` | `endmenu` en double | corrige (337) |
+| `1451b7fe7a36`, `120db145140a` | 6, 3 | `cpufeature.c`, `mmu.c` | contenu amont present (seuls des `#include` inutiles restent) | rien |
+| `740f140b5dc4`, `9362c0885a48`, `7601d81506ef` | 1, 2, 2 | `Makefile` | bloc clang reorganise a la main au lot 2, compilation identique a l'amont pour nos options | rien |
+| `86e514306bfb`, `8fca3c364683`, `f8c66aba27fa` | 1, 2, 1 | Xen, EFI, UFS | non compiles (`CONFIG_XEN`, `CONFIG_EFI`, `CONFIG_SCSI_UFSHCD` absents) | rien |
+
+`apply.py` ne resout plus rien seul : tout conflit dans un fichier compile arrete l'application.

@@ -68,26 +68,9 @@ for h in todo:
     st = g("diff", "--name-only", "--diff-filter=U").stdout.split()
     if not st and ("No changes" in out or "already applied" in out or "patch does not apply" not in out and not g("diff", "--cached", "--name-only").stdout.strip()):
         g("am", "--skip"); note(h, "déjà présent (identique)", "git am : aucun changement"); continue
-    if st and all(rel(f) for f in st) is not None:
-        auto = []
-        for f in st:
-            path = os.path.join(K, f)
-            try: txt = open(path, encoding="utf-8", errors="surrogateescape").read()
-            except FileNotFoundError: auto = None; break
-            hunks = re.findall(r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n", txt, re.S)
-            outside = re.sub(r"<<<<<<< [^\n]*\n.*?>>>>>>> [^\n]*\n", "", txt, flags=re.S)
-            have = {l.strip() for l in outside.splitlines() if l.strip()} | {l.strip() for o, t in hunks for l in o.splitlines() if l.strip()}
-            if not hunks or not all(all(l.strip() in have for l in t.splitlines() if l.strip()) for o, t in hunks):
-                auto = None; break
-            auto.append((path, re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n.*?>>>>>>> [^\n]*\n", lambda m: m.group(1), txt, flags=re.S)))
-        if auto:
-            for path, txt in auto: open(path, "w", encoding="utf-8", errors="surrogateescape").write(txt)
-            g("add", "--", *st)
-            if not g("diff", "--cached", "--name-only").stdout.strip():
-                g("am", "--skip"); note(h, "déjà présent (forme Android/MediaTek)", "auto : lignes amont déjà dans " + " ".join(st)); continue
-            r2 = g("am", "--continue")
-            if r2.returncode == 0:
-                note(h, "appliqué (conflit auto : lignes amont déjà présentes)", " ".join(st)); n += 1; continue
+    # No automatic resolution when the upstream lines "are already there": it kept our side of each conflict and
+    # lost the deletions of the upstream commit (address0_mutex lock in hub_port_init(), a second endmenu in
+    # drivers/char/Kconfig, ...). Conflicts in compiled files always stop for a manual resolution.
     if st and not any(rel(f) for f in st):
         for f in st:
             if g("cat-file", "-e", f"HEAD:{f}").returncode == 0:
