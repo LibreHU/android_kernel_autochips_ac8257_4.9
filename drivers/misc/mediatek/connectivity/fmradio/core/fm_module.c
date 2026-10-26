@@ -1788,6 +1788,16 @@ void mtk_wcn_fm_exit(void)
 }
 EXPORT_SYMBOL(mtk_wcn_fm_exit);
 
+#ifdef MODULE
+/* LibreHU: these sources only start the driver from wmt_drv (built-in mode, do_*_drv_init). Built as a module
+ * (CONFIG_LIBREHU_CONN_MODULES), loaded by the vendor init scripts once vendor.connsys.driver.ready=yes, as the
+ * stock module, it starts itself.
+ */
+module_init(mt_fm_init);
+module_exit(mt_fm_exit);
+MODULE_LICENSE("GPL");
+#endif
+
 EXPORT_SYMBOL(g_dbg_level);
 /*
 MODULE_LICENSE("GPL");

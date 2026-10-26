@@ -40,3 +40,9 @@ LibreHU changes (search "LibreHU"):
   MTK_WCN_REMOVE_KERNEL_MODULE (each module registers itself, as the stock ones); trigger_assert_cb kept in the
   adapters; rlm_domain.c: the Samsung S96801 board test reads saved_command_line, not exported to modules on 4.9,
   left out in module mode.
+- Module mode, compared with the stock AC8257 modules (26/10/2026, symbols and disassembly of the stock .ko):
+  bt_drv, wmt_chrdev_wifi, fmradio_drv and wlan_drv_gen4m had no module_init (these sources only start them from
+  wmt_drv, built in): module_init/module_exit added under MODULE (BT_init, WIFI_init, mt_fm_init, initWlan, the
+  functions the stock init_module runs); fmradio_drv had no MODULE_LICENSE (GPL-only exports refused): added.
+- mt6761.c consys_hw_vcn18_ctrl: MT6357_LDO_VCN18_OP_EN and MT6357_LDO_VCN33_OP_EN set to 1 (LDO in SW mode)
+  before regulator_enable, as the stock wmt_drv.ko (0x1a5a, 0x1b1e) and mt6768.c / mt6771.c with the MT6358.

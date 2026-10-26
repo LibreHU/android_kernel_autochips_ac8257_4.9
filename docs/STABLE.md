@@ -150,6 +150,20 @@ Noyau `r77` : demarre (methode recovery, puis `boot` avec et sans menu). Pilotes
 l'AC8257 n'envoie pas `COMBO_IOCTL_CONNSYS_SOC_HW_INIT`, le pilote de plateforme consys n'etait pas enregistre et
 un verrou non initialise etait pris. Corrige (`README.librehu`) : enregistrement dans `do_common_drv_init`, arret
 propre si la sonde echoue. Le module KernelSU ne s'etait pas active (reste dans `modules_update`) : a revoir.
+
+Comparaison avec les modules stock (symboles et desassemblage des `.ko` de `/vendor/lib/modules`, `wmt_loader`,
+`wmt_launcher`, scripts init du vendor ; fichiers non publies) :
+- `wmt_loader` stock : `SET_CHIP_ID` (0x8257), `MODULE_CLEANUP`, `DO_MODULE_INIT`, puis
+  `vendor.connsys.driver.ready=yes` ; les scripts init chargent alors `wmt_chrdev_wifi`, `wlan_drv_gen4m`,
+  `bt_drv`, `gps_drv`, `fmradio_drv`. Commandes `wmt_launcher` (ioctl 5, 7, 12 a 15, 20, 22, 29 a 31 ;
+  `open_stp`, `srh_patch`, `srh_rom_patch`), noeuds `/dev/stpbt`, `/dev/stpgps`, `/dev/wmtWifi`, `/dev/fm`,
+  commandes Wi-Fi (`0`, `1`, `S`, `P`, `A`) et dependances des modules : identiques ;
+- plateforme consys (reset, alimentation, AFE, EMI, broches, decalages EMI `0xf0068000`...) : celle de `mt6761.c` ;
+  seule difference, les registres PMIC `MT6357_LDO_VCN18_OP_EN` / `VCN33_OP_EN` ecrits par le stock : ajoutes ;
+- `bt_drv`, `wmt_chrdev_wifi`, `fmradio_drv` et `wlan_drv_gen4m` n'avaient **pas de `module_init`** (charges, ils ne
+  faisaient rien) et `fmradio_drv` pas de licence : corrige ;
+- module KernelSU : `wmt_drv` en post-fs-data, les autres dans `service.sh` une fois `vendor.connsys.driver.ready=yes`
+  (meme ordre que le vendor ; le zip TWRP, qui remplace les fichiers, suit deja cet ordre).
 Tant que les pilotes ne sont pas valides a la main (`insmod` un par un, `dmesg -w`), ne pas installer le zip TWRP
 `conn-modules-stable` ni le module KernelSU.
 

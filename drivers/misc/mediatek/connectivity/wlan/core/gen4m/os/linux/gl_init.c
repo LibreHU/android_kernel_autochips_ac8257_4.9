@@ -6643,6 +6643,15 @@ void mtk_wcn_wlan_gen4_exit(void)
 }
 EXPORT_SYMBOL(mtk_wcn_wlan_gen4_exit);
 
+#ifdef MODULE
+/* LibreHU: these sources only start the driver from wmt_drv (built-in mode, do_*_drv_init). Built as a module
+ * (CONFIG_LIBREHU_CONN_MODULES), loaded by the vendor init scripts once vendor.connsys.driver.ready=yes, as the
+ * stock module, it starts itself.
+ */
+module_init(initWlan);
+module_exit(exitWlan);
+#endif
+
 #elif ((MTK_WCN_HIF_SDIO == 0) && (CFG_BUILT_IN_DRIVER == 1))
 
 device_initcall(initWlan);
