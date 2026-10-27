@@ -69,6 +69,26 @@ Un seul des deux suffit ; ensemble, ils chargent les memes fichiers et le second
 `fpsgo` (module de performance du vendor, sans sources ici) ne se chargera pas non plus : pas d'effet attendu hors
 regulation des images par seconde du service de performance MediaTek.
 
+## Demarrage tres lent avec les noyaux du 26/10 (corrige le 27/10)
+
+Symptome (4.9.200 installe par le zip `kernel-stable-4.9.200`) : le launcher n'apparait qu'apres des heures, et
+c'est pareil a chaque redemarrage. Le journal du noyau est rempli a 99,9 % (674 025 lignes sur 674 440) de :
+
+    SELinux: avc:  seqno 1 < latest_notif 2
+
+Cause : la mise a jour de KernelSU Next du 26/10 (branche legacy 465490a2 + 165b87fa) et non les correctifs
+linux-stable ni les modules. Sur 4.9 (pas de `selinux_state`), 165b87fa donne a `avc_ss_reset()` un compteur
+local (2, 3...) quand KernelSU applique ses regles SELinux. `latest_granting` du serveur de securite reste a 1 :
+chaque `avc_insert()` refuse alors l'entree (`seqno 1 < latest_notif 2`, `security/selinux/avc.c`). Plus de cache
+AVC : chaque controle d'acces recalcule la decision dans la politique et ecrit une ligne dans le journal. Le
+premier essai au fastboot utilisait encore KernelSU Next v3.4.0-legacy (seqno 0), d'ou la difference.
+
+Correction (`drivers/kernelsu/selinux/rules.c`, toutes les branches, `LibreHU-main` comprise) : seqno 0 sur 4.9,
+comme avant la mise a jour. Le cache est vide sans toucher a `latest_notif`. Les modules Wi-Fi / BT / GPS / FM
+recompiles ne changent pas : le zip `conn-modules-stable-*` n'est pas a refaire, seul `boot` est a reflasher.
+
+Verification sur l'unite apres le nouveau noyau : `dmesg | grep -c latest_notif` doit donner 0.
+
 ## Plan des lots
 
 | Branche | Versions | Etat |
