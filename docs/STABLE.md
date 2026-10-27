@@ -438,8 +438,11 @@ Tests fonctionnels de l'utilisateur (27/10/2026, meme noyau, `/proc/version` = `
 Bluetooth (son, et infos batterie / reseau du telephone remontees par LibreHU Bridge), Wi-Fi, point d'acces Wi-Fi,
 KernelSU Next (root), installation par l'OTA via TWRP, radio FM, GPIO marche arriere et frein a main, entrees video
 CVBS 1 et 2, camera RCA en mode CVBS.
+Ensuite : lecteur CD **OK** ; temperatures 32 a 43 °C sur les capteurs reels (`-127000` = capteur absent de l'AC8257,
+valeur fixe de `get_immediate_*_wrap()` dans `thermal/ac8257/src/mtk_tc.c`).
 Restent a verifier : GPS avec antenne, mise en veille / reprise, partage de connexion USB (`rndis`), appel
-Bluetooth, temperatures en usage prolonge, lecteur CD / DVD et Ethernet USB.
+Bluetooth, Ethernet USB. Android Auto sans fil (Wi-Fi Direct) difficile : a analyser (piste : partage multicanal
+avec le groupe Wi-Fi Direct permanent d'Open Headunit, voir HANDOFF / logs du 27/10).
 
 ## Audit des resolutions automatiques (lots 1 a 7)
 
