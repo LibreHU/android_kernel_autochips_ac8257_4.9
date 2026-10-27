@@ -31,6 +31,9 @@ env:
   ATC_MAKE: ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0
   # HOSTCC with -fcommon: the AutoChips scripts/dtc defines yylloc twice, which host GCC >= 10 refuses at link time
   # (fixed upstream by "scripts/dtc: Remove redundant YYLOC global declaration", present on reverse-engineering)
+  # Author shown by /proc/version and the boot log: "Linux version ... (dokt@librehu)" instead of the CI runner's
+  KBUILD_BUILD_USER: dokt
+  KBUILD_BUILD_HOST: librehu
 
 # Release latest-<branch> of each build pushed (boot images), picked up by LibreHU-flashablesZips (TWRP zips,
 # LibreHU Apps).
