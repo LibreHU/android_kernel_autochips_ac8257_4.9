@@ -172,7 +172,7 @@ points d'accroche.
 | Modification | Detail | CI | Sur l'unite |
 |---|---|---|---|
 | Jancar `/dev/gpios_ioctl` | `CONFIG_JANCAR_GPIOS` (noms d'options du stock), reimplementation : la source Jancar manque au paquet | OK | ✅ |
-| KernelSU Next v3.4.2-legacy (API 5, branche legacy 465490a2 + 165b87fa) | hooks manuels, gestionnaire KernelSU Next v3.4.2 (la v3.4.0-legacy, API 4, etait refusee par ce gestionnaire) | OK | a retester |
+| KernelSU Next v3.4.2-legacy (API 5, branche legacy 465490a2 + 165b87fa) | hooks manuels, gestionnaire KernelSU Next v3.4.2 (la v3.4.0-legacy, API 4, etait refusee par ce gestionnaire) ; 27/10 : `reset_avc_cache` remis a seqno 0 (le compteur de 165b87fa desactivait le cache AVC, demarrage de plusieurs heures) | OK | a retester |
 | Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock | OK | ⬜ |
 | Outils de mise au point | console pstore precoce et memoire SPM / SCP hors de Linux en boot recovery (actifs) ; panique minutee, interception des redemarrages, one-shot, retour en recovery (`CONFIG_AC8257_BRINGUP_PANIC`, **desactives** depuis le 21/10/2026) | OK | ✅ |
 | **Menu de demarrage** | image `boot_ac8257_bootmenu.img` : menu TWRP / Android / Fastboot de l'arbre device devant ce noyau (`tools/ac8257/bootmenu`, `bootmenu_image.py`) ; le menu s'affiche et demarre Android, **tactile absent** (21/10/2026) : le tactile `mtk-tpd` n'etait cree que ~5 s apres l'init (`CONFIG_DELAY_QUEUE_TIME=5`, file de travail de `mtk_tpd.c`), le menu ne le cherchait que 1 s ; corrige : delai a 1 s (le stock le cree vers 2,4 s) et le menu le cherche toutes les 250 ms tant qu'il est affiche | a retester | ⚠️ |
