@@ -262,6 +262,11 @@ Meme methode que le lot 1 (`recovery_test`, puis `boot` + zip des modules de con
 demarrage ; MCU / CAN et touches au volant (UART 8250) ; mise en veille et reprise (`proc.S`) ; Wi-Fi, partage de
 connexion, Bluetooth, FM, GPS ; USB (adb, cle, Ethernet, lecteur CD/DVD) ; camera de recul ; son.
 
+### Essai sur l'unite (27/10/2026, `r108`, zip `kernel-stable-4.9.200`)
+Avec le correctif KernelSU (seqno AVC) : `Boot is finished (13805 ms)`, launcher affiche ; modules de connectivite
+charges par les scripts du vendor en ~1 s (`wmt_loader: do kernel module init succeed`) ; Wi-Fi (p2p0 connecte),
+Bluetooth (firmware configure) et GNSS demarres. Pas encore verifies : MCU / CAN, veille, FM, USB, camera, son.
+
 ## Lot 3 : `stable-4.9.225` (4.9.201 -> 4.9.225)
 
 Branche empilee sur `stable-4.9.200` (avec la mise a jour KernelSU Next v3.4.2-legacy). 2552 commits linux-stable :
@@ -421,6 +426,13 @@ visent surtout Xen, `cls_route` (`CONFIG_NET_CLS_ROUTE4`, non compile) et la pil
 - `drivers/char/Kconfig` : menu « Character devices » ferme deux fois (resolution automatique) ;
 - `mtk_idle.c` : `mtk_cpuidle_framework_init()` est `__init` et etait exportee ; `modpost` en fait maintenant une
   erreur ; son seul appelant est dans le noyau : export retire.
+
+### Essai sur l'unite (27/10/2026, `r113`, zip `kernel-stable-4.9.337`)
+`Boot is finished (14030 ms)`, launcher affiche ; `latest_notif` absent du journal ; aucune erreur noyau (BUG,
+WARNING, Oops, blocage, erreur mmc / USB / systeme de fichiers) dans le dmesg capture (149 s a 235 s apres le
+demarrage) ; modules de connectivite charges en ~1 s, Wi-Fi (p2p0 connecte), Bluetooth et GNSS demarres ; logcat
+comparable a 4.9.200 (memes erreurs vendor). Pas encore verifies : MCU / CAN, veille, FM, USB (aucune enumeration
+dans la fenetre du dmesg, donc correctif `hub.c` non exerce), camera, son.
 
 ## Audit des resolutions automatiques (lots 1 a 7)
 
