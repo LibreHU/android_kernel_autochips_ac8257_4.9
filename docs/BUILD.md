@@ -63,3 +63,9 @@ dans le defconfig pour un noyau de test qui risque de bloquer.
 Avec ces outils actifs (noyaux d'avant le 21/10/2026), `adb reboot recovery` et `adb reboot bootloader` deviennent
 une panique et l'unite redemarre sur Android. Pour redemarrer normalement sur un tel noyau :
 `adb shell su -c "echo 0 > /sys/module/ac8257_bringup/parameters/intercept_reboot"`, puis la commande `adb reboot`.
+
+## Auteur de la compilation
+
+La CI fixe `KBUILD_BUILD_USER=dokt` et `KBUILD_BUILD_HOST=librehu` (`env:` de `.github/workflows/build.yml`) :
+`/proc/version` et la premiere ligne du journal du noyau affichent `Linux version 4.9.x+ (dokt@librehu) ...`. En local, exporter les memes
+variables avant `make` pour obtenir la meme chaine (sans effet sur les modules : le vermagic n'en depend pas).
