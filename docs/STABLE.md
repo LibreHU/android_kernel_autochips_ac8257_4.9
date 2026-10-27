@@ -256,3 +256,8 @@ maintenant son `<linux/overflow.h>` (sans `struct_size()`), repli dans `compat/k
 Meme methode que le lot 1 (`recovery_test`, puis `boot` + zip des modules de connectivite du meme run), puis :
 demarrage ; MCU / CAN et touches au volant (UART 8250) ; mise en veille et reprise (`proc.S`) ; Wi-Fi, partage de
 connexion, Bluetooth, FM, GPS ; USB (adb, cle, Ethernet, lecteur CD/DVD) ; camera de recul ; son.
+
+### Essai sur l'unite (27/10/2026, `r108`, zip `kernel-stable-4.9.200`)
+Avec le correctif KernelSU (seqno AVC) : `Boot is finished (13805 ms)`, launcher affiche ; modules de connectivite
+charges par les scripts du vendor en ~1 s (`wmt_loader: do kernel module init succeed`) ; Wi-Fi (p2p0 connecte),
+Bluetooth (firmware configure) et GNSS demarres. Pas encore verifies : MCU / CAN, veille, FM, USB, camera, son.
