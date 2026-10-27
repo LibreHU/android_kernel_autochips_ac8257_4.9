@@ -14,3 +14,6 @@ Changes for this kernel (compat/k49 is LibreHU code, forced with -include from K
 - compat/kernel_compat.c and .h: the 4.9 kernel_read/kernel_write prototypes come from compat/k49;
 - hook/patch_memory.h: no x86 code on arm64; infra/su_mount_ns.c: ns_get_path returns a pointer before 4.11;
 - Kbuild: no seccomp sed on the kernel tree, warnings not fatal.
+- selinux/rules.c: reset_avc_cache passes seqno 0 on 4.9 (no selinux_state). The local counter of 165b87fa
+  raised the AVC latest_notif above the security server's latest_granting, so every AVC insert failed
+  ("SELinux: avc: seqno 1 < latest_notif 2" flooding the kernel log, boot taking hours).
