@@ -431,8 +431,15 @@ visent surtout Xen, `cls_route` (`CONFIG_NET_CLS_ROUTE4`, non compile) et la pil
 `Boot is finished (14030 ms)`, launcher affiche ; `latest_notif` absent du journal ; aucune erreur noyau (BUG,
 WARNING, Oops, blocage, erreur mmc / USB / systeme de fichiers) dans le dmesg capture (149 s a 235 s apres le
 demarrage) ; modules de connectivite charges en ~1 s, Wi-Fi (p2p0 connecte), Bluetooth et GNSS demarres ; logcat
-comparable a 4.9.200 (memes erreurs vendor). Pas encore verifies : MCU / CAN, veille, FM, USB (aucune enumeration
-dans la fenetre du dmesg, donc correctif `hub.c` non exerce), camera, son.
+comparable a 4.9.200 (memes erreurs vendor).
+
+Tests fonctionnels de l'utilisateur (27/10/2026, meme noyau, `/proc/version` = `Linux version 4.9.337+ (dokt@librehu)
+... #1 SMP PREEMPT Tue Oct 27 12:09:54 UTC 2026`) : **OK** pour USB (correctif `hub.c` exerce) et mode adb, MCU,
+Bluetooth (son, et infos batterie / reseau du telephone remontees par LibreHU Bridge), Wi-Fi, point d'acces Wi-Fi,
+KernelSU Next (root), installation par l'OTA via TWRP, radio FM, GPIO marche arriere et frein a main, entrees video
+CVBS 1 et 2, camera RCA en mode CVBS.
+Restent a verifier : GPS avec antenne, mise en veille / reprise, partage de connexion USB (`rndis`), appel
+Bluetooth, temperatures en usage prolonge, lecteur CD / DVD et Ethernet USB.
 
 ## Audit des resolutions automatiques (lots 1 a 7)
 
