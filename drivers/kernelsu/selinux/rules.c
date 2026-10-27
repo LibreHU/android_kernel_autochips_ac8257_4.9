@@ -61,9 +61,13 @@ static void reset_avc_cache()
 	#if defined(KSU_COMPAT_USE_SELINUX_STATE)
 	u32 seqno = selinux_state.ss ? ++selinux_state.ss->latest_granting : 1;
 	#else
-	/* 4.9: no selinux_state; use a monotonic local seqno for AVC/policyload notifications */
-	static u32 ksu_avc_seqno = 1;
-	u32 seqno = ++ksu_avc_seqno;
+	/*
+	 * 4.9: no selinux_state, latest_granting is static in ss/services.c and stays as it is. A seqno above it
+	 * would raise the AVC's latest_notif, and every later avc_insert (seqno latest_granting < latest_notif)
+	 * would then fail with a warning: no AVC cache, a printk per permission check, a very slow system.
+	 * 0 flushes the cache without moving latest_notif (what this code did before 165b87fa).
+	 */
+	u32 seqno = 0;
 	#endif
 
 #if ((!defined(KSU_COMPAT_USE_SELINUX_STATE)) || \
