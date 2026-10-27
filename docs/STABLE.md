@@ -441,8 +441,11 @@ CVBS 1 et 2, camera RCA en mode CVBS.
 Ensuite : lecteur CD **OK** ; temperatures 32 a 43 °C sur les capteurs reels (`-127000` = capteur absent de l'AC8257,
 valeur fixe de `get_immediate_*_wrap()` dans `thermal/ac8257/src/mtk_tc.c`).
 Restent a verifier : GPS avec antenne, mise en veille / reprise, partage de connexion USB (`rndis`), appel
-Bluetooth, Ethernet USB. Android Auto sans fil (Wi-Fi Direct) difficile : a analyser (piste : partage multicanal
-avec le groupe Wi-Fi Direct permanent d'Open Headunit, voir HANDOFF / logs du 27/10).
+Bluetooth, Ethernet USB. Android Auto sans fil (Wi-Fi Direct) : pas un probleme du noyau. La puce (connsys, pilote
+gen4m) n'a qu'une radio sans DBDC : box sur 2462 MHz et groupe Wi-Fi Direct d'Open Headunit sur 5180 MHz = partage
+multicanal (MCC, ~95 bascules par reseau en 85 s dans les logs du 27/10). Corrige cote appli (Open Headunit LibreHU
+`c77f7d3`, 27/10) : groupe sur le canal du Wi-Fi client quand c'est un canal 5 GHz hors DFS, sinon 5 GHz hors DFS
+(Android Auto sans fil demande le 5 GHz). A tester sur l'unite.
 
 ## Audit des resolutions automatiques (lots 1 a 7)
 
