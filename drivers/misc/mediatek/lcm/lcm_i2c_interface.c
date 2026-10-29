@@ -287,6 +287,17 @@ static int interface_driver_probe(struct i2c_client *client, const struct i2c_de
 
 	interface_client_list[lcm_id] = client;
 
+	/*
+	 * The UJC201 dtbo declares its only bridge (lcm_bridge_ic@2d on i2c0) with lcm_id = 0, which is
+	 * LCM_ID_SECONDARY here, while the primary panel code talks to LCM_ID_PRIMARY: the bridge was never
+	 * programmed again after its power was cut (black panel after a real suspend). A lone bridge serves
+	 * the primary panel too, until a real primary one shows up.
+	 */
+	if (lcm_id == LCM_ID_SECONDARY && !interface_client_list[LCM_ID_PRIMARY]) {
+		interface_client_list[LCM_ID_PRIMARY] = client;
+		LCM_INTERFACE_INFO("lcm_id = %d also used as the primary bridge\n", lcm_id);
+	}
+
 	LCM_INTERFACE_INFO("lcm_id = %d\n", lcm_id);
 
 	return 0;
@@ -300,7 +311,7 @@ static int interface_driver_remove(struct i2c_client *client)
 		interface_client_list[LCM_ID_PRIMARY] = NULL;
 		LCM_INTERFACE_INFO("LCM_ID_PRIMARY = %d\n", LCM_ID_PRIMARY);
 	}
-	else if (client == interface_client_list[LCM_ID_SECONDARY]) {
+	if (client == interface_client_list[LCM_ID_SECONDARY]) {
 		interface_client_list[LCM_ID_SECONDARY] = NULL;
 		LCM_INTERFACE_INFO("LCM_ID_SECONDARY = %d\n", LCM_ID_SECONDARY);
 	}
