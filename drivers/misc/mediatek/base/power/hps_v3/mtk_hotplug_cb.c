@@ -39,6 +39,17 @@
 /* FIXME : follow K44 first */
 
 static struct notifier_block cpu_hotplug_nb;
+
+/*
+ * LibreHU (UJC201): the cluster is switched to HW mode below (mp_enter_suspend), where the SPMC powers a core off
+ * by itself once PSCI CPU_OFF has put it in WFI. The ATF's MTK_SIP_POWER_DOWN_CORE (plat_pm.c mt_core_ops ->
+ * "spmc: power off core") then writes the SW power control of the core and polls SPM PWR_STATUS (0x10006180) for
+ * it to drop, with no timeout: on the UJC201 that poll never ends and the whole SoC hangs at the first CPU going
+ * offline (29/10: echo 0 > cpu3/online, pm_test "processors"). 1 = do not send the MTK SIP power down calls at
+ * CPU_DEAD (PSCI alone); /sys/module/mtk_hotplug_cb/parameters/skip_sip_power_down.
+ */
+static bool skip_sip_power_down;
+module_param(skip_sip_power_down, bool, 0644);
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
 struct cpumask *mtk_cpu_cluster0_mask = to_cpumask(cpu_cluster0_bits);
 
@@ -112,6 +123,10 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #ifdef CONFIG_HOTPLUG_CPU
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
+		if (skip_sip_power_down) {
+			pr_info("[LibreHU] cpu%u dead: MTK SIP power down skipped (PSCI only)\n", cpu);
+			break;
+		}
 		mt_secure_call(MTK_SIP_POWER_DOWN_CORE, cpu, 0, 0, 0);
 		arch_get_cluster_cpus(&cpuhp_cpumask,
 		arch_get_cluster_id(cpu));
