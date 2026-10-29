@@ -38,6 +38,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <linux/delay.h>
+#include <linux/kthread.h>
 #include "metazone.h"
 #include "metazone_ioctl.h"
 
@@ -99,6 +100,41 @@
 #define GOWIN_BRIDGE_IC_POWER_EN_PIN0		3
 #define GOWIN_BRIDGE_IC_POWER_EN_PIN1		44
 
+/*
+ * Jancar boards (UJC201): the panel is a MIPI DSI panel whose init table and
+ * timings are stored in the MetaZone. LK runs that table at boot; the kernel
+ * must run it again on every resume, after the panel lost its power. GPIO
+ * numbers are those of the stock dtbo lcm_pins_* nodes.
+ */
+#define JAC_LCD_POWER_PIN			170	/* state_power_en_output* */
+#define JAC_BRIDGE_POWER_PIN			164	/* state_gowin_bridge_chip_power_en* */
+#define JAC_LCD_RESET_PIN			152	/* state_jac_rst_output* */
+
+#define JAC_MZ_LCM_TYPE				0x1019C
+#define JAC_MZ_LCD_POWER_DELAY			0x101A4
+#define JAC_MZ_MIPI_TABLE			0x101A5	/* binary items of 100 bytes */
+#define JAC_MZ_MIPI_TABLE_ITEMS			35
+#define JAC_MZ_MIPI_LANE			0x101DA
+#define JAC_MZ_MIPI_CLK				0x101DC
+#define JAC_MZ_WIDTH				0x101DD
+#define JAC_MZ_HEIGHT				0x101DE
+#define JAC_MZ_CONFIG_ENABLE			0x101DF
+#define JAC_MZ_VFP				0x101E4
+#define JAC_MZ_VBP				0x101E5
+#define JAC_MZ_VPW				0x101E6
+#define JAC_MZ_HFP				0x101E7
+#define JAC_MZ_HBP				0x101E8
+#define JAC_MZ_HPW				0x101E9
+#define JAC_MZ_BIT				0x101EE
+#define JAC_MZ_MIPI_TABLE_LEN			0x102DB
+
+#define JAC_CONFIG_ENABLE_MAGIC			0x51525354
+#define JAC_MIPI_ITEM_LEN			100
+#define JAC_MIPI_TABLE_LEN_MAX			3400
+#define JAC_MIPI_PARA_MAX			99
+#define JAC_MIPI_CMD_MAX			512
+#define JAC_LCD_POWER_DELAY_MAX			3000
+
 #define MRF_HEADER_INFO_OFF			0
 #define MRF_HEADER_INFO_LEN			0xC00
 #define MRF_PANEL_INFO_OFF			(MRF_HEADER_INFO_OFF+0x100)
@@ -151,6 +187,20 @@ static struct pinctrl_state *lcm_bridge_chip_eint;
 #endif
 static struct pinctrl_state *lcm_gowin_bridge_chip_power_en0;
 static struct pinctrl_state *lcm_gowin_bridge_chip_power_en1;
+static struct pinctrl_state *jac_rst_output0, *jac_rst_output1;
+
+struct jac_mipi_setting_table {
+	unsigned int cmd;
+	unsigned char count;
+	unsigned char para_list[JAC_MIPI_PARA_MAX];
+};
+
+static unsigned int jac_lcm_enabled;
+static unsigned int jac_lcm_type;
+static unsigned int jac_lcd_power_delay;
+static unsigned int jac_mipi_cnt;
+static struct jac_mipi_setting_table jac_mipi_table[JAC_MIPI_CMD_MAX];
+static char jac_mipi_raw[JAC_MZ_MIPI_TABLE_ITEMS * JAC_MIPI_ITEM_LEN];
 
 static char *lvds_init_table_text;
 static char *mipi_init_table_text;
@@ -536,6 +586,15 @@ int lcm_get_gpio_info(struct platform_device *pdev)
 		goto error;
 	}
 
+	/* Jancar panel reset; only boards with a MetaZone panel table have it */
+	jac_rst_output0 = pinctrl_lookup_state(pinctrl1, "state_jac_rst_output0");
+	jac_rst_output1 = pinctrl_lookup_state(pinctrl1, "state_jac_rst_output1");
+	if (IS_ERR(jac_rst_output0) || IS_ERR(jac_rst_output1)) {
+		jac_rst_output0 = NULL;
+		jac_rst_output1 = NULL;
+		LCM_DRIVER_INFO("no pinctrl state_jac_rst_output*\n");
+	}
+
 	LCM_DRIVER_INFO("leave\n");
 
 	return 0;
@@ -566,7 +625,7 @@ void lcm_gpio_output(int pin, int level)
 			pinctrl_select_state(pinctrl1, rst_output0);
 		}
 
-	} else if (LCM_POWER_EN_PIN == pin) {
+	} else if ((LCM_POWER_EN_PIN == pin) || (JAC_LCD_POWER_PIN == pin)) {
 		if (level) {
 			pinctrl_select_state(pinctrl1, power_en_output1);
 		} else {
@@ -578,11 +637,21 @@ void lcm_gpio_output(int pin, int level)
 		} else {
 			pinctrl_select_state(pinctrl1, lcm_gowin_bridge_chip_power_en0);
 		}
-	}*/ else if (GOWIN_BRIDGE_IC_POWER_EN_PIN1 == pin) {
+	}*/ else if ((GOWIN_BRIDGE_IC_POWER_EN_PIN1 == pin) || (JAC_BRIDGE_POWER_PIN == pin)) {
 		if (level) {
 			pinctrl_select_state(pinctrl1, lcm_gowin_bridge_chip_power_en1);
 		} else {
 			pinctrl_select_state(pinctrl1, lcm_gowin_bridge_chip_power_en0);
+		}
+	} else if (JAC_LCD_RESET_PIN == pin) {
+		if ((!jac_rst_output0) || (!jac_rst_output1)) {
+			LCM_DRIVER_ERROR("no jac_rst pinctrl state!\n");
+			return;
+		}
+		if (level) {
+			pinctrl_select_state(pinctrl1, jac_rst_output1);
+		} else {
+			pinctrl_select_state(pinctrl1, jac_rst_output0);
 		}
 	}
 
@@ -1048,6 +1117,194 @@ static void push_table(struct mipi_setting_info *setting_info)
 	}
 
 	LCM_DRIVER_INFO("leave\n");
+}
+
+/*
+ * Jancar MetaZone panel table: a byte stream of records <len><cmd><len - 1
+ * parameters>, where <3><0xff><0xff><ms> is a delay.
+ */
+static void jac_lcm_analysis_mipi_params_form_MetaZone(void)
+{
+	unsigned int total = 0, left, i = 0, n;
+	unsigned char cnt;
+	unsigned char *p = (unsigned char *)jac_mipi_raw;
+	unsigned int idx;
+
+	jac_mipi_cnt = 0;
+	MetaZone_Read(JAC_MZ_MIPI_TABLE_LEN, &total);
+	if (0 == total) {
+		LCM_DRIVER_INFO("[LCM] no mipi para\n");
+		return;
+	}
+	if (total > JAC_MIPI_TABLE_LEN_MAX) {
+		LCM_DRIVER_INFO("[LCM] mipi para to big\n");
+		return;
+	}
+
+	for (idx = 0; idx * JAC_MIPI_ITEM_LEN < total; idx++) {
+		MetaZone_ReadBinary(JAC_MZ_MIPI_TABLE + idx, jac_mipi_raw + idx * JAC_MIPI_ITEM_LEN,
+				    JAC_MIPI_ITEM_LEN);
+	}
+	LCM_DRIVER_INFO("total :%d\n", total);
+
+	left = total;
+	while (left && (i < JAC_MIPI_CMD_MAX)) {
+		cnt = p[0];
+		if ((0 == cnt) || (cnt + 1 > left)) {
+			break;
+		}
+		if ((3 == cnt) && (0xff == p[1]) && (0xff == p[2])) {
+			jac_mipi_table[i].cmd = MIPI_REGFLAG_MDELAY;
+			jac_mipi_table[i].count = p[3];
+		} else {
+			n = cnt - 1;
+			if (n > JAC_MIPI_PARA_MAX) {
+				LCM_DRIVER_FATAL("mipi[%d]:%x, %d parameters, too many!\n", i, p[1], n);
+				break;
+			}
+			jac_mipi_table[i].cmd = p[1];
+			jac_mipi_table[i].count = n;
+			memcpy(jac_mipi_table[i].para_list, p + 2, n);
+		}
+		LCM_DRIVER_DEBUG("mipi[%d]:%x, %d\n", i, jac_mipi_table[i].cmd, jac_mipi_table[i].count);
+		p += cnt + 1;
+		left -= cnt + 1;
+		i++;
+	}
+	jac_mipi_cnt = i;
+	LCM_DRIVER_INFO("mipi cmd:%d\n", jac_mipi_cnt);
+}
+
+/*
+ * Stock overwrites the DSI params with the MetaZone ones; here they only get
+ * logged (and compared), the boot params from LK already drive this panel.
+ */
+static void jac_lcm_get_mipi_params_form_MetaZone(struct LCM_PARAMS *params)
+{
+	unsigned int enable = 0, lane = 0, clk = 0, width = 0, height = 0, bit = 0;
+	unsigned int hpw = 0, hbp = 0, hfp = 0, vpw = 0, vbp = 0, vfp = 0;
+	static unsigned int inited, config_found;
+
+	if (inited) {
+		goto exit;
+	}
+	inited = 1;
+
+	MetaZone_Read(JAC_MZ_CONFIG_ENABLE, &enable);
+	LCM_DRIVER_INFO("[LCM] lcm_config_enable():%x\n", enable);
+	if (JAC_CONFIG_ENABLE_MAGIC != enable) {
+		return;
+	}
+	config_found = 1;
+
+	MetaZone_Read(JAC_MZ_MIPI_LANE, &lane);
+	MetaZone_Read(JAC_MZ_MIPI_CLK, &clk);
+	MetaZone_Read(JAC_MZ_HPW, &hpw);
+	MetaZone_Read(JAC_MZ_HBP, &hbp);
+	MetaZone_Read(JAC_MZ_HFP, &hfp);
+	MetaZone_Read(JAC_MZ_VPW, &vpw);
+	MetaZone_Read(JAC_MZ_VBP, &vbp);
+	MetaZone_Read(JAC_MZ_VFP, &vfp);
+	MetaZone_Read(JAC_MZ_HEIGHT, &height);
+	MetaZone_Read(JAC_MZ_WIDTH, &width);
+	MetaZone_Read(JAC_MZ_BIT, &bit);
+	MetaZone_Read(JAC_MZ_LCD_POWER_DELAY, &jac_lcd_power_delay);
+	MetaZone_Read(JAC_MZ_LCM_TYPE, &jac_lcm_type);
+
+	LCM_DRIVER_INFO("[LCM] mipi lane(%d) clk(%d) hpw(%d) hbp(%d) hfp(%d) vpw(%d) vbp(%d) vfp(%d)\n",
+			lane, clk, hpw, hbp, hfp, vpw, vbp, vfp);
+	LCM_DRIVER_INFO("[LCM] %dx%d bit(%d) lcd_power_delay(%d) jac_lcm_tpye(%d)\n",
+			width, height, bit, jac_lcd_power_delay, jac_lcm_type);
+	if ((lane != params->dsi.LANE_NUM) || (clk != params->dsi.PLL_CLOCK) ||
+	    (width != params->width) || (height != params->height) ||
+	    (hpw != params->dsi.horizontal_sync_active) || (hbp != params->dsi.horizontal_backporch) ||
+	    (hfp != params->dsi.horizontal_frontporch) || (vpw != params->dsi.vertical_sync_active) ||
+	    (vbp != params->dsi.vertical_backporch) || (vfp != params->dsi.vertical_frontporch)) {
+		LCM_DRIVER_ERROR("MetaZone panel params differ from LK ones, LK ones kept!\n");
+	}
+
+	jac_lcm_analysis_mipi_params_form_MetaZone();
+
+exit:
+	/* the reset pin comes from lcm_get_gpio_info() */
+	jac_lcm_enabled = (config_found && jac_rst_output0 && jac_rst_output1) ? 1 : 0;
+	LCM_DRIVER_INFO("jac panel init on resume:%d\n", jac_lcm_enabled);
+}
+
+static void jac_push_table(struct jac_mipi_setting_table *table, unsigned int count,
+			   unsigned char force_update)
+{
+	unsigned int i;
+
+	LCM_DRIVER_INFO("[LCM] :%d\n", count);
+	for (i = 0; i < count; i++) {
+		switch (table[i].cmd) {
+		case MIPI_REGFLAG_MDELAY:
+			MDELAY(table[i].count);
+			break;
+		case MIPI_REGFLAG_UDELAY:
+			UDELAY(table[i].count);
+			break;
+		case MIPI_REGFLAG_END_OF_TABLE:
+			break;
+		default:
+			dsi_set_cmdq_V22(NULL, table[i].cmd, table[i].count, table[i].para_list, force_update);
+		}
+	}
+}
+
+/* power on, reset and init sequence of the stock lcm_init */
+static void jac_lcm_init(void)
+{
+	if (jac_lcd_power_delay > JAC_LCD_POWER_DELAY_MAX) {
+		jac_lcd_power_delay = JAC_LCD_POWER_DELAY_MAX;
+	}
+
+	if (1 == jac_lcm_type) {
+		if (jac_lcd_power_delay < 3) {
+			lcm_gpio_output(JAC_LCD_POWER_PIN, 1);
+		}
+	} else {
+		lcm_gpio_output(JAC_LCD_POWER_PIN, 1);
+		lcm_gpio_output(JAC_BRIDGE_POWER_PIN, 1);
+	}
+
+	lcm_gpio_output(JAC_LCD_RESET_PIN, 0);
+	lcm_gpio_output(LVDS_BRIDGE_IC_RESET_PIN, 0);
+	MDELAY(20);
+	lcm_gpio_output(JAC_LCD_RESET_PIN, 1);
+	lcm_gpio_output(LVDS_BRIDGE_IC_RESET_PIN, 1);
+	MDELAY(30);
+
+	if ((0 == jac_lcm_type) && (jac_lcd_power_delay >= 3)) {
+		MDELAY(50);
+		lcm_gpio_output(JAC_LCD_RESET_PIN, 0);
+		MDELAY(jac_lcd_power_delay);
+		lcm_gpio_output(JAC_LCD_RESET_PIN, 1);
+		MDELAY(140);
+	}
+
+	if (jac_mipi_cnt) {
+		jac_push_table(jac_mipi_table, jac_mipi_cnt, 1);
+	} else {
+		lvds_push_table(LCM_ID_PRIMARY, &lvds_init);
+	}
+	MDELAY(10);
+
+	if ((1 == jac_lcm_type) && (jac_lcd_power_delay >= 3)) {
+		MDELAY(jac_lcd_power_delay);
+		lcm_gpio_output(JAC_LCD_POWER_PIN, 1);
+	}
+}
+
+static int jac_set_lcd_power_kthread(void *data)
+{
+	MDELAY(80);
+	lcm_gpio_output(JAC_LCD_POWER_PIN, 0);
+	lcm_gpio_output(JAC_BRIDGE_POWER_PIN, 0);
+	LCM_DRIVER_INFO("leave\n");
+
+	return 0;
 }
 
 static int lcm_timing_text_deal(struct lcm_timing_info *lcm_timing, char *text)
@@ -1945,6 +2202,12 @@ void lcm_params_info_dump(void)
 static void lcm_valid_data_start_early(void)
 {
 	LCM_DRIVER_INFO("enter\n");
+	if (jac_lcm_enabled) {
+		/* the panel is powered and initialized by jac_lcm_init() */
+		LCM_DRIVER_INFO("leave\n");
+
+		return;
+	}
   	if (GAOWIN_BRIDGE_IC != lcm_bridge_ic_detect(LCM_ID_PRIMARY)) {
  		if ((INTERFACE_TYPE_LVDS == panel_info.interface_type) && (lvds_init.cnt)) {
  			/*init brige IC*/
@@ -1990,7 +2253,7 @@ static void lcm_valid_data_start_late(void)
 	}
 
 #ifdef BRIDGE_IC_IRQ_ENABLE
-	if ((INTERFACE_TYPE_LVDS == panel_info.interface_type) && (lvds_init.cnt)) {
+	if ((!jac_lcm_enabled) && (INTERFACE_TYPE_LVDS == panel_info.interface_type) && (lvds_init.cnt)) {
 		interface_write_byte(LCM_ID_PRIMARY, LVDS_REGFLAG_BRIGE_IC_ADDR, ERROR_STATUS_REG, 0xff);
 		data = 0;
 		interface_read_byte(LCM_ID_PRIMARY, LVDS_REGFLAG_BRIGE_IC_ADDR, ERROR_STATUS_REG, &data);
@@ -2031,7 +2294,10 @@ static void lcm_valid_data_stop_late(void)
 		lcm_gpio_output(LVDS_BRIDGE_IC_RESET_PIN, 0);
 		MDELAY(5);
 		/* LCM power off after LCM input valid data off, ask for LCM (BP101wx1-206) spec 9.0 T2*/
-		lcm_gpio_output(LCM_POWER_EN_PIN, 0);
+		if (!jac_lcm_enabled) {
+			/* jac_set_lcd_power_kthread() powers the panel off */
+			lcm_gpio_output(LCM_POWER_EN_PIN, 0);
+		}
 	}
 	LCM_DRIVER_INFO("leave\n");
 }
@@ -2390,6 +2656,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 		LCM_DRIVER_INFO("panel phy_width, panel phy_heigh: not set value, use default!\n");
 	}
 
+	jac_lcm_get_mipi_params_form_MetaZone(params);
+
 exit:
 
 	install_lcm_valid_data_start_early_func(lcm_valid_data_start_early);
@@ -2443,6 +2711,13 @@ static void lcm_init(void)
 	LCM_DRIVER_INFO("enter\n");
 	if (g_mobilelog) {
 		lcm_params_info_dump();
+	}
+
+	if (jac_lcm_enabled) {
+		jac_lcm_init();
+		LCM_DRIVER_INFO("leave\n");
+
+		return;
 	}
 
 	if (INTERFACE_TYPE_MIPI == panel_info.interface_type) {
@@ -2568,6 +2843,12 @@ static void lcm_suspend(void)
 			LCM_DRIVER_DEBUG("power_off_timing.cnt:0\n");
 			SET_RESET_PIN(0);
 		}
+	}
+
+	if (jac_lcm_enabled) {
+		lcm_gpio_output(JAC_LCD_RESET_PIN, 0);
+		lcm_gpio_output(LVDS_BRIDGE_IC_RESET_PIN, 0);
+		kthread_run(jac_set_lcd_power_kthread, NULL, "set_lcd_power_kthread");
 	}
 
 	LCM_DRIVER_INFO("leave\n");
