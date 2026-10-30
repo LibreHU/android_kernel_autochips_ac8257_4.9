@@ -174,7 +174,7 @@ points d'accroche.
 |---|---|---|---|
 | Jancar `/dev/gpios_ioctl` | `CONFIG_JANCAR_GPIOS` (noms d'options du stock), reimplementation : la source Jancar manque au paquet | OK | ✅ |
 | KernelSU Next v3.4.2-legacy (API 5, branche legacy 465490a2 + 165b87fa) | hooks manuels, gestionnaire KernelSU Next v3.4.2 (la v3.4.0-legacy, API 4, etait refusee par ce gestionnaire) ; 27/10 : `reset_avc_cache` remis a seqno 0 (le compteur de 165b87fa desactivait le cache AVC, demarrage de plusieurs heures) | OK | a retester |
-| Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock | OK | ⬜ |
+| Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock ; boost tactile **effectif depuis `r128`** (30/10, `3ccc70f3f`) : il passait par le sysboost de la PPM, que l'init vendor laisse desactive, et ne faisait rien ([docs/TUNING.md](docs/TUNING.md)) | OK | ⬜ |
 | Outils de mise au point | console pstore precoce et memoire SPM / SCP hors de Linux en boot recovery (actifs) ; panique minutee, interception des redemarrages, one-shot, retour en recovery (`CONFIG_AC8257_BRINGUP_PANIC`, **desactives** depuis le 21/10/2026) | OK | ✅ |
 | **Menu de demarrage** | image `boot_ac8257_bootmenu.img` : menu TWRP / Android / Fastboot de l'arbre device devant ce noyau (`tools/ac8257/bootmenu`, `bootmenu_image.py`) ; le menu s'affiche et demarre Android, **tactile absent** (21/10/2026) : le tactile `mtk-tpd` n'etait cree que ~5 s apres l'init (`CONFIG_DELAY_QUEUE_TIME=5`, file de travail de `mtk_tpd.c`), le menu ne le cherchait que 1 s ; corrige : delai a 1 s (le stock le cree vers 2,4 s) et le menu le cherche toutes les 250 ms tant qu'il est affiche | a retester | ⚠️ |
 | **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,3 GHz** | 16 OPP ; tensions progressives au-dessus de 2,0 GHz (1,0375 V a 2,1 GHz, jusqu'a 1,11875 V a 2,6 GHz, la tension maximale du MT6765) ; [docs/TUNING.md](docs/TUNING.md) | OK (runs 48, 61) | ✅ 2,3 et 2,4 GHz ; 2,6 GHz instable a 1,10 V |
@@ -208,7 +208,7 @@ Pas a reprendre :
    audio, tactile, MCU, camera de recul et entrees CVBS, que la reconstruction n'avait jamais fait marcher. Reste :
    IR, veille, ARM2 au demarrage, camera AHD, VIDEO OUT.
 4. **Ajouts LibreHU** — en CI depuis le 20/10/2026 ; sur l'unite : `/dev/gpios_ioctl`, KernelSU Next, overclock
-   (2,4 GHz), Ethernet USB OK ; reste a tester : tensions reglables, GPU 730 MHz, gouverneurs, boost tactile.
+   (2,4 GHz), Ethernet USB OK ; reste a tester : tensions reglables, GPU 730 MHz, gouverneurs, boost tactile (corrige en `r128`).
 5. **Usage quotidien** : installation dans `boot` — ✅ testee (21/10/2026) ; reste le retrait des options de mise au
    point et les images publiees en release.
 

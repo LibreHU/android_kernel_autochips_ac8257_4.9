@@ -106,9 +106,15 @@ Le comportement erratique vu avec les noyaux `reverse-engineering` (meme code) a
 | Pas de table de puissance (upower) pour la table OC : repli sur la table FY lue par index d'OPP, 2,6 GHz estime comme 2,0 GHz | budget de puissance / thermique de la PPM et modele d'energie de l'ordonnanceur faux en haut : la frequence monte trop, puis le thermique bride brutalement | table upower construite pour l'OC (lignes FY reprises, au-dessus de 2001 MHz extrapolees par exces : f.V^2 dynamique, V^3 fuite ; capacite ramenee a 1024) |
 
 Verifie et sain : chemin gouverneur -> `_calc_new_opp_idx` -> SSPM, plafond utilisateur via le notifier de
-politique (enregistre avant le pilote), plancher du boost tactile, cote GPU ordre des limites (plafond LibreHU,
-plancher, puis thermique / puissance prioritaires) et table de puissance GPU calculee depuis les vraies
-frequence et tension. Limites restantes : une tension changee a chaud (`volt_uv`, `vcore_uv`) n'est pas reportee
+politique (enregistre avant le pilote), cote GPU ordre des limites (plafond LibreHU, plancher, puis thermique /
+puissance prioritaires) et table de puissance GPU calculee depuis les vraies frequence et tension.
+
+**Correction du 30/10/2026 : le boost tactile ne faisait rien** (il figurait a tort dans la liste ci-dessus).
+`ac8257_input_boost` passait par le sysboost de la PPM (`mt_ppm_sysboost_freq`), politique que l'init vendor laisse
+desactivee : chaque toucher ne donnait que « sysboost policy is not enabled! » dans dmesg (88 fois dans les logs
+`r127`). Depuis `r128` (`3ccc70f3f`), il passe par le plancher LibreHU (`ac8257_cpufreq_boost_min()`, replie comme
+`scaling_min_freq` ; plafond et limites PPM / thermiques prioritaires). Reglages inchanges dans
+`/sys/module/ac8257_input_boost/parameters/` : `freq_khz` (1533000, 0 = coupe), `duration_ms` (100). Limites restantes : une tension changee a chaud (`volt_uv`, `vcore_uv`) n'est pas reportee
 dans les estimations de puissance (upower, table GPU) ; la frequence affichee est celle que la SSPM rapporte
 (moyenne de son journal), pas une mesure de la PLL.
 
