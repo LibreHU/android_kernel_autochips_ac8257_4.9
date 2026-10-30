@@ -1284,6 +1284,8 @@ static unsigned int ac8257_cpu_max_khz = 2601000;
 static unsigned int ac8257_cpu_boot_khz = 2301000;
 /* scaling_max_freq / scaling_min_freq of the cpufreq policy (cpufreq notifier below) */
 static unsigned int ac8257_pol_max_khz = UINT_MAX, ac8257_pol_min_khz;
+/* touch input boost minimum (ac8257_cpufreq_boost_min()), 0 = none */
+static unsigned int ac8257_boost_min_khz;
 static int ac8257_ppm_base[NR_MT_CPU_DVFS], ac8257_ppm_limit[NR_MT_CPU_DVFS];
 static bool ac8257_ppm_seen;
 static unsigned int ac8257_ppm_clusters;
@@ -1304,15 +1306,16 @@ static int ac8257_soft_max_idx(struct mt_cpu_dvfs *p)
 	return ac8257_idx_not_above(p, min(ac8257_cpu_max_khz, ac8257_pol_max_khz));
 }
 
-/* index of the lowest OPP not below scaling_min_freq, -1 when there is no minimum */
+/* index of the lowest OPP not below scaling_min_freq and the boost minimum, -1 when there is none */
 static int ac8257_soft_min_idx(struct mt_cpu_dvfs *p)
 {
+	unsigned int khz = max(ac8257_pol_min_khz, ac8257_boost_min_khz);
 	int i;
 
-	if (!ac8257_pol_min_khz)
+	if (!khz)
 		return -1;
 	for (i = p->nr_opp_tbl - 1; i > 0; i--)
-		if (cpu_dvfs_get_freq_by_idx(p, i) >= ac8257_pol_min_khz)
+		if (cpu_dvfs_get_freq_by_idx(p, i) >= khz)
 			break;
 	return i;
 }
@@ -1367,6 +1370,19 @@ static void ac8257_reapply_limits(void)
 #ifndef CONFIG_HYBRID_CPU_DVFS
 	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
 #endif
+}
+
+/*
+ * Touch input boost (drivers/misc/librehu/ac8257_input_boost.c): a minimum frequency, 0 to remove it,
+ * folded into the floor like scaling_min_freq (the maximum and the PPM / thermal limits still win).
+ * The PPM system boost cannot do it: the vendor init leaves that policy disabled.
+ */
+void ac8257_cpufreq_boost_min(unsigned int khz)
+{
+	if (khz == ac8257_boost_min_khz)
+		return;
+	ac8257_boost_min_khz = khz;
+	ac8257_reapply_limits();
 }
 
 static int ac8257_cpu_max_set(const char *val, const struct kernel_param *kp)
