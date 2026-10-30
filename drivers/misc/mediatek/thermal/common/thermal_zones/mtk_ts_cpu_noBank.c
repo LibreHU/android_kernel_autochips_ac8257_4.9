@@ -178,6 +178,34 @@ static char g_bind8[20] = "";
 static char g_bind9[20] = "";
 #endif
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * LibreHU: CPU thermal policy of a cooled UJC201, put over the trips userspace writes to
+ * /proc/driver/thermal/tzcpu. At boot the vendor thermal_manager writes /vendor/etc/.tp/thermal.conf
+ * there: reset 125 C and the ATM bound at 55 C, with its CTM (mtk_cooler_atm.c) bringing the target
+ * back to 55 C as soon as the board passes 46 C, which held the overclocked CPU around 55 C. Here the
+ * reset (and the hardware protection, set from trip 0) stays at 125 C, the static brakes cpu00 and
+ * cpu03 come at 105 C and the ATM coolers at 100 C (the ATM targets the temperature of its trip); the
+ * CTM is turned off in mtk_cooler_atm.c. With ac8257_thermal.policy=0 (command line, or
+ * /sys/module/ac8257_thermal/parameters/policy before the write) the written values are kept as they are.
+ */
+static const struct {
+	int temp;
+	const char *cooler;
+} ac8257_tzcpu_policy[] = {
+	{ 125000, "mtktscpu-sysrst" },
+	{ 105000, "cpu00" },
+	{ 105000, "cpu03" },
+	{ 100000, "cpu_adaptive_0" },
+	{ 100000, "cpu_adaptive_1" },
+};
+
+bool ac8257_thermal_policy = true;
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "ac8257_thermal."
+module_param_named(policy, ac8257_thermal_policy, bool, 0644);
+#endif
+
 struct mt_gpufreq_power_table_info *mtk_gpu_power;
 
 #if 0
@@ -1142,6 +1170,29 @@ static ssize_t tscpu_write
 		/* modify for PTPOD, if disable Thermal,
 		 * PTPOD still need to use this function for getting temperature
 		 */
+
+#ifdef CONFIG_MACH_AC8257
+		if (ac8257_thermal_policy) {
+			char *binds[10] = {
+				ptr_mtktscpu_data->bind0, ptr_mtktscpu_data->bind1,
+				ptr_mtktscpu_data->bind2, ptr_mtktscpu_data->bind3,
+				ptr_mtktscpu_data->bind4, ptr_mtktscpu_data->bind5,
+				ptr_mtktscpu_data->bind6, ptr_mtktscpu_data->bind7,
+				ptr_mtktscpu_data->bind8, ptr_mtktscpu_data->bind9,
+			};
+
+			for (i = 0; i < 10; i++) {
+				bool set = i < ARRAY_SIZE(ac8257_tzcpu_policy);
+
+				ptr_mtktscpu_data->trip[i] = set ? ac8257_tzcpu_policy[i].temp : 0;
+				ptr_mtktscpu_data->t_type[i] = 0;
+				strlcpy(binds[i], set ? ac8257_tzcpu_policy[i].cooler : "no-cooler",
+					sizeof(ptr_mtktscpu_data->bind0));
+			}
+			num_trip = ARRAY_SIZE(ac8257_tzcpu_policy);
+			tscpu_printk("tscpu_write: LibreHU policy over the written trips\n");
+		}
+#endif
 
 		down(&sem_mutex);
 		tscpu_dprintk("tscpu_write tscpu_unregister_thermal\n");
