@@ -299,7 +299,7 @@ static VIDEO_FORMAT TP9963_Format_Detect(void)
 			break;
 		}
 		pre_format = cur_format;
-		mdelay(50);
+		msleep(50);
 		retry--;
 	} while (retry > 0);
 
@@ -472,7 +472,7 @@ UINT32 TP9963Open(void)
 		TP9963_Param_Set(source_format);
 	} else {
 		TP9963_decoder_init(FORMAT_HD_25);
-		mdelay(100);
+		msleep(100);
 		source_format = TP9963_Format_Detect();
 	}
 
