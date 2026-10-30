@@ -364,7 +364,13 @@ Bluetooth de l'unite passe par le pilote MediaTek.)
   maintenant sans detection de renommage et s'arrete si un commit touche d'autres fichiers que l'original ;
   `tools/stable/renameaudit.py` verifie une branche (lots 1 a 5 : seul ce cas) ;
 - `fs/fs-writeback.c` : appel MediaTek a `block_dump___mark_inode_dirty()` retire avec la fonction ;
-- `drivers/block/zram/zram_drv.c` : `pages_compacted` est un `atomic_long_t` (fichier proc MediaTek).
+- `drivers/block/zram/zram_drv.c` : `pages_compacted` est un `atomic_long_t` (fichier proc MediaTek) ;
+- `drivers/usb/core/hub.c` (vu le 30/10/2026, corrige sur `stable-4.9.337` seulement, `e4e853475`) : « Fix locking
+  issues with address0_mutex » (4.9.292, applique sans conflit) prend `usb_lock_port()` et `address0_mutex` en tete
+  de la boucle de `hub_port_connect()` et ne les rend plus sur le chemin `done:`. L'abandon MediaTek d'une
+  enumeration pendant l'entree en veille ou un reboot (`goto done` juste apres `usb_alloc_dev()`) sortait donc avec
+  les deux verrous tenus : toute enumeration ou reset-resume suivant sur le bus restait bloque. Le test est fait
+  avant les verrous. `stable-4.9.300` et `-319` ont le meme defaut (branches non suivies).
 
 ### A tester sur l'unite
 Comme le lot 4, en insistant sur tout ce qui passe par binder et ION (demarrage complet, camera de recul, video,
@@ -466,3 +472,37 @@ ligne « deja presente » pouvait l'etre ailleurs dans le fichier. Les 15 cas de
 | `86e514306bfb`, `8fca3c364683`, `f8c66aba27fa` | 1, 2, 1 | Xen, EFI, UFS | non compiles (`CONFIG_XEN`, `CONFIG_EFI`, `CONFIG_SCSI_UFSHCD` absents) | rien |
 
 `apply.py` ne resout plus rien seul : tout conflit dans un fichier compile arrete l'application.
+
+## Veille et reprise
+
+Etat au 30/10/2026, branche `stable-4.9.337`.
+
+- **Extinction des coeurs** (29/10, toutes les branches stable, `0ac5529bd` sur 337) : le `smpboot_park_threads()`
+  d'AutoChips attend que tous les threads smpboot du coeur aient quitte la file d'execution ; depuis 4.9.120
+  (« cpu/hotplug: Make bringup/teardown of smp threads symmetric ») il tourne dans `cpuhp/N` lui-meme, qui ne la
+  quitte jamais : `echo 0 > cpuN/online` et la veille bloquaient. Le thread appelant n'est plus compte. Valide en
+  `r123` (coeurs 3, 2, 1 eteints puis rallumes).
+- **Premiere vraie veille** (29/10, `r123`, contact coupe 60 s) : 52,9 s en veille, reveil par l'impulsion PB2 de
+  la MCU (EINT PMIC). Au reveil : dalle noire (image presente dans scrcpy, retro-eclairage allume), « GTP wakeup
+  sleep failed », DVD USB a rebrancher, son absent.
+- **Dalle** (`r126`, `37725299b`) : la dalle est une MIPI DSI dont la table d'init est dans la MetaZone Jancar ; le
+  paquet GPL n'a pas les fonctions `jac_*` du pilote LCM : le noyau ne la reinitialisait jamais apres la coupure
+  de PB4 par la MCU. `lcm_init()` / `lcm_suspend()` reprennent la sequence du noyau stock #72.
+- **Correctifs `r127`** (30/10) :
+
+| Commit | Correctif |
+|---|---|
+| `4aba1ef04` lcm | coupure de la dalle (GPIO 170 / 164) 80 ms apres la veille en travail differe, annule au debut de `jac_lcm_init()` : un ecran eteint puis rallume vite ne coupe plus la dalle pendant son init |
+| `3083afcea` disp | `fast_disp_composer` attend la reprise de l'affichage au lieu d'une VSYNC qui ne vient pas : plus de 10 « wait VSYNC timeout » par seconde ecran eteint |
+| `fa8d201e6` gt9xx | un seul reset au reveil : `gtp_send_cfg()` renvoie 2 quand rien n'est envoye (pilote de reference Goodix) ; avant, 5 resets et « GTP wakeup sleep failed » a chaque allumage |
+| `e4e853475` usb | abandon MediaTek d'une enumeration (veille, reboot) avant `address0_mutex` (voir le lot 5) |
+| `41bff516e` imgsensor | `regulator_put()` meme quand l'alimentation est eteinte : un regulateur fuyait a chaque mise sous tension camera |
+| `dfccf2efa` cpufreq | la SSPM recoit les tensions d'overclock relevees ([TUNING.md](TUNING.md)) |
+| `f8162dde7` tp9963 | `msleep` au lieu de `mdelay` dans la detection de format (jusqu'a 700 ms de CPU en attente active) |
+| `a1df947ca` ppm | commentaire : l'OPP PTPOD de la table OC est l'index 11 |
+
+A tester : ecran eteint quelques minutes puis `dmesg | grep -c "wait VSYNC timeout"` (0 ou 1) ; ecran eteint puis
+rallume vite (image) ; un seul « GTP RESET » par allumage ; vraie veille contact coupe 60 s (dalle, tactile, USB),
+puis `dmesg` complet. Restent : DVD USB (« runtime PM trying to activate child device host0 but parent
+(2-1.4:1.0) is not active » au reveil, journal complet a relire) et son absent (le processeur audio BD37534,
+I2C 6 0x40, pilote par LibreHU-service, perd probablement ses registres quand la MCU coupe PB4).

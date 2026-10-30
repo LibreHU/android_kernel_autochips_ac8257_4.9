@@ -15,7 +15,7 @@ d'enregistrement de la SSPM, qui applique le DVFS) :
 |---|---|---|
 | 2601 | 1,11875 V | au-dessus du stock ; **instable a 1,10 V** (20/10/2026) ; 1,11875 V = tension la plus haute du MT6765 |
 | 2501 | 1,100 V | au-dessus du stock, non teste |
-| 2401 | 1,08125 V | au-dessus du stock ; **stable** (Geekbench 5, 21/10/2026) |
+| 2401 | 1,08125 V | au-dessus du stock ; **stable a 1,050 V reels** (Geekbench 5, 21/10/2026, avant `r127`) |
 | 2301 | 1,0625 V | **stable a 1,025 V** (`reverse-engineering`) ; **maximum au demarrage** |
 | 2201 | 1,050 V | stable a 1,025 V |
 | 2101 | 1,0375 V | teste a 1,025 V |
@@ -30,6 +30,18 @@ a 1,11875 V a 2,351 GHz (puces FY), 2,501 GHz pour les meilleures (SB), soit env
 des limites `MAX_VPROC_VOLT` / `MAX_VSRAM_VOLT` de 1,12 V (`mtk_cpufreq_opp_table.h` et `mtk_cpufreq_platform.h`
 du noyau MT6765 de la Galaxy Tab A7 Lite, [gta7lite/android_kernel_samsung_mt6765](https://github.com/gta7lite/android_kernel_samsung_mt6765)).
 L'AC8257 est donne pour 2,0 GHz : rien ne garantit 2,5 ou 2,6 GHz, meme a 1,11875 V.
+
+**Jusqu'a `r127` (30/10/2026), ces tensions n'etaient pas appliquees au-dessus de 2,0 GHz** : `d95b3be61` avait
+releve la table OPP et la table de puissance (upower), pas la table d'enregistrement `ocTbl`
+(`mtk_cpufreq_opp_pv_table.h`) que `cpuhvfs_pvt_tbl_create()` copie dans la memoire de la SSPM et que la SSPM
+applique (l'EEM est coupee avec la table OC). La SSPM gardait donc 1,10 / 1,075 / 1,05 V a 2,6 / 2,5 / 2,4 GHz et
+1,025 V de 2,1 a 2,3 GHz, alors que `volt_uv` affichait la table relevee. Corrige par `dfccf2efa` (codes Vproc 96,
+93, 90, 87, 85, 83, 81, soit 21 + (uV - 650000) / 6250). Tension reelle, lue dans le registre DA du PMIC MT6357
+(root ; fixe le minimum a 2,3 GHz le temps de la lecture, puis le remet a 987 MHz) :
+```
+adb shell "su -c 'echo 2301000 > /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq; sleep 2; cat /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_freq /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_volt; echo 987000 > /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq'"
+```
+Attendu avec `r127` et les reglages par defaut : `2301000 KHz` et `Vproc: 1062500 uV` (avant : 1025000 uV).
 
 Le stock tourne a 2,0 GHz maximum (table FY, 1,025 V). 1400 MHz / 0,80 V reste l'OPP de calibration de l'EEM
 (PTPOD).
@@ -52,7 +64,8 @@ Essais sur l'unite (noyau `LibreHU-main`, tensions par defaut) :
 - 2,3 GHz : stable (deja valide avec `reverse-engineering`) ; c'est le maximum au demarrage.
 - **2,6 GHz a 1,10 V : instable.** Le 20/10/2026 (run 59), apres environ 14 min, le coeur CPU 0 s'est fige
   (chien de garde materiel : `Qwdt`, `kick=0x0e check=0x0f`, `Non-crashing CPUs did not react to IPI`), a
-  46 degres. Table relevee depuis (ci-dessus, 1,11875 V a 2,6 GHz) ; a retester, deconseille au quotidien.
+  46 degres. Table relevee depuis (ci-dessus, 1,11875 V a 2,6 GHz), appliquee par la SSPM seulement a partir de
+  `r127` ; a retester, deconseille au quotidien.
 
 Exemples (root) :
 ```
