@@ -22,6 +22,7 @@
 #include <linux/printk.h>
 #include <linux/types.h>
 #include <linux/kobject.h>
+#include <linux/reboot.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 
 #define MAX_NUM_INSTANCE_MTK_COOLER_SHUTDOWN  3
@@ -251,6 +252,11 @@ static int _mtk_cl_sd_send_signal(void)
 		info.si_addr = NULL;
 		ret = send_sig_info(SIGIO, &info, pg_task);
 	}
+#ifdef CONFIG_MACH_AC8257
+	/* a registered pid whose process is gone: nobody got the signal */
+	else if (ret == 0)
+		ret = -ESRCH;
+#endif
 
 	if (ret != 0)
 		mtk_cooler_shutdown_dprintk("%s ret=%d\n", __func__, ret);
@@ -330,7 +336,21 @@ static int _mtk_cl_sd_send_signal(void)
 		/* make this an edge trigger instead of level trigger */
 		if (sd_happened == 0) {
 			/* send signal to target process */
+#ifdef CONFIG_MACH_AC8257
+			/*
+			 * LibreHU: the shutdown of the board policy (mtk_ts_bts.c) must not depend on a
+			 * userspace daemon having written its pid to /proc/driver/thermal/clsd_pid: without
+			 * one, the kernel powers off itself (orderly_poweroff: userspace poweroff, else sync
+			 * and power off).
+			 */
+			if (_mtk_cl_sd_send_signal()) {
+				pr_notice("%s: %s, no shutdown daemon, kernel power off\n", __func__,
+					  cdev->type);
+				orderly_poweroff(true);
+			}
+#else
 			_mtk_cl_sd_send_signal();
+#endif
 			sd_happened = 1;
 		}
 #endif
