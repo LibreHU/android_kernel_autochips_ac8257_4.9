@@ -37,10 +37,11 @@ config AC8257_BRINGUP_PANIC_SECS
 
 config AC8257_INPUT_BOOST
 	bool "Touch input boost"
+	depends on MTK_CPU_FREQ
 	default y
 	help
 	  Raises the CPU minimum frequency for a short time on a touch, through
-	  the PPM system boost (tunables in
+	  the LibreHU floor of the cpufreq driver (tunables in
 	  /sys/module/ac8257_input_boost/parameters/).
 
 endmenu
