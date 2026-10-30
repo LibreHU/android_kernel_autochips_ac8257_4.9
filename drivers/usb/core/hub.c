@@ -56,6 +56,9 @@ extern void musb_set_disc_flag(void);
 //Add for ATC suspend and resume notify.
 #include <../../misc/autochips/inc/boot_state.h>
 bool b_is_in_suspend = false;
+/* all the hubs, for the enumerations retried at STATUS_RESUME_END */
+static LIST_HEAD(atc_hub_list);
+static DEFINE_MUTEX(atc_hub_list_lock);
 #define NS_TO_100MS (100000000)
 #define NS_TO_S (1000000000)
 #endif
@@ -1709,6 +1712,12 @@ static void hub_disconnect(struct usb_interface *intf)
 	struct usb_device *hdev = interface_to_usbdev(intf);
 	int port1;
 
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	mutex_lock(&atc_hub_list_lock);
+	list_del(&hub->atc_list);
+	mutex_unlock(&atc_hub_list_lock);
+#endif
+
 	/*
 	 * Stop adding new hub events. We do not want to block here and thus
 	 * will not try to remove any pending work item.
@@ -1858,6 +1867,13 @@ descriptor_error:
 	INIT_WORK(&hub->events, hub_event);
 	usb_get_intf(intf);
 	usb_get_dev(hdev);
+
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	/* before hub_configure(): its failure path is hub_disconnect() */
+	mutex_lock(&atc_hub_list_lock);
+	list_add_tail(&hub->atc_list, &atc_hub_list);
+	mutex_unlock(&atc_hub_list_lock);
+#endif
 
 #if defined(CONFIG_ATC_AOSP_ENHANCEMENT) && defined(CONFIG_ATC_USB_HSRX_DISC)
 	INIT_DELAYED_WORK(&hub->poll_disc_events, poll_disc_event);
@@ -4723,6 +4739,36 @@ static bool is_enter_suspend(void)
 	return b_is_in_suspend;
 }
 
+/*
+ * b_is_in_suspend gives up an enumeration after one attempt and leaves the port disabled, the
+ * device still plugged: nothing enumerates it again until it is unplugged. After a real suspend,
+ * where the MCU cut the power of the hub and of what is behind it (USB DVD drive...), a device not
+ * ready yet at the resume stayed so until it was replugged. hub_port_connect() notes such ports;
+ * at STATUS_RESUME_END they go back to hub_wq, now with all the attempts.
+ */
+static void atc_hub_retry_aborted_ports(void)
+{
+	struct usb_hub *hub;
+	int port1;
+	bool kick;
+
+	mutex_lock(&atc_hub_list_lock);
+	list_for_each_entry(hub, &atc_hub_list, atc_list) {
+		kick = false;
+		for (port1 = 1; port1 <= USB_MAXCHILDREN; port1++) {
+			if (test_and_clear_bit(port1, hub->atc_retry_bits)) {
+				set_bit(port1, hub->change_bits);
+				kick = true;
+			}
+		}
+		if (kick) {
+			dev_info(hub->intfdev, "retry the enumerations cut short by the suspend\n");
+			kick_hub_wq(hub);
+		}
+	}
+	mutex_unlock(&atc_hub_list_lock);
+}
+
 extern void musb_set_vbus_by_gpio(int is_on);
 extern void xhci_set_vbus_by_gpio(int is_on);
 static int get_bs_event(struct notifier_block *notifier,
@@ -4772,6 +4818,7 @@ static int get_bs_event(struct notifier_block *notifier,
 		pr_info("[BS] test_bs_event STATUS_RESUME_END\n");
 		musb_set_vbus_by_gpio(1);
 		xhci_set_vbus_by_gpio(1);
+		atc_hub_retry_aborted_ports();
 		break;
 	default:
 		pr_info("[BS]test_bs_event unknow status\n");
@@ -5289,8 +5336,13 @@ static void hub_port_connect(struct usb_hub *hub, int port1, u16 portstatus,
 		 * loop, and this goto done, which the "done:" path does not unlock, left both held (and
 		 * leaked the udev allocated for the attempt).
 		 */
-		if(get_usb20_reboot_stage() ||
-			(is_enter_suspend() && (i > 0))) {
+		if (get_usb20_reboot_stage()) {
+			status = -ENODEV;
+			goto done;
+		}
+		if (is_enter_suspend() && (i > 0)) {
+			/* enumerated again at STATUS_RESUME_END */
+			set_bit(port1, hub->atc_retry_bits);
 			status = -ENODEV;
 			goto done;
 		}
@@ -5442,6 +5494,8 @@ loop:
 #ifdef CONFIG_ATC_AOSP_ENHANCEMENT
 		if (is_enter_suspend()) {
 			printk("b_is_in_suspend is true not SET_CONFIG_TRIES\n");
+			/* enumerated again at STATUS_RESUME_END */
+			set_bit(port1, hub->atc_retry_bits);
 			break;
 		}
 #endif

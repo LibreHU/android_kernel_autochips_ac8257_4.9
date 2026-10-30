@@ -81,6 +81,11 @@ struct usb_hub {
 	void		*data;
 	bool		poll_running;
 #endif
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	unsigned long		atc_retry_bits[1]; /* ports whose enumeration
+							b_is_in_suspend cut short */
+	struct list_head	atc_list;	/* in atc_hub_list */
+#endif
 	struct work_struct      events;
 	struct usb_port		**ports;
 };
