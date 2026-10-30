@@ -38,10 +38,11 @@ pas · ⬜ pas encore teste.
 | Tactile | Autres dalles (FocalTech, ILITEK, Himax, Hynitron) | ⬜ | pilotes presents, pas de telles dalles sur l'unite de test |
 | CPU / GPU | 2,3 GHz au demarrage | ✅ | |
 | CPU / GPU | 2,4 GHz | ✅ | stable, Geekbench 5 |
-| CPU / GPU | 2,5 GHz | ⬜ | |
-| CPU / GPU | 2,6 GHz | ⬜ | **instable a l'ancienne tension 1,10 V** (watchdog materiel apres 14 min) ; a retester a 1,11875 V |
+| CPU / GPU | 2,5 GHz | ⬜ | **instable a 1,10 V** (`r127`, Geekbench, 30/10) : Vsram 50 mV sous Vproc ; a retester a 1,05 V (`r129`) |
+| CPU / GPU | 2,6 GHz | ⬜ | **instable a 1,10 V** (watchdog materiel apres 14 min) ; a retester a 1,05 V (`r129`) ; au-dela, plafond de Vsram de la SSPM ([docs/TUNING.md](docs/TUNING.md)) |
 | CPU / GPU | GPU 730 MHz, tensions reglables | ⬜ | |
 | CPU / GPU | Sondes de temperature | 🟡 | toutes OK sauf « batterie » a 0 °C (l'unite n'a pas de batterie ; a comparer au stock) |
+| CPU / GPU | Politique thermique LibreHU | ⬜ | `r129` : CPU reset 125 °C, freins 105 °C, regulation 100 °C (CTM coupe) ; carte arret 105 °C, reset 107 °C (le vendor n'en active aucun) ; [docs/TUNING.md](docs/TUNING.md) |
 | Audio | Sortie audio (RCA) | ✅ | |
 | Audio | Lecture sous forte charge CPU | 🟡 | quelques « data underflow » pendant Geekbench |
 | Audio | Appel mains libres Bluetooth | ⬜ | |
@@ -177,8 +178,8 @@ points d'accroche.
 | Boost tactile, zram lz4, I/O deadline, gouverneurs conservative et schedutil | `interactive` reste le gouverneur par defaut, comme le stock ; boost tactile **effectif depuis `r128`** (30/10, `3ccc70f3f`) : il passait par le sysboost de la PPM, que l'init vendor laisse desactive, et ne faisait rien ([docs/TUNING.md](docs/TUNING.md)) | OK | ⬜ |
 | Outils de mise au point | console pstore precoce et memoire SPM / SCP hors de Linux en boot recovery (actifs) ; panique minutee, interception des redemarrages, one-shot, retour en recovery (`CONFIG_AC8257_BRINGUP_PANIC`, **desactives** depuis le 21/10/2026) | OK | ✅ |
 | **Menu de demarrage** | image `boot_ac8257_bootmenu.img` : menu TWRP / Android / Fastboot de l'arbre device devant ce noyau (`tools/ac8257/bootmenu`, `bootmenu_image.py`) ; le menu s'affiche et demarre Android, **tactile absent** (21/10/2026) : le tactile `mtk-tpd` n'etait cree que ~5 s apres l'init (`CONFIG_DELAY_QUEUE_TIME=5`, file de travail de `mtk_tpd.c`), le menu ne le cherchait que 1 s ; corrige : delai a 1 s (le stock le cree vers 2,4 s) et le menu le cherche toutes les 250 ms tant qu'il est affiche | a retester | ⚠️ |
-| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,3 GHz** | 16 OPP ; tensions progressives au-dessus de 2,0 GHz (1,0375 V a 2,1 GHz, jusqu'a 1,11875 V a 2,6 GHz, la tension maximale du MT6765) ; [docs/TUNING.md](docs/TUNING.md) | OK (runs 48, 61) | ✅ 2,3 et 2,4 GHz ; 2,6 GHz instable a 1,10 V |
-| **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,10 V, envoyees a la SSPM | OK (run 48) | ⬜ |
+| **Overclock CPU jusqu'a 2,6 GHz**, maximum au demarrage **2,3 GHz** | 16 OPP ; tensions progressives au-dessus de 2,0 GHz (1,0375 V a 2,1 GHz), **1,05 V au plus** de 2,2 a 2,6 GHz : plafond de Vsram de la SSPM (`r129`) ; [docs/TUNING.md](docs/TUNING.md) | OK (runs 48, 61, 129) | ✅ 2,3 et 2,4 GHz ; 2,5 / 2,6 GHz instables a 1,10 V |
+| **Tensions CPU reglables** | `ac8257_cpufreq.volt_uv` / `volt_offset_uv`, 0,65-1,05 V, envoyees a la SSPM ; sur la ligne de commande, appliquees au demarrage depuis `r129` | OK (runs 48, 129) | ⬜ |
 | **GPU 730 MHz** et OPP intermediaires, **tensions VCORE reglables** | le GPU tourne sur VCORE (partagee avec le SoC) : `ac8257_gpufreq.vcore_uv`, 0,60-0,90 V | OK (run 48) | ⬜ |
 | **Decodeur camera TP9963** (camera AHD) | pilote `tp9963_yuv` absent du paquet, **reconstruit depuis le noyau stock** (registres, metazones, reponses a la HAL camera) et recoupe avec les pilotes GPL OpenIPC et Allwinner du meme TP9963 ; [docs/VIDEO.md](docs/VIDEO.md) | OK (run 49) | 🟡 detecte, image non testee |
 | **Tactiles des autres dalles** | FocalTech FT8201, ILITEK TDDI, Himax HX83102, Hynitron CST340 : pilotes GPL publics les plus proches du stock, essayes apres le GT928 (rien ne change sur une unite a GT911) ; references des dalles et ce qui manque (Synaptics, Sitronix, Jadard) : [docs/TOUCH.md](docs/TOUCH.md) | OK (run 51) | ⬜ |
