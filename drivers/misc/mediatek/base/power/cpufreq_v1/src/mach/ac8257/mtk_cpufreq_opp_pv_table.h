@@ -83,10 +83,10 @@ static unsigned int fy2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
  */
 static unsigned int ocTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	/* Freq, Vproc, post_div, clk_div */
-	{ 2601, 96, 1, 1 },	/* LL, 1.11875 V */
-	{ 2501, 93, 1, 1 },	/* 1.100 V */
-	{ 2401, 90, 1, 1 },	/* 1.08125 V */
-	{ 2301, 87, 1, 1 },	/* 1.0625 V */
+	{ 2601, 85, 1, 1 },	/* LL, 1.050 V: Vsram ceiling of the SSPM */
+	{ 2501, 85, 1, 1 },	/* 1.050 V */
+	{ 2401, 85, 1, 1 },	/* 1.050 V */
+	{ 2301, 85, 1, 1 },	/* 1.050 V */
 	{ 2201, 85, 1, 1 },	/* 1.050 V */
 	{ 2101, 83, 1, 1 },	/* 1.0375 V */
 	{ 2001, 81, 1, 1 },	/* 1.025 V */
