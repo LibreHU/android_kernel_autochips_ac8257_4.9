@@ -5282,6 +5282,20 @@ static void hub_port_connect(struct usb_hub *hub, int port1, u16 portstatus,
 	status = 0;
 
 	for (i = 0; i < SET_CONFIG_TRIES; i++) {
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+		/*
+		 * Checked before the port lock and address0_mutex are taken: since "usb: hub: Fix
+		 * locking issues with address0_mutex" (stable 4.9.292) they are taken at the top of this
+		 * loop, and this goto done, which the "done:" path does not unlock, left both held (and
+		 * leaked the udev allocated for the attempt).
+		 */
+		if(get_usb20_reboot_stage() ||
+			(is_enter_suspend() && (i > 0))) {
+			status = -ENODEV;
+			goto done;
+		}
+#endif
+
 		usb_lock_port(port_dev);
 		mutex_lock(hcd->address0_mutex);
 		retry_locked = true;
@@ -5297,14 +5311,6 @@ static void hub_port_connect(struct usb_hub *hub, int port1, u16 portstatus,
 			usb_unlock_port(port_dev);
 			goto done;
 		}
-
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-		if(get_usb20_reboot_stage() ||
-			(is_enter_suspend() && (i > 0))) {
-			status = -ENODEV;
-			goto done;
-		}
-#endif
 
 #if defined(CONFIG_ATC_AOSP_ENHANCEMENT) && defined(CONFIG_ATC_USB_HSRX_DISC)
 		/* used by DVR workaround in polling & disconnect flow */
