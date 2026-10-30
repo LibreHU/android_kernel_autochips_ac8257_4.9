@@ -104,23 +104,32 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
 
 	if (enable) {
 		mdelay(5);
+		/*
+		 * Each regulator_get() needs its regulator_put(), the supply being on or not: when the supply
+		 * was off (UJC201: its sensors use none of these PMIC LDOs) every camera power on leaked a
+		 * consumer (struct regulator, its name and debugfs entries).
+		 */
 		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) {
 			preg = regulator_get(pdevice, "vcama");
-			if (!IS_ERR_OR_NULL(preg) && regulator_is_enabled(preg)) {
-			pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
+			if (!IS_ERR_OR_NULL(preg)) {
+				if (regulator_is_enabled(preg)) {
+					pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
+					pr_debug("[regulator] %s INT_VCAMA_OC %d\n",
+						__func__, enable);
+				}
 				regulator_put(preg);
-				pr_debug("[regulator] %s INT_VCAMA_OC %d\n",
-					__func__, enable);
 			}
 
 		}
 		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
 			preg = regulator_get(pdevice, "vcamd");
-			if (!IS_ERR_OR_NULL(preg) && regulator_is_enabled(preg)) {
-			pmic_enable_interrupt(INT_VCAMD_OC, 1, "camera");
+			if (!IS_ERR_OR_NULL(preg)) {
+				if (regulator_is_enabled(preg)) {
+					pmic_enable_interrupt(INT_VCAMD_OC, 1, "camera");
+					pr_debug("[regulator] %s INT_VCAMD_OC %d\n",
+						__func__, enable);
+				}
 				regulator_put(preg);
-				pr_debug("[regulator] %s INT_VCAMD_OC %d\n",
-					__func__, enable);
 			}
 		}
 
@@ -129,11 +138,13 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
 			sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
 
 			preg = regulator_get(pdevice, "vcamio");
-			if (!IS_ERR_OR_NULL(preg) && regulator_is_enabled(preg)) {
-			pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
+			if (!IS_ERR_OR_NULL(preg)) {
+				if (regulator_is_enabled(preg)) {
+					pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
+					pr_debug("[regulator] %s INT_VCAMIO_OC %d\n",
+						__func__, enable);
+				}
 				regulator_put(preg);
-				pr_debug("[regulator] %s INT_VCAMIO_OC %d\n",
-					__func__, enable);
 			}
 		}
 		rcu_read_lock();
