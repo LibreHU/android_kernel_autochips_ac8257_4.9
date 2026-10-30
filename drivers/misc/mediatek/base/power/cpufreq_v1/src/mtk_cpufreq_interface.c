@@ -188,12 +188,15 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file,
 		p->name);
 	} else {
 		if (oppidx >= 0 && oppidx < p->nr_opp_tbl) {
-			p->dvfs_disable_by_procfs = true;
 #ifdef CONFIG_HYBRID_CPU_DVFS
-			/* if (!cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) */
-			cpuhvfs_set_freq(arch_get_cluster_id(p->cpu_id),
-			cpu_dvfs_get_freq_by_idx(p, oppidx));
+			/*
+			 * cpuhvfs_set_freq() does nothing with the SSPM DVFS: freezing the DVFS here
+			 * left the CPU at whatever OPP it was on. Pin it with scaling_min/max_freq.
+			 */
+			tag_pr_info("%s: cpufreq_oppidx unsupported with the SSPM DVFS, use scaling_min_freq / scaling_max_freq\n",
+			p->name);
 #else
+			p->dvfs_disable_by_procfs = true;
 			_mt_cpufreq_dvfs_request_wrapper(p, oppidx,
 			MT_CPU_DVFS_NORMAL, NULL);
 #endif
@@ -253,13 +256,12 @@ static ssize_t cpufreq_freq_proc_write(struct file *file,
 			}
 
 			if (found == 1) {
-				p->dvfs_disable_by_procfs = true;
 #ifdef CONFIG_HYBRID_CPU_DVFS
-				/* if (!cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) */
-				cpuhvfs_set_freq(
-				arch_get_cluster_id(p->cpu_id),
-				cpu_dvfs_get_freq_by_idx(p, i));
+				/* as cpufreq_oppidx: nothing would set the frequency */
+				tag_pr_info("%s: cpufreq_freq unsupported with the SSPM DVFS, use scaling_min_freq / scaling_max_freq\n",
+				p->name);
 #else
+				p->dvfs_disable_by_procfs = true;
 				_mt_cpufreq_dvfs_request_wrapper(p,
 				i, MT_CPU_DVFS_NORMAL, NULL);
 #endif
@@ -296,9 +298,9 @@ static int cpufreq_volt_proc_show(struct seq_file *m, void *v)
 static ssize_t cpufreq_volt_proc_write(struct file *file,
 	const char __user *buffer, size_t count, loff_t *pos)
 {
-	unsigned long flags;
 	struct mt_cpu_dvfs *p = PDE_DATA(file_inode(file));
 #ifndef CONFIG_HYBRID_CPU_DVFS
+	unsigned long flags;
 	struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 #endif
 	int uv;
@@ -314,16 +316,17 @@ static ssize_t cpufreq_volt_proc_write(struct file *file,
 		tag_pr_info
 		("echo uv > /proc/cpufreq/%s/cpufreq_volt\n", p->name);
 	} else {
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		/* cpuhvfs_set_volt() is a stub: the write only froze the DVFS */
+		tag_pr_info("%s: cpufreq_volt unsupported with the SSPM DVFS, use /sys/module/ac8257_cpufreq/parameters/volt_uv\n",
+		p->name);
+#else
 		p->dvfs_disable_by_procfs = true;
 		cpufreq_lock(flags);
-#ifdef CONFIG_HYBRID_CPU_DVFS
-		/* if (!cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) */
-		/* cpuhvfs_set_volt(arch_get_cluster_id(p->cpu_id), uv / 10); */
-#else
 		vproc_p->fix_volt = uv / 10;
 		set_cur_volt_wrapper(p, vproc_p->fix_volt);
-#endif
 		cpufreq_unlock(flags);
+#endif
 	}
 
 	return count;
