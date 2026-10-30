@@ -38,7 +38,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <linux/delay.h>
-#include <linux/kthread.h>
+#include <linux/workqueue.h>
 #include "metazone.h"
 #include "metazone_ioctl.h"
 
@@ -1253,9 +1253,26 @@ static void jac_push_table(struct jac_mipi_setting_table *table, unsigned int co
 	}
 }
 
+/*
+ * Panel power off 80 ms after its reset went low, as the stock jac_set_lcd_power_kthread(). A delayed
+ * work rather than a thread, so that a resume within these 80 ms (quick screen off / on) cancels it
+ * instead of having the panel powered off in the middle of jac_lcm_init().
+ */
+static void jac_lcd_power_off_work_func(struct work_struct *work)
+{
+	lcm_gpio_output(JAC_LCD_POWER_PIN, 0);
+	lcm_gpio_output(JAC_BRIDGE_POWER_PIN, 0);
+	LCM_DRIVER_INFO("leave\n");
+}
+
+static DECLARE_DELAYED_WORK(jac_lcd_power_off_work, jac_lcd_power_off_work_func);
+
 /* power on, reset and init sequence of the stock lcm_init */
 static void jac_lcm_init(void)
 {
+	/* a power off still pending from the last suspend would cut the panel during this init */
+	cancel_delayed_work_sync(&jac_lcd_power_off_work);
+
 	if (jac_lcd_power_delay > JAC_LCD_POWER_DELAY_MAX) {
 		jac_lcd_power_delay = JAC_LCD_POWER_DELAY_MAX;
 	}
@@ -1295,16 +1312,6 @@ static void jac_lcm_init(void)
 		MDELAY(jac_lcd_power_delay);
 		lcm_gpio_output(JAC_LCD_POWER_PIN, 1);
 	}
-}
-
-static int jac_set_lcd_power_kthread(void *data)
-{
-	MDELAY(80);
-	lcm_gpio_output(JAC_LCD_POWER_PIN, 0);
-	lcm_gpio_output(JAC_BRIDGE_POWER_PIN, 0);
-	LCM_DRIVER_INFO("leave\n");
-
-	return 0;
 }
 
 static int lcm_timing_text_deal(struct lcm_timing_info *lcm_timing, char *text)
@@ -2295,7 +2302,7 @@ static void lcm_valid_data_stop_late(void)
 		MDELAY(5);
 		/* LCM power off after LCM input valid data off, ask for LCM (BP101wx1-206) spec 9.0 T2*/
 		if (!jac_lcm_enabled) {
-			/* jac_set_lcd_power_kthread() powers the panel off */
+			/* jac_lcd_power_off_work powers the panel off */
 			lcm_gpio_output(LCM_POWER_EN_PIN, 0);
 		}
 	}
@@ -2848,7 +2855,7 @@ static void lcm_suspend(void)
 	if (jac_lcm_enabled) {
 		lcm_gpio_output(JAC_LCD_RESET_PIN, 0);
 		lcm_gpio_output(LVDS_BRIDGE_IC_RESET_PIN, 0);
-		kthread_run(jac_set_lcd_power_kthread, NULL, "set_lcd_power_kthread");
+		schedule_delayed_work(&jac_lcd_power_off_work, msecs_to_jiffies(80));
 	}
 
 	LCM_DRIVER_INFO("leave\n");
