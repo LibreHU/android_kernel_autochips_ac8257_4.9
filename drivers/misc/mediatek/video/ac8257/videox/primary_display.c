@@ -3658,6 +3658,18 @@ int  fast_disp_composer_thread(void *data)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
 	while (1) {
+		/*
+		 * Thread releases the CPU while the display is slept, as the ESD and idle threads: there is
+		 * no VSYNC then, so each wait below timed out and logged "wait VSYNC timeout" ten times a
+		 * second for as long as the screen stayed off. A pending fast_disp_update is applied after
+		 * the resume (primary_display_trigger() skips it while slept anyway).
+		 */
+		if (primary_get_state() == DISP_SLEPT) {
+			wait_event_interruptible(display_state_wait_queue,
+				primary_get_state() != DISP_SLEPT);
+			continue;
+		}
+
 		if (!islcmconnected && !primary_display_is_video_mode()) {
 			DISPCHECK("LCM Not Connected && CMD Mode\n");
 			msleep(20);
