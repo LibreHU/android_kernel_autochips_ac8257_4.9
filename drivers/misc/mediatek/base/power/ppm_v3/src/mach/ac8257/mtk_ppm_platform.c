@@ -348,7 +348,7 @@ unsigned int get_cluster_ptpod_fix_freq_idx(unsigned int id)
 #ifdef CONFIG_MACH_AC8257
 	/*
 	 * EEM init01 waits (forever) until Vproc equals VBOOT (0.80 V): the PTPOD OPP must be the
-	 * 1400 MHz / 0.80 V entry, index 10 of the overclock table (index 8 there is 1533 MHz / 0.85 V).
+	 * 1400 MHz / 0.80 V entry, index 11 of the overclock table (index 10 there is 1533 MHz / 0.85 V).
 	 */
 	if (mt_cpufreq_get_cpu_level() == 3)
 		return PTPOD_FREQ_IDX_AC8257_OC;
