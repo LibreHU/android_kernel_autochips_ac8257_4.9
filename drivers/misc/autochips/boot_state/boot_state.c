@@ -19,6 +19,9 @@
 #include <linux/kobject.h>
 #include <linux/string.h>
 #include <linux/syscore_ops.h>
+#include <linux/mutex.h>
+#include <linux/suspend.h>
+#include <linux/workqueue.h>
 
 #include "boot_state.h"
 
@@ -59,6 +62,21 @@ struct kobject *boot_state_kobj;
 EXPORT_SYMBOL_GPL(boot_state_kobj);
 
 int boot_level = STATUS_UNKNOWN;
+
+/*
+ * STATUS_RESUME_END only comes from userspace ("resume_end" written here by the QuickBoot service).
+ * From STATUS_RESUME_START (boot_state_syscore_resume()) until then, hub.c keeps b_is_in_suspend
+ * set: one enumeration attempt per USB device, usb-storage errors not retried, SCSI timeouts and
+ * retries halved, bulk NAKs turned into errors on the MUSB port. A resume that userspace does not
+ * report left the USB stack in that state until the next suspend: report it from here when
+ * userspace has not done it resume_end_ms after the resume (0: never).
+ */
+static unsigned int resume_end_ms = 10000;
+module_param(resume_end_ms, uint, 0644);
+MODULE_PARM_DESC(resume_end_ms, "ms after a resume before the kernel reports resume_end itself (0: never)");
+
+/* state changes from process context: sysfs and bs_resume_end_work */
+static DEFINE_MUTEX(bs_state_lock);
 
 static int state_change(int level)
 {
@@ -107,7 +125,9 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 
 	for (s = &status_boot[level]; level < STATUS_LAST; s++, level++) {
 		if (*s && len == strlen(*s) && !strncmp(buf, *s, len)) {
+			mutex_lock(&bs_state_lock);
 			state_change(level);
+			mutex_unlock(&bs_state_lock);
 			error = 0;
 			break;
 		}
@@ -138,6 +158,43 @@ static struct syscore_ops boot_state_syscore_ops = {
 	.resume = boot_state_syscore_resume,
 };
 
+static void bs_resume_end_work_func(struct work_struct *work)
+{
+	mutex_lock(&bs_state_lock);
+	if (boot_level == STATUS_RESUME_START) {
+		pr_info("[BS] no resume_end from userspace %u ms after the resume, sent by the kernel\n",
+			resume_end_ms);
+		state_change(STATUS_RESUME_END);
+	}
+	mutex_unlock(&bs_state_lock);
+}
+
+static DECLARE_DELAYED_WORK(bs_resume_end_work, bs_resume_end_work_func);
+
+static int boot_state_pm_notify(struct notifier_block *nb, unsigned long event, void *unused)
+{
+	switch (event) {
+	case PM_SUSPEND_PREPARE:
+		/* suspending again before the deadline: the next resume starts a new one */
+		cancel_delayed_work_sync(&bs_resume_end_work);
+		break;
+	case PM_POST_SUSPEND:
+		/* freezable: never runs between the freeze and the thaw of a suspend */
+		if ((STATUS_RESUME_START == boot_level) && resume_end_ms)
+			queue_delayed_work(system_freezable_wq, &bs_resume_end_work,
+					   msecs_to_jiffies(resume_end_ms));
+		break;
+	default:
+		break;
+	}
+
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block boot_state_pm_nb = {
+	.notifier_call = boot_state_pm_notify,
+};
+
 static int __init boot_state_init(void)
 {
 	int ret = 0;
@@ -151,12 +208,15 @@ static int __init boot_state_init(void)
 		pr_err("[BS] Fail to create file /sys/boot/state");
 
 	register_syscore_ops(&boot_state_syscore_ops);
+	register_pm_notifier(&boot_state_pm_nb);
 
 	return ret;
 }
 
 static void __exit boot_state_exit(void)
 {
+	unregister_pm_notifier(&boot_state_pm_nb);
+	cancel_delayed_work_sync(&bs_resume_end_work);
 	unregister_syscore_ops(&boot_state_syscore_ops);
 	kobject_put(boot_state_kobj);
 }
