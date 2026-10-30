@@ -55,18 +55,46 @@ static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 static DEFINE_SEMAPHORE(sem_mutex);
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * LibreHU thermal policy (mtk_ts_cpu_noBank.c) for the board sensor (AP thermistor): Android shut down
+ * at 105 C (mtk-cl-shutdown00), reset at 107 C (mtktsAP-sysrst), already in force at boot and put over
+ * what userspace writes to /proc/driver/thermal/tzbts. The vendor thermal.conf writes 0 trips here:
+ * the board had no protection at all.
+ */
+extern bool ac8257_thermal_policy;
+
+static const struct {
+	int temp;
+	const char *cooler;
+} ac8257_tzbts_policy[] = {
+	{ 107000, "mtktsAP-sysrst" },
+	{ 105000, "mtk-cl-shutdown00" },
+};
+
+static unsigned int interval = 1;	/* seconds, 0 : no auto polling */
+static int trip_temp[10] = { 107000, 105000, 100000, 90000, 80000,
+				70000, 65000, 60000, 55000, 50000 };
+#else
 static unsigned int interval;	/* seconds, 0 : no auto polling */
 static int trip_temp[10] = { 120000, 110000, 100000, 90000, 80000,
 				70000, 65000, 60000, 55000, 50000 };
+#endif
 
 static struct thermal_zone_device *thz_dev;
 static int mtkts_bts_debug_log;
 static int kernelmode;
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+#ifdef CONFIG_MACH_AC8257
+static int num_trip = ARRAY_SIZE(ac8257_tzbts_policy);
+static char g_bind0[20] = "mtktsAP-sysrst";
+static char g_bind1[20] = "mtk-cl-shutdown00";
+#else
 static int num_trip;
 static char g_bind0[20] = { 0 };
 static char g_bind1[20] = { 0 };
+#endif
 static char g_bind2[20] = { 0 };
 static char g_bind3[20] = { 0 };
 static char g_bind4[20] = { 0 };
@@ -957,6 +985,29 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 		&ptr_mtktsbts_data->trip[9], &ptr_mtktsbts_data->t_type[9],
 		ptr_mtktsbts_data->bind9,
 		&ptr_mtktsbts_data->time_msec) == 32) {
+
+#ifdef CONFIG_MACH_AC8257
+		if (ac8257_thermal_policy) {
+			char *binds[10] = {
+				ptr_mtktsbts_data->bind0, ptr_mtktsbts_data->bind1,
+				ptr_mtktsbts_data->bind2, ptr_mtktsbts_data->bind3,
+				ptr_mtktsbts_data->bind4, ptr_mtktsbts_data->bind5,
+				ptr_mtktsbts_data->bind6, ptr_mtktsbts_data->bind7,
+				ptr_mtktsbts_data->bind8, ptr_mtktsbts_data->bind9,
+			};
+
+			for (i = 0; i < 10; i++) {
+				bool set = i < ARRAY_SIZE(ac8257_tzbts_policy);
+
+				ptr_mtktsbts_data->trip[i] = set ? ac8257_tzbts_policy[i].temp : 0;
+				ptr_mtktsbts_data->t_type[i] = 0;
+				strlcpy(binds[i], set ? ac8257_tzbts_policy[i].cooler : "no-cooler",
+					sizeof(ptr_mtktsbts_data->bind0));
+			}
+			num_trip = ARRAY_SIZE(ac8257_tzbts_policy);
+			mtkts_bts_printk("[mtkts_bts_write] LibreHU policy over the written trips\n");
+		}
+#endif
 
 		down(&sem_mutex);
 		mtkts_bts_dprintk(

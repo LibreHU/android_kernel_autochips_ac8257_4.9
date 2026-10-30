@@ -95,6 +95,33 @@ SoC a ce niveau, pas seulement du GPU.
 Noeud pour les applis : `/sys/devices/platform/dfrgx/devfreq/dfrgx/` (`cur_freq`, `available_frequencies`,
 `max_freq`, `min_freq`).
 
+## Thermique CPU et carte (politique LibreHU)
+
+Au démarrage, `thermal_manager` (vendor) écrit sa configuration (`/vendor/etc/.tp/thermal.conf`, chiffrée) dans
+`/proc/driver/thermal/`. Le noyau remplace les seuils CPU qu'elle écrit (`thermal/common/thermal_zones/mtk_ts_cpu_noBank.c`)
+et ceux de la carte (`mtk_ts_bts.c`), et coupe le CTM (`coolers/mtk_cooler_atm.c`) ; ses valeurs par défaut (avant
+`thermal_manager`) sont les mêmes (`thermal/ac8257/inc/tzcpu_initcfg.h`, `clatm_initcfg.h`, `mtk_ts_bts.c`).
+
+| Seuil CPU (capteur de la puce) | Vendor | LibreHU |
+|---|---|---|
+| reset `mtktscpu-sysrst` (règle aussi la protection matérielle) | 125 °C | 125 °C |
+| frein `cpu00` (budget total CPU + GPU 700 mW) | — | 105 °C |
+| frein `cpu03` (budget total CPU + GPU 1000 mW) | — | 105 °C |
+| régulation ATM `cpu_adaptive_0` / `cpu_adaptive_1` (cible = température du seuil) | 55 / 54 °C | 100 °C |
+| CTM (cible ramenée de 85 à 55 °C quand la carte passe de 43 à 46 °C) | actif | coupé |
+
+| Seuil carte (thermistance AP, `tzbts`) | Vendor | LibreHU |
+|---|---|---|
+| arrêt d'Android `mtk-cl-shutdown00` | — (la ligne du vendor active 0 seuil : aucune protection) | 105 °C |
+| reset `mtktsAP-sysrst` | — | 107 °C |
+
+L'arrêt passe par le démon déclaré dans `/proc/driver/thermal/clsd_pid` ; sans lui, le noyau s'éteint lui-même
+(`orderly_poweroff`). Inchangé : budgets de l'ATM (`clatm_setting`, plancher 685 mW, pas de plafond) et autres
+capteurs. Vérifier : `cat /proc/driver/thermal/tzcpu`, `cat /proc/driver/thermal/tzbts` et
+`cat /proc/driver/thermal/clctm` (`ctm 0`). Valeurs du vendor : `ac8257_thermal.policy=0` sur la ligne de commande ;
+à chaud, `echo 0 > /sys/module/ac8257_thermal/parameters/policy`, puis les écritures suivantes de `tzcpu`, `tzbts` et
+`clctm` sont prises telles quelles.
+
 ## Audit du 20/10/2026 : fréquence « capricieuse »
 
 Le comportement erratique vu avec les noyaux `reverse-engineering` (meme code) avait trois causes, corrigees :

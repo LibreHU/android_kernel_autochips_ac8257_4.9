@@ -240,6 +240,10 @@ static int thp_p_tj_correlation;
 static int thp_threshold_tj;
 #endif
 
+#ifdef CONFIG_MACH_AC8257
+extern bool ac8257_thermal_policy;	/* mtk_ts_cpu.c */
+#endif
+
 #if CONTINUOUS_TM
 #if defined(CLATM_SET_INIT_CFG)
 static int ctm_on = CLATM_INIT_CFG_CATM; /* 2: cATM+, 1: cATMv1, 0: off */
@@ -2240,6 +2244,12 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 			t_MAX_EXIT_TJ, t_STEADY_EXIT_TJ, t_COEF_AE, t_COEF_BE,
 			t_COEF_AX, t_COEF_BX, t_K_SUM_TT_HIGH, t_K_SUM_TT_LOW,
 			t_CATMP_STEADY_TTJ_DELTA);
+
+#ifdef CONFIG_MACH_AC8257
+		/* LibreHU thermal policy (mtk_ts_cpu.c): CTM off, the ATM targets the temperature of its trip */
+		if (ac8257_thermal_policy)
+			t_ctm_on = 0;
+#endif
 
 		if (t_ctm_on < 0 || t_ctm_on > 2) {
 #ifdef CONFIG_MTK_AEE_FEATURE
