@@ -13,23 +13,34 @@ d'enregistrement de la SSPM, qui applique le DVFS) :
 
 | MHz | Tension | Etat |
 |---|---|---|
-| 2601 | 1,11875 V | au-dessus du stock ; **instable a 1,10 V** (20/10/2026) ; 1,11875 V = tension la plus haute du MT6765 |
-| 2501 | 1,100 V | au-dessus du stock, non teste |
-| 2401 | 1,08125 V | au-dessus du stock ; **stable a 1,050 V reels** (Geekbench 5, 21/10/2026, avant `r127`) |
-| 2301 | 1,0625 V | **stable a 1,025 V** (`reverse-engineering`) ; **maximum au demarrage** |
+| 2601 | 1,050 V | **instable a 1,10 V** (20/10/2026, Vsram 50 mV sous Vproc) ; a 1,05 V : a tester |
+| 2501 | 1,050 V | **instable a 1,10 V** (Geekbench, 30/10/2026, r127) ; a 1,05 V : a tester |
+| 2401 | 1,050 V | **stable a 1,050 V** (Geekbench 5, 21/10/2026, avant `r127`) |
+| 2301 | 1,050 V | **stable a 1,025 V** (`reverse-engineering`) ; **maximum au demarrage** |
 | 2201 | 1,050 V | stable a 1,025 V |
 | 2101 | 1,0375 V | teste a 1,025 V |
 | 2001 ... 987 | tensions stock (table FY) | maximum stock 2001 MHz, 1,025 V |
 
-Tensions au-dessus de 2,0 GHz : progressives, a partir de la tension stock de 2,0 GHz (1,025 V) :
-- jusqu'a 2,3 GHz, +12,5 mV par 100 MHz. C'est de la marge : 2,3 GHz a tenu a 1,025 V sur l'unite ; elle sert par
-  temps chaud, au prix d'environ 7 % de puissance dynamique en plus a 2,3 GHz ((1,0625 / 1,025)^2).
-- au-dessus, +18,75 mV par 100 MHz, jusqu'a **1,11875 V** a 2,6 GHz, jamais plus.
+Tensions au-dessus de 2,0 GHz : +12,5 mV par 100 MHz jusqu'a 1,05 V a 2,2 GHz, puis **1,05 V au plus**. La SSPM
+garde Vsram (SRAM des coeurs) = Vproc + 0,1 V, entre 0,80 et 1,05 V : les `MIN_VSRAM_VOLT` / `MAX_VSRAM_VOLT` du paquet
+Autochips. Lu sur l'unite le 30/10/2026 (`cpufreq_volt`, en charge) :
+
+| MHz | Vproc | Vsram |
+|---|---|---|
+| 987 | 0,6875 V | 0,800 V |
+| 1400 | 0,800 V | 0,900 V |
+| 2000 | 1,025 V | 1,050 V |
+| 2400 (r127 : 1,08125 V) | 1,08125 V | **1,050 V** |
+
+Au-dessus de 1,05 V de Vproc, Vsram reste sous Vproc, etat que le pilote MediaTek lui-meme traite comme invalide
+(`assert_volt_valid`) : c'est le mur des plantages a 2,5 et 2,6 GHz (1,10 V). La table s'arrete donc a 1,05 V (2,3 a
+2,6 GHz ; r127 : 1,0625 a 1,11875 V). Aller au-dela demanderait de changer le plafond de Vsram dans le firmware de la
+SSPM (partition `sspm`, fermee).
 Reference : le MediaTek MT6765 (Helio P35 : memes Cortex-A53, 12 nm, meme PMIC MT6357) monte de 0,95 V a 2,033 GHz
 a 1,11875 V a 2,351 GHz (puces FY), 2,501 GHz pour les meilleures (SB), soit environ +44 mV par 80 a 100 MHz, avec
 des limites `MAX_VPROC_VOLT` / `MAX_VSRAM_VOLT` de 1,12 V (`mtk_cpufreq_opp_table.h` et `mtk_cpufreq_platform.h`
 du noyau MT6765 de la Galaxy Tab A7 Lite, [gta7lite/android_kernel_samsung_mt6765](https://github.com/gta7lite/android_kernel_samsung_mt6765)).
-L'AC8257 est donne pour 2,0 GHz : rien ne garantit 2,5 ou 2,6 GHz, meme a 1,11875 V.
+L'AC8257 est donne pour 2,0 GHz : rien ne garantit 2,5 ou 2,6 GHz a 1,05 V.
 
 **Jusqu'a `r127` (30/10/2026), ces tensions n'etaient pas appliquees au-dessus de 2,0 GHz** : `d95b3be61` avait
 releve la table OPP et la table de puissance (upower), pas la table d'enregistrement `ocTbl`
@@ -41,7 +52,7 @@ applique (l'EEM est coupee avec la table OC). La SSPM gardait donc 1,10 / 1,075 
 ```
 adb shell "su -c 'echo 2301000 > /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq; sleep 2; cat /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_freq /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_volt; echo 987000 > /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq'"
 ```
-Attendu avec `r127` et les reglages par defaut : `2301000 KHz` et `Vproc: 1062500 uV` (avant : 1025000 uV).
+Attendu avec les reglages par defaut : `2301000 KHz` et `Vproc: 1050000 uV` (r127 : 1062500 uV, avant : 1025000 uV).
 
 Le stock tourne a 2,0 GHz maximum (table FY, 1,025 V). 1400 MHz / 0,80 V reste l'OPP de calibration de l'EEM
 (PTPOD).
@@ -55,8 +66,8 @@ Parametres (`/sys/module/ac8257_cpufreq/parameters/`, ou `ac8257_cpufreq.<nom>=`
 | `volt_uv` | table | les 16 tensions en uV, frequence la plus haute d'abord ; ecrire 16 valeurs separees par des virgules, 0 = valeur de la table |
 | `volt_offset_uv` | 0 | decalage ajoute a toutes les tensions (negatif = sous-tension) |
 
-Chaque tension est arrondie au pas du PMIC (6,25 mV) et gardee entre **0,65 et 1,11875 V** (le regulateur Vproc
-accepte jusqu'a 1,3125 V ; la limite est volontairement plus basse). La nouvelle table est envoyee a la SSPM
+Chaque tension est arrondie au pas du PMIC (6,25 mV) et gardee entre **0,65 et 1,05 V** (le regulateur Vproc accepte
+jusqu'a 1,3125 V, mais Vsram ne depasse pas 1,05 V). La nouvelle table est envoyee a la SSPM
 comme le fait l'EEM (`cpuhvfs_update_volt`). L'EEM est desactivee avec la table OC (elle est calibree pour la
 table stock). `ac8257_cpu_oc=0` sur la ligne de commande : tables stock, EEM active, pas de reglage de tension.
 
@@ -64,8 +75,9 @@ Essais sur l'unite (noyau `LibreHU-main`, tensions par defaut) :
 - 2,3 GHz : stable (deja valide avec `reverse-engineering`) ; c'est le maximum au demarrage.
 - **2,6 GHz a 1,10 V : instable.** Le 20/10/2026 (run 59), apres environ 14 min, le coeur CPU 0 s'est fige
   (chien de garde materiel : `Qwdt`, `kick=0x0e check=0x0f`, `Non-crashing CPUs did not react to IPI`), a
-  46 degres. Table relevee depuis (ci-dessus, 1,11875 V a 2,6 GHz), appliquee par la SSPM seulement a partir de
-  `r127` ; a retester, deconseille au quotidien.
+  46 degres. Avec r127 (2,6 GHz a 1,11875 V, 2,5 GHz a 1,10 V), plantage a 2,5 GHz sous Geekbench le 30/10/2026 :
+  Vsram restait a 1,05 V, sous Vproc. Table ramenee a 1,05 V au plus ; 2,5 / 2,6 GHz a 1,05 V : a tester,
+  deconseille au quotidien.
 
 Exemples (root) :
 ```

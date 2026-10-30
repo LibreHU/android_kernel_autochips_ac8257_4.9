@@ -30,9 +30,9 @@
 #define NORMAL_DIFF_VRSAM_VPROC		10000
 #define MAX_DIFF_VSRAM_VPROC		35000
 #define MIN_VSRAM_VOLT			80000
-#define MAX_VSRAM_VOLT			112000	/* 105000 stock; AC8257 overclock table up to 1.11875 V (MT6765: 112000) */
+#define MAX_VSRAM_VOLT			112000	/* AP-side DVFS only (not built: the SSPM DVFS keeps the stock 105000) */
 #define MIN_VPROC_VOLT			65000
-#define MAX_VPROC_VOLT			112000	/* 102500 stock; AC8257 overclock table up to 1.11875 V (MT6765: 112000) */
+#define MAX_VPROC_VOLT			112000	/* AP-side DVFS only; 102500 stock, the OC table stops at 105000 */
 
 #define PMIC_CMD_DELAY_TIME	5
 #define MIN_PMIC_SETTLE_TIME	5
