@@ -1439,7 +1439,8 @@ module_param_named(boot_khz, ac8257_cpu_boot_khz, uint, 0444);
  *   volt_offset_uv  offset in uV added to every OPP (undervolt < 0, overvolt > 0), default 0
  * Each result is rounded to the PMIC step (6250 uV) and kept within AC8257_VOLT_MIN_UV..AC8257_VOLT_MAX_UV.
  * The new table goes to the SSPM the way the EEM updates it (cpuhvfs_update_volt). The EEM itself is off
- * with the overclock table (calibrated against the stock one).
+ * with the overclock table (calibrated against the stock one). Given on the command line
+ * (ac8257_cpufreq.volt_uv=...), the values are applied once the table exists (ac8257_volt_boot_apply()).
  */
 #define AC8257_VOLT_NR		16		/* OPPs of the OC table, NR_FREQ of mtk_cpufreq_opp_pv_table.h */
 #define AC8257_VOLT_MIN_UV	650000		/* MIN_VPROC_VOLT */
@@ -1461,8 +1462,11 @@ static int ac8257_volt_apply(void)
 	unsigned long flags;
 	int i, n;
 
-	if (!ac8257_cpu_oc || !p || !p->opp_tbl)
+	if (!ac8257_cpu_oc)
 		return -ENODEV;
+	/* command line: the table does not exist yet, ac8257_volt_boot_apply() applies the values */
+	if (!p || !p->opp_tbl)
+		return -EAGAIN;
 	n = min_t(int, p->nr_opp_tbl, AC8257_VOLT_NR);
 	cpufreq_para_lock(flags);
 	if (!ac8257_volt_saved) {
@@ -1518,7 +1522,7 @@ static int ac8257_volt_uv_set(const char *val, const struct kernel_param *kp)
 	memcpy(ac8257_volt_user, v, sizeof(v));
 	ret = ac8257_volt_apply();
 	mutex_unlock(&ac8257_volt_lock);
-	return ret;
+	return ret == -EAGAIN ? 0 : ret;
 }
 
 static int ac8257_volt_uv_get(char *buffer, const struct kernel_param *kp)
@@ -1547,8 +1551,27 @@ static int ac8257_volt_offset_set(const char *val, const struct kernel_param *kp
 	ac8257_volt_offset_uv = off;
 	ret = ac8257_volt_apply();
 	mutex_unlock(&ac8257_volt_lock);
-	return ret;
+	return ret == -EAGAIN ? 0 : ret;
 }
+
+/* voltages given on the command line, parsed before the OPP table existed */
+static int __init ac8257_volt_boot_apply(void)
+{
+	bool set = ac8257_volt_offset_uv;
+	int i, ret;
+
+	for (i = 0; i < AC8257_VOLT_NR; i++)
+		if (ac8257_volt_user[i])
+			set = true;
+	if (!set || !ac8257_cpu_oc)
+		return 0;
+	mutex_lock(&ac8257_volt_lock);
+	ret = ac8257_volt_apply();
+	mutex_unlock(&ac8257_volt_lock);
+	pr_info("ac8257_cpufreq: command line voltages applied (%d)\n", ret);
+	return 0;
+}
+late_initcall_sync(ac8257_volt_boot_apply);
 
 static const struct kernel_param_ops ac8257_volt_uv_ops = {
 	.set = ac8257_volt_uv_set,
