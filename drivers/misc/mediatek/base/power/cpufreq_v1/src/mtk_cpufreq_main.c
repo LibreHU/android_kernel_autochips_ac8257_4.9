@@ -1443,7 +1443,7 @@ module_param_named(boot_khz, ac8257_cpu_boot_khz, uint, 0444);
  */
 #define AC8257_VOLT_NR		16		/* OPPs of the OC table, NR_FREQ of mtk_cpufreq_opp_pv_table.h */
 #define AC8257_VOLT_MIN_UV	650000		/* MIN_VPROC_VOLT */
-#define AC8257_VOLT_MAX_UV	1118750		/* top of the OC table (MT6765 maximum); the PMIC buck goes up to 1.3125 V */
+#define AC8257_VOLT_MAX_UV	1050000		/* Vsram ceiling of the SSPM: above, Vsram < Vproc (mtk_cpufreq_opp_table.h) */
 #define AC8257_VOLT_STEP_UV	6250
 #define AC8257_PMIC_BASE_UV	518750		/* Vproc code 0 */
 
