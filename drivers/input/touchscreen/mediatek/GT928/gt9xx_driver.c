@@ -740,7 +740,11 @@ Output:
 *******************************************************/
 s32 gtp_send_cfg(struct i2c_client *client)
 {
-	s32 ret = 0;
+	/*
+	 * Nothing to send (config kept in the TP flash, GTP_DRIVER_SEND_CFG 0) is a success, as in the
+	 * Goodix reference driver: gtp_wakeup_sleep() waits for a positive value.
+	 */
+	s32 ret = 2;
 #if GTP_DRIVER_SEND_CFG
 	s32 retry = 0;
 
@@ -1999,8 +2003,10 @@ static s8 gtp_wakeup_sleep(struct i2c_client *client)
 	while (retry++ < 5) {
 		ret = tpd_power_on(client);
 
-		if (ret < 0)
+		if (ret < 0) {
 			GTP_ERROR("I2C Power on ERROR!");
+			continue;
+		}
 
 		ret = gtp_send_cfg(client);
 
@@ -2126,13 +2132,17 @@ static void tpd_on(void)
 	while (retry++ < 5) {
 		ret = tpd_power_on(i2c_client_point);
 
-		if (ret < 0)
+		if (ret < 0) {
 			GTP_ERROR("I2C Power on ERROR!");
+			continue;
+		}
 
 		ret = gtp_send_cfg(i2c_client_point);
 
-		if (ret > 0)
+		if (ret > 0) {
 			GTP_DEBUG("Wakeup sleep send config success.");
+			break;
+		}
 	}
 	if (ret < 0)
 		GTP_ERROR("GTP later resume failed.");
