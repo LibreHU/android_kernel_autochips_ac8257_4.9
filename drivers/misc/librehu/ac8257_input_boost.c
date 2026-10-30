@@ -1,8 +1,9 @@
 /*
  * Touch input boost: on a touch, the CPU minimum frequency is raised to freq_khz for duration_ms
- * through the MediaTek PPM system boost (the unused BOOST_BY_UT user, so that the PPM interface used
- * by the vendor modules is unchanged). Tunables in /sys/module/ac8257_input_boost/parameters/:
- * freq_khz (1533000; 0 disables), duration_ms (100).
+ * through the LibreHU floor of the cpufreq driver (ac8257_cpufreq_boost_min(), folded in like
+ * scaling_min_freq; the PPM system boost it used before is disabled by the vendor init, so the boost
+ * did nothing). Tunables in /sys/module/ac8257_input_boost/parameters/: freq_khz (1533000; 0 disables),
+ * duration_ms (100).
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU General Public License version 2 as published by the Free Software Foundation.
@@ -12,7 +13,7 @@
 #include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
-#include <mtk_ppm_api.h>
+#include <mach/mtk_cpufreq_api.h>
 
 static unsigned int freq_khz = 1533000;
 module_param(freq_khz, uint, 0644);
@@ -30,7 +31,7 @@ static void ac8257_boost_on(struct work_struct *w)
 {
 	mutex_lock(&boost_lock);
 	if (!boosted && freq_khz) {
-		mt_ppm_sysboost_freq(BOOST_BY_UT, freq_khz);
+		ac8257_cpufreq_boost_min(freq_khz);
 		boosted = true;
 	}
 	mutex_unlock(&boost_lock);
@@ -41,7 +42,7 @@ static void ac8257_boost_off(struct work_struct *w)
 {
 	mutex_lock(&boost_lock);
 	if (boosted) {
-		mt_ppm_sysboost_freq(BOOST_BY_UT, 0);
+		ac8257_cpufreq_boost_min(0);
 		boosted = false;
 	}
 	mutex_unlock(&boost_lock);
