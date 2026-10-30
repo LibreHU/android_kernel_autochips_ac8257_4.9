@@ -76,16 +76,20 @@ static unsigned int fy2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	{  850, 45, 2, 1 },
 };
 
-/* OC (CPU_LEVEL_3): same frequencies/voltages as opp_tbl_LL_e3_0, Vproc code = 21 + (uV - 650000) / 6250 */
+/*
+ * OC (CPU_LEVEL_3): same frequencies/voltages as opp_tbl_LL_e3_0, Vproc code = 21 + (uV - 650000) / 6250.
+ * This is the table the SSPM applies (cpuhvfs_pvt_tbl_create()), the EEM being off with it: keep it in step
+ * with CPU_DVFS_VOLTx_VPROC_LL_OC of mtk_cpufreq_opp_table.h.
+ */
 static unsigned int ocTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	/* Freq, Vproc, post_div, clk_div */
-	{ 2601, 93, 1, 1 },	/* LL */
-	{ 2501, 89, 1, 1 },
-	{ 2401, 85, 1, 1 },
-	{ 2301, 81, 1, 1 },
-	{ 2201, 81, 1, 1 },
-	{ 2101, 81, 1, 1 },
-	{ 2001, 81, 1, 1 },
+	{ 2601, 96, 1, 1 },	/* LL, 1.11875 V */
+	{ 2501, 93, 1, 1 },	/* 1.100 V */
+	{ 2401, 90, 1, 1 },	/* 1.08125 V */
+	{ 2301, 87, 1, 1 },	/* 1.0625 V */
+	{ 2201, 85, 1, 1 },	/* 1.050 V */
+	{ 2101, 83, 1, 1 },	/* 1.0375 V */
+	{ 2001, 81, 1, 1 },	/* 1.025 V */
 	{ 1917, 76, 1, 1 },
 	{ 1834, 71, 1, 1 },
 	{ 1700, 63, 1, 1 },
