@@ -85,4 +85,7 @@ extern void mt_cpufreq_set_governor_freq_registerCB(cpuFreqsampler_func pCB);
 /* CPUFREQ */
 extern void aee_record_cpufreq_cb(unsigned int step);
 
+/* LibreHU touch input boost: minimum frequency in kHz, 0 = none */
+extern void ac8257_cpufreq_boost_min(unsigned int khz);
+
 #endif	/* __MTK_CPUFREQ_API_H__ */
