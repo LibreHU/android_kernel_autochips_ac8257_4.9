@@ -813,6 +813,22 @@ out:
 }
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
+/*
+ * AC8257: the SSPM bounds every request with the limits ac8257_apply_soft_max() writes to it (PPM,
+ * thermal, boosts, scaling_min/max_freq), as it does for the MediaTek governors, whose requests go
+ * there unclamped (mt_cpufreq_set_by_wfi_load_cluster()). Clamping a governor request here too
+ * froze the bounds of the moment into it: performance, powersave and userspace ask once, so their
+ * request stayed at a boost floor or a thermal limit after it ended.
+ */
+static inline bool _mt_cpufreq_bounded_by_sspm(enum mt_cpu_dvfs_action_id action)
+{
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CONFIG_MACH_AC8257)
+	return action == MT_CPU_DVFS_NORMAL;
+#else
+	return false;
+#endif
+}
+
 static void _mt_cpufreq_set(struct cpufreq_policy *policy,
 	struct mt_cpu_dvfs *p, int new_opp_idx,
 	enum mt_cpu_dvfs_action_id action)
@@ -835,7 +851,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy,
 	if (action == MT_CPU_DVFS_ONLINE || action == MT_CPU_DVFS_DP ||
 	    (do_dvfs_stress_test && action == MT_CPU_DVFS_NORMAL))
 		new_opp_idx = _calc_new_opp_idx_no_base(p, new_opp_idx);
-	else
+	else if (!_mt_cpufreq_bounded_by_sspm(action))
 		new_opp_idx = _calc_new_opp_idx(p, new_opp_idx);
 
 	if (action != MT_CPU_DVFS_EEM_UPDATE)
