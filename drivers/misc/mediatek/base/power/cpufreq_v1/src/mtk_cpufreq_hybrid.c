@@ -1255,7 +1255,21 @@ static void __init init_cpuhvfs_debug_repo(void)
 	for (c = 0; c < NR_MT_CPU_DVFS; c++) {
 #endif
 		repo_i = OFFS_PPM_LIMIT_S / sizeof(u32) + c;
+#ifdef CONFIG_MACH_AC8257
+		{
+			/*
+			 * Start the SSPM within the boot maximum (2.3 GHz by default): its request is
+			 * zeroed above, OPP 0, which is 2601 MHz with the overclock table (2001 MHz in
+			 * the stock one), and these bounds stay its own until the first PPM callback.
+			 */
+			int boot = ac8257_cpufreq_boot_opp_idx(c, _mt_cpufreq_get_cpu_level());
+
+			dbg_repo[repo_i] = (boot << 16) | (NR_FREQ - 1);
+			dbg_repo[OFFS_WFI_S / sizeof(u32) + c] = boot;
+		}
+#else
 		dbg_repo[repo_i] = (0 << 16) | (NR_FREQ - 1);
+#endif
 	}
 
 	g_dbg_repo = dbg_repo;
