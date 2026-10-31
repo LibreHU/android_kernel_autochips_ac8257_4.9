@@ -28,7 +28,7 @@ pas · ⬜ pas encore teste.
 | Stockage | Ecriture sur `/system` (`adb remount`) | ✅ | corrige : le noyau ne cree plus `mmc0/sw_wp_en` (absent du stock), qui faisait refuser les ecritures (EXT4 I/O error) |
 | Stockage | Etat du systeme de fichiers `/system` | 🟡 | 244 erreurs ext4 anciennes enregistrees (depuis le 13/10), aucune nouvelle ; `e2fsck -fn` (lecture seule) a faire depuis TWRP |
 | Systeme | Root KernelSU Next | ✅ | `su -c id` |
-| Systeme | Mise en veille / reprise | 🟡 | `stable-4.9.337` : premiere vraie veille reussie (29/10) ; reprise (dalle, tactile, USB) corrigee en `r126` / `r127`, a tester ; DVD USB et son au reveil a analyser ([docs/STABLE.md](docs/STABLE.md#veille-et-reprise)) |
+| Systeme | Mise en veille / reprise | 🟡 | `stable-4.9.337` : premiere vraie veille reussie (29/10) ; reprise (dalle, tactile, USB) corrigee en `r126` / `r127`, filets de securite USB et gadget USB en `r130`, a tester ; DVD USB et son au reveil a analyser ([docs/STABLE.md](docs/STABLE.md#veille-et-reprise)) |
 | Affichage | Ecran 1280 x 720, rotation | ✅ | rotation lue dans la metazone (`persist.sf.hwrotation=90`) |
 | Affichage | GPU PowerVR GE8300 | ✅ | OpenGL ES 3.2, meme pilote que le stock |
 | Affichage | Retro-eclairage ecran et touches | ✅ | luminosite maximale plus haute que le stock |

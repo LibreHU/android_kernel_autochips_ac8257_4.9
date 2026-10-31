@@ -475,7 +475,7 @@ ligne « deja presente » pouvait l'etre ailleurs dans le fichier. Les 15 cas de
 
 ## Veille et reprise
 
-Etat au 30/10/2026, branche `stable-4.9.337`.
+Etat au 31/10/2026, branche `stable-4.9.337`.
 
 - **Extinction des coeurs** (29/10, toutes les branches stable, `0ac5529bd` sur 337) : le `smpboot_park_threads()`
   d'AutoChips attend que tous les threads smpboot du coeur aient quitte la file d'execution ; depuis 4.9.120
@@ -506,3 +506,11 @@ rallume vite (image) ; un seul « GTP RESET » par allumage ; vraie veille conta
 puis `dmesg` complet. Restent : DVD USB (« runtime PM trying to activate child device host0 but parent
 (2-1.4:1.0) is not active » au reveil, journal complet a relire) et son absent (le processeur audio BD37534,
 I2C 6 0x40, pilote par LibreHU-service, perd probablement ses registres quand la MCU coupe PB4).
+
+- **Correctifs `r130`** (31/10) :
+
+| Commit | Correctif |
+|---|---|
+| `630f95d9a` boot_state | si l'espace utilisateur n'ecrit pas `resume_end` 10 s apres une reprise, le noyau l'envoie lui-meme (`/sys/module/boot_state/parameters/resume_end_ms`, 0 = jamais) : sinon l'USB restait dans le mode « veille » d'AutoChips (une seule tentative d'enumeration, erreurs usb-storage non retentees, delais SCSI divises par deux) jusqu'a la veille suivante. QuickBoot l'ecrit deja (dmesg du 29/10) : filet de securite |
+| `a4cfbbb2d` usb hub | les ports dont l'enumeration a ete abandonnee pendant la veille (une seule tentative) sont re-enumeres a `resume_end`, avec toutes les tentatives : un peripherique lent a revenir apres la coupure de PB4 n'est plus a rebrancher. Ce n'est pas le correctif du DVD du 29/10 : ce jour-la le hub et le lecteur avaient ete repris (reset-resume), pas abandonnes |
+| `ed422b649` usb gadget | `android_setup()` (gadget Android, `CONFIG_USB_CONFIGFS_UEVENT`) sous `gi->spinlock`, comme `configfs_composite_setup()` du lot 3 : une requete SETUP pendant un changement de fonctions USB (adb, MTP, RNDIS, bascule CarPlay) pouvait utiliser la memoire liberee par `configfs_composite_unbind()` |
