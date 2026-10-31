@@ -268,12 +268,26 @@ int Ripi_cpu_dvfs_thread(void *data)
 					j = p->idx_opp_ppm_base;
 
 				/* Update policy min/max */
+#ifdef CONFIG_MACH_AC8257
+				/*
+				 * Not on the AC8257. These are the bounds in force in the SSPM: PPM, thermal
+				 * and boost limits (touch boosts, boosts asked through cpu_ctrl by the vendor
+				 * userspace) folded with scaling_min/max_freq by ac8257_apply_soft_max(). Written
+				 * into the policy, they became the user limits at the next governor change
+				 * (store_scaling_governor() copies the policy, then the policy notifier reads
+				 * it): scaling_min_freq frozen at a boost floor, scaling_max_freq at a thermal
+				 * limit, and powersave / performance aiming at those, so the CPU stayed at the
+				 * maximum whatever the governor. The SSPM and _calc_new_opp_idx() apply these
+				 * bounds anyway; the policy keeps the limits written by userspace.
+				 */
+#else
 				p->mt_policy->min =
 					cpu_dvfs_get_freq_by_idx(p,
 					p->idx_opp_ppm_base);
 				p->mt_policy->max =
 					cpu_dvfs_get_freq_by_idx(p,
 					p->idx_opp_ppm_limit);
+#endif
 
 #ifdef SINGLE_CLUSTER
 				cid =
