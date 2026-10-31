@@ -1402,6 +1402,26 @@ void ac8257_cpufreq_boost_min(unsigned int khz)
 }
 
 /*
+ * OPP index of the boot maximum (boot_khz within max_khz) in table lv, from opp_tbls since the policy
+ * does not exist yet: the SSPM starts within it (init_cpuhvfs_debug_repo()).
+ */
+int ac8257_cpufreq_boot_opp_idx(int id, unsigned int lv)
+{
+	struct opp_tbl_info *t;
+	unsigned int boot = ac8257_cpu_boot_khz ?
+		min(ac8257_cpu_boot_khz, ac8257_cpu_max_khz) : ac8257_cpu_max_khz;
+	int i;
+
+	if (id < 0 || id >= NR_MT_CPU_DVFS || lv >= NUM_CPU_LEVEL)
+		return 0;
+	t = &opp_tbls[id][lv];
+	for (i = 0; i < t->size - 1; i++)
+		if (t->opp_tbl[i].cpufreq_khz <= boot)
+			break;
+	return i;
+}
+
+/*
  * Frequency of OPP idx in the stock table of the chip (FY or FY2), whatever table is loaded, 0 if
  * there is no such OPP. For the vendor interfaces that take OPP indexes (cpu_ctrl boot_freq, the
  * user touch boost built with FPSGO): they were set for the stock table, whose OPP 0 is 2001 MHz;
