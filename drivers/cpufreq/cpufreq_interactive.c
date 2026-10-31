@@ -554,6 +554,13 @@ static void cpufreq_interactive_adjust_cpu(unsigned int cpu,
 			icpu = &per_cpu(interactive_cpu, i);
 			icpu->pol_hispeed_val_time = hvt;
 		}
+	} else if (cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS)) {
+		/*
+		 * The driver's own limits can hold policy->cur away from its last
+		 * request: give it the new target anyway (__cpufreq_driver_target()
+		 * does so for such drivers).
+		 */
+		__cpufreq_driver_target(policy, max_freq, CPUFREQ_RELATION_H);
 	}
 #endif
 
