@@ -52,7 +52,7 @@ void switch_init_opp(int boost_opp)
 	touch_boost_opp = boost_opp;
 	for (i = 0; i < perfmgr_clusters; i++)
 		target_freq[i].min =
-			mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
+			cpu_ctrl_opp_to_freq(i, touch_boost_opp);
 }
 
 void switch_init_duration(int duration)
@@ -295,7 +295,7 @@ int init_utch(struct proc_dir_entry *parent)
 
 	for (i = 0; i < perfmgr_clusters; i++) {
 		target_freq[i].min =
-			mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
+			cpu_ctrl_opp_to_freq(i, touch_boost_opp);
 		target_freq[i].max = reset_freq[i].min = reset_freq[i].max = -1;
 	}
 	mutex_init(&notify_lock);
