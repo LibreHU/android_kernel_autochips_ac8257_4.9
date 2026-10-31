@@ -88,4 +88,7 @@ extern void aee_record_cpufreq_cb(unsigned int step);
 /* LibreHU touch input boost: minimum frequency in kHz, 0 = none */
 extern void ac8257_cpufreq_boost_min(unsigned int khz);
 
+/* frequency of an OPP index of the stock table, for the vendor interfaces that take OPP indexes */
+extern unsigned int mt_cpufreq_get_stock_freq_by_idx(int id, int idx);
+
 #endif	/* __MTK_CPUFREQ_API_H__ */
