@@ -1401,6 +1401,25 @@ void ac8257_cpufreq_boost_min(unsigned int khz)
 	ac8257_reapply_limits();
 }
 
+/*
+ * Frequency of OPP idx in the stock table of the chip (FY or FY2), whatever table is loaded, 0 if
+ * there is no such OPP. For the vendor interfaces that take OPP indexes (cpu_ctrl boot_freq, the
+ * user touch boost built with FPSGO): they were set for the stock table, whose OPP 0 is 2001 MHz;
+ * the overclock table has six more OPPs on top, so the same index meant up to 600 MHz more.
+ */
+unsigned int mt_cpufreq_get_stock_freq_by_idx(int id, int idx)
+{
+	struct opp_tbl_info *t;
+
+	if (id < 0 || id >= NR_MT_CPU_DVFS)
+		return 0;
+	t = &opp_tbls[id][ac8257_cpufreq_stock_level()];
+	if (idx < 0 || idx >= t->size)
+		return 0;
+	return t->opp_tbl[idx].cpufreq_khz;
+}
+EXPORT_SYMBOL(mt_cpufreq_get_stock_freq_by_idx);
+
 static int ac8257_cpu_max_set(const char *val, const struct kernel_param *kp)
 {
 	int ret = param_set_uint(val, kp);

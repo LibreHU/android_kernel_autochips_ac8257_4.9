@@ -489,17 +489,25 @@ static int __init ac8257_cpu_oc_setup(char *str)
 }
 __setup("ac8257_cpu_oc=", ac8257_cpu_oc_setup);
 
-unsigned int _mt_cpufreq_get_cpu_level(void)
+/* level of the stock tables of this chip, the one loaded without the overclock table */
+unsigned int ac8257_cpufreq_stock_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
-	int val = mt_get_chip_sw_ver(); /* = get_devinfo_with_index(num); */
 
-	if (val == CHIP_SW_VER_01)
+	if (mt_get_chip_sw_ver() == CHIP_SW_VER_01)
 		lv = CPU_LEVEL_2;
 
 #if defined(CONFIG_MTK_LP_OPP)
 		lv = CPU_LEVEL_0;
 #endif
+	return lv;
+}
+
+unsigned int _mt_cpufreq_get_cpu_level(void)
+{
+	unsigned int lv = ac8257_cpufreq_stock_level();
+	int val = mt_get_chip_sw_ver(); /* = get_devinfo_with_index(num); */
+
 	if (ac8257_cpu_oc)
 		lv = CPU_LEVEL_3;
 

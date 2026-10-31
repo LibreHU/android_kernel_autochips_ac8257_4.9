@@ -27,6 +27,24 @@ enum {
 	CPU_MAX_KIR
 };
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
+#ifdef CONFIG_MACH_AC8257
+extern unsigned int mt_cpufreq_get_stock_freq_by_idx(int id, int idx);
+#endif
+
+/*
+ * Frequency of an OPP index set by the vendor (boot_freq of the init scripts, touch_opp of the user
+ * touch boost, built with FPSGO): an index of the stock table. The AC8257 overclock table has six
+ * more OPPs on top, so the same index there meant a frequency up to 600 MHz higher (OPP 0: 2601
+ * instead of 2001 MHz).
+ */
+static inline unsigned int cpu_ctrl_opp_to_freq(int cluster, int opp)
+{
+#ifdef CONFIG_MACH_AC8257
+	return mt_cpufreq_get_stock_freq_by_idx(cluster, opp);
+#else
+	return mt_cpufreq_get_freq_by_idx(cluster, opp);
+#endif
+}
 extern int update_userlimit_cpu_freq(int kicker, int num_cluster
 				, struct ppm_limit_data *freq_limit);
 extern int update_userlimit_cpu_core(int kicker, int num_cluster

@@ -281,12 +281,12 @@ static ssize_t perfmgr_boot_freq_proc_write(struct file *filp,
 				freq_limit[i/2].max =
 					(data < 0 || data > MAX_NR_FREQ - 1)
 					? -1 :
-					mt_cpufreq_get_freq_by_idx(i / 2, data);
+					cpu_ctrl_opp_to_freq(i / 2, data);
 			else /* min */
 				freq_limit[i/2].min =
 					(data < 0 || data > MAX_NR_FREQ - 1)
 					? -1 :
-					mt_cpufreq_get_freq_by_idx(i / 2, data);
+					cpu_ctrl_opp_to_freq(i / 2, data);
 			i++;
 #endif
 		}
