@@ -2558,7 +2558,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	else
 		__mt_gpufreq_setup_opp_table(g_opp_table_6761,
 				ARRAY_SIZE(g_opp_table_6761));
-		g_fixed_vsram_volt_idx = 0;
+	g_fixed_vsram_volt_idx = 0;
 
 	/* setup PMIC init value */
 #ifdef USE_STAND_ALONE_VGPU
