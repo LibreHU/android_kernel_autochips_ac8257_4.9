@@ -54,6 +54,9 @@ extern void mt_gpufreq_disable_by_ptpod(void);
 extern unsigned int mt_gpufreq_get_max_power(void);
 extern unsigned int mt_gpufreq_get_min_power(void);
 extern unsigned int mt_gpufreq_get_thermal_limit_index(void);
+/* AC8257 bounds on the OPP index (dfrgx max_freq / min_freq, a kept OPP), for GED to aim within */
+extern unsigned int mt_gpufreq_get_soft_max_idx(void);
+extern unsigned int mt_gpufreq_get_soft_min_idx(void);
 extern unsigned int mt_gpufreq_get_thermal_limit_freq(void);
 extern void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power);
 extern unsigned int mt_gpufreq_get_leakage_mw(void);
