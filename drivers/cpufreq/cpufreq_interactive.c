@@ -1337,8 +1337,16 @@ void cpufreq_interactive_limits(struct cpufreq_policy *policy)
 	struct interactive_cpu *icpu;
 	unsigned int cpu;
 	unsigned long flags;
+	/*
+	 * cpufreq_policy_apply_limits() compares the new limits with policy->cur, which a
+	 * CPUFREQ_NEED_UPDATE_LIMITS driver may keep at the frequency the hardware runs at
+	 * (mt-cpufreq with the SSPM DVFS, whose bounds hold it there): its request would replace
+	 * the governor's target. Hand such a driver the clamped targets instead.
+	 */
+	bool hand_targets = cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS);
 
-	cpufreq_policy_apply_limits(policy);
+	if (!hand_targets)
+		cpufreq_policy_apply_limits(policy);
 
 	for_each_cpu(cpu, policy->cpus) {
 		icpu = &per_cpu(interactive_cpu, cpu);
@@ -1351,6 +1359,13 @@ void cpufreq_interactive_limits(struct cpufreq_policy *policy)
 			icpu->target_freq = policy->min;
 
 		spin_unlock_irqrestore(&icpu->target_freq_lock, flags);
+	}
+
+	if (hand_targets) {
+		spin_lock_irqsave(&speedchange_cpumask_lock, flags);
+		cpumask_or(&speedchange_cpumask, &speedchange_cpumask, policy->cpus);
+		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
+		wake_up_process(speedchange_task);
 	}
 }
 
