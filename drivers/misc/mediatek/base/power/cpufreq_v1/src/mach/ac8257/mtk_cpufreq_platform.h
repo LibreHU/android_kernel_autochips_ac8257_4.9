@@ -72,5 +72,6 @@ extern int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 extern int mt_cpufreq_regulator_map(struct platform_device *pdev);
 extern int mt_cpufreq_dts_map(void);
 extern unsigned int _mt_cpufreq_get_cpu_level(void);
+extern unsigned int ac8257_cpufreq_stock_level(void);
 
 #endif	/* __MTK_CPUFREQ_PLATFORM_H__ */
