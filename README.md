@@ -41,6 +41,7 @@ pas · ⬜ pas encore teste.
 | CPU / GPU | 2,5 GHz | ⬜ | **instable a 1,10 V** (`r127`, Geekbench, 30/10) : Vsram 50 mV sous Vproc ; a retester a 1,05 V (`r129`) |
 | CPU / GPU | 2,6 GHz | ⬜ | **instable a 1,10 V** (watchdog materiel apres 14 min) ; a retester a 1,05 V (`r129`) ; au-dela, plafond de Vsram de la SSPM ([docs/TUNING.md](docs/TUNING.md)) |
 | CPU / GPU | GPU 730 MHz, tensions reglables | ⬜ | |
+| CPU / GPU | Gouverneurs et limites min / max respectes | ⬜ | `r131` : le CPU restait au maximum quel que soit le gouverneur (limites figees par un changement de gouverneur, requetes bornees deux fois) ; OPP GPU fixe soumis au thermique ; [docs/TUNING.md](docs/TUNING.md#limites-gouverneurs-et-boosts-r131-31102026) |
 | CPU / GPU | Sondes de temperature | 🟡 | toutes OK sauf « batterie » a 0 °C (l'unite n'a pas de batterie ; a comparer au stock) |
 | CPU / GPU | Politique thermique LibreHU | ⬜ | `r129` : CPU reset 125 °C, freins 105 °C, regulation 100 °C (CTM coupe) ; carte arret 105 °C, reset 107 °C (le vendor n'en active aucun) ; [docs/TUNING.md](docs/TUNING.md) |
 | Audio | Sortie audio (RCA) | ✅ | |

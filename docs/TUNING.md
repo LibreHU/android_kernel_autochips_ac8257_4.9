@@ -89,6 +89,34 @@ echo -25000 > /sys/module/ac8257_cpufreq/parameters/volt_offset_uv
 cat /sys/module/ac8257_cpufreq/parameters/volt_uv
 ```
 
+### Limites, gouverneurs et boosts (`r131`, 31/10/2026)
+
+Avec la SSPM, le noyau ne regle pas la frequence lui-meme : il ecrit dans la memoire de la SSPM la requete du
+gouverneur (registre `WFI`) et les bornes en vigueur (registre `PPM_LIMIT` : `scaling_min_freq` /
+`scaling_max_freq`, `max_khz`, limites PPM et thermiques, boosts), et la SSPM applique la requete dans ces bornes.
+Signale sur l'unite : en powersave avec un minimum de 1,5 GHz et un maximum de 2,2 GHz, le CPU restait au maximum,
+quel que soit le gouverneur. Defauts trouves dans le code et corriges :
+
+| Defaut | Effet | Correction |
+|---|---|---|
+| le thread de reception de la SSPM recopiait les bornes en vigueur (boosts, limites thermiques) dans `scaling_min_freq` / `scaling_max_freq` | un changement de gouverneur recopie la politique : le notifier LibreHU prenait ces bornes pour celles de l'utilisateur. Plancher fige a celui d'un boost, plafond fige a une limite thermique, et powersave / performance visaient ces valeurs | `scaling_min_freq` / `scaling_max_freq` gardent les valeurs ecrites ; la SSPM applique toujours les bornes effectives |
+| les requetes passant par le coeur cpufreq (performance, powersave, userspace, ondemand, conservative, interactive) etaient bornees une seconde fois cote noyau, avec les bornes du moment | un gouverneur qui ne demande qu'une fois gardait la borne du moment (plancher d'un boost, limite thermique) apres sa fin | requete envoyee telle quelle, comme celles de schedutil et schedplus ; la SSPM la borne |
+| le coeur cpufreq ne transmet pas une requete egale a `scaling_cur_freq`, qui est la frequence de la SSPM | la requete precedente, parfois celle d'un autre gouverneur, restait en vigueur | drapeau `CPUFREQ_NEED_UPDATE_LIMITS` de Linux 5.10 retroporte (`1c534352f47f`, `a62f68f5ca53`) et pose par mt-cpufreq ; interactive et ondemand en tiennent compte |
+| au changement de `scaling_min/max_freq`, interactive, schedutil, ondemand et conservative demandaient le min / max d'apres `scaling_cur_freq` | la requete du gouverneur etait remplacee : CPU au nouveau maximum alors que le gouverneur voulait le minimum | ils redonnent leur propre requete, calculee dans les nouvelles limites |
+| index d'OPP fournis par le vendor (`boot_freq` de `cpu_ctrl`, boost tactile utilisateur `usrtch`) lus dans la table OC | OPP 0 = 2601 MHz au lieu de 2001 MHz, OPP 2 = 2401 au lieu de 1834 MHz | lus dans la table d'origine de la puce : memes frequences que le stock |
+| la SSPM demarre avec la requete 0 et sans borne, jusqu'au premier rappel de la PPM | OPP 0 = 2601 MHz avec la table OC (2001 MHz en stock) | requete et borne de depart a `boot_khz` (2,3 GHz) |
+
+Lecture des valeurs :
+- `scaling_min_freq` / `scaling_max_freq` : les limites ecrites (applis, LibreHU-service) ; elles n'affichent plus
+  les limites thermiques ni les boosts.
+- `scaling_cur_freq` : la frequence de la SSPM (moyenne de son journal) ; `/proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_freq`
+  : celle de la PLL.
+- Planchers en vigueur : boost tactile noyau `ktch` (1183 MHz doigt pose, `/proc/perfmgr/tchbst/kernel/`), boost
+  LibreHU (1533 MHz pendant 100 ms, `ac8257_input_boost`), demandes du vendor par
+  `/proc/perfmgr/boost_ctrl/cpu_ctrl/` (`perfserv_freq` du HAL power, `boot_freq` des scripts d'init, resume dans
+  `current_freqy`). Le plus haut l'emporte, sous `scaling_max_freq` et `max_khz`. `usrtch` n'est pas compile
+  (il depend de `CONFIG_MTK_FPSGO`).
+
 ## GPU (PowerVR GE8300)
 
 Table OC : 730, 660, 600, 500, 450, 390, 300 MHz (730 MHz = OPP haute du MT6761T, a la tension stock de 660 MHz).
@@ -106,6 +134,14 @@ SoC a ce niveau, pas seulement du GPU.
 
 Noeud pour les applis : `/sys/devices/platform/dfrgx/devfreq/dfrgx/` (`cur_freq`, `available_frequencies`,
 `max_freq`, `min_freq`).
+
+Bornes du GPU (`r131`) : un OPP fixe par `/proc/gpufreq/gpufreq_opp_freq` (reglage GPU de LibreHU-service Tweaks)
+ou, sinon, `max_freq` / `min_freq` (`max_khz` / `min_khz`). La limite thermique / puissance l'emporte toujours.
+Corrige :
+- un OPP fixe passait apres la limite thermique et la remplacait : un GPU fixe a 730 MHz n'etait jamais bride ;
+- GED (le DVFS GPU de MediaTek) ne connaissait pas `min_freq` / `max_freq`. Une requete hors bornes ne
+  correspondait jamais a l'OPP applique : a chaque periode, GED la renvoyait, avec a chaque fois une poignee de main
+  de changement d'horloge avec le pilote PowerVR, pour rien. GED vise maintenant dans ces bornes.
 
 ## Thermique CPU et carte (politique LibreHU)
 
@@ -146,7 +182,9 @@ Le comportement erratique vu avec les noyaux `reverse-engineering` (meme code) a
 
 Verifie et sain : chemin gouverneur -> `_calc_new_opp_idx` -> SSPM, plafond utilisateur via le notifier de
 politique (enregistre avant le pilote), cote GPU ordre des limites (plafond LibreHU, plancher, puis thermique /
-puissance prioritaires) et table de puissance GPU calculee depuis les vraies frequence et tension.
+puissance prioritaires) et table de puissance GPU calculee depuis les vraies frequence et tension. Revu le
+31/10/2026 : ce chemin et la recopie des bornes dans la politique figeaient des limites, voir
+[Limites, gouverneurs et boosts](#limites-gouverneurs-et-boosts-r131-31102026).
 
 **Correction du 30/10/2026 : le boost tactile ne faisait rien** (il figurait a tort dans la liste ci-dessus).
 `ac8257_input_boost` passait par le sysboost de la PPM (`mt_ppm_sysboost_freq`), politique que l'init vendor laisse
