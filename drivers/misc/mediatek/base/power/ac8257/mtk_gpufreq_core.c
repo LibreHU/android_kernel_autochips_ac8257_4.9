@@ -325,6 +325,56 @@ phys_addr_t gpu_fdvfs_virt_addr; /* for GED, legacy ?! */
  */
 
 /*
+ * Bounds that LibreHU puts on the OPP index (a lower index is a higher frequency): the OPP kept
+ * through /proc/gpufreq/gpufreq_opp_freq when there is one, else max_khz / min_khz (dfrgx max_freq /
+ * min_freq), the minimum within the maximum. mt_gpufreq_target() applies them, GED aims within them
+ * (mt_gpufreq_get_soft_max_idx() / mt_gpufreq_get_soft_min_idx()), and the Thermal/Power/PBM limit
+ * wins over both.
+ */
+static void ac8257_gpu_bounds(unsigned int *hi, unsigned int *lo)
+{
+	unsigned int max_idx = 0, min_idx;
+
+	if (!g_opp_table || !g_opp_idx_num) {
+		*hi = 0;
+		*lo = UINT_MAX;
+		return;
+	}
+	if (g_keep_opp_freq_state && g_keep_opp_freq_idx < g_opp_idx_num) {
+		*hi = *lo = g_keep_opp_freq_idx;
+		return;
+	}
+	/* skip the OPPs above max_khz (the last one is always allowed) */
+	while (max_idx < g_opp_idx_num - 1 &&
+	       g_opp_table[max_idx].gpufreq_khz > ac8257_gpu_max_khz)
+		max_idx++;
+	/* the lowest OPP not below min_khz, within the maximum */
+	min_idx = g_opp_idx_num - 1;
+	while (min_idx > max_idx && g_opp_table[min_idx].gpufreq_khz < ac8257_gpu_min_khz)
+		min_idx--;
+	*hi = max_idx;
+	*lo = min_idx;
+}
+
+unsigned int mt_gpufreq_get_soft_max_idx(void)
+{
+	unsigned int hi, lo;
+
+	ac8257_gpu_bounds(&hi, &lo);
+	return hi;
+}
+EXPORT_SYMBOL(mt_gpufreq_get_soft_max_idx);
+
+unsigned int mt_gpufreq_get_soft_min_idx(void)
+{
+	unsigned int hi, lo;
+
+	ac8257_gpu_bounds(&hi, &lo);
+	return lo;
+}
+EXPORT_SYMBOL(mt_gpufreq_get_soft_min_idx);
+
+/*
  * API : handle frequency change request
  */
 unsigned int mt_gpufreq_target(unsigned int idx)
@@ -333,6 +383,7 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 	unsigned int target_volt;
 	unsigned int target_idx;
 	unsigned int target_cond_idx;
+	unsigned int bound_hi, bound_lo;
 
 	mutex_lock(&mt_gpufreq_lock);
 
@@ -352,14 +403,12 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		return -1;
 	}
 
-	/* AC8257 soft maximum: skip the OPPs above max_khz (the last one is always allowed) */
-	while (idx < g_opp_idx_num - 1 &&
-	       g_opp_table[idx].gpufreq_khz > ac8257_gpu_max_khz)
-		idx++;
-	/* AC8257 soft minimum, within the maximum */
-	while (idx > 0 && g_opp_table[idx].gpufreq_khz < ac8257_gpu_min_khz &&
-	       g_opp_table[idx - 1].gpufreq_khz <= ac8257_gpu_max_khz)
-		idx--;
+	/* AC8257 bounds (max_khz / min_khz, or the kept OPP); the Thermal/Power/PBM limit below wins */
+	ac8257_gpu_bounds(&bound_hi, &bound_lo);
+	if (idx < bound_hi)
+		idx = bound_hi;
+	if (idx > bound_lo)
+		idx = bound_lo;
 
 	/* look up for the target OPP table */
 	target_freq = g_opp_table[idx].gpufreq_khz;
@@ -384,16 +433,11 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		}
 	}
 
-	/* If /proc command keep OPP freq */
-	if (g_keep_opp_freq_state) {
-		target_freq = g_opp_table[g_keep_opp_freq_idx].gpufreq_khz;
-		target_volt = g_opp_table[g_keep_opp_freq_idx].gpufreq_volt;
-		target_idx = g_opp_table[g_keep_opp_freq_idx].gpufreq_idx;
-		target_cond_idx = g_keep_opp_freq_idx;
-		gpufreq_pr_debug(
-			"@%s: keep OPP freq, freq = %d, volt = %d, idx = %d\n",
-			__func__, target_freq, target_volt, target_cond_idx);
-	}
+	/*
+	 * An OPP kept through /proc/gpufreq/gpufreq_opp_freq is one of the AC8257 bounds above, before
+	 * the Thermal/Power/PBM limit: it overrode that limit here, so a GPU kept at 730 MHz (the GPU
+	 * setting of LibreHU-service Tweaks) was never throttled.
+	 */
 
 	/* If /proc command fix the freq and volt */
 	if (g_fixed_freq_volt_state) {

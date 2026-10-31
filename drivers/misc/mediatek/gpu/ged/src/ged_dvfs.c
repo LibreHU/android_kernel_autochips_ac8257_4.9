@@ -476,6 +476,24 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, unsigned long ui32New
 			g_CommitType = MTK_GPU_DVFS_TYPE_CUSTOMIZATION;
 		}
 
+#ifdef CONFIG_MACH_AC8257
+		/*
+		 * LibreHU bounds (dfrgx min_freq / max_freq, an OPP kept through
+		 * gpufreq_opp_freq): mt_gpufreq_target() applies them, so aim within
+		 * them. Outside, the request never matched the OPP set and each DVFS
+		 * period committed it again, a clock change handshake with the GPU
+		 * for nothing.
+		 */
+		if (ui32NewFreqID > mt_gpufreq_get_soft_min_idx()) {
+			ui32NewFreqID = mt_gpufreq_get_soft_min_idx();
+			g_CommitType = MTK_GPU_DVFS_TYPE_CUSTOMIZATION;
+		}
+		if (ui32NewFreqID < mt_gpufreq_get_soft_max_idx()) {
+			ui32NewFreqID = mt_gpufreq_get_soft_max_idx();
+			g_CommitType = MTK_GPU_DVFS_TYPE_CUSTOMIZATION;
+		}
+#endif
+
 		/* up bound */
 		if (ui32NewFreqID < g_cust_upbound_freq_id) {
 			ui32NewFreqID = g_cust_upbound_freq_id;
