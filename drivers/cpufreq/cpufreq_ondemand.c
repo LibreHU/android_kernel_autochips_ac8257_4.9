@@ -121,7 +121,13 @@ static void dbs_freq_increase(struct cpufreq_policy *policy, unsigned int freq)
 	if (od_tuners->powersave_bias)
 		freq = od_ops.powersave_bias_target(policy, freq,
 				CPUFREQ_RELATION_H);
-	else if (policy->cur == policy->max)
+	/*
+	 * With a CPUFREQ_NEED_UPDATE_LIMITS driver policy->cur may be held at the
+	 * maximum by the driver's own limits (a boost floor), not by this
+	 * governor's request: make the request anyway.
+	 */
+	else if (policy->cur == policy->max &&
+		 !cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS))
 		return;
 
 	__cpufreq_driver_target(policy, freq, od_tuners->powersave_bias ?
