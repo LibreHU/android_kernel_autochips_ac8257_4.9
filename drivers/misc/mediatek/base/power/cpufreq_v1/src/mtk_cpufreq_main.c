@@ -1866,7 +1866,16 @@ static struct freq_attr *_mt_cpufreq_attr[] = {
 };
 
 static struct cpufreq_driver _mt_cpufreq_driver = {
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CONFIG_MACH_AC8257)
+	/*
+	 * policy->cur is the frequency the SSPM runs at (its receive thread), which the SSPM bounds
+	 * (boosts, thermal) can hold away from the last request: a request equal to policy->cur still
+	 * has to reach the SSPM, or the previous request, maybe another governor's, stays in force.
+	 */
+	.flags = CPUFREQ_ASYNC_NOTIFICATION | CPUFREQ_NEED_UPDATE_LIMITS,
+#else
 	.flags = CPUFREQ_ASYNC_NOTIFICATION,
+#endif
 	.verify = _mt_cpufreq_verify,
 	.target = _mt_cpufreq_target,
 	.init = _mt_cpufreq_init,
