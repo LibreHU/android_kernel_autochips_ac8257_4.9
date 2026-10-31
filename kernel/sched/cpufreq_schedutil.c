@@ -785,7 +785,14 @@ static void sugov_limits(struct cpufreq_policy *policy)
 {
 	struct sugov_policy *sg_policy = policy->governor_data;
 
-	if (!policy->fast_switch_enabled) {
+	/*
+	 * Not for a CPUFREQ_NEED_UPDATE_LIMITS driver: cpufreq_policy_apply_limits() compares the
+	 * limits with policy->cur, which such a driver may keep at the frequency the hardware runs
+	 * at (mt-cpufreq with the SSPM DVFS), and its request would replace the governor's. The
+	 * next update gives it the request computed within the new limits (need_freq_update).
+	 */
+	if (!policy->fast_switch_enabled &&
+	    !cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS)) {
 		mutex_lock(&sg_policy->work_lock);
 		cpufreq_policy_apply_limits(policy);
 		mutex_unlock(&sg_policy->work_lock);

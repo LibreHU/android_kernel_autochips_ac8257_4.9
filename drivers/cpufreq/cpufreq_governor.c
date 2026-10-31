@@ -550,7 +550,14 @@ void cpufreq_dbs_governor_limits(struct cpufreq_policy *policy)
 	struct policy_dbs_info *policy_dbs = policy->governor_data;
 
 	mutex_lock(&policy_dbs->timer_mutex);
-	cpufreq_policy_apply_limits(policy);
+	/*
+	 * Not for a CPUFREQ_NEED_UPDATE_LIMITS driver: cpufreq_policy_apply_limits() compares the
+	 * limits with policy->cur, which such a driver may keep at the frequency the hardware runs
+	 * at (mt-cpufreq with the SSPM DVFS), and its request would replace the governor's. The
+	 * next sample, due at once below, gives it the request computed within the new limits.
+	 */
+	if (!cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS))
+		cpufreq_policy_apply_limits(policy);
 	gov_update_sample_delay(policy_dbs, 0);
 
 	mutex_unlock(&policy_dbs->timer_mutex);
