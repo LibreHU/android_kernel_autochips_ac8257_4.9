@@ -1,5 +1,12 @@
 # Noyau LibreHU pour l'UJC201 (Jancar, Autochips AC8257)
 
+> **Branche gelee depuis le 01/11/2026** : plus de travail ni de compilation ici. Le travail continue sur
+> [`stable-4.9.337`](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/tree/stable-4.9.337)
+> (`LibreHU-main` + les correctifs linux-stable jusqu'a 4.9.337, et tous les correctifs LibreHU depuis), seule
+> branche compilee par la CI. Le dernier build de `LibreHU-main` (`r105`, release `latest-LibreHU-main`) reste dans
+> l'OTA (zips `kernel-librehu` et `kernel-librehu-bootmenu`). Le texte ci-dessous decrit la branche telle qu'elle
+> etait a ce moment-la.
+
 Noyau Linux 4.9.117 de l'autoradio Jancar UJC201 (SoC Autochips AC8257), construit sur les **sources GPL officielles
 d'Autochips** recues de SIXWIN / Jancar le 19/10/2026, auxquelles on ajoute les modifications LibreHU.
 

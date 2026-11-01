@@ -1,8 +1,10 @@
 # Compiler et tester le noyau `LibreHU-main` (base Autochips)
 
 ## CI
-`.github/workflows/build.yml` compile chaque push sur `LibreHU-main` et `connectivity-builtin` (lancement manuel possible)
-et publie en artefacts :
+`.github/workflows/build.yml` compilait chaque push sur `LibreHU-main` et `connectivity-builtin` (lancement manuel
+possible). **Depuis le 01/11/2026, seule `stable-4.9.337` est compilee** (avec son propre `build.yml`) : ces deux
+branches ne le sont plus et gardent leur derniere release, dont viennent toujours leurs zips de l'OTA. Il publiait en
+artefacts :
 - `Image.gz-dtb`, `config` ;
 - `recovery_test_ac8257.img` : 32 Mio, vbmeta du recovery stock, pour le test depuis la partition recovery ;
 - `boot_ac8257.img` : 10 Mio, vbmeta du boot (partition boot normale) ;
