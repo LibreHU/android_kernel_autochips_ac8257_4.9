@@ -1,14 +1,21 @@
-# Mises a jour linux-stable 4.9.y (branches `stable-4.9.*`)
+# Mises a jour linux-stable 4.9.y (`stable-4.9.337` et branches `legacy-4.9.*`)
 
 Le paquet Autochips est un Linux **4.9.117** (aout 2018) ; la branche 4.9 s'est arretee a **4.9.337** (7 janvier 2023,
 derniere version de Greg Kroah-Hartman). On rattrape les 220 versions par lots, une branche par lot, testee sur
 l'unite avant la suivante, puis tout revient dans `LibreHU-main`.
 
+**Depuis le 01/11/2026**, seule `stable-4.9.337` (le dernier lot, qui contient les six autres) est suivie :
+correctifs, CI a chaque push, zips de l'OTA. Les lots 1 a 6 sont devenus les branches **`legacy-4.9.<N>`**
+(`stable-4.9.<N>` renommees) : non maintenues et hors OTA, elles servent seulement a retrouver le lot linux-stable
+qui a casse quelque chose ([Branches legacy](#branches-legacy)). Le texte des lots plus bas garde les noms de
+l'epoque.
+
 ## Methode
 - **Branches empilees** : `stable-4.9.150` part de `LibreHU-main`, `stable-4.9.200` de `stable-4.9.150`, etc. On ne
   cree la suivante qu'une fois la precedente validee sur l'unite ; une correction dans un lot est fusionnee dans les
-  suivants. La CI construit toute branche `stable-4.9.*` et publie la prerelease `latest-<branche>` (pas de zip dans
-  LibreHU Apps : flashablesZips ne prend que les branches declarees).
+  suivants. La CI construit a chaque push toute branche `stable-4.9.*` (les `legacy-4.9.*` a la demande seulement) et
+  publie la prerelease `latest-<branche>` (pas de zip dans LibreHU Apps : flashablesZips ne prend que les branches
+  declarees, `stable-4.9.337` seule depuis le 01/11/2026).
 - **Source** : les commits officiels de linux-stable (`git fetch stable` sur
   `https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git`, tags `v4.9.117`..`v4.9.337`), appliques un par
   un dans l'ordre par `tools/stable/apply.py` avec `git am -3` (fusion a trois voies). Auteur et message d'origine
@@ -46,8 +53,8 @@ nom deja charge) ; s'il le fait avant, ils echouent sur les CRC et les notres pr
 `/data/adb/modules/librehu_connectivity/last.log`. Outil : `tools/stable/conn_ksu_module.sh`.
 
 **Sans KernelSU : zips TWRP** du depot [LibreHU-flashablesZips](https://github.com/LibreHU/LibreHU-flashablesZips)
-(LibreHU Apps -> Zips -> Noyau), deux par branche `stable-4.9.<N>` (150, 200, 225, 250, 300, 319, 337), faits depuis
-sa release `latest-stable-4.9.<N>` :
+(LibreHU Apps -> Zips -> Noyau), deux pour la branche `stable-4.9.<N>` suivie (`<N>` = 337 ; ceux des lots 150 a 319
+retires le 01/11/2026), faits depuis sa release `latest-stable-4.9.<N>` :
 - `kernel-stable-4.9.<N>` : le noyau (`boot_ac8257_bootmenu.img`) **et** ses modules en une fois ; tout est verifie
   avant d'ecrire (empreintes, noyau de l'image = celui des modules, dm-verity, memoire interne), `boot` sauvegarde ;
 - `conn-modules-stable-4.9.<N>` : **modules seuls**, une fois ce noyau dans `boot` (`boot_ac8257.img` ou
@@ -93,15 +100,41 @@ Verification sur l'unite apres le nouveau noyau : `dmesg | grep -c latest_notif`
 
 | Branche | Versions | Etat |
 |---|---|---|
-| `stable-4.9.150` | 4.9.118 -> 4.9.150 | **valide sur l'unite** (demarrage, Wi-Fi, partage de connexion, Bluetooth, FM ; installation durable) |
-| `stable-4.9.200` | 4.9.151 -> 4.9.200 | applique, compile (noyau + modules de connectivite) ; **a tester sur l'unite** |
-| `stable-4.9.225` | 4.9.201 -> 4.9.225 | applique, compile ; **a tester sur l'unite** |
-| `stable-4.9.250` | 4.9.226 -> 4.9.250 | applique, compile ; **a tester sur l'unite** |
-| `stable-4.9.300` | 4.9.251 -> 4.9.300 | applique, compile ; **a tester sur l'unite** (CVE-2021-0920 af_unix, binder CVE-2021-39686) |
-| `stable-4.9.319` | 4.9.301 -> 4.9.319 | applique, compile ; **a tester sur l'unite** (Spectre-BHB arm64) |
-| `stable-4.9.337` | 4.9.320 -> 4.9.337 | applique, compile ; **a tester sur l'unite** (reecriture de `random.c`) |
+| `legacy-4.9.150` (ex `stable-4.9.150`) | 4.9.118 -> 4.9.150 | **valide sur l'unite** (demarrage, Wi-Fi, partage de connexion, Bluetooth, FM ; installation durable) ; legacy |
+| `legacy-4.9.200` (ex `stable-4.9.200`) | 4.9.151 -> 4.9.200 | applique, compile (noyau + modules de connectivite) ; demarre sur l'unite (27/10, `r108`) ; legacy |
+| `legacy-4.9.225` (ex `stable-4.9.225`) | 4.9.201 -> 4.9.225 | applique, compile ; non teste sur l'unite ; legacy |
+| `legacy-4.9.250` (ex `stable-4.9.250`) | 4.9.226 -> 4.9.250 | applique, compile ; non teste sur l'unite ; legacy |
+| `legacy-4.9.300` (ex `stable-4.9.300`) | 4.9.251 -> 4.9.300 | applique, compile ; non teste sur l'unite (CVE-2021-0920 af_unix, binder CVE-2021-39686) ; legacy |
+| `legacy-4.9.319` (ex `stable-4.9.319`) | 4.9.301 -> 4.9.319 | applique, compile ; non teste sur l'unite (Spectre-BHB arm64) ; legacy |
+| `stable-4.9.337` | 4.9.320 -> 4.9.337 | applique, compile (reecriture de `random.c`) ; **teste sur l'unite le 27/10** (`r113`, voir le lot 7) ; seule branche suivie |
 
-## Lot 1 : `stable-4.9.150` (4.9.118 -> 4.9.150)
+## Branches legacy
+
+Le 01/11/2026, `stable-4.9.150`, `-200`, `-225`, `-250`, `-300` et `-319` sont devenues `legacy-4.9.150` ...
+`legacy-4.9.319` : meme historique (l'ancienne tete est un ancetre de la nouvelle, rien n'est retire), plus les
+correctifs LibreHU de `r126` a `r134` de `stable-4.9.337`, repris par `git cherry-pick -x` (auteur et message
+d'origine, `(cherry picked from commit ...)`), et un avertissement en tete du README de chacune. Elles ne sont plus
+maintenues ni dans l'OTA (zips retires de flashablesZips) : elles servent seulement a chercher **dans quel lot
+linux-stable** un probleme est apparu, en essayant deux lots voisins qui ont les memes correctifs LibreHU.
+
+Correctifs repris differemment selon le lot :
+- `e4e853475` (abandon MediaTek d'une enumeration USB avant `address0_mutex`) : `legacy-4.9.300` et `-319`
+  seulement ; avant 4.9.292 (« Fix locking issues with address0_mutex »), le defaut qu'il corrige n'existe pas ;
+- `ed422b649` (`android_setup()` sous `gi->spinlock`) : a partir de `legacy-4.9.225` ; `gi->spinlock` arrive avec
+  le `configfs_composite_setup()` du lot 3 ;
+- `a4cfbbb2d` (ports abandonnes pendant la veille re-enumeres a `resume_end`) : adapte sur `legacy-4.9.150` a `-250`,
+  ou l'abandon MediaTek est encore a sa place d'origine dans la boucle de `hub_port_connect()` : le port y est
+  marque (« Backport notes » et `(backported from commit ...)` dans le message) ;
+- documentation : en cas de conflit, le texte de `stable-4.9.337`, qui decrit les memes correctifs.
+
+Compilation : le workflow ne construit a chaque push que `LibreHU-main` et `stable-4.9.*` ; une branche legacy se
+construit a la demande (`gh workflow run build.yml --ref legacy-4.9.<N>`, ou GitHub -> Actions -> Build AC8257
+kernel -> Run workflow), qui publie la prerelease `latest-legacy-4.9.<N>` (`boot_ac8257.img`,
+`boot_ac8257_bootmenu.img`, `recovery_test_ac8257.img`, `librehu_connectivity_ksu.zip`). Toutes compilees le
+01/11/2026 (runs 135 a 140). Essai d'un lot : methode du lot 1 ([A tester sur l'unite](#a-tester-sur-lunite)) avec
+cette prerelease ; avec `recovery_test`, un redemarrage normal revient au noyau de `boot`.
+
+## Lot 1 : `legacy-4.9.150`, ex `stable-4.9.150` (4.9.118 -> 4.9.150)
 
 2178 commits linux-stable : **2086 appliques tels quels**, 11 avec un conflit resolu a la
 main, 4 avec un conflit dont les lignes amont etaient deja la,
@@ -228,7 +261,7 @@ Methode sans risque (la partition boot n'est pas touchee) : `recovery_test_ac825
 
 Resultat a reporter ici et dans [STATUS.md](STATUS.md).
 
-## Lot 2 : `stable-4.9.200` (4.9.151 -> 4.9.200)
+## Lot 2 : `legacy-4.9.200`, ex `stable-4.9.200` (4.9.151 -> 4.9.200)
 
 Branche empilee sur `stable-4.9.150` (correctifs de connectivite compris). 3043 commits linux-stable :
 **2975 appliques tels quels**, 21 avec un conflit resolu a la main, 4 avec un conflit dont les lignes amont etaient
@@ -267,7 +300,7 @@ Avec le correctif KernelSU (seqno AVC) : `Boot is finished (13805 ms)`, launcher
 charges par les scripts du vendor en ~1 s (`wmt_loader: do kernel module init succeed`) ; Wi-Fi (p2p0 connecte),
 Bluetooth (firmware configure) et GNSS demarres. Pas encore verifies : MCU / CAN, veille, FM, USB, camera, son.
 
-## Lot 3 : `stable-4.9.225` (4.9.201 -> 4.9.225)
+## Lot 3 : `legacy-4.9.225`, ex `stable-4.9.225` (4.9.201 -> 4.9.225)
 
 Branche empilee sur `stable-4.9.200` (avec la mise a jour KernelSU Next v3.4.2-legacy). 2552 commits linux-stable :
 **2529 appliques tels quels**, 12 avec un conflit resolu a la main, 1 avec un conflit dont les lignes amont etaient
@@ -299,7 +332,7 @@ derniers seulement : toute la branche maintenant.
 Comme le lot 2, en insistant sur l'USB (adb, CarPlay, cle, Ethernet), la mise en veille, la temperature (zones
 thermiques) et le son.
 
-## Lot 4 : `stable-4.9.250` (4.9.226 -> 4.9.250)
+## Lot 4 : `legacy-4.9.250`, ex `stable-4.9.250` (4.9.226 -> 4.9.250)
 
 Branche empilee sur `stable-4.9.225`. 1956 commits linux-stable : **1948 appliques tels quels**, 2 avec un conflit
 resolu a la main, 1 en partie (conflit dans un fichier non compile), 3 deja presents (1 identique, 2 sous une forme
@@ -328,7 +361,7 @@ chaud.
 Comme le lot 3, en insistant sur la MCU (touches au volant, CAN : UART 8250) et le Wi-Fi / partage de connexion
 (`af_packet`).
 
-## Lot 5 : `stable-4.9.300` (4.9.251 -> 4.9.300)
+## Lot 5 : `legacy-4.9.300`, ex `stable-4.9.300` (4.9.251 -> 4.9.300)
 
 Branche empilee sur `stable-4.9.250`. 2693 commits linux-stable : **2659 appliques tels quels**, 15 avec un conflit
 resolu a la main, 3 avec un conflit dont les lignes amont etaient deja la, 1 en partie, 4 deja presents, 11 ignores
@@ -370,14 +403,15 @@ Bluetooth de l'unite passe par le pilote MediaTek.)
   de la boucle de `hub_port_connect()` et ne les rend plus sur le chemin `done:`. L'abandon MediaTek d'une
   enumeration pendant l'entree en veille ou un reboot (`goto done` juste apres `usb_alloc_dev()`) sortait donc avec
   les deux verrous tenus : toute enumeration ou reset-resume suivant sur le bus restait bloque. Le test est fait
-  avant les verrous. `stable-4.9.300` et `-319` ont le meme defaut (branches non suivies).
+  avant les verrous. `stable-4.9.300` et `-319` avaient le meme defaut : corrige sur `legacy-4.9.300` et `-319` lors du
+  portage du 01/11/2026 (les lots 1 a 4 n'ont pas ce code).
 
 ### A tester sur l'unite
 Comme le lot 4, en insistant sur tout ce qui passe par binder et ION (demarrage complet, camera de recul, video,
 applications), le stockage eMMC (changement de partition : demarrage, OTA) et l'USB (cles, adb, CarPlay :
 voir l'audit du lot 7, `hub.c`).
 
-## Lot 6 : `stable-4.9.319` (4.9.301 -> 4.9.319)
+## Lot 6 : `legacy-4.9.319`, ex `stable-4.9.319` (4.9.301 -> 4.9.319)
 
 Branche empilee sur `stable-4.9.300`. 843 commits linux-stable : **829 appliques tels quels**, 7 avec un conflit
 resolu a la main, 1 avec un conflit dont les lignes amont etaient deja la, 1 deja present, 1 non repris (forme
@@ -461,7 +495,7 @@ ligne « deja presente » pouvait l'etre ailleurs dans le fichier. Les 15 cas de
 
 | Commit linux-stable | Lot | Fichier | Constat | Correction |
 |---|---|---|---|---|
-| `b13daa1c3d42` usb: hub: Fix usb enumeration issue due to address0 race | 5 | `drivers/usb/core/hub.c` | **`hub_port_init()` prenait encore `address0_mutex` deja tenu par ses appelants : blocage a chaque enumeration USB** | verrou retire (branches `stable-4.9.300` et suivantes) |
+| `b13daa1c3d42` usb: hub: Fix usb enumeration issue due to address0 race | 5 | `drivers/usb/core/hub.c` | **`hub_port_init()` prenait encore `address0_mutex` deja tenu par ses appelants : blocage a chaque enumeration USB** | verrou retire (`legacy-4.9.300`, `legacy-4.9.319`, `stable-4.9.337`) |
 | `32d782808b84` futex: Mark the begin of futex exit explicitly | 5 | `kernel/exit.c` | barriere `PF_EXITING` restee apres `exit_signals()` (redondante) | retiree comme en amont (300 et suivantes) |
 | `75b66cc00943` PM / core: Clear the direct_complete flag on errors | 1 | `drivers/base/power/main.c` | `direct_complete = false` manquait quand un reveil est en attente (contexte Android) | ajoute (toutes les branches) |
 | `796f458ad791` crypto: asymmetric_keys - select CRYPTO_HASH | 2 | `crypto/asymmetric_keys/Kconfig` | 2 `select` sur 3 manquaient (options non activees) | ajoutes (337) |
