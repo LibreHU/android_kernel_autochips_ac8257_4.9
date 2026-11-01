@@ -509,7 +509,7 @@ ligne « deja presente » pouvait l'etre ailleurs dans le fichier. Les 15 cas de
 
 ## Veille et reprise
 
-Etat au 31/10/2026, branche `stable-4.9.337`.
+Etat au 01/11/2026, branche `stable-4.9.337`.
 
 - **Extinction des coeurs** (29/10, toutes les branches stable, `0ac5529bd` sur 337) : le `smpboot_park_threads()`
   d'AutoChips attend que tous les threads smpboot du coeur aient quitte la file d'execution ; depuis 4.9.120
@@ -548,3 +548,18 @@ I2C 6 0x40, pilote par LibreHU-service, perd probablement ses registres quand la
 | `630f95d9a` boot_state | si l'espace utilisateur n'ecrit pas `resume_end` 10 s apres une reprise, le noyau l'envoie lui-meme (`/sys/module/boot_state/parameters/resume_end_ms`, 0 = jamais) : sinon l'USB restait dans le mode « veille » d'AutoChips (une seule tentative d'enumeration, erreurs usb-storage non retentees, delais SCSI divises par deux) jusqu'a la veille suivante. QuickBoot l'ecrit deja (dmesg du 29/10) : filet de securite |
 | `a4cfbbb2d` usb hub | les ports dont l'enumeration a ete abandonnee pendant la veille (une seule tentative) sont re-enumeres a `resume_end`, avec toutes les tentatives : un peripherique lent a revenir apres la coupure de PB4 n'est plus a rebrancher. Ce n'est pas le correctif du DVD du 29/10 : ce jour-la le hub et le lecteur avaient ete repris (reset-resume), pas abandonnes |
 | `ed422b649` usb gadget | `android_setup()` (gadget Android, `CONFIG_USB_CONFIGFS_UEVENT`) sous `gi->spinlock`, comme `configfs_composite_setup()` du lot 3 : une requete SETUP pendant un changement de fonctions USB (adb, MTP, RNDIS, bascule CarPlay) pouvait utiliser la memoire liberee par `configfs_composite_unbind()` |
+
+- **Essai du 01/11 (`r134`, puis `r143`)** : veille d'environ 30 s, reveil par la MCU, `resume_end` envoye par
+  `system_server`. USB (hub, cle, lecteur CD : sommaire du disque relu au reveil) **OK**. Dalle noire, retroeclairage
+  allume : `jac_lcm_init()` tournait mais envoyait la table LVDS (`interface_client NULL`) au lieu de la table DSI,
+  car `r126` lisait la table a des index hors de la MetaZone (`0x101A5` / `0x102DB` ; la MetaZone a 500 valeurs et
+  200 entrees binaires). **Corrige en `r143`** (`4f489fde8` : table aux entrees binaires 165 a 199, soit `0x100A5`,
+  longueur en `0x101DB` ; verifie sur une copie de la MetaZone de l'unite : 86 commandes, 368 octets, comme le
+  journal du noyau stock), **valide sur l'unite le 01/11**.
+- **Son absent au reveil** (trace I2C du 01/11, `events/i2c` filtre sur le bus 6) : apres la reprise,
+  LibreHU-service renvoie au BD37534 volume, tonalites, faders, loudness, caisson et leve le mute (ecritures
+  acquittees), mais pas la sequence de demarrage de la puce ni le choix de l'entree (`0x01`, `0x03`, `0x05`,
+  `0x41` / `0x44` / `0x47`), perdus a la coupure de PB4 : la puce n'ecoute plus l'entree Android. Correctif a faire.
+- **adb apres la veille** : le port OTG repart en peripherique et le PC le reconnait (`USB_STATE=CONFIGURED`), mais
+  pendant qu'Android est encore gele ; adb ne se reconnecte qu'apres une bascule hote / peripherique
+  (LibreHU-service). Correctif a faire : rebrancher le port dans son role a `resume_end`.
