@@ -24,6 +24,11 @@
 
 #include <mt-plat/mtk_boot_common.h>
 #include <mt-plat/charger_type.h>
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+#include <linux/delay.h>
+#include <linux/notifier.h>
+#include "../../../autochips/inc/boot_state.h"
+#endif
 
 #ifdef FPGA_PLATFORM
 #include <linux/i2c.h>
@@ -2049,6 +2054,70 @@ void platform_musb_resume(struct musb* musb)
 #endif
 #endif
 
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+extern void mt_usb_host_connect(int delay);
+extern void mt_usb_host_disconnect(int delay);
+
+/*
+ * Port 0 after a real standby: the resume runs the device (or host) init of the port while userspace
+ * is still frozen. In device mode the host enumerates the gadget again at once (USB_STATE CONFIGURED),
+ * but adbd (FunctionFS) misses it, and no adb connection comes back until the data role is switched
+ * back and forth (dual_role_usb data_role, the USB mode of LibreHU-service), which disconnects and
+ * connects the port with userspace running. So at STATUS_RESUME_END, after a kernel resume, the port is
+ * disconnected and connected again in its current role, as that switch does.
+ * otg_replug_ms: how long it stays disconnected, 0 = never.
+ */
+static unsigned int otg_replug_ms = 300;
+module_param(otg_replug_ms, uint, 0644);
+MODULE_PARM_DESC(otg_replug_ms, "port 0 disconnected for this long (ms) at resume_end after a standby, 0 = off");
+
+static bool otg_resumed;
+
+static void otg_replug_work_func(struct work_struct *work)
+{
+	unsigned int gap = READ_ONCE(otg_replug_ms);
+
+	if (!mtk_musb || !gap)
+		return;
+
+	if (is_host_active(mtk_musb)) {
+		DBG(0, "port 0 replugged as host after the standby\n");
+		mt_usb_host_disconnect(0);
+		mt_usb_host_connect(gap);
+	} else {
+		DBG(0, "port 0 replugged as device after the standby\n");
+		mt_usb_dev_disconnect();
+		msleep(gap);
+		mt_usb_connect();
+	}
+}
+
+static DECLARE_WORK(otg_replug_work, otg_replug_work_func);
+
+static int otg_bs_notify(struct notifier_block *nb, unsigned long event, void *data)
+{
+	switch (event) {
+	case STATUS_RESUME_START:
+		/* boot_state syscore resume: a kernel resume, interrupts off */
+		otg_resumed = true;
+		break;
+	case STATUS_RESUME_END:
+		if (otg_resumed) {
+			otg_resumed = false;
+			schedule_work(&otg_replug_work);
+		}
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block otg_bs_nb = {
+	.notifier_call = otg_bs_notify,
+};
+#endif
+
 static int __init usb20_init(void)
 {
 	int ret;
@@ -2063,6 +2132,10 @@ static int __init usb20_init(void)
 #endif
 
 	ret = platform_driver_register(&mt_usb_driver);
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	if (!ret)
+		register_bs_notifer(&otg_bs_nb);
+#endif
 
 #ifdef FPGA_PLATFORM
 	add_usb_i2c_driver();
