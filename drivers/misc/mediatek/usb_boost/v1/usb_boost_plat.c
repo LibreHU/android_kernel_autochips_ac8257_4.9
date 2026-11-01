@@ -23,9 +23,17 @@
 /* platform specific parameter here */
 
 #if defined(CONFIG_MACH_AC8257)
-static int cpu_freq_test_para[] = {1, 5, 500, 0};
-static int cpu_core_test_para[] = {1, 5, 500, 0};
-static int dram_vcore_test_para[] = {1, 5, 500, 0};
+/*
+ * {enable, timeout s, poll_intval ms, raw}. Off by default on the AC8257: every MTP or mass
+ * storage transfer to a PC held the CPU at 2.5 GHz at least (OPP 1, capped by scaling_max_freq),
+ * kept MCDI off and the DRAM at OPP 0 for 5 s, and a PC that polls MTP renewed it all the time,
+ * whatever the governor or scaling_min_freq. Turn each on and tune it from
+ * /sys/class/usb_boost/<cpu_freq|cpu_core|dram_vcore>/enable, timeout and poll_intval, and set the
+ * CPU floor in kHz in /sys/class/usb_boost/cpu_freq/arg1; the AutoChips values are kept below.
+ */
+static int cpu_freq_test_para[] = {0, 5, 500, 0};
+static int cpu_core_test_para[] = {0, 5, 500, 0};
+static int dram_vcore_test_para[] = {0, 5, 500, 0};
 
 /* -1 denote not used*/
 struct act_arg_obj cpu_freq_test_arg = {2500000, -1, -1};
