@@ -559,7 +559,12 @@ I2C 6 0x40, pilote par LibreHU-service, perd probablement ses registres quand la
 - **Son absent au reveil** (trace I2C du 01/11, `events/i2c` filtre sur le bus 6) : apres la reprise,
   LibreHU-service renvoie au BD37534 volume, tonalites, faders, loudness, caisson et leve le mute (ecritures
   acquittees), mais pas la sequence de demarrage de la puce ni le choix de l'entree (`0x01`, `0x03`, `0x05`,
-  `0x41` / `0x44` / `0x47`), perdus a la coupure de PB4 : la puce n'ecoute plus l'entree Android. Correctif a faire.
+  `0x41` / `0x44` / `0x47`), perdus a la coupure de PB4 : la puce n'ecoute plus l'entree Android. Corrige dans
+  LibreHU-service (`be5f5cc`, 01/11) : a l'allumage d'ecran qui suit une suspension du SoC, `HeadUnit.reinitAudio()`
+  renvoie la sequence de demarrage, l'entree et tous les reglages ; a tester.
 - **adb apres la veille** : le port OTG repart en peripherique et le PC le reconnait (`USB_STATE=CONFIGURED`), mais
   pendant qu'Android est encore gele ; adb ne se reconnecte qu'apres une bascule hote / peripherique
-  (LibreHU-service). Correctif a faire : rebrancher le port dans son role a `resume_end`.
+  (LibreHU-service). **Corrige en `r144`** (`8c0f114d1`) : a `STATUS_RESUME_END` apres une reprise du noyau, le port
+  est deconnecte puis reconnecte dans son role (peripherique : `mt_usb_dev_disconnect()` / `mt_usb_connect()` ;
+  hote : `mt_usb_host_disconnect()` / `mt_usb_host_connect()`), comme cette bascule ; duree de la deconnexion :
+  `/sys/module/usb20/parameters/otg_replug_ms` (300 ms, 0 = coupe) ; a tester.
