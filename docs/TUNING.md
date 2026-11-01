@@ -114,8 +114,39 @@ Lecture des valeurs :
 - Planchers en vigueur : boost tactile noyau `ktch` (1183 MHz doigt pose, `/proc/perfmgr/tchbst/kernel/`), boost
   LibreHU (1533 MHz pendant 100 ms, `ac8257_input_boost`), demandes du vendor par
   `/proc/perfmgr/boost_ctrl/cpu_ctrl/` (`perfserv_freq` du HAL power, `boot_freq` des scripts d'init, resume dans
-  `current_freqy`). Le plus haut l'emporte, sous `scaling_max_freq` et `max_khz`. `usrtch` n'est pas compile
-  (il depend de `CONFIG_MTK_FPSGO`).
+  `current_freqy`), boost USB (coupe par defaut depuis `r134`, ci-dessous). Le plus haut l'emporte, sous
+  `scaling_max_freq` et `max_khz`. `usrtch` n'est pas compile (il depend de `CONFIG_MTK_FPSGO`).
+
+### Boost USB (`r134`, 01/11/2026)
+
+Le boost USB de MediaTek, regle par Autochips pour l'AC8257, s'active a chaque transfert MTP ou stockage de masse
+avec un PC. Il impose alors trois choses jusqu'a 5 s apres le dernier transfert : CPU a 2,5 GHz au moins (plafonne
+par `scaling_max_freq`), sommeil profond des coeurs (MCDI) coupe, DRAM au maximum. Un PC qui interroge le MTP le
+relancait sans cesse. Releve du 01/11/2026 : en powersave avec un minimum de 1,5 GHz, CPU a 2,2 GHz, avec
+`current_freqy` a `min:2500000`. **Coupe par defaut depuis `r134`**, reglable :
+
+| Fichier (`/sys/class/usb_boost/`) | Defaut | Role |
+|---|---|---|
+| `cpu_freq/enable` | 0 | plancher CPU pendant les transferts (1 = actif) |
+| `cpu_freq/arg1` | 2500000 | ce plancher en kHz (plafonne par `scaling_max_freq`) ; pris en compte tout de suite |
+| `cpu_freq/timeout` | 5 | duree en secondes apres le dernier transfert |
+| `cpu_core/enable` | 0 | coupe le sommeil profond des coeurs pendant les transferts (latence 50 us) |
+| `dram_vcore/enable` | 0 | DRAM au maximum (OPP 0) pendant les transferts |
+| `cpu_core/timeout`, `dram_vcore/timeout` | 5 | idem pour ces deux boosts |
+| `*/poll_intval` | 500 | intervalle de verification de la fin, en ms (10 au moins) |
+
+Avant `r134`, tous ces fichiers etaient en `0400` : sysfs refuse alors l'ecriture, meme a root, et rien n'etait
+reglable. Etat : `ro_is_running` (`true` pendant un boost) et `ro_work_cnt` (nombre de boosts depuis le
+demarrage), lisibles par root.
+
+Dans SmartPack-Kernel Manager ([Custom Controls](https://smartpack.github.io/spkm/customcontrols/)) :
+- interrupteur : « Custom Controls », « + », « Switch », fichier `/sys/class/usb_boost/cpu_freq/enable` (de meme
+  `cpu_core/enable` et `dram_vcore/enable`) ;
+- valeur : « + », « Generic », fichier `/sys/class/usb_boost/cpu_freq/arg1` (plancher en kHz, par exemple
+  1700000) et `/sys/class/usb_boost/cpu_freq/timeout` (secondes).
+Si le selecteur de fichiers ne suit pas le lien `/sys/class/usb_boost/`, les memes fichiers sont dans
+`/sys/devices/virtual/usb_boost/`. La documentation de SmartPack ne dit pas si ces controles sont reappliques au
+demarrage : apres un redemarrage, le noyau repart a 0 (coupe).
 
 ## GPU (PowerVR GE8300)
 
