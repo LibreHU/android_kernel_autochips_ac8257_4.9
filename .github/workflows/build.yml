@@ -9,9 +9,14 @@ name: Build AC8257 kernel
 # Branch LibreHU-main: AutoChips GPL kernel (autochips-gpl) + the LibreHU changes ported from reverse-engineering.
 # Branch connectivity-builtin: LibreHU-main + Wi-Fi / BT / GPS / FM drivers built in (docs/CONNECTIVITY.md).
 
+# Frozen since 01/11/2026: only stable-4.9.337 is built (with its own copy of this file). This branch is no
+# longer rebuilt: pushes do not trigger this workflow and a manual run here is skipped. Its last release
+# (latest-connectivity-builtin, r106) stays, and the OTA zips kernel-connectivity and kernel-connectivity-bootmenu
+# still come from it.
+
 on:
   push:
-    branches: [LibreHU-main, connectivity-builtin]
+    branches: [stable-4.9.337]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -43,6 +48,7 @@ permissions:
 
 jobs:
   build:
+    if: github.ref_name == 'stable-4.9.337'
     # ubuntu-22.04: last runner image with a python2 package (the AutoChips DTS generator needs it)
     runs-on: ubuntu-22.04
     timeout-minutes: 120
