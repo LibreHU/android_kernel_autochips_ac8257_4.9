@@ -53,6 +53,13 @@ avant. `/vendor` n'est pas touche. Si un script init du vendor charge ses module
 nom deja charge) ; s'il le fait avant, ils echouent sur les CRC et les notres prennent le relais. Journal :
 `/data/adb/modules/librehu_connectivity/last.log`. Outil : `tools/stable/conn_ksu_module.sh`.
 
+Corrige le 01/11/2026 (`6060e1ebb`, `r145`) : la CI compilait `Image.gz-dtb` puis lancait un second `make modules`,
+qui reliait `vmlinux` une deuxieme fois (chaque `make` reecrit `compile.h` : numero de build et date de la banniere).
+L'image restait `#1`, `vmlinux` passait `#2`, et le module KernelSU, qui compare `/proc/version` a la banniere de
+`vmlinux`, se croyait sur un autre noyau et ne chargeait rien (« other kernel: nothing loaded »). Les modules eux-memes
+allaient avec le noyau (memes symboles et CRC) : les zips TWRP, qui ne comparent pas la banniere, n'etaient pas touches.
+Image et modules sont maintenant compiles par un seul `make`.
+
 **Sans KernelSU : zips TWRP** du depot [LibreHU-flashablesZips](https://github.com/LibreHU/LibreHU-flashablesZips)
 (LibreHU Apps -> Zips -> Noyau), deux pour la branche `stable-4.9.<N>` suivie (`<N>` = 337 ; ceux des lots 150 a 319
 retires le 01/11/2026), faits depuis sa release `latest-stable-4.9.<N>` :
