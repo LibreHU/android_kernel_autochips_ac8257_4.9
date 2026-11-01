@@ -1,5 +1,12 @@
 # Noyau LibreHU pour l'UJC201 (Jancar, Autochips AC8257)
 
+> **Branche legacy `legacy-4.9.300`** (ex-`stable-4.9.300`, 01/11/2026) : plus maintenue et retiree de l'OTA. Elle sert
+> seulement de point de comparaison, pour savoir si un lot de correctifs linux-stable a casse quelque chose
+> (bisection). Elle contient les correctifs LibreHU de `stable-4.9.337` jusqu'a `r134` (veille, ecran, tactile,
+> USB, cpufreq / thermique / GPU, boost USB coupe par defaut), adaptes a cette version ; les nouveaux correctifs ne
+> vont plus que sur `stable-4.9.337`. La CI ne la compile plus a chaque envoi : la lancer a la main (« Run
+> workflow » sur `legacy-4.9.300`), release `latest-legacy-4.9.300`.
+
 Noyau Linux 4.9.117 de l'autoradio Jancar UJC201 (SoC Autochips AC8257), construit sur les **sources GPL officielles
 d'Autochips** recues de SIXWIN / Jancar le 19/10/2026, auxquelles on ajoute les modifications LibreHU.
 
