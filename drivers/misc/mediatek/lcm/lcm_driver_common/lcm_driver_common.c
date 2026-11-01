@@ -112,7 +112,7 @@
 
 #define JAC_MZ_LCM_TYPE				0x1019C
 #define JAC_MZ_LCD_POWER_DELAY			0x101A4
-#define JAC_MZ_MIPI_TABLE			0x101A5	/* binary items of 100 bytes */
+#define JAC_MZ_MIPI_TABLE			0x100A5	/* binary items 165 to 199, 100 bytes each */
 #define JAC_MZ_MIPI_TABLE_ITEMS			35
 #define JAC_MZ_MIPI_LANE			0x101DA
 #define JAC_MZ_MIPI_CLK				0x101DC
@@ -126,7 +126,7 @@
 #define JAC_MZ_HBP				0x101E8
 #define JAC_MZ_HPW				0x101E9
 #define JAC_MZ_BIT				0x101EE
-#define JAC_MZ_MIPI_TABLE_LEN			0x102DB
+#define JAC_MZ_MIPI_TABLE_LEN			0x101DB	/* DWORD 475 */
 
 #define JAC_CONFIG_ENABLE_MAGIC			0x51525354
 #define JAC_MIPI_ITEM_LEN			100
