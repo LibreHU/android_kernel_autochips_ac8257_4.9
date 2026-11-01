@@ -236,7 +236,8 @@ the kernel log). Remove with `CONFIG_KSU=n`.
 
 ## GitHub Actions
 
-`.github/workflows/build.yml` builds `Image.gz-dtb` at each push on reverse-engineering (changes outside `docs/` and
+Since 01/11/2026 this branch is no longer built: only `stable-4.9.337` is (with its own `build.yml`). Before that,
+`.github/workflows/build.yml` built `Image.gz-dtb` at each push on reverse-engineering (changes outside `docs/` and
 `*.md`) and on demand ("Run workflow", with the recovery command line as input). It fetches the AOSP GCC 4.9
 toolchain (LineageOS mirror, pinned commit), builds with `ac8257_demo_defconfig` and packs:
 
