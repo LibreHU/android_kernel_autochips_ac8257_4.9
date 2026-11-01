@@ -98,11 +98,13 @@ jobs:
       - name: Build Image.gz-dtb
         run: |
           set -o pipefail
-          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" Image.gz-dtb 2>&1 | tee build.log
-          # stable-4.9.* branches: the connectivity drivers as modules (CONFIG_LIBREHU_CONN_MODULES, docs/STABLE.md)
-          if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then
-            make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" modules 2>&1 | tee -a build.log
-          fi
+          # stable-4.9.* branches: the connectivity drivers as modules (CONFIG_LIBREHU_CONN_MODULES, docs/STABLE.md).
+          # One make for both: each make writes a new compile.h (build number and date in the banner) and relinks
+          # vmlinux, so a second "make modules" left an Image #1 and a vmlinux #2, and the KernelSU module, which
+          # compares /proc/version with the banner of vmlinux, saw another kernel and loaded nothing.
+          TARGETS=Image.gz-dtb
+          grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config && TARGETS="$TARGETS modules"
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" $TARGETS 2>&1 | tee build.log
 
       - name: Pack images
         env:
