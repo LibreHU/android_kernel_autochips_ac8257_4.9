@@ -390,6 +390,9 @@ static ssize_t attr_store(struct device *dev, struct device_attribute *attr,
 	}
 
 	ret = kstrtol(buf, 0, &tmp);
+	/* tmp is not set on a parse error: it was used anyway */
+	if (ret)
+		return ret;
 
 	switch (idx) {
 	/* normal usage */
@@ -402,7 +405,13 @@ static ssize_t attr_store(struct device *dev, struct device_attribute *attr,
 		boost_inst[i].para[idx] = (int)tmp;
 		break;
 	case ATTR_TIMEOUT:
+		/* seconds after the last USB transfer */
+		boost_inst[i].para[idx] = tmp < 0 ? 0 : (int)tmp;
+		break;
 	case ATTR_POLLING_INTVAL:
+		/* ms between two timeout checks of the boost worker: 0 made it spin */
+		boost_inst[i].para[idx] = tmp < 10 ? 10 : (int)tmp;
+		break;
 	case ATTR_RAW:
 		boost_inst[i].para[idx] = (int)tmp;
 		break;
@@ -444,6 +453,9 @@ static ssize_t attr_store(struct device *dev, struct device_attribute *attr,
 	/* ARG usage */
 	case ATTR_ARG1:
 		boost_inst[i].act_arg.arg1 = (int)tmp;
+		/* cpu_freq: a new floor applies now if a boost is in force */
+		if (i == TYPE_CPU_FREQ && boost_inst[i].is_running)
+			__boost_act(i, ACT_HOLD);
 		break;
 	case ATTR_ARG2:
 		boost_inst[i].act_arg.arg2 = (int)tmp;
@@ -535,6 +547,26 @@ static ssize_t attr_show(struct device *dev,
 	return count;
 }
 
+/*
+ * The settings a user changes (enable, timeout, poll_intval, and the floor arg1 of cpu_freq, the
+ * only type using it) are writable by root, from tuning apps (SmartPack-Kernel Manager custom
+ * controls) for instance; the rest stays read-only. Every attribute used to be 0400, and sysfs does
+ * not open a file without a write bit for writing, root included: nothing could be changed.
+ */
+static umode_t usb_boost_attr_mode(int type, int n)
+{
+	switch (n) {
+	case ATTR_ENABLE:
+	case ATTR_TIMEOUT:
+	case ATTR_POLLING_INTVAL:
+		return 0644;
+	case ATTR_ARG1:
+		return type == TYPE_CPU_FREQ ? 0644 : 0400;
+	default:
+		return 0400;
+	}
+}
+
 static int create_sys_fs(void)
 {
 	int i;
@@ -551,7 +583,7 @@ static int create_sys_fs(void)
 
 		for (n = 0; n < _ATTR_MAXID; n++) {
 			boost_inst[i].attr[n].attr.name = attr_name[n];
-				boost_inst[i].attr[n].attr.mode = 0400;
+			boost_inst[i].attr[n].attr.mode = usb_boost_attr_mode(i, n);
 			boost_inst[i].attr[n].show = attr_show;
 			boost_inst[i].attr[n].store = attr_store;
 
