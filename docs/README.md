@@ -21,8 +21,8 @@ reconstruit (branche `reverse-engineering`).
 |---|---|
 | `autochips-gpl` | paquet GPL Autochips tel que recu (SIXWIN / Jancar, 19/10/2026), jamais modifie |
 | `reverse-engineering` | noyau reconstruit (base publique MediaTek MT6761 + reverse engineering) ; reference |
-| `LibreHU-main` | **branche de travail** : `autochips-gpl` + nos modifications |
-| `stable-4.9.337` | `LibreHU-main` + correctifs linux-stable jusqu'a 4.9.337 ; les lots 1 a 6 sont en `legacy-4.9.*` (non maintenus, hors OTA, pour la bisection seulement) ([STABLE.md](STABLE.md)) |
+| `LibreHU-main` | `autochips-gpl` + nos modifications ; plus de travail ni de compilation depuis le 01/11/2026 (son dernier build reste dans l'OTA) |
+| `stable-4.9.337` | **branche de travail** depuis le 01/11/2026, seule compilee par la CI : `LibreHU-main` + correctifs linux-stable jusqu'a 4.9.337 ; les lots 1 a 6 sont en `legacy-4.9.*` (non maintenus, hors OTA, plus recompiles, pour la bisection seulement) ([STABLE.md](STABLE.md)) |
 
 Un nouvel envoi de Jancar (pilotes manquants) est ajoute tel quel sur `autochips-gpl`, puis
 `git merge autochips-gpl` sur `LibreHU-main`.

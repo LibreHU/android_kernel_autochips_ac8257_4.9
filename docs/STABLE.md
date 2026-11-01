@@ -4,18 +4,19 @@ Le paquet Autochips est un Linux **4.9.117** (aout 2018) ; la branche 4.9 s'est 
 derniere version de Greg Kroah-Hartman). On rattrape les 220 versions par lots, une branche par lot, testee sur
 l'unite avant la suivante, puis tout revient dans `LibreHU-main`.
 
-**Depuis le 01/11/2026**, seule `stable-4.9.337` (le dernier lot, qui contient les six autres) est suivie :
-correctifs, CI a chaque push, zips de l'OTA. Les lots 1 a 6 sont devenus les branches **`legacy-4.9.<N>`**
-(`stable-4.9.<N>` renommees) : non maintenues et hors OTA, elles servent seulement a retrouver le lot linux-stable
+**Depuis le 01/11/2026**, on ne travaille plus que sur `stable-4.9.337` (le dernier lot, qui contient les six
+autres), seule branche du noyau compilee par la CI : correctifs, CI a chaque push, zips de l'OTA. Les lots 1 a 6 sont
+devenus les branches **`legacy-4.9.<N>`** (`stable-4.9.<N>` renommees) : non maintenues, hors OTA et plus
+recompilees, elles servent seulement a retrouver le lot linux-stable
 qui a casse quelque chose ([Branches legacy](#branches-legacy)). Le texte des lots plus bas garde les noms de
 l'epoque.
 
 ## Methode
 - **Branches empilees** : `stable-4.9.150` part de `LibreHU-main`, `stable-4.9.200` de `stable-4.9.150`, etc. On ne
   cree la suivante qu'une fois la precedente validee sur l'unite ; une correction dans un lot est fusionnee dans les
-  suivants. La CI construit a chaque push toute branche `stable-4.9.*` (les `legacy-4.9.*` a la demande seulement) et
-  publie la prerelease `latest-<branche>` (pas de zip dans LibreHU Apps : flashablesZips ne prend que les branches
-  declarees, `stable-4.9.337` seule depuis le 01/11/2026).
+  suivants. La CI construit a chaque push `stable-4.9.337`, seule branche compilee depuis le 01/11/2026 (les
+  `legacy-4.9.*` ne sont plus recompilees), et publie la prerelease `latest-<branche>` (pas de zip dans LibreHU Apps :
+  flashablesZips ne prend que les branches declarees, `stable-4.9.337` seule).
 - **Source** : les commits officiels de linux-stable (`git fetch stable` sur
   `https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git`, tags `v4.9.117`..`v4.9.337`), appliques un par
   un dans l'ordre par `tools/stable/apply.py` avec `git am -3` (fusion a trois voies). Auteur et message d'origine
@@ -127,12 +128,11 @@ Correctifs repris differemment selon le lot :
   marque (« Backport notes » et `(backported from commit ...)` dans le message) ;
 - documentation : en cas de conflit, le texte de `stable-4.9.337`, qui decrit les memes correctifs.
 
-Compilation : le workflow ne construit a chaque push que `LibreHU-main` et `stable-4.9.*` ; une branche legacy se
-construit a la demande (`gh workflow run build.yml --ref legacy-4.9.<N>`, ou GitHub -> Actions -> Build AC8257
-kernel -> Run workflow), qui publie la prerelease `latest-legacy-4.9.<N>` (`boot_ac8257.img`,
-`boot_ac8257_bootmenu.img`, `recovery_test_ac8257.img`, `librehu_connectivity_ksu.zip`). Toutes compilees le
-01/11/2026 (runs 135 a 140). Essai d'un lot : methode du lot 1 ([A tester sur l'unite](#a-tester-sur-lunite)) avec
-cette prerelease ; avec `recovery_test`, un redemarrage normal revient au noyau de `boot`.
+Compilation : plus aucune (decision du 01/11/2026 : la CI ne compile que `stable-4.9.337`). Les derniers builds
+restent : prereleases `latest-legacy-4.9.<N>` des runs 135 a 140 du 01/11/2026 (`boot_ac8257.img`,
+`boot_ac8257_bootmenu.img`, `recovery_test_ac8257.img`, `librehu_connectivity_ksu.zip`), avec les correctifs LibreHU
+jusqu'a `r134`. Essai d'un lot : methode du lot 1 ([A tester sur l'unite](#a-tester-sur-lunite)) avec cette
+prerelease ; avec `recovery_test`, un redemarrage normal revient au noyau de `boot`.
 
 ## Lot 1 : `legacy-4.9.150`, ex `stable-4.9.150` (4.9.118 -> 4.9.150)
 

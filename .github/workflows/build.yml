@@ -6,11 +6,13 @@ name: Build AC8257 kernel
 #  - recovery_test_ac8257.img: 32 MiB, recovery vbmeta, for the recovery test
 #    method of docs/BUILD.md (fastboot flash recovery + fastboot oem reboot-recovery)
 #  - boot_ac8257.img: 10 MiB, boot vbmeta (normal boot partition)
-# Branch LibreHU-main: AutoChips GPL kernel (autochips-gpl) + the LibreHU changes ported from reverse-engineering.
+# Branch stable-4.9.337: LibreHU-main + the linux-stable fixes up to 4.9.337 (docs/STABLE.md), the only kernel
+# branch built since 01/11/2026. The other branches (LibreHU-main, connectivity-builtin, legacy-4.9.*) are no longer
+# rebuilt and keep their last release (the OTA zips of LibreHU-main and connectivity-builtin still come from it).
 
 on:
   push:
-    branches: [LibreHU-main, 'stable-4.9.*']
+    branches: [stable-4.9.337]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -42,6 +44,8 @@ permissions:
 
 jobs:
   build:
+    # Manual runs too: only stable-4.9.337 is built (a run started from another branch with this file is skipped)
+    if: github.ref_name == 'stable-4.9.337'
     # ubuntu-22.04: last runner image with a python2 package (the AutoChips DTS generator needs it)
     runs-on: ubuntu-22.04
     timeout-minutes: 120

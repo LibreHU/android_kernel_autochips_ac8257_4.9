@@ -1,8 +1,9 @@
 # Compiler et tester le noyau `LibreHU-main` (base Autochips)
 
 ## CI
-`.github/workflows/build.yml` compile chaque push sur `LibreHU-main` et `connectivity-builtin` (lancement manuel possible)
-et publie en artefacts :
+`.github/workflows/build.yml` compile chaque push sur `stable-4.9.337`, seule branche compilee depuis le 01/11/2026
+(lancement manuel possible sur cette branche seulement ; `LibreHU-main` et `connectivity-builtin` ne sont plus
+recompilees et gardent leur derniere release, dont viennent toujours leurs zips de l'OTA), et publie en artefacts :
 - `Image.gz-dtb`, `config` ;
 - `recovery_test_ac8257.img` : 32 Mio, vbmeta du recovery stock, pour le test depuis la partition recovery ;
 - `boot_ac8257.img` : 10 Mio, vbmeta du boot (partition boot normale) ;
@@ -12,8 +13,9 @@ et publie en artefacts :
   LK lui fait ignorer le ramdisk), `tools/ac8257/bootmenu_image.py` ; environ 290 Ko de marge dans les 10 Mio ;
 - `BUILD_INFO.txt` (commit, ligne de commande ajoutee, SHA-256).
 
-Les memes fichiers vont aussi dans la release **`latest-<branche>`** du depot ([latest-LibreHU-main](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/releases/tag/latest-LibreHU-main),
-[latest-connectivity-builtin](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/releases/tag/latest-connectivity-builtin), en pre-release), remplacee a chaque build,
+Les memes fichiers vont aussi dans la release **`latest-<branche>`** du depot ([latest-stable-4.9.337](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/releases/tag/latest-stable-4.9.337),
+en pre-release ; [latest-LibreHU-main](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/releases/tag/latest-LibreHU-main) et [latest-connectivity-builtin](https://github.com/LibreHU/android_kernel_autochips_ac8257_4.9/releases/tag/latest-connectivity-builtin)
+ne changent plus), remplacee a chaque build,
 avec `release.txt` (`version=r<build>-<commit>`, branche, commit, date). Pas de release pour un lancement manuel avec
 une autre ligne de commande. [LibreHU-flashablesZips](https://github.com/LibreHU/LibreHU-flashablesZips) en fait les
 zips TWRP de la categorie **Noyau** de LibreHU Apps (onglet Zips : flash par TWRP, ou ecriture directe de l'image en
