@@ -51,7 +51,7 @@ pas · ⬜ pas encore teste.
 | Connectivite | Wi-Fi client | ✅ | -59 dBm, 65 Mbit/s en 2,4 GHz |
 | Connectivite | Point d'acces, Wi-Fi Direct | ✅ | |
 | Connectivite | Bluetooth | ✅ | detection a distance, appairage, A2DP |
-| Connectivite | Radio FM | ✅ | avec RDS ; `r146` : mono force et remise en etat apres un balayage enfin transmis depuis une appli 32 bits ([docs/STABLE.md](docs/STABLE.md)) |
+| Connectivite | Radio FM | ✅ | avec RDS ; `r146` : mono force et remise en etat apres un balayage enfin transmis depuis une appli 32 bits ([docs/STABLE.md](docs/STABLE.md)) ; **essai de Reo Au In aux Etats-Unis avec `r146` (02/11/2026)** : region Ameriques (pas de 200 kHz, desaccentuation 75 µs envoyee au pilote) et RDS americain (RBDS) parfaits avec LibreHU FM |
 | Connectivite | GPS | ✅ | position a ±4 m, 21 satellites utilises (GPS, GLONASS, Galileo, BeiDou) |
 | Connectivite | Branche `connectivity-builtin` (pilotes integres au noyau) | ⬜ | CI verte (run 65), pas encore flashee |
 | USB / reseau | adb, USB peripherique | ✅ | |
