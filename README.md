@@ -26,7 +26,7 @@ pas · ⬜ pas encore teste.
 | Demarrage | Stabilite | ✅ | 40 min d'usage sans plantage, Geekbench 5 termine |
 | Stockage | eMMC, `/data` | ✅ | |
 | Stockage | Ecriture sur `/system` (`adb remount`) | ✅ | corrige : le noyau ne cree plus `mmc0/sw_wp_en` (absent du stock), qui faisait refuser les ecritures (EXT4 I/O error) |
-| Stockage | Etat du systeme de fichiers `/system` | 🟡 | 244 erreurs ext4 anciennes enregistrees (depuis le 13/10), aucune nouvelle ; `e2fsck -fn` (lecture seule) a faire depuis TWRP |
+| Stockage | Etat du systeme de fichiers `/system` | ✅ | **repare par `e2fsck` depuis TWRP (02/11/2026)** ; il y avait 244 erreurs ext4 anciennes (depuis le 13/10), aucune nouvelle depuis |
 | Systeme | Root KernelSU Next | ✅ | `su -c id` |
 | Systeme | Mise en veille / reprise | ✅ | **fonctionne sur l'unite (02/11/2026)** : au reveil, son, affichage et USB reviennent. Correctifs : dalle (`r143` : table d'init lue a ses vrais index de la MetaZone), port OTG rebranche (`r144`), puce son BD37534 reinitialisee par LibreHU-service ([docs/STABLE.md](docs/STABLE.md#veille-et-reprise)) |
 | Affichage | Ecran 1280 x 720, rotation | ✅ | rotation lue dans la metazone (`persist.sf.hwrotation=90`) |
@@ -42,7 +42,7 @@ pas · ⬜ pas encore teste.
 | CPU / GPU | 2,6 GHz | ⬜ | **instable a 1,10 V** (watchdog materiel apres 14 min) ; a retester a 1,05 V (`r129`) ; au-dela, plafond de Vsram de la SSPM ([docs/TUNING.md](docs/TUNING.md)) |
 | CPU / GPU | GPU 730 MHz, tensions reglables | ⬜ | |
 | CPU / GPU | Frequences du SoC, gouverneurs et limites min / max | ✅ | **fonctionnels sur l'unite (02/11/2026)** ; correctifs : limites qui restaient figees au changement de gouverneur et requetes bornees deux fois (`r131`), boost USB MediaTek coupe par defaut et reglable (`r134`, SmartPack, [docs/TUNING.md](docs/TUNING.md#boost-usb-r134-01112026)) ; OPP GPU fixe soumis au thermique |
-| CPU / GPU | Sondes de temperature | 🟡 | toutes OK sauf « batterie » a 0 °C (l'unite n'a pas de batterie ; a comparer au stock) |
+| CPU / GPU | Sondes de temperature | ✅ | toutes OK ; « batterie » (`mtktsbattery`) a 0 °C **comme avec le noyau stock** : l'unite n'a pas de batterie, sonde sans objet |
 | CPU / GPU | Temperatures en usage reel | ✅ | **60 °C au plus** apres 1 h 30 de conduite (02/11/2026), son a fond (ampli d'origine remplace par un TDA7560 de ST), gouverneur `schedplus` de MediaTek (celui que la ROM met au demarrage) avec boost tactile, CPU a 2,3 GHz au plus ; **au repos, bien plus froid** depuis que le boost USB MediaTek est coupe par defaut (`r134`) |
 | CPU / GPU | Politique thermique LibreHU | ⬜ | `r129` : CPU reset 125 °C, freins 105 °C, regulation 100 °C (CTM coupe) ; carte arret 105 °C, reset 107 °C (le vendor n'en active aucun) ; [docs/TUNING.md](docs/TUNING.md) |
 | Audio | Sortie audio (RCA) | ✅ | |
@@ -66,13 +66,13 @@ pas · ⬜ pas encore teste.
 | Vehicule | Frein a main, feux (ILL), ACC | ✅ | trames MCU `04`, `0B`, `00` |
 | Vehicule | `/dev/gpios_ioctl` (Jancar) | ✅ | pilote le commutateur video CVBS |
 | Vehicule | Metazone `/dev/mtz` | ✅ | lecture (rotation, format camera) |
-| Vehicule | Telecommande IR | ⬜ | |
+| Vehicule | Telecommande IR | ⬜ | pas de telecommande IR installee sur l'unite de test |
 | Vehicule | spidev, UART2 / UART3 | ⬜ | |
 | Video | CVBS IN 1 | ✅ | position AV (0/0) du commutateur |
 | Video | CVBS IN 2 | ✅ | position 1/0 |
-| Video | Camera de recul CVBS | ✅ | vue de recul LibreHU-service, 720 x 576 |
+| Video | Camera de recul CVBS | ✅ | vue de recul LibreHU-service, 720 x 576 ; s'affiche bien au signal 12 V des feux de recul (02/11/2026) |
 | Video | Camera de recul AHD (TP9963) | 🟡 | puce detectee (ID `0x2863`), image non testee faute de camera AHD |
-| Video | Recul rapide ARM2 au demarrage | ⬜ | l'ARM2 rend bien la main a Linux (`arm2 status 2`) |
+| Video | Recul rapide ARM2 au demarrage | ✅ | **fonctionne en CVBS, avec la configuration envoyee par LibreHU-service (02/11/2026)** ; l'ARM2 rend bien la main a Linux (`arm2 status 2`) |
 | Video | VIDEO OUT (puce USB MacroSilicon) | ⬜ | aucun pilote noyau necessaire, USB hote |
 | Video | Decodeurs TP9951 / TP2855 d'autres series d'UJC201 | ❌ | reconnus par le stock, absents du paquet GPL ; sans effet sur une unite a TP9963 |
 
