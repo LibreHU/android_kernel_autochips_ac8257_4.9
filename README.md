@@ -28,7 +28,7 @@ pas · ⬜ pas encore teste.
 | Stockage | Ecriture sur `/system` (`adb remount`) | ✅ | corrige : le noyau ne cree plus `mmc0/sw_wp_en` (absent du stock), qui faisait refuser les ecritures (EXT4 I/O error) |
 | Stockage | Etat du systeme de fichiers `/system` | 🟡 | 244 erreurs ext4 anciennes enregistrees (depuis le 13/10), aucune nouvelle ; `e2fsck -fn` (lecture seule) a faire depuis TWRP |
 | Systeme | Root KernelSU Next | ✅ | `su -c id` |
-| Systeme | Mise en veille / reprise | 🟡 | `stable-4.9.337` : premiere vraie veille reussie (29/10) ; 01/11 : **dalle OK au reveil** (`r143` : table d'init enfin lue a ses vrais index de la MetaZone), USB et lecteur CD OK ; son (BD37534 reinitialise au reveil par LibreHU-service, version du 01/11) et adb (port OTG rebranche par le noyau en `r144`) corriges, a tester ([docs/STABLE.md](docs/STABLE.md#veille-et-reprise)) |
+| Systeme | Mise en veille / reprise | ✅ | **fonctionne sur l'unite (02/11/2026)** : au reveil, son, affichage et USB reviennent. Correctifs : dalle (`r143` : table d'init lue a ses vrais index de la MetaZone), port OTG rebranche (`r144`), puce son BD37534 reinitialisee par LibreHU-service ([docs/STABLE.md](docs/STABLE.md#veille-et-reprise)) |
 | Affichage | Ecran 1280 x 720, rotation | ✅ | rotation lue dans la metazone (`persist.sf.hwrotation=90`) |
 | Affichage | GPU PowerVR GE8300 | ✅ | OpenGL ES 3.2, meme pilote que le stock |
 | Affichage | Retro-eclairage ecran et touches | ✅ | luminosite maximale plus haute que le stock |
@@ -41,7 +41,7 @@ pas · ⬜ pas encore teste.
 | CPU / GPU | 2,5 GHz | ⬜ | **instable a 1,10 V** (`r127`, Geekbench, 30/10) : Vsram 50 mV sous Vproc ; a retester a 1,05 V (`r129`) |
 | CPU / GPU | 2,6 GHz | ⬜ | **instable a 1,10 V** (watchdog materiel apres 14 min) ; a retester a 1,05 V (`r129`) ; au-dela, plafond de Vsram de la SSPM ([docs/TUNING.md](docs/TUNING.md)) |
 | CPU / GPU | GPU 730 MHz, tensions reglables | ⬜ | |
-| CPU / GPU | Gouverneurs et limites min / max respectes | ⬜ | `r131` : le CPU restait au maximum quel que soit le gouverneur (limites figees par un changement de gouverneur, requetes bornees deux fois) ; OPP GPU fixe soumis au thermique ; `r134` : boost USB MediaTek (CPU a 2,5 GHz tant qu'un PC utilise le MTP) coupe par defaut et reglable (SmartPack, [docs/TUNING.md](docs/TUNING.md#boost-usb-r134-01112026)) |
+| CPU / GPU | Frequences du SoC, gouverneurs et limites min / max | ✅ | **fonctionnels sur l'unite (02/11/2026)** ; correctifs : limites qui restaient figees au changement de gouverneur et requetes bornees deux fois (`r131`), boost USB MediaTek coupe par defaut et reglable (`r134`, SmartPack, [docs/TUNING.md](docs/TUNING.md#boost-usb-r134-01112026)) ; OPP GPU fixe soumis au thermique |
 | CPU / GPU | Sondes de temperature | 🟡 | toutes OK sauf « batterie » a 0 °C (l'unite n'a pas de batterie ; a comparer au stock) |
 | CPU / GPU | Politique thermique LibreHU | ⬜ | `r129` : CPU reset 125 °C, freins 105 °C, regulation 100 °C (CTM coupe) ; carte arret 105 °C, reset 107 °C (le vendor n'en active aucun) ; [docs/TUNING.md](docs/TUNING.md) |
 | Audio | Sortie audio (RCA) | ✅ | |
@@ -57,7 +57,7 @@ pas · ⬜ pas encore teste.
 | USB / reseau | USB 1 et USB 2 en hote | ✅ | |
 | USB / reseau | Ethernet USB RTL8152 | ✅ | quelques `Rx status -71` (erreur de protocole USB) |
 | USB / reseau | Autres adaptateurs Ethernet (RNDIS, iPhone, AX88179...) | ⬜ | pilotes integres |
-| USB / reseau | Lecteur CD / DVD USB | ⚠️ | detecte, CD audio lu par LibreHU Disc ; **panique du noyau** a la premiere erreur de lecture audio (bug du 4.9 : `rq->sense` NULL dans `cdrom_read_cdda_bpc`), corrigee (a retester) |
+| USB / reseau | Lecteur CD / DVD USB | ✅ | **fonctionne sur l'unite (02/11/2026)** avec LibreHU Disc : CD audio du commerce, films graves, DVD Xbox et DVD d'installation de Windows lus, navigation dans leurs fichiers ; la panique du noyau a la premiere erreur de lecture audio (bug du 4.9 : `rq->sense` NULL dans `cdrom_read_cdda_bpc`) est corrigee, aucune pendant ces essais |
 | Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte, commandes executees |
 | Vehicule | Marche arriere (GPIO 2 du SoC) | ✅ | active a l'etat bas |
 | Vehicule | Sortie AMP CONT (ampli / caisson) | ✅ | commande MCU `44` |
@@ -209,9 +209,10 @@ Pas a reprendre :
 2. **Premier demarrage** depuis la partition recovery — ✅ fait (run 57, 20/10/2026 ; launcher au run 64).
 3. **Parite avec le stock** — en grande partie faite (21/10/2026) : modules vendor (Wi-Fi, BT, GPS, FM), metazone,
    audio, tactile, MCU, camera de recul et entrees CVBS, que la reconstruction n'avait jamais fait marcher. Reste :
-   IR, veille, ARM2 au demarrage, camera AHD, VIDEO OUT.
+   IR, ARM2 au demarrage, camera AHD, VIDEO OUT (veille / reprise : fonctionne, 02/11/2026).
 4. **Ajouts LibreHU** — en CI depuis le 20/10/2026 ; sur l'unite : `/dev/gpios_ioctl`, KernelSU Next, overclock
-   (2,4 GHz), Ethernet USB OK ; reste a tester : tensions reglables, GPU 730 MHz, gouverneurs, boost tactile (corrige en `r128`).
+   (2,4 GHz), Ethernet USB OK ; reste a tester : tensions reglables, GPU 730 MHz, boost tactile (corrige en `r128`) ; gouverneurs et frequences :
+   fonctionnels (02/11/2026).
 5. **Usage quotidien** : installation dans `boot` — ✅ testee (21/10/2026) ; reste le retrait des options de mise au
    point et les images publiees en release.
 
@@ -226,7 +227,7 @@ Pas a reprendre :
   Samsung MT6765 (meme famille de puces, connectivite MT6631) ; d'ici la, les modules stock.
 - **Device tree propre a l'UJC201** au lieu de l'overlay de demonstration Autochips, et pilote d'ecran tire de la
   description de la metazone.
-- **Veille / reprise**, et camera de recul rapide (ARM2) des le demarrage normal.
+- **Camera de recul rapide (ARM2)** des le demarrage normal (la veille / reprise fonctionne depuis le 02/11/2026).
 
 ## Compiler from scratch
 
