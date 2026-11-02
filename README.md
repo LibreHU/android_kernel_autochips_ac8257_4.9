@@ -71,7 +71,7 @@ pas · ⬜ pas encore teste.
 | Video | CVBS IN 1 | ✅ | position AV (0/0) du commutateur |
 | Video | CVBS IN 2 | ✅ | position 1/0 |
 | Video | Camera de recul CVBS | ✅ | vue de recul LibreHU-service, 720 x 576 ; s'affiche bien au signal 12 V des feux de recul (02/11/2026) |
-| Video | Camera de recul AHD (TP9963) | 🟡 | puce detectee (ID `0x2863`), image non testee faute de camera AHD |
+| Video | Camera de recul AHD (TP9963) | ✅ | **camera AHD 1080p : image affichee** chez Reo Au In avec le dernier noyau (`r146`, 02/11/2026) ; puce detectee (ID `0x2863`) |
 | Video | Recul rapide ARM2 au demarrage | ✅ | **fonctionne en CVBS, avec la configuration envoyee par LibreHU-service (02/11/2026)** ; l'ARM2 rend bien la main a Linux (`arm2 status 2`) |
 | Video | VIDEO OUT (puce USB MacroSilicon) | ⬜ | aucun pilote noyau necessaire, USB hote |
 | Video | Decodeurs TP9951 / TP2855 d'autres series d'UJC201 | ❌ | reconnus par le stock, absents du paquet GPL ; sans effet sur une unite a TP9963 |
