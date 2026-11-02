@@ -56,6 +56,7 @@ pas · ⬜ pas encore teste.
 | USB / reseau | adb, USB peripherique | ✅ | |
 | USB / reseau | USB 1 et USB 2 en hote | ✅ | |
 | USB / reseau | Ethernet USB RTL8152 | ✅ | quelques `Rx status -71` (erreur de protocole USB) |
+| USB / reseau | Adaptateur Ethernet USB Asus | ✅ | fonctionne sur l'unite (02/11/2026) ; puce et pilote non releves |
 | USB / reseau | Autres adaptateurs Ethernet (RNDIS, iPhone, AX88179...) | ⬜ | pilotes integres |
 | USB / reseau | Lecteur CD / DVD USB | ✅ | **fonctionne sur l'unite (02/11/2026)** avec LibreHU Disc : CD audio du commerce, films graves, DVD Xbox et DVD d'installation de Windows lus, navigation dans leurs fichiers ; la panique du noyau a la premiere erreur de lecture audio (bug du 4.9 : `rq->sense` NULL dans `cdrom_read_cdda_bpc`) est corrigee, aucune pendant ces essais |
 | Vehicule | MCU / CAN (`ttyS1`) | ✅ | MCU detecte, commandes executees |
