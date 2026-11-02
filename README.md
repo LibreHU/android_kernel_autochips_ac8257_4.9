@@ -45,7 +45,7 @@ pas · ⬜ pas encore teste.
 | CPU / GPU | Sondes de temperature | 🟡 | toutes OK sauf « batterie » a 0 °C (l'unite n'a pas de batterie ; a comparer au stock) |
 | CPU / GPU | Politique thermique LibreHU | ⬜ | `r129` : CPU reset 125 °C, freins 105 °C, regulation 100 °C (CTM coupe) ; carte arret 105 °C, reset 107 °C (le vendor n'en active aucun) ; [docs/TUNING.md](docs/TUNING.md) |
 | Audio | Sortie audio (RCA) | ✅ | |
-| Audio | Lecture sous forte charge CPU | 🟡 | quelques « data underflow » pendant Geekbench |
+| Audio | Lecture sous forte charge CPU | ✅ | **pas de saccades sous benchmark CPU, avec ViPER4Android active et fonctionnel** (02/11/2026) ; avant : quelques « data underflow » pendant Geekbench |
 | Audio | Appel mains libres Bluetooth | ⬜ | |
 | Connectivite | Wi-Fi client | ✅ | -59 dBm, 65 Mbit/s en 2,4 GHz |
 | Connectivite | Point d'acces, Wi-Fi Direct | ✅ | |
