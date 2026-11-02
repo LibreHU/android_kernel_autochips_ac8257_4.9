@@ -124,8 +124,14 @@ static long fm_ops_compat_ioctl(struct file *filp, unsigned int cmd, unsigned lo
 		break;
 		}
 	default:
+		/* LibreHU: these ioctls are declared with an int32_t, not a pointer; the size field of a 32-bit command
+		 * rewritten below would be a pointer's, unknown to the 64-bit switch: give them their own command. */
 		if ((cmd & 0xFF) == IOCTL_NR(FM_IOCTL_PRE_SEARCH))
 			ret = filp->f_op->unlocked_ioctl(filp, FM_IOCTL_PRE_SEARCH, arg);
+		else if ((cmd & 0xFF) == IOCTL_NR(FM_IOCTL_RESTORE_SEARCH))
+			ret = filp->f_op->unlocked_ioctl(filp, FM_IOCTL_RESTORE_SEARCH, arg);
+		else if ((cmd & 0xFF) == IOCTL_NR(FM_IOCTL_SETMONOSTERO))
+			ret = filp->f_op->unlocked_ioctl(filp, FM_IOCTL_SETMONOSTERO, arg);
 		else
 			ret = filp->f_op->unlocked_ioctl(filp, ((cmd & 0xFF) | (FM_IOCTL_POWERUP & 0xFFFFFF00)), arg);
 		break;
