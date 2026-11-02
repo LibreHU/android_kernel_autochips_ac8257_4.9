@@ -229,7 +229,16 @@ Comparaison avec les modules stock (symboles et desassemblage des `.ko` de `/ven
 - `bt_drv`, `wmt_chrdev_wifi`, `fmradio_drv` et `wlan_drv_gen4m` n'avaient **pas de `module_init`** (charges, ils ne
   faisaient rien) et `fmradio_drv` pas de licence : corrige ;
 - module KernelSU : `wmt_drv` en post-fs-data, les autres dans `service.sh` une fois `vendor.connsys.driver.ready=yes`
-  (meme ordre que le vendor ; le zip TWRP, qui remplace les fichiers, suit deja cet ordre).
+  (meme ordre que le vendor ; le zip TWRP, qui remplace les fichiers, suit deja cet ordre) ;
+- `fmradio_drv`, couche 32 bits (`fm_ops_compat_ioctl`, corrige le 02/11/2026, `97311f83a`, `r146`) : elle reecrit
+  toute commande d'une appli 32 bits (LibreHU FM et la radio Jancar sont en armeabi-v7a) avec la taille d'argument de
+  `FM_IOCTL_POWERUP`, un pointeur (8 octets pour le pilote 64 bits). `FM_IOCTL_PRE_SEARCH`, `FM_IOCTL_RESTORE_SEARCH`
+  et `FM_IOCTL_SETMONOSTERO` sont declarees avec un `int32_t` (4 octets) : seule la premiere etait traitee a part.
+  Donc la remise en etat apres un balayage (`mt6631_restore_search` : sortie audio I2S, registres `0x9B` et hote
+  `0x80101054`) ne se faisait jamais et le mono force etait refuse. Les deux sont transmises comme `PRE_SEARCH`.
+  L'eRT, que le pilote ne decode pas, est rebati par l'appli depuis le journal brut (`FM_IOCTL_RDS_GET_LOG`) ; ce
+  journal ne garde que la derniere interruption RDS, mais la puce n'en envoie qu'une par paquet de 6 groupes
+  (`FM_RDS_CFG0 = 6`, environ 0,5 s) et l'appli le lit toutes les 0,2 s : pas de groupe perdu, pas de changement.
 Tant que les pilotes ne sont pas valides a la main (`insmod` un par un, `dmesg -w`), ne pas installer le zip TWRP
 `conn-modules-stable` ni le module KernelSU.
 
