@@ -130,6 +130,30 @@ Ce qu'on en verifie sur l'unite :
 C'est une fiche commerciale : elle donne les limites de la puce, pas celles de la carte Jancar (alimentation,
 refroidissement, puces presentes).
 
+## La fiche Jancar Q8L
+
+Fiche produit de Jancar : [Q8L](https://jancar.com.cn/en/product-35323-116606.html) (AC8257 ; texte en chinois sur le
+site anglais, releve le 06/11/2026, (c) Shenzhen Jinganchi Technology Development Co., Ltd.). Photos de la fiche : a
+ajouter.
+
+| Fiche Jancar (Q8L) | Sur l'UJC201 de test |
+|---|---|
+| Android 11.0 | Android 9 (`PPR1.180610.011`) |
+| 8 coeurs (4 + 4) AC8257 a 2,0 GHz | 4 coeurs Cortex-A53 actifs, comme la brochure AutoChips ci-dessus |
+| RAM 2 / 4 / 6 / 8 Go DDR, stockage 16 / 32 / 64 / 128 Go | selon la variante |
+| Ecran 1024 x 600, 800 x 480 ou 1280 x 720 ; puce d'affichage « AC8257L » | 1280 x 720 |
+| Radio AM / FM / RDS : FM 76,0-108,0 MHz, AM 522-1620 kHz ; regions Asie, Europe, Russie, Amerique 1 et 2, Japon, Asie du Sud-Est | FM avec RDS (puce MT6631) |
+| Wi-Fi 802.11 b/g/n 2,4 / 5 GHz, Bluetooth 5.0, GNSS : MT6631 | MT6631 (combo Wi-Fi, BT, GPS, FM) |
+| Son : DSP ROHM « 32107 », ampli « 7388 » (TDA7388 de ST ?), 4 x 25 W sous 13,8 V | processeur de son ROHM BD37534 ; ampli d'origine remplace par un TDA7560 de ST sur l'unite de l'utilisateur |
+| Recul AHD / CVBS progressif, DVR | AHD par le TP9963, CVBS par le decodeur integre (TVD) |
+| Video jusqu'a 1920 x 1080 ; 2 entrees video ; sortie video par une petite carte en option ou par USB | 2 entrees CVBS ; VIDEO OUT par la puce USB MacroSilicon |
+| Entrees audio AUX gauche / droite ; sorties gauche, droite, caisson ; 4 prises USB, disque USB jusqu'a 2 To, SD par adaptateur USB | |
+| Formats : audio MP3, WMA, AAC, RM, FLAC, WAV ; video MPEG-1/2/4, H.264, H.263, VC-1, RV / RMVB, DivX, Sorenson Spark, VP8, AVS ; images JPG, BMP, GIF, PNG | |
+| Temperatures : fonctionnement -20 a 70 °C, limites -35 a 85 °C | 60 °C au plus apres 1 h 30 de conduite, son a fond |
+
+C'est la fiche d'une gamme : elle ne dit pas quelles puces sont sur une carte donnee (voir les differences ci-dessus),
+et le lien entre « Q8L » et « UJC201 » n'est pas confirme.
+
 ## Les branches
 
 | Branche | Contenu | Regle |
