@@ -742,9 +742,21 @@ int mtktsbattery_register_cooler(void)
 	return 0;
 }
 
+/*
+ * LibreHU: a head unit has no battery, so this zone only ever read a fixed value (-127 C on the UJC201) that every
+ * app listed as a sensor. It is registered only with mtk_ts_battery.zone=1 on the kernel command line.
+ * /proc/driver/thermal/tzbattery stays, so the vendor thermal_manager can still write its settings there.
+ */
+static bool zone;
+module_param(zone, bool, 0444);
+MODULE_PARM_DESC(zone, "register the battery thermal zone (a head unit has no battery)");
+
 static int mtktsbattery_register_thermal(void)
 {
 	mtktsbattery_dprintk("[mtktsbattery_register_thermal]\n");
+
+	if (!zone)
+		return 0;
 
 	/* trips : trip 0~1 */
 	thz_dev = mtk_thermal_zone_device_register("mtktsbattery", num_trip,

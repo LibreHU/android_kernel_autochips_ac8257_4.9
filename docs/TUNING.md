@@ -181,6 +181,12 @@ Au démarrage, `thermal_manager` (vendor) écrit sa configuration (`/vendor/etc/
 et ceux de la carte (`mtk_ts_bts.c`), et coupe le CTM (`coolers/mtk_cooler_atm.c`) ; ses valeurs par défaut (avant
 `thermal_manager`) sont les mêmes (`thermal/ac8257/inc/tzcpu_initcfg.h`, `clatm_initcfg.h`, `mtk_ts_bts.c`).
 
+Pas de zone `mtktsbattery` : un autoradio n'a pas de batterie, la zone lisait une valeur fixe (-127 °C sur l'UJC201)
+que toutes les applis montraient comme une sonde (`thermal/common/thermal_zones/mtk_ts_battery.c`). Elle n'est plus
+enregistrée, sauf avec `mtk_ts_battery.zone=1` sur la ligne de commande du noyau ; `/proc/driver/thermal/tzbattery`
+reste, pour que `thermal_manager` puisse toujours y écrire ses réglages. Les autres zones changent donc de numéro
+(`thermal_zone0` = `mtktscpu`) : les applis LibreHU les lisent par leur type.
+
 | Seuil CPU (capteur de la puce) | Vendor | LibreHU |
 |---|---|---|
 | reset `mtktscpu-sysrst` (règle aussi la protection matérielle) | 125 °C | 125 °C |
