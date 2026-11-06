@@ -136,8 +136,7 @@ refroidissement, puces presentes).
 ## La fiche Jancar Q8L
 
 Fiche produit de Jancar : [Q8L](https://jancar.com.cn/en/product-35323-116606.html) (AC8257 ; texte en chinois sur le
-site anglais, releve le 06/11/2026, (c) Shenzhen Jinganchi Technology Development Co., Ltd.). Photos de la fiche : a
-ajouter.
+site anglais, releve le 06/11/2026, (c) Shenzhen Jinganchi Technology Development Co., Ltd.).
 
 | Fiche Jancar (Q8L) | Sur l'UJC201 de test |
 |---|---|
@@ -156,6 +155,14 @@ ajouter.
 
 C'est la fiche d'une gamme : elle ne dit pas quelles puces sont sur une carte donnee (voir les differences ci-dessus),
 et le lien entre « Q8L » et « UJC201 » n'est pas confirme.
+
+Carte mere (photos envoyees par le mainteneur le 06/11/2026) : serigraphie « JAC_8258_VER_0.2 » et « 2020_09_19 »,
+etiquette « …20220425 2+32G … AHD720/360 » et « +ASP/DSP+MIPI/LVDS+4G/WIFI+6856 033 », puces marquees « AutoChips » et
+« icmax ».
+
+![Carte mere, recto](docs/img/jac_8258_mainboard_front.webp)
+
+![Carte mere, verso](docs/img/jac_8258_mainboard_back.webp)
 
 ## Les branches
 
