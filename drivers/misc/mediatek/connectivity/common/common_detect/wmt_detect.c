@@ -115,6 +115,22 @@ static long wmt_detect_unlocked_ioctl(struct file *filp, unsigned int cmd, unsig
 	case COMBO_IOCTL_GET_SOC_CHIP_ID:
 		retval = wmt_plat_get_soc_chipid();
 		/*get soc chipid by HAL interface */
+		/* LibreHU: wmt_loader asks for the chip id before DO_MODULE_INIT, which registers the consys
+		 * platform driver here (the AC8257 wmt_loader never sends CONNSYS_SOC_HW_INIT): without the probe
+		 * the answer was 0, wmt_loader saved persist.vendor.connsys.chipid=0x0000 when /data had none
+		 * (LineageOS, factory reset) and started WMT with chip 0 (Wi-Fi crash, boot loop once Wi-Fi is on).
+		 * Probe the consys first (done once, as do_common_drv_init does it), then ask again.
+		 */
+		if (retval == 0 && wmt_plat_consys_hw_init() == 0)
+			retval = wmt_plat_get_soc_chipid();
+#ifdef CONFIG_MACH_AC8257
+		/* LibreHU: the stock AC8257 driver's id, the only valid one here, if the probe still failed */
+		if (retval == 0) {
+			WMT_DETECT_PR_WARN("consys not probed, SoC chip id 0x8257 given\n");
+			retval = 0x8257;
+		}
+#endif
+		WMT_DETECT_PR_INFO("SoC chip id: 0x%04lx\n", (unsigned long)retval);
 		break;
 
 	case COMBO_IOCTL_GET_ADIE_CHIP_ID:

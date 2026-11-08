@@ -12,7 +12,8 @@ name: Build AC8257 kernel
 
 on:
   push:
-    branches: [stable-4.9.337]
+    # test-wifi-chipid: test branch (Wi-Fi chip id fix), prerelease latest-test-wifi-chipid, not in the OTA zips
+    branches: [stable-4.9.337, test-wifi-chipid]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -45,7 +46,7 @@ permissions:
 jobs:
   build:
     # Manual runs too: only stable-4.9.337 is built (a run started from another branch with this file is skipped)
-    if: github.ref_name == 'stable-4.9.337'
+    if: github.ref_name == 'stable-4.9.337' || github.ref_name == 'test-wifi-chipid'
     # ubuntu-22.04: last runner image with a python2 package (the AutoChips DTS generator needs it)
     runs-on: ubuntu-22.04
     timeout-minutes: 120
