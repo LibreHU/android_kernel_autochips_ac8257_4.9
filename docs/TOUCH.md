@@ -74,3 +74,13 @@ changent rien sur une unite a GT911.
 `late_initcall` : avec 5 (valeur de la defconfig), le peripherique `mtk-tpd` n'apparaissait que vers 6 s, apres le
 demarrage d'un `/init` comme le menu de demarrage. Le noyau stock le cree vers 2,4 s (`input: mtk-tpd as
 /devices/virtual/input/input2` a 2,45 s dans ses journaux) : la defconfig de `LibreHU-main` met 1 s.
+
+## Ecran eteint : tactile toujours actif
+
+Le stock endort le Goodix a l'extinction de l'ecran (`mtk_tpd.c`, notification `FB_BLANK_POWERDOWN` ->
+`gtp_enter_sleep`). Sur l'UJC201 (`CONFIG_JANCAR_SOLUTION`), depuis le 13/11/2026, il reste actif : la touche power du
+panneau est une zone du tactile hors de l'ecran, lue par LibreHU-service, qui doit pouvoir rallumer l'unite ; le
+reveil du Goodix apres une extinction echouait parfois (tactile mort jusqu'au redemarrage). Android ignore les touchers
+tant qu'il n'est pas interactif (un ecran tactile interne ne le reveille pas) : rien n'arrive aux applis. L'IRQ du
+tactile n'est pas une source de reveil : masquee pendant la veille du systeme. `mtk_tpd.sleep_on_blank=1` sur la ligne
+de commande, ou `/sys/module/mtk_tpd/parameters/sleep_on_blank` a chaud, remet le sommeil a l'extinction.

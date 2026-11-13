@@ -10,6 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#include <linux/moduleparam.h>
 #include "tpd.h"
 #include <linux/slab.h>
 #include <linux/device.h>
@@ -371,6 +372,17 @@ static struct delayed_work tpd_init_work;
 static struct workqueue_struct *tpd_init_workqueue;
 static int tpd_suspend_flag;
 int tpd_register_flag;
+/*
+ * LibreHU: on the Jancar UJC201 the touch controller stays awake while the screen is off. The front panel's power key
+ * is a zone of the touch panel outside the LCD, read by LibreHU-service, and has to wake the unit; the Goodix wake-up
+ * after a blank also failed at times (touch dead until a reboot). Android drops the touches it gets while it is not
+ * interactive (an internal touchscreen does not wake it), so nothing reaches the apps. The touch IRQ is no wake-up
+ * source: it stays masked while the system is suspended. mtk_tpd.sleep_on_blank=1 on the command line (or
+ * /sys/module/mtk_tpd/parameters/sleep_on_blank at run time) brings back the controller's sleep on blank.
+ */
+static bool sleep_on_blank = !IS_ENABLED(CONFIG_JANCAR_SOLUTION);
+module_param(sleep_on_blank, bool, 0644);
+MODULE_PARM_DESC(sleep_on_blank, "put the touch controller to sleep while the screen is off");
 /* global variable definitions */
 struct tpd_device *tpd;
 static struct tpd_driver_t tpd_driver_list[TP_DRV_MAX_COUNT];	/* = {0}; */
@@ -435,6 +447,10 @@ static int tpd_fb_notifier_callback(
 		break;
 	case FB_BLANK_POWERDOWN:
 		TPD_DMESG("LCD OFF Notify\n");
+		if (!sleep_on_blank) {
+			TPD_DMESG("touch kept awake (mtk_tpd.sleep_on_blank=0)\n");
+			break;
+		}
 		if (g_tpd_drv && !tpd_suspend_flag) {
 			err = cancel_work_sync(&touch_resume_work);
 			if (!err)

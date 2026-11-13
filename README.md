@@ -229,6 +229,7 @@ points d'accroche.
 | **Ethernet USB integre** | RTL8152/8153, RNDIS (partage de connexion Android), iPhone, LAN78xx, SMSC, DM9601, SR9700/9800, MCS7830, CH9200, RTL8150, Pegasus, CDC EEM (en plus d'AX88179, CDC Ether, CDC NCM du stock) | OK (run 48) | ✅ RTL8152 |
 | **Batterie toujours pleine** (`librehu_battery`) | pas de jauge dans le DT de l'UJC201 : aucune batterie pour Android (0-1 % sous LineageOS, le stock le masquait) ; `battery` 100 %, pleine, et `ac` en ligne, sauf si un vrai pilote a deja ce nom ; `librehu_battery.enable=0` les retire ([docs/TUNING.md](docs/TUNING.md)) | en cours | ⬜ |
 | Pas de decodeur IR « clavier MCE » | `CONFIG_IR_MCE_KBD_DECODER` (config du stock) creait « MCE IR Keyboard/Mouse (gpio-rc-recv) », clavier alphabetique et souris pour Android : clavier virtuel masque sous LineageOS ; la telecommande `rc-jancar` (NEC) ne change pas | en cours | ⬜ |
+| Tactile actif ecran eteint (UJC201) | le Goodix n'est plus endormi a l'extinction (`mtk_tpd.c`) : la touche power du panneau (zone hors ecran, LibreHU-service) rallume l'unite, et plus de tactile mort apres un reveil rate ; Android ignore ces touchers tant qu'il dort ; `mtk_tpd.sleep_on_blank=1` le remet ([docs/TOUCH.md](docs/TOUCH.md)) | en cours | ⬜ |
 | Identifiant de puce Wi-Fi avant l'init du consys | `COMBO_IOCTL_GET_SOC_CHIP_ID` sonde le consys d'abord, sinon 0x8257 : wmt_loader enregistrait 0x0000 sur un /data vide (LineageOS, remise a zero), Wi-Fi en panne et redemarrages (branche `test-wifi-chipid`, fusionnee le 13/11/2026) | en cours | ⬜ |
 
 Pas a reprendre :
