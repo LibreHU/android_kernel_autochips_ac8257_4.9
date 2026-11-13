@@ -74,3 +74,4 @@ obj-$(CONFIG_AXP288_FUEL_GAUGE) += axp288_fuel_gauge.o
 obj-$(CONFIG_AXP288_CHARGER)	+= axp288_charger.o
 
 obj-y += mediatek/
+obj-$(CONFIG_LIBREHU_FAKE_BATTERY)	+= librehu_battery.o

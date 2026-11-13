@@ -512,6 +512,14 @@ config AXP20X_POWER
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
 
+config LIBREHU_FAKE_BATTERY
+	bool "LibreHU: battery always full, on mains (head unit without battery)"
+	help
+	  Registers a battery at 100 %, full, and mains online, for head units
+	  without a battery whose device tree has no gauge (Jancar UJC201):
+	  without it the health HAL finds no battery and Android shows 0 %.
+	  Off with librehu_battery.enable=0 on the kernel command line.
+
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
 

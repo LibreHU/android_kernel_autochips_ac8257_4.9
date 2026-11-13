@@ -184,7 +184,13 @@ et ceux de la carte (`mtk_ts_bts.c`), et coupe le CTM (`coolers/mtk_cooler_atm.c
 Pas de zone `mtktsbattery` : un autoradio n'a pas de batterie, la zone lisait une valeur fixe (-127 °C sur l'UJC201)
 que toutes les applis montraient comme une sonde (`thermal/common/thermal_zones/mtk_ts_battery.c`). Elle n'est plus
 enregistrée, sauf avec `mtk_ts_battery.zone=1` sur la ligne de commande du noyau ; `/proc/driver/thermal/tzbattery`
-reste, pour que `thermal_manager` puisse toujours y écrire ses réglages. Les autres zones changent donc de numéro
+reste, pour que `thermal_manager` puisse toujours y écrire ses réglages.
+
+Batterie toujours pleine, sur secteur (`drivers/power/supply/librehu_battery.c`, `CONFIG_LIBREHU_FAKE_BATTERY`,
+13/11/2026) : l'arbre de périphériques de l'UJC201 n'a pas de nœud `mediatek,bat_gm30`, la jauge MediaTek ne démarre
+pas et aucune alimentation de type batterie n'existe (« healthd: No battery devices found ») ; Android stock le
+masquait (100 %), LineageOS affichait 0-1 %. Le noyau enregistre `battery` (100 %, pleine, 4,2 V, 25 °C) et `ac`
+(en ligne, seulement si aucun pilote n'a déjà ce nom) ; `librehu_battery.enable=0` sur la ligne de commande les retire. Les autres zones changent donc de numéro
 (`thermal_zone0` = `mtktscpu`) : les applis LibreHU les lisent par leur type.
 
 | Seuil CPU (capteur de la puce) | Vendor | LibreHU |
