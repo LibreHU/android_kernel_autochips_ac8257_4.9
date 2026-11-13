@@ -75,11 +75,13 @@ changent rien sur une unite a GT911.
 demarrage d'un `/init` comme le menu de demarrage. Le noyau stock le cree vers 2,4 s (`input: mtk-tpd as
 /devices/virtual/input/input2` a 2,45 s dans ses journaux) : la defconfig de `LibreHU-main` met 1 s.
 
-## Ecran eteint : sommeil du tactile
+## Ecran eteint : tactile actif, reset au rallumage
 
-Le Goodix est endormi a l'extinction de l'ecran (`mtk_tpd.c`, notification `FB_BLANK_POWERDOWN` ->
-`gtp_enter_sleep`) et reveille au rallumage avec un reset (`GTP wakeup begin`, `GTP RESET`, `GTP wakeup sleep`),
-comme le stock. `mtk_tpd.sleep_on_blank=0` (ligne de commande, ou `/sys/module/mtk_tpd/parameters/sleep_on_blank` a
-chaud) le garde actif ecran eteint, pour la touche power du panneau (zone hors ecran, LibreHU-service) ; essaye par
-defaut le 13/11/2026 (noyau r151) : sous LineageOS le tactile etait mort au rallumage (pas de reset sans le reveil),
-d'ou le retour au sommeil par defaut. L'IRQ du tactile n'est pas une source de reveil.
+Le stock endort le Goodix a l'extinction de l'ecran (`mtk_tpd.c`, notification `FB_BLANK_POWERDOWN` ->
+`gtp_enter_sleep`) et le reveille au rallumage, avec un reset (`GTP wakeup begin`, `GTP RESET`, `GTP wakeup sleep`).
+Sur l'UJC201 (`CONFIG_JANCAR_SOLUTION`), il reste actif ecran eteint : la touche power du panneau (zone hors ecran,
+lue par LibreHU-service) doit pouvoir rallumer l'unite verrouillee ; Android ignore les autres touchers tant qu'il
+dort. Au rallumage, le Goodix ne repond plus sans le reset (essai du noyau r151, 13/11/2026 : tactile mort) : il passe
+alors par un sommeil puis le reveil normal, qui le resette (`touch kept awake while the screen was off: reset`).
+L'IRQ du tactile n'est pas une source de reveil. `mtk_tpd.sleep_on_blank=1` (ligne de commande, ou
+`/sys/module/mtk_tpd/parameters/sleep_on_blank` a chaud) remet le sommeil du stock.

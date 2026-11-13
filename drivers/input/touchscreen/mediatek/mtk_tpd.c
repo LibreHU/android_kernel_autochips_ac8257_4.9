@@ -373,13 +373,17 @@ static struct workqueue_struct *tpd_init_workqueue;
 static int tpd_suspend_flag;
 int tpd_register_flag;
 /*
- * LibreHU: mtk_tpd.sleep_on_blank=0 (command line, or /sys/module/mtk_tpd/parameters/sleep_on_blank at run time)
- * keeps the touch controller awake while the screen is off, for the front panel's power key (a zone of the touch
- * panel outside the LCD, read by LibreHU-service). Off by default: on the UJC201 the Goodix was dead once the screen
- * came back (no "GTP RESET" without the resume; LineageOS test of 13/11/2026), so the controller sleeps on blank and
- * is reset on unblank, as the stock does. The touch IRQ is no wake-up source.
+ * LibreHU: on the Jancar UJC201 the touch controller is not put to sleep when the screen goes off, so that the front
+ * panel's power key (a zone of the touch panel outside the LCD, read by LibreHU-service) can wake the unit; Android
+ * drops the other touches while it is not interactive (an internal touchscreen does not wake it). When the screen
+ * comes back, the Goodix no longer answers (it needs the reset of the wake-up path: "GTP RESET"; kernel r151 skipped
+ * it and left the touch dead, 13/11/2026): it then goes through a sleep and the normal wake-up, which resets it.
+ * The touch IRQ is no wake-up source. mtk_tpd.sleep_on_blank=1 (command line, or the module parameter at run time)
+ * brings back the sleep on blank of the stock.
  */
-static bool sleep_on_blank = true;
+static bool sleep_on_blank = !IS_ENABLED(CONFIG_JANCAR_SOLUTION);
+/* Screen off with the controller kept awake: reset it (sleep + wake-up) when the screen comes back. */
+static int tpd_kept_awake;
 module_param(sleep_on_blank, bool, 0644);
 MODULE_PARM_DESC(sleep_on_blank, "put the touch controller to sleep while the screen is off");
 /* global variable definitions */
@@ -412,6 +416,12 @@ static struct notifier_block tpd_fb_notifier;
 static void touch_resume_workqueue_callback(struct work_struct *work)
 {
 	TPD_DEBUG("GTP touch_resume_workqueue_callback\n");
+	if (tpd_kept_awake) {
+		/* LibreHU: balanced sleep (IRQ off) before the wake-up and its reset (IRQ on) */
+		TPD_DMESG("touch kept awake while the screen was off: reset\n");
+		g_tpd_drv->suspend(NULL);
+		tpd_kept_awake = 0;
+	}
 	g_tpd_drv->resume(NULL);
 	tpd_suspend_flag = 0;
 }
@@ -435,7 +445,7 @@ static int tpd_fb_notifier_callback(
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
 		TPD_DMESG("LCD ON Notify\n");
-		if (g_tpd_drv && tpd_suspend_flag) {
+		if (g_tpd_drv && (tpd_suspend_flag || tpd_kept_awake)) {
 			err = queue_work(touch_resume_workqueue,
 						&touch_resume_work);
 			if (!err) {
@@ -446,7 +456,9 @@ static int tpd_fb_notifier_callback(
 		break;
 	case FB_BLANK_POWERDOWN:
 		TPD_DMESG("LCD OFF Notify\n");
-		if (!sleep_on_blank) {
+		if (!sleep_on_blank && !tpd_suspend_flag) {
+			cancel_work_sync(&touch_resume_work);
+			tpd_kept_awake = 1;
 			TPD_DMESG("touch kept awake (mtk_tpd.sleep_on_blank=0)\n");
 			break;
 		}
