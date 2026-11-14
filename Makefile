@@ -957,7 +957,8 @@ KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
 KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
 
 # require functions to have arguments in prototypes, not empty 'int foo()'
-KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
+# LibreHU: the MediaTek / AutoChips 4.9 drivers declare many "void f()" functions: warning, not error
+KBUILD_CFLAGS   += $(call cc-option,-Wno-error=strict-prototypes)
 
 # Prohibit date/time macros, which would make the build non-deterministic
 KBUILD_CFLAGS   += $(call cc-option,-Werror=date-time)

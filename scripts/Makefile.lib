@@ -298,6 +298,12 @@ $(obj)/%.dtb: $(src)/%.dts $(DTC) FORCE
 
 dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
 
+# cat
+# ---------------------------------------------------------------------------
+# LibreHU (AC8257): concatenate the prerequisites, for Image.gz-dtb (kernel with its appended device tree)
+quiet_cmd_cat = CAT     $@
+cmd_cat = (cat $(filter-out FORCE,$^) > $@) || (rm -f $@; false)
+
 # Bzip2
 # ---------------------------------------------------------------------------
 

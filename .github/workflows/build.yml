@@ -1,18 +1,19 @@
-name: Build AC8257 kernel
+name: Build AC8257 kernel 4.19 (experimental)
 
-# Builds Image.gz-dtb with the AOSP GCC 4.9 toolchain and packs it into the
-# stock UJC201 boot image layout (tools/ac8257/stock/boot_template_250718.img:
-# stock header, cmdline and boot vbmeta, without the stock kernel):
-#  - recovery_test_ac8257.img: 32 MiB, recovery vbmeta, for the recovery test
-#    method of docs/BUILD.md (fastboot flash recovery + fastboot oem reboot-recovery)
+# Experimental branch experimental-4.19.<N>: Linux 4.19.325 (ACK android-4.19-stable) with the AutoChips AC8257 vendor
+# tree and the LibreHU changes (docs/K419.md). Builds Image.gz-dtb and the connectivity modules with Ubuntu clang 14
+# and binutils (the AOSP clang 6.0.2 of the 4.9 branches is too old for the 4.19 core), then packs them into the
+# stock UJC201 boot image layout as the 4.9 CI does:
 #  - boot_ac8257.img: 10 MiB, boot vbmeta (normal boot partition)
-# Branch stable-4.9.337: LibreHU-main + the linux-stable fixes up to 4.9.337 (docs/STABLE.md), the only kernel
-# branch built since 01/11/2026. The other branches (LibreHU-main, connectivity-builtin, legacy-4.9.*) are no longer
-# rebuilt and keep their last release (the OTA zips of LibreHU-main and connectivity-builtin still come from it).
+#  - boot_ac8257_bootmenu.img: the same kernel behind the boot menu (TWRP / Android / Fastboot)
+#  - recovery_test_ac8257.img: 32 MiB, recovery vbmeta, for the recovery test method (fastboot flash recovery +
+#    fastboot oem reboot-recovery): a crash ends in a normal boot of the installed kernel, not a boot loop
+# Published as a prerelease latest-<branch> marked experimental. LibreHU-flashablesZips only takes the branches it
+# declares (stable-4.9.337): nothing from here reaches LibreHU Apps.
 
 on:
   push:
-    branches: [stable-4.9.337]
+    branches: ['experimental-4.19.*']
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -24,87 +25,49 @@ on:
         default: 'init=/init log_buf_len=8M'
 
 env:
-  # LineageOS mirror of AOSP prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 (GCC 4.9.x 20150123)
-  TOOLCHAIN_REPO: https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9
-  TOOLCHAIN_SHA: a61b4b9ea2a5098dbf113999526978aec683753b
-  # AutoChips ac8257_demo_defconfig with the product settings of the stock UJC201 kernel (#72)
   DEFCONFIG: ac8257_ujc201_defconfig
-  # Variables of the AutoChips build environment (kenv.mk) read by Kconfig (option env=), values of the stock kernel
+  # Variables of the AutoChips build environment (kenv.mk) read by Kconfig as $(VAR), values of the stock kernel
   ATC_MAKE: ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0
-  # HOSTCC with -fcommon: the AutoChips scripts/dtc defines yylloc twice, which host GCC >= 10 refuses at link time
-  # (fixed upstream by "scripts/dtc: Remove redundant YYLOC global declaration", present on reverse-engineering)
-  # Author shown by /proc/version and the boot log: "Linux version ... (dokt@librehu)" instead of the CI runner's
+  # Toolchain: LLVM 14 (as the later android-4.19-stable kernels) with GNU binutils for the GNU assembler of 4.19
+  KMAKE: ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-14 CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC=gcc python=python
   KBUILD_BUILD_USER: dokt
   KBUILD_BUILD_HOST: librehu
 
-# Release latest-<branch> of each build pushed (boot images), picked up by LibreHU-flashablesZips (TWRP zips,
-# LibreHU Apps).
 permissions:
   contents: write
 
 jobs:
   build:
-    # Manual runs too: only stable-4.9.337 is built (a run started from another branch with this file is skipped)
-    if: github.ref_name == 'stable-4.9.337'
-    # ubuntu-22.04: last runner image with a python2 package (the AutoChips DTS generator needs it)
+    if: startsWith(github.ref_name, 'experimental-4.19')
+    # ubuntu-22.04: clang-14 and a python2 package (the AutoChips DTS generator tools/dct/DrvGen.py is Python 2)
     runs-on: ubuntu-22.04
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Host packages
+      - name: Host packages and toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends bc bison flex libssl-dev libelf-dev cpio
-          # tools/dct/DrvGen.py (AutoChips cust.dtsi generator) is Python 2, run through #! /usr/bin/python
-          sudo apt-get install -y --no-install-recommends python2
-          # AOSP clang-4691093 is linked against libtinfo.so.5
-          sudo apt-get install -y --no-install-recommends libtinfo5
+          sudo apt-get install -y --no-install-recommends bc bison flex libssl-dev libelf-dev cpio python2 \
+            clang-14 lld-14 llvm-14 binutils-aarch64-linux-gnu
           sudo ln -sf /usr/bin/python2 /usr/bin/python
-          /usr/bin/python --version
-
-      - name: Toolchain (AOSP GCC 4.9)
-        run: |
-          git init -q "$RUNNER_TEMP/gcc49"
-          cd "$RUNNER_TEMP/gcc49"
-          git remote add origin "$TOOLCHAIN_REPO"
-          git fetch -q --depth 1 origin "$TOOLCHAIN_SHA"
-          git checkout -q FETCH_HEAD
-          echo "$RUNNER_TEMP/gcc49/bin" >> "$GITHUB_PATH"
-
-      - name: Toolchain (AOSP clang 6.0.2, clang-4691093, as the stock kernel)
-        run: |
-          # The stock UJC201 kernel #72 was built with AOSP clang 6.0.2 (r316199, clang-4691093) and the GCC 4.9
-          # binutils: same compiler here, so the AutoChips sources build as they did for Jancar (GCC 4.9 stops on
-          # warnings clang does not give) and the symbol CRCs can match the stock vendor modules.
-          mkdir -p "$RUNNER_TEMP/clang"
-          cd "$RUNNER_TEMP/clang"
-          for ref in refs/tags/android-9.0.0_r61 refs/tags/android-9.0.0_r1 refs/heads/pie-release; do
-            url="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/$ref/clang-4691093.tar.gz"
-            if curl -fsSL --retry 3 "$url" -o clang.tar.gz && tar xzf clang.tar.gz; then echo "clang from $ref"; break; fi
-          done
-          ./bin/clang --version | tee /dev/stderr | grep -q 4691093
-          echo "$RUNNER_TEMP/clang/bin" >> "$GITHUB_PATH"
+          python --version
+          clang-14 --version | head -1
+          aarch64-linux-gnu-ld --version | head -1
 
       - name: Configure
-        run: make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE "$DEFCONFIG"
+        run: make O=out $KMAKE $ATC_MAKE "$DEFCONFIG"
 
-      - name: Build Image.gz-dtb
+      - name: Build Image.gz-dtb and modules
         run: |
           set -o pipefail
-          # stable-4.9.* branches: the connectivity drivers as modules (CONFIG_LIBREHU_CONN_MODULES, docs/STABLE.md).
-          # One make for both: each make writes a new compile.h (build number and date in the banner) and relinks
-          # vmlinux, so a second "make modules" left an Image #1 and a vmlinux #2, and the KernelSU module, which
-          # compares /proc/version with the banner of vmlinux, saw another kernel and loaded nothing.
+          # One make for the image and the modules (the KernelSU connectivity module compares /proc/version with the
+          # banner of this vmlinux: a second make would relink vmlinux with another build number)
           TARGETS=Image.gz-dtb
           grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config && TARGETS="$TARGETS modules"
-          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC="gcc -fcommon" $ATC_MAKE -j"$(nproc)" $TARGETS 2>&1 | tee build.log
+          make O=out $KMAKE $ATC_MAKE -j"$(nproc)" $TARGETS 2>&1 | tee build.log
 
       - name: Pack images
         env:
@@ -117,62 +80,57 @@ jobs:
             --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
             --cmdline-append "$CMDLINE_APPEND"
           python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257.img --size 10485760
-          # Same kernel behind the boot menu (TWRP / Android / Fastboot at each start): tools/ac8257/bootmenu_image.py
           python3 tools/ac8257/bootmenu_image.py out/arch/arm64/boot/Image out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb \
             "$T" dist/boot_ac8257_bootmenu.img
           cp "$K" dist/
           cp out/.config dist/config
-          # KernelSU module with the connectivity drivers built with this kernel (stable-4.9.* branches)
           if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then
-            sh tools/stable/conn_ksu_module.sh out dist/librehu_connectivity_ksu.zip "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
+            # binutils of the GNU toolchain here (the script defaults to the Android GCC 4.9 one of the 4.9 CI)
+            STRIP=aarch64-linux-gnu-strip sh tools/stable/conn_ksu_module.sh out dist/librehu_connectivity_ksu.zip "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
           fi
-          echo "commit ${GITHUB_SHA}" > dist/BUILD_INFO.txt
-          echo "recovery cmdline append: $CMDLINE_APPEND" >> dist/BUILD_INFO.txt
+          {
+            echo "commit ${GITHUB_SHA}"
+            echo "branch ${GITHUB_REF_NAME}"
+            echo "kernel $(make -s O=out $KMAKE kernelversion 2>/dev/null)"
+            echo "compiler $(clang-14 --version | head -1)"
+            echo "recovery cmdline append: $CMDLINE_APPEND"
+          } > dist/BUILD_INFO.txt
           sha256sum dist/* | tee -a dist/BUILD_INFO.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ac8257-kernel-${{ github.sha }}
+          name: ac8257-kernel-4.19-${{ github.sha }}
           path: dist/
           retention-days: 30
 
-      - name: Release of the branch (latest-<branch>)
-        # Pushes, and manual runs with the default command line (a custom one stays an artifact)
+      - name: Prerelease of the branch (latest-<branch>, experimental)
         if: github.event_name == 'push' || github.event.inputs.cmdline_append == 'init=/init log_buf_len=8M'
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}
         run: |
-          # One release per branch, tag latest-<branch>, replaced at each build: LibreHU-flashablesZips makes the TWRP
-          # zips of LibreHU Apps from its boot images and reads the version in release.txt. Only LibreHU-main is a
-          # full release; the other branches (connectivity-builtin...) are prereleases.
           TAG="latest-$BRANCH"
           NAME="r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
-          PRE=true; [ "$BRANCH" = LibreHU-main ] && PRE=false
           printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
             "$GITHUB_RUN_NUMBER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.txt
           {
-            echo "Noyau LibreHU de la branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9}) : $(git log -1 --pretty=%s)"
+            echo "**EXPERIMENTAL** : noyau Linux 4.19.325 pour l'UJC201, branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9})."
+            echo "Pas encore valide sur l'unite. Lire docs/K419.md avant tout essai (methode recovery conseillee : le noyau"
+            echo "installe dans boot ne change pas et un echec redemarre normalement)."
             echo
-            echo "- \`boot_ac8257.img\` : partition boot (10 Mio, AVB du boot stock)"
-            echo "- \`boot_ac8257_bootmenu.img\` : le meme noyau derriere le menu de demarrage (TWRP / Android / Fastboot)"
-            echo "- \`recovery_test_ac8257.img\` : methode de test depuis la partition recovery (docs/BUILD.md)"
+            echo "- \`recovery_test_ac8257.img\` : essai sans risque depuis la partition recovery (fastboot flash recovery, puis fastboot oem reboot-recovery)"
+            echo "- \`boot_ac8257.img\` / \`boot_ac8257_bootmenu.img\` : partition boot (seulement apres un essai recovery reussi)"
+            echo "- \`librehu_connectivity_ksu.zip\` : modules Wi-Fi / BT / GPS / FM de CE noyau (module KernelSU)"
             echo
-            echo "Zips TWRP et ecriture depuis Android : LibreHU Apps, onglet Zips (categorie Noyau), ou"
-            echo "\`fastboot flash boot boot_ac8257.img\`. vbmeta n'est pas touche."
-            if [ -f dist/librehu_connectivity_ksu.zip ]; then
-              echo
-              echo "- \`librehu_connectivity_ksu.zip\` : module KernelSU (Wi-Fi, BT, GPS, FM recompiles avec CE noyau ; les modules"
-              echo "  du vendor ne se chargent plus sur une branche linux-stable). A installer dans KernelSU Next puis redemarrer ;"
-              echo "  ne fait rien avec un autre noyau. Journal : /data/adb/modules/librehu_connectivity/last.log (docs/STABLE.md)."
-            fi
+            echo "Retour arriere : TWRP garde son propre noyau ; reflasher le boot de \`stable-4.9.337\` (release latest-stable-4.9.337)."
+            echo "vbmeta n'est jamais touche."
           } > notes.md
           git tag -f "$TAG" "$GITHUB_SHA"
           git push -f origin "refs/tags/$TAG"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "Noyau $BRANCH $NAME" --notes-file notes.md --prerelease=$PRE
+            gh release edit "$TAG" --title "Noyau 4.19 EXPERIMENTAL $NAME" --notes-file notes.md --prerelease=true
           else
-            gh release create "$TAG" --title "Noyau $BRANCH $NAME" --notes-file notes.md --prerelease=$PRE --verify-tag
+            gh release create "$TAG" --title "Noyau 4.19 EXPERIMENTAL $NAME" --notes-file notes.md --prerelease=true --verify-tag
           fi
           gh release upload "$TAG" dist/boot_ac8257.img dist/boot_ac8257_bootmenu.img dist/recovery_test_ac8257.img \
             dist/Image.gz-dtb dist/config dist/BUILD_INFO.txt dist/release.txt --clobber
