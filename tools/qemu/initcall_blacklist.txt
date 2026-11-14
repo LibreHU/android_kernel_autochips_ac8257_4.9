@@ -20,3 +20,4 @@ mtk_sleep_init           # SPM
 _mt_cpufreq_pdrv_init    # cpuhvfs (SSPM)
 mcdi_init                # SSPM
 init_wk                  # watchdog kicker (TOPRGU)
+trng_init                # its thread asks the secure monitor (SMC) for entropy while the CRNG is not ready after 1 s

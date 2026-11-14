@@ -20,4 +20,7 @@ GICv2 ("virt,gic-version=2"):
   _mt_cpufreq_pdrv_init        pc: cpuhvfs_set_sched_dvfs_disable+0xc
   mcdi_init                    pc: memcpy_to_sspm+0x18
   work oops mtk_wdt_restart <- wdk_work_callback: init_wk (late_initcall of the watchdog kicker) added by hand
--> userspace reached with the 19 names of initcall_blacklist.txt.
+-> userspace reached with these 19 names.
+First CI run (GitHub runner, QEMU 6.2): partuuid-missing oopsed at 1.35 s in the trng_entropy thread,
+mt_secure_call_all() (SMC, undefined without a secure monitor): the thread of trng_init asks the secure monitor for
+entropy when the CRNG is not ready 1 s after its start, which depends on the host -> trng_init added (20 names).
