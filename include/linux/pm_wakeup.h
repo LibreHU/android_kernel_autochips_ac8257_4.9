@@ -27,6 +27,7 @@
 #endif
 
 #include <linux/types.h>
+#include <linux/string.h>	/* memset() in wakeup_source_init() (LibreHU compat) */
 
 struct wake_irq;
 
@@ -195,6 +196,26 @@ static inline void pm_wakeup_dev_event(struct device *dev, unsigned int msec,
 				       bool hard) {}
 
 #endif /* !CONFIG_PM_SLEEP */
+
+/*
+ * LibreHU: wakeup_source_init() / wakeup_source_trash() of the 4.9 kernel, for the MediaTek / AutoChips drivers
+ * (statically allocated wakeup sources). 4.9 kept the name pointer as given.
+ */
+static inline void wakeup_source_init(struct wakeup_source *ws, const char *name)
+{
+	if (ws) {
+		memset(ws, 0, sizeof(*ws));
+		ws->name = name;
+	}
+	wakeup_source_add(ws);
+}
+
+static inline void wakeup_source_trash(struct wakeup_source *ws)
+{
+	wakeup_source_remove(ws);
+	__pm_relax(ws);
+}
+
 
 static inline void __pm_wakeup_event(struct wakeup_source *ws, unsigned int msec)
 {

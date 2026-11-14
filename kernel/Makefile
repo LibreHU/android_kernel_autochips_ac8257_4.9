@@ -20,6 +20,8 @@ obj-y     = fork.o exec_domain.o panic.o \
 	    async.o range.o smpboot.o ucount.o
 
 obj-$(CONFIG_MODULES) += kmod.o
+# LibreHU 4.19: CPU hotplug notifiers and other 4.9 functions for the MediaTek / AutoChips drivers
+obj-$(CONFIG_MEDIATEK_SOLUTION) += librehu_cpu_notifier.o librehu_compat_4_9.o
 obj-$(CONFIG_MULTIUSER) += groups.o
 
 ifdef CONFIG_FUNCTION_TRACER

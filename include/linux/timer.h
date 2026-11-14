@@ -22,6 +22,11 @@ struct timer_list {
 #ifdef CONFIG_LOCKDEP
 	struct lockdep_map	lockdep_map;
 #endif
+#ifdef CONFIG_MEDIATEK_SOLUTION
+	/* LibreHU: 4.9-style timers of the MediaTek / AutoChips drivers (setup_timer(), init_timer(), .data) */
+	void			(*legacy_function)(unsigned long);
+	unsigned long		data;
+#endif
 
 	ANDROID_KABI_RESERVE(1);
 	ANDROID_KABI_RESERVE(2);
@@ -135,6 +140,62 @@ static inline void init_timer_on_stack_key(struct timer_list *timer,
 
 #define timer_setup_on_stack(timer, callback, flags)		\
 	__init_timer_on_stack((timer), (callback), (flags))
+
+#ifdef CONFIG_MEDIATEK_SOLUTION
+/*
+ * LibreHU (4.19 port of the AC8257 kernel): the timer API of 4.14 and before, removed in 4.15, for the MediaTek /
+ * AutoChips drivers written for 4.9. The 4.9 callback, which takes "unsigned long data", is called by a trampoline
+ * with the data given to setup_timer() (or stored in .data and .legacy_function around init_timer()).
+ */
+static inline void legacy_timer_fn(struct timer_list *t)
+{
+	if (t->legacy_function)
+		t->legacy_function(t->data);
+}
+
+/* The 4.9 DEFINE_TIMER(name, function, expires, data) */
+#define DEFINE_LEGACY_TIMER(_name, _function, _expires, _data)		\
+	struct timer_list _name = {					\
+		.entry = { .next = TIMER_ENTRY_STATIC },		\
+		.function = legacy_timer_fn,				\
+		.expires = (_expires),					\
+		.flags = 0,						\
+		.legacy_function = (_function),				\
+		.data = (_data),					\
+		__TIMER_LOCKDEP_MAP_INITIALIZER(			\
+			__FILE__ ":" __stringify(__LINE__))		\
+	}
+
+#define __legacy_setup_timer(_timer, _fn, _data, _flags, _setup)		\
+	do {								\
+		_setup((_timer), legacy_timer_fn, (_flags));		\
+		(_timer)->legacy_function = (_fn);			\
+		(_timer)->data = (_data);				\
+	} while (0)
+#define setup_timer(timer, fn, data)					\
+	__legacy_setup_timer(timer, fn, data, 0, timer_setup)
+#define setup_timer_on_stack(timer, fn, data)				\
+	__legacy_setup_timer(timer, fn, data, 0, timer_setup_on_stack)
+#define setup_deferrable_timer(timer, fn, data)			\
+	__legacy_setup_timer(timer, fn, data, TIMER_DEFERRABLE, timer_setup)
+#define setup_deferrable_timer_on_stack(timer, fn, data)		\
+	__legacy_setup_timer(timer, fn, data, TIMER_DEFERRABLE, timer_setup_on_stack)
+#define setup_pinned_timer(timer, fn, data)				\
+	__legacy_setup_timer(timer, fn, data, TIMER_PINNED, timer_setup)
+/* As in 4.9, init_timer() keeps .legacy_function and .data: some drivers set them before (pinctrl EINT debounce) */
+#define init_timer(timer)						\
+	timer_setup((timer), legacy_timer_fn, 0)
+#define init_timer_pinned(timer)					\
+	timer_setup((timer), legacy_timer_fn, TIMER_PINNED)
+#define init_timer_deferrable(timer)					\
+	timer_setup((timer), legacy_timer_fn, TIMER_DEFERRABLE)
+#define init_timer_pinned_deferrable(timer)				\
+	timer_setup((timer), legacy_timer_fn, TIMER_PINNED | TIMER_DEFERRABLE)
+#define init_timer_on_stack(timer)					\
+	timer_setup_on_stack((timer), legacy_timer_fn, 0)
+#define init_timer_deferrable_on_stack(timer)				\
+	timer_setup_on_stack((timer), legacy_timer_fn, TIMER_DEFERRABLE)
+#endif /* CONFIG_MEDIATEK_SOLUTION */
 
 #ifdef CONFIG_DEBUG_OBJECTS_TIMERS
 extern void destroy_timer_on_stack(struct timer_list *timer);
