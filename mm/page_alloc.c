@@ -8433,3 +8433,68 @@ bool set_hwpoison_free_buddy_page(struct page *page)
 	return hwpoisoned;
 }
 #endif
+
+#ifdef CONFIG_MEDIATEK_SOLUTION
+/*
+ * MediaTek (AMMS, modem memory given back by the secure world): free a reserved physical range to the page
+ * allocator. LibreHU 4.19: as in the MediaTek 4.9 kernel, without the memcfg record (CONFIG_MTK_MEMCFG off).
+ */
+int free_reserved_memory(phys_addr_t start_phys, phys_addr_t end_phys)
+{
+	phys_addr_t pos;
+	unsigned long pages = 0;
+
+	if (end_phys <= start_phys) {
+		pr_notice("%s end_phys is smaller than start_phys start_phys:0x%pa end_phys:0x%pa\n",
+			  __func__, &start_phys, &end_phys);
+		return -1;
+	}
+
+	if (!memblock_is_region_reserved(start_phys, end_phys - start_phys)) {
+		pr_notice("%s:not reserved memory phys_start:0x%pa phys_end:0x%pa\n",
+			  __func__, &start_phys, &end_phys);
+		return -1;
+	}
+
+	memblock_free(start_phys, (end_phys - start_phys));
+
+	for (pos = start_phys; pos < end_phys; pos += PAGE_SIZE, pages++)
+		free_reserved_page(phys_to_page(pos));
+
+	if (pages)
+		pr_info("Freeing modem memory: %ldK from phys %llx\n",
+			pages << (PAGE_SHIFT - 10),
+			(unsigned long long)start_phys);
+
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_MEMBLK_RELEASE_POLICY
+/*
+ * AutoChips: give a reserved, mapped memory region back to the page allocator once its user is done (fast reverse
+ * camera buffers, AVM carveout when AVM is off, memory of the reserved CPU). LibreHU 4.19: free_reserved_page()
+ * per page (the managed and total page counts follow), then memblock_free() and the zone watermarks, as the 4.9
+ * __free_pages_memblock_later() + init_per_zone_wmark_later() did; no-map pages (not in the linear map) are kept.
+ */
+int free_memblock_runtime(phys_addr_t phy_addr, phys_addr_t size)
+{
+	unsigned long pfn, end_pfn = PFN_DOWN(phy_addr + size);
+	unsigned long pages = 0;
+
+	if (!size || !memblock_is_region_reserved(phy_addr, size))
+		return -EINVAL;
+
+	for (pfn = PFN_UP(phy_addr); pfn < end_pfn; pfn++) {
+		if (!pfn_valid(pfn))
+			continue;
+		free_reserved_page(pfn_to_page(pfn));
+		pages++;
+	}
+	memblock_free(phy_addr, size);
+	setup_per_zone_wmarks();
+	pr_info("free_memblock_runtime: %luK freed from %pa\n", pages << (PAGE_SHIFT - 10), &phy_addr);
+	return 0;
+}
+EXPORT_SYMBOL(free_memblock_runtime);
+#endif

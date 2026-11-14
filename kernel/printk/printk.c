@@ -1748,6 +1748,45 @@ static int console_trylock_spinning(void)
  * log_buf[start] to log_buf[end - 1].
  * The console_lock must be held.
  */
+/*
+ * MediaTek UART printk control of the 4.9 kernel (LibreHU 4.19), driven by printk.disable_uart= and
+ * /proc/mtprintk (drivers/misc/mediatek/mtprintk):
+ * 0: uart printk enable
+ * 1: uart printk disable
+ * 2: uart printk always enable
+ */
+int printk_disable_uart;
+module_param_named(disable_uart, printk_disable_uart, int, 0644);
+
+bool mt_get_uartlog_status(void)
+{
+	if (printk_disable_uart == 1)
+		return false;
+	return true;
+}
+
+void set_uartlog_status(bool value)
+{
+#ifdef CONFIG_MTK_ENG_BUILD
+	printk_disable_uart = value ? 0 : 1;
+	pr_info("set uart log status %d.\n", value);
+#endif
+}
+
+#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
+void mt_disable_uart(void)
+{
+	/* uart print not always enable */
+	if ((mt_need_uart_console != 1) && (printk_disable_uart != 2))
+		printk_disable_uart = 1;
+}
+
+void mt_enable_uart(void)
+{
+	printk_disable_uart = 0;
+}
+#endif
+
 static void call_console_drivers(const char *ext_text, size_t ext_len,
 				 const char *text, size_t len)
 {
@@ -1759,6 +1798,9 @@ static void call_console_drivers(const char *ext_text, size_t ext_len,
 		return;
 
 	for_each_console(con) {
+		/* MediaTek: UART printk disabled (printk_disable_uart == 1), see below */
+		if ((printk_disable_uart == 1) && (con->flags & CON_CONSDEV))
+			continue;
 		if (exclusive_console && con != exclusive_console)
 			continue;
 		if (!(con->flags & CON_ENABLED))

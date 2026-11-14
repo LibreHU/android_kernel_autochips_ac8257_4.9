@@ -1898,6 +1898,16 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
 
 	status = serial_port_in(port, UART_LSR);
 
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+#ifndef CONFIG_FIQ_DEBUGGER
+#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
+	/* AutoChips: a character received on the console UART turns the UART printk back on */
+	if (uart_console(port) && (status & 0x01) && !uart_suspended)
+		printk_disable_uart = 0;
+#endif
+#endif
+#endif
+
 	/*
 	 * If port is stopped and there are no error conditions in the
 	 * FIFO, then don't drain the FIFO, as this may lead to TTY buffer

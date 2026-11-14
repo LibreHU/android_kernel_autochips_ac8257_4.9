@@ -796,3 +796,12 @@ config ARCH_HAS_PTE_SPECIAL
 	bool
 
 endmenu
+
+config MEMBLK_RELEASE_POLICY
+	bool "enable the policy for memblk memory"
+	depends on (ARM || ARM64)
+	default n
+	help
+	  AutoChips: free_memblock_runtime() gives reserved (mapped) memory
+	  regions back to the page allocator once their user is done with
+	  them (fast reverse camera buffers, AVM carveout, reserved CPU).

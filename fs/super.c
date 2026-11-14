@@ -1388,6 +1388,29 @@ int __sb_start_write(struct super_block *sb, int level, bool wait)
 }
 EXPORT_SYMBOL(__sb_start_write);
 
+#ifdef CONFIG_STORAGE_FULL_WRITE_FORBIDDEN
+/* AutoChips: "storage full" flag of a file system, set and cleared from fs/namespace.c, read by vfs_write() */
+int set_fs_full(struct super_block *s_block)
+{
+	s_block->s_storage_full = 1;
+	return 0;
+}
+EXPORT_SYMBOL(set_fs_full);
+
+int set_fs_not_full(struct super_block *s_block)
+{
+	s_block->s_storage_full = 0;
+	return 0;
+}
+EXPORT_SYMBOL(set_fs_not_full);
+
+int get_fs_full_flag(struct super_block *s_block)
+{
+	return s_block->s_storage_full;
+}
+EXPORT_SYMBOL(get_fs_full_flag);
+#endif
+
 /**
  * sb_wait_write - wait until all writers to given file system finish
  * @sb: the super for which we wait

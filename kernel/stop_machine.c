@@ -636,31 +636,15 @@ int cpu_park(int cpu)
 }
 EXPORT_SYMBOL_GPL(cpu_park);
 
-/* queue @work to @stopper.  if offline, @work is completed immediately */
-static int __cpu_stop_dispatch_work(unsigned int cpu,
-		struct cpu_stop_work *work)
-{
-	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
-	unsigned long flags;
-	int ret = 0;
-
-	raw_spin_lock_irqsave(&stopper->lock, flags);
-	if (stopper->enabled)
-		__cpu_stop_queue_work(stopper, work);
-	else {
-			cpu_stop_signal_done(work->done);
-			ret = 1;
-		}
-	raw_spin_unlock_irqrestore(&stopper->lock, flags);
-
-	return ret;
-}
-
+/*
+ * MediaTek: queue @fn on @cpu without waiting, returns 1 when its stopper is disabled (offline CPU).
+ * LibreHU 4.19: the 4.9 helper re-implemented cpu_stop_queue_work(), which takes a wake queue since 4.17.
+ */
 int stop_one_cpu_dispatch(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
 				struct cpu_stop_work *work_buf)
 {
 	*work_buf = (struct cpu_stop_work){ .fn = fn, .arg = arg, };
-	return __cpu_stop_dispatch_work(cpu, work_buf);
+	return !cpu_stop_queue_work(cpu, work_buf);
 }
 EXPORT_SYMBOL_GPL(stop_one_cpu_dispatch);
 

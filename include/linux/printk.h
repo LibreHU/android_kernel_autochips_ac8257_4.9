@@ -14,6 +14,19 @@ extern const char linux_proc_banner[];
 
 #define PRINTK_MAX_SINGLE_HEADER_LEN 2
 
+/* MediaTek UART printk control (kernel/printk/printk.c, drivers/misc/mediatek/mtprintk) */
+extern int printk_disable_uart;
+extern int mt_need_uart_console;
+extern bool mt_get_uartlog_status(void);
+extern void set_uartlog_status(bool value);
+#ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
+void mt_disable_uart(void);
+void mt_enable_uart(void);
+#else
+static inline void mt_disable_uart(void) { }
+static inline void mt_enable_uart(void) { }
+#endif
+
 static inline int printk_get_level(const char *buffer)
 {
 	if (buffer[0] == KERN_SOH_ASCII && buffer[1]) {

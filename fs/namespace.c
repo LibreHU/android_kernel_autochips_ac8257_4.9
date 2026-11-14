@@ -3069,6 +3069,57 @@ struct dentry *mount_subtree(struct vfsmount *mnt, const char *name)
 }
 EXPORT_SYMBOL(mount_subtree);
 
+#if defined(CONFIG_ATC_AOSP_ENHANCEMENT) && defined(CONFIG_STORAGE_FULL_WRITE_FORBIDDEN)
+/*
+ * AutoChips: the stock system marks a file system as full (or not) with a mount() of this fake type, these sources
+ * and these data on its mount point; vfs_write() then refuses the writes of apps to it (fs/read_write.c).
+ * LibreHU 4.19: same strings and results as the 4.9 kernel, plus the mount permission check of a real mount (the
+ * 4.9 code skipped it) and no leak of the copied strings / of the path.
+ */
+#define SET_STORAGE_FULL_PARA                "&&&&&&&&&&&atcSetStorageSpaceAsIsFull&&&&&&&&&&&&"
+#define CANCEL_STORAGE_FULL_PARA             "&&&&&&&&&&&atcSetStorageSpaceAsNoFull&&&&&&&&&&&&"
+#define SET_STORAGE_FULL_SOURCE              "/makefullstorage"
+#define CANCEL_STORAGE_FULL_SOURCE           "/makenotfullstorage"
+#define STORAGE_FULL_STATE_CHANGE_FS_TYPE    "#####lowstorageset#####"
+
+/* Returns 1 when the request is not one of the two above (the mount goes on and fails as before: no such type) */
+static int atc_storage_full_mount(const char *kernel_dev, const char __user *dir_name, void __user *data)
+{
+	struct path path;
+	char *kernel_data;
+	int full, ret;
+
+	if (!kernel_dev)
+		return -ENOTBLK;
+	if (!dir_name)
+		return -ENOENT;
+	kernel_data = copy_mount_string(data);
+	if (IS_ERR(kernel_data))
+		return PTR_ERR(kernel_data);
+	if (!kernel_data)
+		return -EINVAL;
+	if (!strcmp(kernel_data, SET_STORAGE_FULL_PARA) && !strcmp(kernel_dev, SET_STORAGE_FULL_SOURCE))
+		full = 1;
+	else if (!strcmp(kernel_data, CANCEL_STORAGE_FULL_PARA) && !strcmp(kernel_dev, CANCEL_STORAGE_FULL_SOURCE))
+		full = 0;
+	else
+		full = -1;
+	kfree(kernel_data);
+	if (full < 0)
+		return 1;
+	if (!may_mount())
+		return -EPERM;
+	ret = user_path(dir_name, &path);
+	if (ret)
+		return ret;
+	pr_info("[vfs] %s storage full flag of the file system mounted on %pd\n", full ? "set" : "cleared",
+		path.mnt->mnt_root);
+	ret = full ? set_fs_full(path.mnt->mnt_sb) : set_fs_not_full(path.mnt->mnt_sb);
+	path_put(&path);
+	return ret;
+}
+#endif
+
 int ksys_mount(char __user *dev_name, char __user *dir_name, char __user *type,
 	       unsigned long flags, void __user *data)
 {
@@ -3092,8 +3143,18 @@ int ksys_mount(char __user *dev_name, char __user *dir_name, char __user *type,
 	if (IS_ERR(options))
 		goto out_data;
 
+#if defined(CONFIG_ATC_AOSP_ENHANCEMENT) && defined(CONFIG_STORAGE_FULL_WRITE_FORBIDDEN)
+	if (kernel_type && !strcmp(kernel_type, STORAGE_FULL_STATE_CHANGE_FS_TYPE)) {
+		ret = atc_storage_full_mount(kernel_dev, dir_name, data);
+		if (ret != 1)
+			goto out_options;
+	}
+#endif
 	ret = do_mount(kernel_dev, dir_name, kernel_type, flags, options);
 
+#if defined(CONFIG_ATC_AOSP_ENHANCEMENT) && defined(CONFIG_STORAGE_FULL_WRITE_FORBIDDEN)
+out_options:
+#endif
 	kfree(options);
 out_data:
 	kfree(kernel_dev);

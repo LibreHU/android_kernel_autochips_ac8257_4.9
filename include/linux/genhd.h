@@ -19,10 +19,6 @@
 #include <linux/blk_types.h>
 #include <linux/android_kabi.h>
 
-#ifndef CONFIG_ATC_AOSP_ENHANCEMENT
-#define CONFIG_ATC_AOSP_ENHANCEMENT 1
-#endif
-
 #ifdef CONFIG_BLOCK
 
 #define dev_to_disk(device)	container_of((device), struct gendisk, part0.__dev)
@@ -107,13 +103,6 @@ struct partition_meta_info {
 	char uuid[PARTITION_META_INFO_UUIDLTH];
 	u8 volname[PARTITION_META_INFO_VOLNAMELTH];
 };
-
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-struct boot_part_info {
-	u8 part_name[64];
-	u8 part_uuid[16];
-};
-#endif
 
 struct hd_struct {
 	sector_t start_sect;

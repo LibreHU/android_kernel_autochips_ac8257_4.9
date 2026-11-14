@@ -20,8 +20,6 @@
 
 #include "ubsan.h"
 
-#include "../drivers/misc/mediatek/include/mt-plat/aee.h"
-
 const char *type_check_kinds[] = {
 	"load of",
 	"store to",
@@ -165,11 +163,6 @@ static void ubsan_epilogue(unsigned long *flags)
 		"========================================\n");
 	spin_unlock_irqrestore(&report_lock, *flags);
 	current->in_ubsan--;
-
-	/* AEE Kernel API Dump for UBSan */
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,
-		"UBSan error",
-		"[UBSan report]");
 }
 
 static void handle_overflow(struct overflow_data *data, void *lhs,

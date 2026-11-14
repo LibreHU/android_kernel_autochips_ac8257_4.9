@@ -42,10 +42,6 @@
 #include <asm/byteorder.h>
 #include <uapi/linux/fs.h>
 
-#ifndef CONFIG_ATC_AOSP_ENHANCEMENT
-#define CONFIG_ATC_AOSP_ENHANCEMENT 1
-#endif
-
 struct backing_dev_info;
 struct bdi_writeback;
 struct bio;
@@ -289,7 +285,6 @@ enum positive_aop_returns {
 struct page;
 struct address_space;
 struct writeback_control;
-
 
 /*
  * Write life time hint values.
@@ -1463,7 +1458,7 @@ struct super_block {
 
 	struct sb_writers	s_writers;
 #ifdef CONFIG_STORAGE_FULL_WRITE_FORBIDDEN
-	unsigned int            s_storage_full; /*Partition storage space is not enough flag*/
+	unsigned int		s_storage_full;	/* AutoChips: partition marked as full (fs/namespace.c) */
 #endif
 
 	char			s_id[32];	/* Informational name */
@@ -1549,9 +1544,7 @@ struct super_block {
 
 #ifdef CONFIG_STORAGE_FULL_WRITE_FORBIDDEN
 int set_fs_full(struct super_block *s_block);
-
 int set_fs_not_full(struct super_block *s_block);
-
 int get_fs_full_flag(struct super_block *s_block);
 #endif
 

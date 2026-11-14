@@ -473,4 +473,9 @@ static inline phys_addr_t memblock_alloc(phys_addr_t size, phys_addr_t align)
 
 #endif /* __KERNEL__ */
 
+#ifdef CONFIG_MEMBLK_RELEASE_POLICY
+/* AutoChips (mm/page_alloc.c) */
+int free_memblock_runtime(phys_addr_t phy_addr, phys_addr_t size);
+#endif
+
 #endif /* _LINUX_MEMBLOCK_H */

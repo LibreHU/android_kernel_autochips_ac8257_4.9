@@ -182,12 +182,9 @@ static int __init parse_dt_topology(void)
 	 * When topology is provided cpu-map is essentially a root
 	 * cluster with restricted subnodes.
 	 */
-	map = of_get_child_by_name(cn, "virtual-cpu-map");
-	if (!map) {
-		map = of_get_child_by_name(cn, "cpu-map");
-		if (!map)
-			goto out;
-	}
+	map = of_get_child_by_name(cn, "cpu-map");
+	if (!map)
+		goto out;
 
 	ret = parse_cluster(map, 0);
 	if (ret != 0)
@@ -408,14 +405,8 @@ static inline int __init parse_acpi_topology(void)
 }
 #endif
 
-/*
- * init_cpu_topology is called at boot when only one cpu is running
- * which prevent simultaneous write access to cpu_topology array
- */
 void __init init_cpu_topology(void)
 {
-	if (cpu_topology_init)
-		return;
 	reset_cpu_topology();
 
 	/*
@@ -427,18 +418,3 @@ void __init init_cpu_topology(void)
 	else if (of_have_populated_dt() && parse_dt_topology())
 		reset_cpu_topology();
 }
-
-#ifdef CONFIG_MTK_UNIFY_POWER
-static int
-cpu_capacity_sync(void)
-{
-	int cpu;
-
-	for_each_possible_cpu(cpu)
-		update_cpu_capacity(cpu);
-
-	return 0;
-}
-
-late_initcall_sync(cpu_capacity_sync)
-#endif

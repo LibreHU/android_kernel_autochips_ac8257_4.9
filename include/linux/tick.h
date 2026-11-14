@@ -290,5 +290,12 @@ static inline void tick_nohz_task_switch(void)
 		__tick_nohz_task_switch();
 }
 
+/* MediaTek watchdog dump (kernel/time/tick-broadcast.c) */
+#if defined(CONFIG_TICK_ONESHOT) && defined(CONFIG_MTK_RAM_CONSOLE)
+extern void tick_broadcast_mtk_aee_dump(void);
+#else
+static inline void tick_broadcast_mtk_aee_dump(void) { };
+#endif
+
 ktime_t *get_next_event_cpu(unsigned int cpu);
 #endif

@@ -1372,6 +1372,11 @@ extern void pagefault_out_of_memory(void);
 #define SHOW_MEM_FILTER_NODES		(0x0001u)	/* disallowed nodes */
 
 extern void show_free_areas(unsigned int flags, nodemask_t *nodemask);
+#ifdef CONFIG_MEDIATEK_SOLUTION
+/* MediaTek: task and HW memory dumps of mm/oom_kill.c (Android low memory killer) */
+extern void show_task_mem(void);
+extern void oom_dump_extra_info(void);
+#endif
 
 extern bool can_do_mlock(void);
 extern int user_shm_lock(size_t, struct user_struct *);

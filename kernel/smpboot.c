@@ -255,34 +255,11 @@ static void smpboot_park_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
 int smpboot_park_threads(unsigned int cpu)
 {
 	struct smp_hotplug_thread *cur;
-	struct task_struct *tsk;
-	int cnt;
 
 	mutex_lock(&smpboot_threads_lock);
 	list_for_each_entry_reverse(cur, &hotplug_threads, list)
 		smpboot_park_thread(cur, cpu);
 	mutex_unlock(&smpboot_threads_lock);
-next:
-	cnt = 0;
-	list_for_each_entry(cur, &hotplug_threads, list) {
-		tsk = *per_cpu_ptr(cur->store, cpu);
-		/*
-		 * Since "cpu/hotplug: Make bringup/teardown of smp threads
-		 * symmetric" this runs in cpuhp/N on the dying CPU, not in
-		 * takedown_cpu() after cpuhp/N was parked: cpuhp/N is always
-		 * on_rq here and must not be waited for.
-		 */
-		if (tsk && tsk != current)
-			cnt += tsk->on_rq;
-	}
-	if (cnt) {
-		if (cpu == raw_smp_processor_id()) {
-			set_current_state(TASK_INTERRUPTIBLE);
-			schedule_timeout(1);
-		}
-		goto next;
-	}
-
 	return 0;
 }
 

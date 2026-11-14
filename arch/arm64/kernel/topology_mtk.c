@@ -9,6 +9,7 @@
  */
 
 #include <linux/arch_topology.h>
+#include <linux/cpufreq.h>
 #include <linux/atomic.h>
 #include <linux/cpumask.h>
 #include <linux/export.h>
@@ -119,7 +120,7 @@ void arch_scale_set_curr_freq(int cpu, unsigned long freq)
 	unsigned long max = atomic_long_read(&per_cpu(mtk_cpu_max_freq, cpu));
 
 	if (max)
-		arch_set_freq_scale(cpumask_of(cpu), freq, max);
+		arch_set_freq_scale((struct cpumask *)cpumask_of(cpu), freq, max);
 }
 
 void arch_scale_set_max_freq(int cpu, unsigned long freq)

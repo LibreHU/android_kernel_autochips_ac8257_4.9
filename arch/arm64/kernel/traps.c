@@ -51,8 +51,6 @@
 #include <asm/exception.h>
 #include <asm/system_misc.h>
 #include <asm/sysreg.h>
-#include <mt-plat/aee.h>
-#include <sched.h>
 
 static const char *handler[]= {
 	"Synchronous Abort",
@@ -123,9 +121,6 @@ void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 	if (tsk == current) {
 		frame.fp = (unsigned long)__builtin_frame_address(0);
 		frame.pc = (unsigned long)dump_backtrace;
-	} else if (tsk == task_rq(tsk)->curr) {
-		pr_notice("Do not dump other cpus' running task\n");
-		return;
 	} else {
 		/*
 		 * task blocked in __switch_to
@@ -204,7 +199,6 @@ static DEFINE_RAW_SPINLOCK(die_lock);
  */
 void die(const char *str, struct pt_regs *regs, int err)
 {
-	struct thread_info *thread = current_thread_info();
 	int ret;
 	unsigned long flags;
 
@@ -615,8 +609,11 @@ const char *esr_get_class_string(u32 esr)
 	return esr_class_str[ESR_ELx_EC(esr)];
 }
 
-
 #ifdef CONFIG_MEDIATEK_SOLUTION
+/*
+ * MediaTek: asynchronous abort (SError) handler registration, kept for the MediaTek bus tracker
+ * (drivers/misc/mediatek/systracker); the AutoChips 4.9 kernel registered it without calling it either.
+ */
 static void (*async_abort_handler)(struct pt_regs *regs, void *);
 static void *async_abort_priv;
 
@@ -629,7 +626,6 @@ int register_async_abort_handler(void (*fn)(struct pt_regs *regs, void *),
 	return 0;
 }
 #endif
-
 
 /*
  * bad_mode handles the impossible case in the exception vector. This is always

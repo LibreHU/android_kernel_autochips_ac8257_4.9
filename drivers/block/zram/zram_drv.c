@@ -30,27 +30,19 @@
 #include <linux/vmalloc.h>
 #include <linux/err.h>
 #include <linux/idr.h>
-#include <linux/proc_fs.h>
 #include <linux/sysfs.h>
 #include <linux/debugfs.h>
 #include <linux/cpuhotplug.h>
 
 #include "zram_drv.h"
 
-#ifdef CONFIG_MTK_ENG_BUILD
-#define GUARD_BYTES_LENGTH	64
-#define GUARD_BYTES_HALFLEN	32
-#define GUARD_BYTES		(0x0)
-#endif
-
 static DEFINE_IDR(zram_index_idr);
 /* idr index must be protected */
 static DEFINE_MUTEX(zram_index_mutex);
 
 static int zram_major;
-static struct zram *zram_devices;
 #ifdef CONFIG_MACH_AC8257
-static const char *default_compressor = "lz4";	/* faster than lzo on the A53 */
+static const char *default_compressor = "lz4";	/* LibreHU: faster than lzo on the A53 */
 #else
 static const char *default_compressor = "lzo";
 #endif
@@ -85,7 +77,7 @@ static void zram_slot_unlock(struct zram *zram, u32 index)
 
 static inline bool init_done(struct zram *zram)
 {
-	return zram ? zram->disksize : 0;
+	return zram->disksize;
 }
 
 static inline struct zram *dev_to_zram(struct device *dev)
@@ -1399,12 +1391,6 @@ compress_again:
 		handle = zs_malloc(zram->mem_pool, comp_len,
 				GFP_NOIO | __GFP_HIGHMEM |
 				__GFP_MOVABLE);
-#ifdef CONFIG_MTK_ENG_BUILD
-		if (handle) {
-			need_update_len = true;
-			goto compress_again;
-		}
-#else
 		if (handle)
 			goto compress_again;
 		return -ENOMEM;
@@ -1775,7 +1761,6 @@ static ssize_t disksize_store(struct device *dev,
 	}
 
 	zram->comp = comp;
-	barrier();
 	zram->disksize = disksize;
 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
 
@@ -1922,9 +1907,6 @@ static int zram_add(void)
 	if (!zram)
 		return -ENOMEM;
 
-	if (!zram_devices)
-		zram_devices = zram;
-
 	ret = idr_alloc(&zram_index_idr, zram, 0, 0, GFP_KERNEL);
 	if (ret < 0)
 		goto out_free_dev;
@@ -2007,7 +1989,6 @@ out_free_queue:
 out_free_idr:
 	idr_remove(&zram_index_idr, device_id);
 out_free_dev:
-	zram_devices = NULL;
 	kfree(zram);
 	return ret;
 }
@@ -2041,7 +2022,6 @@ static int zram_remove(struct zram *zram)
 	del_gendisk(zram->disk);
 	blk_cleanup_queue(zram->disk->queue);
 	put_disk(zram->disk);
-	zram_devices = NULL;
 	kfree(zram);
 	return 0;
 }
@@ -2131,83 +2111,6 @@ static void destroy_devices(void)
 	cpuhp_remove_multi_state(CPUHP_ZCOMP_PREPARE);
 }
 
-unsigned long zram_mlog(void)
-{
-#define P2K(x) (((unsigned long)x) << (PAGE_SHIFT - 10))
-	if (num_devices == 0 && init_done(zram_devices))
-		return P2K(zs_get_total_pages(zram_devices->meta->mem_pool));
-#undef P2K
-
-#ifdef CONFIG_HWZRAM_DRV
-	return hwzram_mem_used_total() >> 10;
-#endif
-	return 0;
-}
-
-#ifdef CONFIG_PROC_FS
-static int zraminfo_proc_show(struct seq_file *m, void *v)
-{
-	struct zs_pool_stats pool_stats;
-
-	if (num_devices == 0 && init_done(zram_devices)) {
-
-		memset(&pool_stats, 0x00, sizeof(struct zs_pool_stats));
-
-		down_read(&zram_devices->init_lock);
-		zs_pool_stats(zram_devices->meta->mem_pool, &pool_stats);
-		up_read(&zram_devices->init_lock);
-
-#define P2K(x) (((unsigned long)x) << (PAGE_SHIFT - 10))
-#define B2K(x) (((unsigned long)x) >> (10))
-		seq_printf(m,
-		"DiskSize:       %8lu kB\n"
-		"OrigSize:       %8lu kB\n"
-		"ComprSize:      %8lu kB\n"
-		"MemUsed:        %8lu kB\n"
-		"ZeroPage:       %8lu kB\n"
-		"NotifyFree:     %8lu kB\n"
-		"FailReads:      %8lu kB\n"
-		"FailWrites:     %8lu kB\n"
-		"NumReads:       %8lu kB\n"
-		"NumWrites:      %8lu kB\n"
-		"InvalidIO:      %8lu kB\n"
-		"MaxUsedPages:   %8lu kB\n"
-		"PageMigrated:	 %8lu kB\n"
-		,
-		B2K(zram_devices->disksize),
-		P2K(atomic64_read(&zram_devices->stats.pages_stored)),
-		B2K(atomic64_read(&zram_devices->stats.compr_data_size)),
-		P2K(zs_get_total_pages(zram_devices->meta->mem_pool)),
-		P2K(atomic64_read(&zram_devices->stats.zero_pages)),
-		P2K(atomic64_read(&zram_devices->stats.notify_free)),
-		P2K(atomic64_read(&zram_devices->stats.failed_reads)),
-		P2K(atomic64_read(&zram_devices->stats.failed_writes)),
-		P2K(atomic64_read(&zram_devices->stats.num_reads)),
-		P2K(atomic64_read(&zram_devices->stats.num_writes)),
-		P2K(atomic64_read(&zram_devices->stats.invalid_io)),
-		P2K(atomic_long_read(&zram_devices->stats.max_used_pages)),
-		P2K(pool_stats.pages_compacted));
-#undef P2K
-#undef B2K
-		seq_printf(m, "Algorithm: [%s]\n", zram_devices->compressor);
-	}
-
-	return 0;
-}
-
-static int zraminfo_proc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, zraminfo_proc_show, NULL);
-}
-
-static const struct file_operations zraminfo_proc_fops = {
-	.open		= zraminfo_proc_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
-};
-#endif
-
 static int __init zram_init(void)
 {
 	int ret;
@@ -2242,9 +2145,6 @@ static int __init zram_init(void)
 		num_devices--;
 	}
 
-#ifdef CONFIG_PROC_FS
-	proc_create("zraminfo", 0644, NULL, &zraminfo_proc_fops);
-#endif
 	return 0;
 
 out_error:

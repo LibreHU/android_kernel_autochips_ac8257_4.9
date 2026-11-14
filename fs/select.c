@@ -242,10 +242,10 @@ static int poll_schedule_timeout(struct poll_wqueues *pwq, int state,
 
 	set_current_state(state);
 	if (!pwq->triggered) {
-		if (expires && expires->tv64)
+		if (expires && *expires)	/* LibreHU 4.19: ktime_t is a plain s64 since 4.10 */
 			xgf_igather_timer(current, 1);
 		rc = schedule_hrtimeout_range(expires, slack, HRTIMER_MODE_ABS);
-		if (expires && expires->tv64)
+		if (expires && *expires)	/* LibreHU 4.19: ktime_t is a plain s64 since 4.10 */
 			xgf_igather_timer(current, rc ? -1 : 0);
 	}
 	__set_current_state(TASK_RUNNING);

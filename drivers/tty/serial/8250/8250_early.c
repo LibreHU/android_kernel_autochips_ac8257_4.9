@@ -115,9 +115,6 @@ static void __init init_port(struct earlycon_device *device)
 	unsigned int divisor;
 	unsigned char c;
 	unsigned int ier;
-#ifdef CONFIG_FPGA_EARLY_PORTING
-	int sample_count, sample_point, sample_data;
-#endif
 
 	serial8250_early_out(port, UART_LCR, 0x3);	/* 8n1 */
 	ier = serial8250_early_in(port, UART_IER);

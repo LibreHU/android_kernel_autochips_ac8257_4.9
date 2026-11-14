@@ -44,16 +44,8 @@
 #include <linux/uaccess.h>
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
-#include <linux/io.h>
 
 #include "internal.h"
-
-#ifdef __aarch64__
-#ifdef memcpy
-#undef memcpy
-#endif
-#define memcpy memcpy_toio
-#endif
 
 /*
  * We defer making "oops" entries appear in pstore - see
@@ -488,7 +480,6 @@ static void pstore_unregister_kmsg(void)
 }
 
 #ifdef CONFIG_PSTORE_CONSOLE
-/*
 static void pstore_console_write(struct console *con, const char *s, unsigned c)
 {
 	struct pstore_record record;
@@ -500,31 +491,10 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
 	record.size = c;
 	psinfo->write(&record);
 }
-*/
-
-static void pstore_simp_console_write(struct console *con, const char *s,
-		unsigned int c)
-{
-	u64 id;
-	bool compressed = false;
-
-	psinfo->write_buf(PSTORE_TYPE_CONSOLE, 0, &id, 0, s, compressed, c,
-			psinfo);
-}
-
-void pstore_bconsole_write(struct console *con, const char *s, unsigned int c)
-{
-	u64 id;
-	bool compressed = false;
-
-	if (psinfo)
-		psinfo->write_buf(PSTORE_TYPE_CONSOLE, 1, &id, 0, s, compressed,
-				c, psinfo);
-}
 
 static struct console pstore_console = {
 	.name	= "pstore",
-	.write	= pstore_simp_console_write,
+	.write	= pstore_console_write,
 	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
 	.index	= -1,
 };

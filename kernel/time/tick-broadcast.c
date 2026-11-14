@@ -531,6 +531,30 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
 	return tick_broadcast_oneshot_mask;
 }
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
+/*
+ * MediaTek: broadcast masks in the SRAM log when the hardware watchdog fires (drivers/watchdog/mediatek/wdk).
+ * LibreHU 4.19: the masks only; the per-CPU enter / exit history of the MediaTek 4.9 tick-broadcast.c is not
+ * recorded here. No printk: called from the watchdog dump.
+ */
+extern void aee_sram_fiq_log(const char *msg);
+
+void tick_broadcast_mtk_aee_dump(void)
+{
+	static char buf[128];
+
+	snprintf(buf, sizeof(buf), "[TICK] oneshot_mask: %*pbl\n",
+		 cpumask_pr_args(tick_broadcast_oneshot_mask));
+	aee_sram_fiq_log(buf);
+	snprintf(buf, sizeof(buf), "[TICK] pending_mask: %*pbl\n",
+		 cpumask_pr_args(tick_broadcast_pending_mask));
+	aee_sram_fiq_log(buf);
+	snprintf(buf, sizeof(buf), "[TICK] force_mask: %*pbl\n",
+		 cpumask_pr_args(tick_broadcast_force_mask));
+	aee_sram_fiq_log(buf);
+}
+#endif
+
 /*
  * Called before going idle with interrupts disabled. Checks whether a
  * broadcast event from the other core is about to happen. We detected

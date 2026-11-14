@@ -473,9 +473,9 @@
 	}								\
 	/* cli commands. */				\
 	__cli : AT(ADDR(__cli) - LOAD_OFFSET) {			\
-		VMLINUX_SYMBOL(__commands_start) = .;			\
+		__commands_start = .;			\
 		KEEP(*(__cli))						\
-		VMLINUX_SYMBOL(__commands_end) = .;			\
+		__commands_end = .;			\
 	}								\
 	. = ALIGN((align));
 

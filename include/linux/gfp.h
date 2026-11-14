@@ -644,4 +644,9 @@ extern void free_contig_range(unsigned long pfn, unsigned nr_pages);
 extern void init_cma_reserved_pageblock(struct page *page);
 #endif
 
+#ifdef CONFIG_MEDIATEK_SOLUTION
+/* MediaTek AMMS (mm/page_alloc.c) */
+extern int free_reserved_memory(phys_addr_t start_phys, phys_addr_t end_phys);
+#endif
+
 #endif /* __LINUX_GFP_H */

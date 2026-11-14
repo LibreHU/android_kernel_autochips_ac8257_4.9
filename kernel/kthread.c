@@ -22,7 +22,6 @@
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
 #include <trace/events/sched.h>
-#include <mt-plat/mtk_pidmap.h>
 
 static DEFINE_SPINLOCK(kthread_create_lock);
 static LIST_HEAD(kthread_create_list);
@@ -308,19 +307,6 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
 
 	if (!create)
 		return ERR_PTR(-ENOMEM);
-	// Stash Code for debug AC8257P-7633
-	{
-		unsigned long basep = (unsigned long)threadfn;
-#ifdef CONFIG_MODULES
-		if (basep < (MODULES_VADDR)) {
-#else
-		if (basep < CONFIG_PAGE_OFFSET) {
-#endif
-			printk(KERN_ERR "[STASH]set threadfunc fault addr %lx\n", basep);
-			dump_stack();
-		}
-	}
-	// Stash Code End
 	create->threadfn = threadfn;
 	create->data = data;
 	create->node = node;
