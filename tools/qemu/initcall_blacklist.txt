@@ -1,0 +1,22 @@
+# Initcalls of the MediaTek / AutoChips drivers skipped in QEMU (initcall_blacklist=): they write SoC registers that
+# the QEMU "virt" machine does not have (bases left NULL without the MediaTek device tree nodes) and oops there.
+# Found with tools/qemu/qemu_iter.sh. One name per line, "#" starts a comment.
+hotplug_cb_init          # mp_enter_suspend(): APMIXEDSYS, base set by the MediaTek clock driver
+dram_test_init
+mt_freqhopping_drv_init
+BTIF_init
+scp_init
+atc_gpio_config_init
+mtktspmic_init           # PMIC IIO channel
+mtk_cooler_dtm_init      # mtk_wdt_request_en_set(): TOPRGU watchdog
+mtk_cooler_sysrst_init   # same
+mt6357tsbuck1_init       # PMIC IIO channel
+mt6357tsbuck2_init       # PMIC IIO channel
+fiq_cache_init
+mtk_smi_init             # SMI larbs
+mtk_cooler_atm_init      # thermal timer reading the CPU thermal sensors
+tscpu_init               # CPU thermal sensors
+mtk_sleep_init           # SPM
+_mt_cpufreq_pdrv_init    # cpuhvfs (SSPM)
+mcdi_init                # SSPM
+init_wk                  # watchdog kicker (TOPRGU)

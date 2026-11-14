@@ -1,0 +1,57 @@
+name: QEMU test of the AC8257 kernel 4.19 (experimental)
+
+# Branch qemu: boots the QEMU variant of the experimental 4.19.325 kernel (ac8257_ujc201_defconfig +
+# tools/qemu/qemu.config) in the scenarios of tools/qemu/run.sh: initramfs, dm-verity root as the LK passes it, a
+# corrupted dm-verity block, root=PARTUUID= and a missing PARTUUID. Keeps the consoles as an artifact, publishes nothing.
+
+on:
+  push:
+    branches: [qemu]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qemu:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Host packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bc bison flex libssl-dev libelf-dev cpio python2 \
+            clang-14 lld-14 llvm-14 binutils-aarch64-linux-gnu qemu-system-arm cryptsetup-bin gdisk e2fsprogs
+          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          qemu-system-aarch64 --version | head -1
+
+      - name: Build the QEMU variant of the kernel
+        run: |
+          set -o pipefail
+          tools/qemu/build_kernel.sh out 2>&1 | tee build.log
+
+      - name: Test init and disks
+        run: |
+          tools/qemu/build_init.sh qemu-work out
+          tools/qemu/make_disk.sh qemu-work qemu-work/init
+
+      - name: Boot scenarios
+        run: |
+          ok=1
+          for s in initramfs dm-verity dm-verity-corrupt partuuid partuuid-missing; do
+            tools/qemu/run.sh out/arch/arm64/boot/Image qemu-work "$s" || ok=0
+          done
+          [ "$ok" = 1 ]
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qemu-consoles-${{ github.sha }}
+          path: |
+            qemu-work/*.log
+            build.log
+          retention-days: 30

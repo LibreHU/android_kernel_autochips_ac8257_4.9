@@ -1,0 +1,985 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x410fd034]
+[    0.000000] Linux version 4.19.325+ (dokt@librehu) (Ubuntu clang version 14.0.6, GNU ld (GNU Binutils for Ubuntu) 2.42) #9 SMP PREEMPT Sat Nov 14 22:00:45 UTC 2026
+[    0.000000] bootconsole [ac8257epc0] enabled
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] ac8257: setup_arch: fdt at 0x0000000048200000
+[    0.000000] earlycon: pl11 at MMIO 0x0000000009000000 (options '')
+[    0.000000] bootconsole [pl11] enabled
+[    0.000000] ac8257: setup_arch: early params done
+[    0.000000] ac8257: setup_arch: memblock init
+[    0.000000] ac8257: setup_arch: memblock init done
+[    0.000000] ac8257: setup_arch: paging_init done
+[    0.000000] On node 0 totalpages: 524288
+[    0.000000]   DMA32 zone: 8192 pages used for memmap
+[    0.000000]   DMA32 zone: 0 pages reserved
+[    0.000000]   DMA32 zone: 524288 pages, LIFO batch:63
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] ac8257: setup_arch: psci done
+[    0.000000] percpu: Embedded 24 pages/cpu s59352 r8192 d30760 u98304
+[    0.000000] pcpu-alloc: s59352 r8192 d30760 u98304 alloc=24*4096
+[    0.000000] pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3 
+[    0.000000] Detected VIPT I-cache on CPU0
+[    0.000000] CPU features: enabling workaround for ARM erratum 843419
+[    0.000000] CPU features: enabling workaround for ARM erratum 845719
+[    0.000000] CPU features: enabling workaround for ARM errata 855873
+[    0.000000] CPU features: kernel page table isolation forced ON by KASLR
+[    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 516096
+[    0.000000] Kernel command line: console=ttyAMA0 earlycon=pl011,0x9000000 panic=-1 loglevel=8 initcall_blacklist=hotplug_cb_init,dram_test_init,mt_freqhopping_drv_init,BTIF_init,scp_init,atc_gpio_config_init,mtktspmic_init,mtk_cooler_dtm_init,mtk_cooler_sysrst_init,mt6357tsbuck1_init,mt6357tsbuck2_init,fiq_cache_init,mtk_smi_init,mtk_cooler_atm_init,tscpu_init,mtk_sleep_init,_mt_cpufreq_pdrv_init,mcdi_init,init_wk rdinit=/init
+[    0.000000] blacklisting initcall hotplug_cb_init
+[    0.000000] blacklisting initcall dram_test_init
+[    0.000000] blacklisting initcall mt_freqhopping_drv_init
+[    0.000000] blacklisting initcall BTIF_init
+[    0.000000] blacklisting initcall scp_init
+[    0.000000] blacklisting initcall atc_gpio_config_init
+[    0.000000] blacklisting initcall mtktspmic_init
+[    0.000000] blacklisting initcall mtk_cooler_dtm_init
+[    0.000000] blacklisting initcall mtk_cooler_sysrst_init
+[    0.000000] blacklisting initcall mt6357tsbuck1_init
+[    0.000000] blacklisting initcall mt6357tsbuck2_init
+[    0.000000] blacklisting initcall fiq_cache_init
+[    0.000000] blacklisting initcall mtk_smi_init
+[    0.000000] blacklisting initcall mtk_cooler_atm_init
+[    0.000000] blacklisting initcall tscpu_init
+[    0.000000] blacklisting initcall mtk_sleep_init
+[    0.000000] blacklisting initcall _mt_cpufreq_pdrv_init
+[    0.000000] blacklisting initcall mcdi_init
+[    0.000000] blacklisting initcall init_wk
+[    0.000000] Dentry cache hash table entries: 262144 (order: 9, 2097152 bytes)
+[    0.000000] Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes)
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] Memory: 2030936K/2097152K available (15230K kernel code, 1856K rwdata, 4872K rodata, 3520K init, 3207K bss, 66216K reserved, 0K cma-reserved)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] 
+[    0.000000] **********************************************************
+[    0.000000] **   NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE   **
+[    0.000000] **                                                      **
+[    0.000000] ** trace_printk() being used. Allocating extra memory.  **
+[    0.000000] **                                                      **
+[    0.000000] ** This means that this is a DEBUG kernel and it is     **
+[    0.000000] ** unsafe for production use.                           **
+[    0.000000] **                                                      **
+[    0.000000] ** If you see this message and you are not debugging    **
+[    0.000000] ** the kernel, report this immediately to your vendor!  **
+[    0.000000] **                                                      **
+[    0.000000] **   NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE   **
+[    0.000000] **********************************************************
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=4.
+[    0.000000] 	Tasks RCU enabled.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] arch_timer: cp15 timer(s) running at 62.50MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x1cd42e208c, max_idle_ns: 881590405314 ns
+[    0.000065] sched_clock: 56 bits at 62MHz, resolution 16ns, wraps every 4398046511096ns
+[    0.006156] ram_console: buffer start: 0x(____ptrval____), size: 0x800
+[    0.079778] pmic & external buck: 0x0
+[    0.079935] ram_console: CPU notifier status: 0, 0, 0x0, 0
+[    0.080009] ram_console: CPU HPS footprint: 0, 0x0, 0, 0
+[    0.080075] ram_console: last init function: 0x0
+[    0.129099] Calibrating delay loop (skipped), value calculated using timer frequency.. 125.00 BogoMIPS (lpj=250000)
+[    0.129383] pid_max: default: 32768 minimum: 301
+[    0.130228] Security Framework initialized
+[    0.130457] SELinux:  Initializing.
+[    0.132843] Mount-cache hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.132983] Mountpoint-cache hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.158285] /cpus/cpu-map: empty cluster
+[    0.164368] ASID allocator initialised with 32768 entries
+[    0.165462] rcu: Hierarchical SRCU implementation.
+[    0.169928] initcall hotplug_cb_init blacklisted
+[    0.170249] init_get_max_DRAM_size done. phone_dram_sz: 0x0, kernel_mem_sz: 0x80000000
+[    0.170547] [BOOT_REASON] 'boot_reason=' is not found
+[    0.170726] 'atag,devinfo' is not found
+[    0.171014] log_store: sram header address 0x(____ptrval____).
+[    0.171099] log_store: sram header sig 0x0.
+[    0.172165] smp: Bringing up secondary CPUs ...
+[    0.192461] smp: Brought up 1 node, 4 CPUs
+[    0.192578] SMP: Total of 4 processors activated.
+[    0.192684] CPU features: detected: 32-bit EL0 Support
+[    0.243967] CPU features: emulated: Privileged Access Never (PAN) using TTBR0_EL1 switching
+[    0.244312] CPU: All CPU(s) started at EL1
+[    0.255378] alternatives: patching kernel code
+[    0.261646] CPU3: update max cpu_capacity 1024
+[    0.268266] CPU1: update max cpu_capacity 1024
+[    0.272431] [BOOT_COMMON] 'atag,boot' is not found
+[    0.274879] 
+[    0.274879]  register_restart_handler- 0x000000000a1a2438, Notify call: - 0x0000000090bd1301
+[    0.275035] ARCH_RESET register mtk_restart_handler  ok!!!!
+[    0.281348] Registered cp15_barrier emulation handler
+[    0.281547] Registered setend emulation handler
+[    0.285574] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.285854] futex hash table entries: 1024 (order: 4, 65536 bytes)
+[    0.287139] pinctrl core: initialized pinctrl subsystem
+[    0.294566] mtk_wdt_get_base_addr: rgu iomap failed
+[    0.296866] NET: Registered protocol family 16
+[    0.299230] schedtune: configured to support 6 boost groups
+[    0.299618] audit: initializing netlink subsys (disabled)
+[    0.301448] audit: type=2000 audit(0.200:1): state=initialized audit_enabled=0 res=1
+[    0.301888] ramoops: using module parameters
+[    0.302671] bootconsole [ac8257epc0] disabled
+[    0.303611] persistent_ram: found existing invalid buffer, size 8538, start 8538
+[    0.305303] console [pstore-1] enabled
+[    0.305743] pstore: Registered ramoops as persistent store backend
+[    0.305895] ramoops: attached 0xe0000@0x47c90000, ecc: 0/0
+[    0.306471] [EMI] dram_type(0)
+[    0.306526] [EMI] mr5(0x0)
+[    0.306562] [EMI] ch_num(0)
+[    0.306598] [EMI] rk_num(0)
+[    0.306705] mt_pwrap_init++++
+[    0.306774] PWRAP get node failed
+[    0.306878] initcall dram_test_init blacklisted
+[    0.307454] mtk_wdt_init ok
+[    0.309598] cpuidle: using governor menu
+[    0.311527] cpuidle: using governor mtk_menu
+[    0.312648] hw-breakpoint: found 6 breakpoint and 4 watchpoint registers.
+[    0.314204] DMA: preallocated 256 KiB pool for atomic allocations
+[    0.314958] Serial: AMBA PL011 UART driver
+[    0.315328] [Power/PPM] cluster_num = 1
+[    0.315507] [Power/PPM] ppm cluster 0 -> core_num = 4, cpu_id = 0
+[    0.316934] [Power/PPM] @ppm_main_data_init: done!
+[    0.317761] [Power/PPM] @ppm_main_pdrv_probe: ppm probe done!
+[    0.318041] [Power/PPM] ppm_profile_init done
+[    0.318112] [Power/PPM] ppm driver init done!
+[    0.318305] [TRNG] module init
+[    0.319361] [I] [DISP][LCM] [transfer_ic_interface_init] enter
+[    0.319529] [I] [DISP][LCM] [transfer_ic_interface_init] Success to register interface i2c driver.
+[    0.320192] [SSPM] Reserved Memory Failed
+[    0.320464] [cmdq] cmdq_init enter
+[    0.398954] cryptd: max_cpu_qlen set to 1000
+[    0.402220] [CHIP] node not found
+[    0.402541] [CHIP] node not found
+[    0.402631] [Power/cpufreq] 3,0,0xffff,1000,1000,1000,1000
+[    0.403418] node 'mediatek,ac8257-mcdi' not found!
+[    0.403638] mcdi_sysram_base =           (null)
+[    0.403755] initcall mt_freqhopping_drv_init blacklisted
+[    0.404070] [CONN-MD-DFT][I]conn_md_init:init message queue list succeed
+[    0.404229] [CONN-MD-DFT][I]conn_md_init:init active queue list succeed
+[    0.404358] [CONN-MD-DFT][I]conn_md_init:init user information list succeed
+[    0.404594] [CONN_MD_DMP][I]conn_md_dmp_init:alloc msg_log memory done, size:0x00000428
+[    0.404771] [CONN-MD-DFT][I]conn_md_init:conn_md_dmp_init succeed
+[    0.405478] [CONN-MD-DFT][I]conn_md_init:create conn_md_thread succeed, wakeup it
+[    0.405698] rt5738_i2c_init
+[    0.405968] [PSEUDO][mtk_pseudo_init #3333]: mtk_pseudo_init +
+[    0.406191] [PSEUDO][mtk_pseudo_init #3340]: mtk_pseudo_init -
+[    0.406390] Init Richtek RegMap 1.1.14_G
+[    0.406824] [MTZ]enter metazone init
+[    0.406916] [MTZ]metazone init fail in find autochips,metazone dts compatible node!!
+[    0.407149] [MTZ]exit metazone init with error
+[    0.409425] SCSI subsystem initialized
+[    0.410199] usbcore: registered new interface driver usbfs
+[    0.410470] usbcore: registered new interface driver hub
+[    0.410782] usbcore: registered new device driver usb
+[    0.411257] Touchscreen menager init!
+[    0.411583] videodev: Linux video capture interface: v2.00
+[    0.413778] Advanced Linux Sound Architecture Driver Initialized.
+[    0.420184] [CMDQ]cmdq_init CMDQ driver init begin
+[    0.420649] [CMDQ]CMDQ driver init end
+[    0.421517] clocksource: Switched to clocksource arch_sys_counter
+[    0.496942] VFS: Disk quotas dquot_6.6.0
+[    0.497222] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    0.499956] [Power/cpufreq] FAILED TO PROBE SSPM DEVICE
+[    0.500073] [Power/cpufreq] FAILED TO INIT DVFS SSPM (-19)
+[    0.500175] [MUSB]usb20_init 2125: usb20 init
+[    0.500341] [MUSB]usb20_init 2144: usb20 init ret:0
+[    0.501010] [ION]ion_init()
+[    0.501544] [ION]ion_drv_probe() heap_nr=11
+[    0.502114] [ION]ion_heap_create: Heap type is disabled: 1
+[    0.502221] [ION]ion_mtk_heap_create: error creat heap ion_system_contig_heap type 1 base 0 size 0
+[    0.507256] [ION]ion_sec_heap_create error: not support
+[    0.507433] [ION]ion_mtk_heap_create: error creat heap ion_sec_heap type 13 base 0 size 0
+[    0.507524] [ION]ion_sec_heap_create error: not support
+[    0.507594] [ION]ion_mtk_heap_create: error creat heap ion_sec_heap_prot type 13 base 0 size 0
+[    0.507708] [ION]ion_sec_heap_create error: not support
+[    0.507763] [ION]ion_mtk_heap_create: error creat heap ion_sec_heap_2d_fr type 13 base 0 size 0
+[    0.507880] [ION]ion_sec_heap_create error: not support
+[    0.507942] [ION]ion_mtk_heap_create: error creat heap ion_sec_heap_wfd type 13 base 0 size 0
+[    0.509758] [MTZ] DW Read u4Idx(0x1004b).
+[    0.509891] [MTZ] DW Read Failed. (No MetaZone).
+[    0.509963] [ION]MetaZone_Read(METAZONE_CVBS_AVM_MODE) fail
+[    0.509986] [ION]cvbs avm is disable, use reserved_wch_phys_addr
+[    0.510096] [ION]HDH heap_backcar base:0x0, size:0x0.
+[    0.510228] [ION]ion_heap_create: Heap type is RESERVED: 6
+[    0.510300] ion_reserved heap parameter error.
+[    0.510368] ion_heap_create: error creating heap ion_reserved_mm_heap type 6 base 0 size 0
+[    0.510456] [ION]ion_mtk_heap_create: error creat heap ion_reserved_mm_heap type 6 base 0 size 0
+[    0.511533] MMP: mmprofile_enable(): enable: 1
+[    0.512087] MMP: mmprofile_force_start(): start: 1
+[    0.514466] [ION]ion_init fd register notifer fail
+[    0.515046] NET: Registered protocol family 2
+[    0.516626] IP idents hash table entries: 32768 (order: 6, 262144 bytes)
+[    0.521204] tcp_listen_portaddr_hash hash table entries: 1024 (order: 2, 16384 bytes)
+[    0.521542] TCP established hash table entries: 16384 (order: 5, 131072 bytes)
+[    0.521852] TCP bind hash table entries: 16384 (order: 6, 262144 bytes)
+[    0.522141] TCP: Hash tables configured (established 16384 bind 16384)
+[    0.523380] UDP hash table entries: 1024 (order: 3, 32768 bytes)
+[    0.523657] UDP-Lite hash table entries: 1024 (order: 3, 32768 bytes)
+[    0.524778] NET: Registered protocol family 1
+[    0.527451] [Power/clkbuf] clk_buf_dts_map can't find compatible node for pmic_clock_buffer
+[    0.527586] [Power/clkbuf] clk_buf_init: failed due to DTS failed
+[    0.536100] Unpacking initramfs...
+[    0.542248] Freeing initrd memory: 4K
+[    0.546843] hw perfevents: enabled with armv8_pmuv3 PMU driver, 7 counters available
+[    0.569993] Initialise system trusted keyrings
+[    0.571321] workingset: timestamp_bits=45 max_order=19 bucket_order=0
+[    0.580276] fuse init (API version 7.27)
+[    0.599495] Key type asymmetric registered
+[    0.599649] Asymmetric key parser 'x509' registered
+[    0.599894] io scheduler noop registered
+[    0.600006] io scheduler deadline registered (default)
+[    0.600272] io scheduler cfq registered
+[    0.600362] io scheduler mq-deadline registered (default)
+[    0.600444] io scheduler kyber registered
+[    0.602250] [CLK_APMIXED] find node failed
+[    0.602341] [CLK_APMIXED] base failed
+[    0.602420] [CLK_MCUCFG] find node failed
+[    0.602477] [CLK_MCUCFG] base failed
+[    0.609096] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.612600] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.630094] loop: module loaded
+[    0.631139] zram: Added device: zram0
+[    0.631898] [devinfo] Already init done earlier. Extra times:1.
+[    0.632011] [devinfo] data index 136 is larger than total size 0
+[    0.632110] [devinfo] Already init done earlier. Extra times:2.
+[    0.632174] [devinfo] data index 136 is larger than total size 0
+[    0.632236] [devinfo] Already init done earlier. Extra times:3.
+[    0.632298] [devinfo] data index 137 is larger than total size 0
+[    0.632360] [devinfo] Already init done earlier. Extra times:4.
+[    0.632421] [devinfo] data index 137 is larger than total size 0
+[    0.632483] [devinfo] Already init done earlier. Extra times:5.
+[    0.632544] [devinfo] data index 137 is larger than total size 0
+[    0.632613] [devinfo] Already init done earlier. Extra times:6.
+[    0.632674] [devinfo] data index 137 is larger than total size 0
+[    0.632736] [devinfo] Already init done earlier. Extra times:7.
+[    0.632798] [devinfo] data index 135 is larger than total size 0
+[    0.632889] [devinfo] Already init done earlier. Extra times:8.
+[    0.632967] [devinfo] data index 135 is larger than total size 0
+[    0.633032] [devinfo] Already init done earlier. Extra times:9.
+[    0.633095] [devinfo] data index 135 is larger than total size 0
+[    0.633673] [Power/spower] 422/1689/1351/1351/1351/1351/1689/1351/1520/
+[    0.633926] [CHIP] node not found
+[    0.633988] [CHIP] node not found
+[    0.634030] [Power/cpufreq] 3,0,0xffff,1000,1000,1000,1000
+[    0.634207] [Power/PPM] @ppm_cpi_init: CPI done! enable = 0
+[    0.634520] [Power/PPM] @ppm_sysboost_policy_init: register PPM_POLICY_SYS_BOOST done!
+[    0.634674] [Power/PPM] @ppm_ptpod_policy_init: register PPM_POLICY_PTPOD done!
+[    0.634857] [register_battery_oc_notify] prio_val=1
+[    0.634929] [Power/PPM] @ppm_pwrthro_policy_init: register PPM_POLICY_PWR_THRO done!
+[    0.635100] [Power/PPM] @ppm_thermal_policy_init: register PPM_POLICY_THERMAL done!
+[    0.635322] [Power/PPM] @ppm_hard_userlimit_policy_init: register PPM_POLICY_HARD_USER_LIMIT done!
+[    0.635516] [Power/PPM] @ppm_userlimit_policy_init: register PPM_POLICY_USER_LIMIT done!
+[    0.635668] [Power/PPM] @ppm_forcelimit_policy_init: register PPM_POLICY_FORCE_LIMIT done!
+[    0.635871] [Power/PPM] @ppm_ut_policy_init: register PPM_POLICY_UT done!
+[    0.635970] DISABLE_PBM_FEATURE is defined.
+[    0.636474] [mt_udi] error: cannot find node UDI_NODE!
+[    0.636554] [mt_udi] udipin_base = 0x0.
+[    0.636605] [mt_udi] udi pinmux get some base NULL.
+[    0.636949] [mt_udi] UDI Initial.
+[    0.637108] initcall BTIF_init blacklisted
+[    0.637926] carplay_init register carplay_driver
+[    0.638759] usbcore: registered new interface driver carplay
+[    0.638903] musb-hdrc: version 6.0, ?dma?, otg (peripheral+host)
+[    0.639115] [BOOT_COMMON] [create_sysfs] No atag,meta found !
+[    0.639420] initcall scp_init blacklisted
+[    0.646651] SSPM: Can't get logger phys mem
+[    0.646750] [SSPM] Platform Init Failed
+[    0.647158] [mmdvfs]mmdvfs_pmqos_init
+[    0.647228] mtk_rtc_common: rtc_init
+[    0.647538] [WRAP]driver need registered!!
+[    0.647627] [WRAP]driver need registered!!
+[    0.647688] [WRAP]driver need registered!!
+[    0.647753] [WRAP]driver need registered!!
+[    0.647878] mtk_rtc_hal: rtc_lpsd_restore_al_mask
+[    0.647980] [WRAP]driver need registered!!
+[    0.647986] [WRAP]driver need registered!!
+[    0.648033] [WRAP]driver need registered!!
+[    0.648078] [WRAP]driver need registered!!
+[    0.648124] [WRAP]driver need registered!!
+[    0.648172] mtk_rtc_hal: 1st RTC_AL_MASK = 0x0
+[    0.648265] [WRAP]driver need registered!!
+[    0.648269] [WRAP]driver need registered!!
+[    0.648313] [WRAP]driver need registered!!
+[    0.648368] [WRAP]driver need registered!!
+[    0.648416] mtk_rtc_hal: 2nd RTC_AL_MASK = 0x0
+[    0.649053] [WRAP]driver need registered!!
+[    0.649061] [WRAP]driver need registered!!
+[    0.649119] [WRAP]driver need registered!!
+[    0.649168] [WRAP]driver need registered!!
+[    0.649225] [WRAP]driver need registered!!
+[    0.649276] [WRAP]driver need registered!!
+[    0.649331] [WRAP]driver need registered!!
+[    0.649380] [WRAP]driver need registered!!
+[    0.649470] [WRAP]driver need registered!!
+[    0.649529] [WRAP]driver need registered!!
+[    0.649584] [WRAP]driver need registered!!
+[    0.649656] [WRAP]driver need registered!!
+[    0.649711] [WRAP]driver need registered!!
+[    0.649763] [WRAP]driver need registered!!
+[    0.649842] [WRAP]driver need registered!!
+[    0.649900] [WRAP]driver need registered!!
+[    0.650178] [WRAP]driver need registered!!
+[    0.650239] [WRAP]driver need registered!!
+[    0.650291] [WRAP]driver need registered!!
+[    0.650345] mtk_rtc_hal_common: mon = 1, day = 1, hour = 0
+[    0.650448] [WRAP]driver need registered!!
+[    0.650456] [WRAP]driver need registered!!
+[    0.650503] [WRAP]driver need registered!!
+[    0.650553] [WRAP]driver need registered!!
+[    0.650600] [WRAP]driver need registered!!
+[    0.650649] [WRAP]driver need registered!!
+[    0.650696] [WRAP]driver need registered!!
+[    0.650752] [WRAP]driver need registered!!
+[    0.650819] [WRAP]driver need registered!!
+[    0.650879] [WRAP]driver need registered!!
+[    0.650930] [WRAP]driver need registered!!
+[    0.650979] [WRAP]driver need registered!!
+[    0.651027] [WRAP]driver need registered!!
+[    0.651074] [WRAP]driver need registered!!
+[    0.651121] [WRAP]driver need registered!!
+[    0.651182] [WRAP]driver need registered!!
+[    0.651231] [WRAP]driver need registered!!
+[    0.651309] [WRAP]driver need registered!!
+[    0.651357] [WRAP]driver need registered!!
+[    0.651416] mtk_rtc_common: reset to default date 2010/01/01
+[    0.651711] [WRAP]driver need registered!!
+[    0.651725] [WRAP]driver need registered!!
+[    0.651779] [WRAP]driver need registered!!
+[    0.651856] [WRAP]driver need registered!!
+[    0.651909] [WRAP]driver need registered!!
+[    0.651961] [WRAP]driver need registered!!
+[    0.652011] [WRAP]driver need registered!!
+[    0.652074] [WRAP]driver need registered!!
+[    0.652148] mtk_rtc_common: read al time = 1968/00/00 00:00:00 (0)
+[    0.652295] [WRAP]driver need registered!!
+[    0.652296] [WRAP]driver need registered!!
+[    0.652342] [WRAP]driver need registered!!
+[    0.652387] [WRAP]driver need registered!!
+[    0.652431] [WRAP]driver need registered!!
+[    0.652475] [WRAP]driver need registered!!
+[    0.652519] [WRAP]driver need registered!!
+[    0.652562] [WRAP]driver need registered!!
+[    0.652606] [WRAP]driver need registered!!
+[    0.652650] [WRAP]driver need registered!!
+[    0.652694] [WRAP]driver need registered!!
+[    0.652738] [WRAP]driver need registered!!
+[    0.652782] [WRAP]driver need registered!!
+[    0.652848] [WRAP]driver need registered!!
+[    0.652896] [WRAP]driver need registered!!
+[    0.652941] [WRAP]driver need registered!!
+[    0.652986] [WRAP]driver need registered!!
+[    0.653030] [WRAP]driver need registered!!
+[    0.653080] [WRAP]driver need registered!!
+[    0.653126] mtk_rtc_hal_common: mon = 1, day = 1, hour = 0
+[    0.653225] [WRAP]driver need registered!!
+[    0.653226] [WRAP]driver need registered!!
+[    0.653270] [WRAP]driver need registered!!
+[    0.653314] [WRAP]driver need registered!!
+[    0.653358] [WRAP]driver need registered!!
+[    0.653402] [WRAP]driver need registered!!
+[    0.653479] [WRAP]driver need registered!!
+[    0.653532] [WRAP]driver need registered!!
+[    0.653582] [WRAP]driver need registered!!
+[    0.653631] [WRAP]driver need registered!!
+[    0.653681] [WRAP]driver need registered!!
+[    0.653731] [WRAP]driver need registered!!
+[    0.653780] [WRAP]driver need registered!!
+[    0.653849] [WRAP]driver need registered!!
+[    0.653902] [WRAP]driver need registered!!
+[    0.653952] [WRAP]driver need registered!!
+[    0.654002] [WRAP]driver need registered!!
+[    0.654052] [WRAP]driver need registered!!
+[    0.654102] [WRAP]driver need registered!!
+[    0.654205] mtk_rtc_common: reset to default date 2010/01/01
+[    0.654602] rtc rtc0: invalid alarm value: 1968-1-1 0:0:0
+[    0.655358] mt-rtc mt-rtc: rtc core: registered mt-rtc as rtc0
+[    0.655632] [WRAP]driver need registered!!
+[    0.655636] [WRAP]driver need registered!!
+[    0.655686] [WRAP]driver need registered!!
+[    0.655731] [WRAP]driver need registered!!
+[    0.655776] [WRAP]driver need registered!!
+[    0.655853] [WRAP]driver need registered!!
+[    0.655901] [WRAP]driver need registered!!
+[    0.655946] [WRAP]driver need registered!!
+[    0.655991] [WRAP]driver need registered!!
+[    0.656035] [WRAP]driver need registered!!
+[    0.656079] [WRAP]driver need registered!!
+[    0.656124] [WRAP]driver need registered!!
+[    0.656167] [WRAP]driver need registered!!
+[    0.656217] [WRAP]driver need registered!!
+[    0.656261] [WRAP]driver need registered!!
+[    0.656305] [WRAP]driver need registered!!
+[    0.656351] [WRAP]driver need registered!!
+[    0.656395] [WRAP]driver need registered!!
+[    0.656439] [WRAP]driver need registered!!
+[    0.656485] mtk_rtc_hal_common: mon = 1, day = 1, hour = 0
+[    0.656589] [WRAP]driver need registered!!
+[    0.656591] [WRAP]driver need registered!!
+[    0.656635] [WRAP]driver need registered!!
+[    0.656679] [WRAP]driver need registered!!
+[    0.656723] [WRAP]driver need registered!!
+[    0.656766] [WRAP]driver need registered!!
+[    0.656831] [WRAP]driver need registered!!
+[    0.656878] [WRAP]driver need registered!!
+[    0.656922] [WRAP]driver need registered!!
+[    0.656967] [WRAP]driver need registered!!
+[    0.657011] [WRAP]driver need registered!!
+[    0.657055] [WRAP]driver need registered!!
+[    0.657099] [WRAP]driver need registered!!
+[    0.657143] [WRAP]driver need registered!!
+[    0.657187] [WRAP]driver need registered!!
+[    0.657232] [WRAP]driver need registered!!
+[    0.657281] [WRAP]driver need registered!!
+[    0.657325] [WRAP]driver need registered!!
+[    0.657369] [WRAP]driver need registered!!
+[    0.657513] mtk_rtc_common: reset to default date 2010/01/01
+[    0.658150] mt-rtc mt-rtc: setting system clock to 2010-01-01 00:00:00 UTC (1262304000)
+[    0.658616] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    0.660574] [DISP]init_log_buffer success
+[    0.662956] [DFRC] start to initialize fps policy
+[    0.663347] [DFRC] Display does not start probe
+[    0.667758] USB_BOOST, <create_sys_fs(), 575> 
+[    0.668401] USB_BOOST, <usb_boost_set_para_and_arg(), 147> para_range:<4>
+[    0.668507] USB_BOOST, <usb_boost_set_para_and_arg(), 147> para_range:<4>
+[    0.668592] USB_BOOST, <usb_boost_set_para_and_arg(), 147> para_range:<4>
+[    0.668736] USB_BOOST, <usb_boost_set_para_and_arg(), 147> para_range:<4>
+[    0.668917] USB_BOOST, <usb_boost_set_para_and_arg(), 147> para_range:<4>
+[    0.668995] USB_BOOST, <usb_boost_set_para_and_arg(), 147> para_range:<4>
+[    0.670316] initcall atc_gpio_config_init blacklisted
+[    0.670790] mtk_cooler_shutdown: thermal/cooler/shutdown init
+[    0.670948] mtk_cooler_shutdown: thermal/cooler/shutdown register ltf
+[    0.671661] mtk_cooler_backlight: thermal/cooler/backlight init
+[    0.671749] mtk_cooler_backlight: thermal/cooler/backlight register ltf
+[    0.672129] mtk_cooler_kshutdown: thermal/cooler/kshutdown init
+[    0.672204] mtk_cooler_kshutdown: thermal/cooler/kshutdown register ltf
+[    0.673114] mtk_change_policy: thermal/thermal_policy init
+[    0.673406] [Thermal/TZ/BTS] mtkts_bts_prepare_table table_num=7
+[    0.673889] [Thermal/TZ/BTSMDPA] mtkts_btsmdpa_prepare_table table_num=7
+[    0.674093] initcall tscpu_init blacklisted
+[    0.674150] initcall mtktspmic_init blacklisted
+[    0.675559] [W]mtk_wcn_cmb_stub_query_ctrl:Thermal query not registered
+[    0.678650] initcall mtk_cooler_atm_init blacklisted
+[    0.678742] initcall mtk_cooler_dtm_init blacklisted
+[    0.678823] initcall mtk_cooler_sysrst_init blacklisted
+[    0.678908] [Cooler_NR]mtk_cooler_NR_init 213
+[    0.679087] [Cooler_NR]mtk_cooler_NR_init 234
+[    0.679312] initcall mt6357tsbuck1_init blacklisted
+[    0.679382] initcall mt6357tsbuck2_init blacklisted
+[    0.684965] initcall fiq_cache_init blacklisted
+[    0.685250] [vss_avin] avin_module_init[info] enter
+[    0.685691] [vss_avin] avin_probe[info] enter
+[    0.687049] [vss_avin] avin_probe[info] the major is 81, the minor is 0
+[    0.687247] [vss_avin] avin_module_init[info] success!
+[    0.687408] [vss_tvd] tvd_init[info] enter
+[    0.687636] [vss_tvd] tvd_init[info] leave
+[    0.687847]  [Dualarm] [INFO]: dualarm_init success
+[    0.687974] Can not find arm2-log node!
+[    0.688065] [vss_wch] wch_dev_init[info] init--->
+[    0.688316] [vss_nr] nr_init[info] [NR]:nr_init--->
+[    0.688588] [vss_nr] NrKernelThreadInit[info] NrKernelThreadInit begin! 
+[    0.689170] [vss_nr] NrKernelThreadInit[info] NrKernelThreadInit create thread success = 0x00000000f976b872 
+[    0.689376] [vss_nr] NrKernelThreadInit[info] NrKernelThreadInit end! 
+[    0.689557] [vss_nr] NrUpdateAddressThread[info] NrUpdateAddressThread! 
+[    0.689733] [vss_di] di_init[info] di_init 
+[    0.690054] [BackCarDrv][info] backcar_drv_init(line:624) enter
+[    0.690431] [BackCarDrv][info] backcar_probe(line:524) enter
+[    0.690642] [BackCarDrv][info] backcar_probe(line:542) [autochips] fail to get arm2 backcar ui node
+[    0.690778] [BackCarDrv][info] backcar_probe(line:555) [autochips] fail to get arm2 backcar mdp node
+[    0.690964] [BackCarDrv][info] backcar_probe(line:567) [autochips] fail to get arm2 backcar isp node
+[    0.691073] [BackCarDrv][info] backcar_probe(line:570) leave and minor number is 57
+[    0.691373] [imgsensor][imgsensor_init] [camerahw_probe] start
+[    0.692246] [BackCarDrv][info] backcar_drv_init(line:685) leave
+[    0.693334] spi_dev_init().
+[    0.697216] tun: Universal TUN/TAP device driver, 1.6
+[    0.697667] PPP generic driver version 2.4.2
+[    0.698083] PPP BSD Compression module registered
+[    0.698206] PPP Deflate Compression module registered
+[    0.698452] PPP MPPE Compression module registered
+[    0.698545] NET: Registered protocol family 24
+[    0.698766] pegasus: v0.9.3 (2013/04/25), Pegasus/Pegasus II USB Ethernet driver
+[    0.698986] usbcore: registered new interface driver pegasus
+[    0.699117] usbcore: registered new interface driver rtl8150
+[    0.699261] usbcore: registered new interface driver r8152
+[    0.699462] usbcore: registered new interface driver lan78xx
+[    0.699602] usbcore: registered new interface driver asix
+[    0.699726] usbcore: registered new interface driver ax88179_178a
+[    0.699890] usbcore: registered new interface driver cdc_ether
+[    0.700021] usbcore: registered new interface driver cdc_eem
+[    0.700156] usbcore: registered new interface driver dm9601
+[    0.700282] usbcore: registered new interface driver sr9700
+[    0.700436] usbcore: registered new interface driver CoreChips
+[    0.700587] usbcore: registered new interface driver smsc75xx
+[    0.700737] usbcore: registered new interface driver smsc95xx
+[    0.700893] usbcore: registered new interface driver net1080
+[    0.701021] usbcore: registered new interface driver rndis_host
+[    0.701146] usbcore: registered new interface driver cdc_subset
+[    0.701278] usbcore: registered new interface driver zaurus
+[    0.701492] usbcore: registered new interface driver MOSCHIP usb-ethernet driver
+[    0.701654] usbcore: registered new interface driver ipheth
+[    0.701796] usbcore: registered new interface driver cdc_ncm
+[    0.701955] usbcore: registered new interface driver ch9200
+[    0.702523] usbcore: registered new interface driver usb-storage
+[    0.702667] usbcore: registered new interface driver ums-alauda
+[    0.702797] usbcore: registered new interface driver ums-cypress
+[    0.702983] usbcore: registered new interface driver ums-datafab
+[    0.703115] usbcore: registered new interface driver ums-freecom
+[    0.703250] usbcore: registered new interface driver ums-isd200
+[    0.703424] usbcore: registered new interface driver ums-jumpshot
+[    0.703558] usbcore: registered new interface driver ums-karma
+[    0.703686] usbcore: registered new interface driver ums-onetouch
+[    0.703836] usbcore: registered new interface driver ums-sddr09
+[    0.703976] usbcore: registered new interface driver ums-sddr55
+[    0.704107] usbcore: registered new interface driver ums-usbat
+[    0.704239] usbcore: registered new interface driver trancevibrator
+[    0.705208] usb_function_register name=acm
+[    0.705571] usb_function_register name=gser
+[    0.707153] usb_function_register name=rndis
+[    0.707259] usb_function_register name=mass_storage
+[    0.707373] usb_function_register name=ffs
+[    0.707434] usb_function_register name=midi
+[    0.707491] usb_function_register name=hid
+[    0.707552] usb_function_register name=mtp
+[    0.707607] usb_function_register name=ptp
+[    0.707663] usb_function_register name=audio_source
+[    0.707724] usb_function_register name=accessory
+[    0.707784] usb_function_register name=ean
+[    0.707870] usb_function_register name=iap2
+[    0.707928] usb_function_register name=ncm
+[    0.708260] usbcore: registered new interface driver xpad
+[    0.708737] [tpd_em_log] :register device successfully
+[    0.708856] <<-GTP-INFO->> MTK68554 debug MediaTek gt928 touch panel driver init
+[    0.709031] mtk-tpd:[tpd_get_dts_info:140] can't find touch compatible custom node
+[    0.709203] [FTS_TS]tpd_driver_init: Enter
+[    0.709254] [FTS_TS/I]tpd_driver_init:Driver version: Focaltech V3.0 20190102
+[    0.709350] mtk-tpd:[tpd_get_dts_info:140] can't find touch compatible custom node
+[    0.709604] [FTS_TS/I]tpd_driver_init:tpd max touch num:2
+[    0.709698] [FTS_TS]tpd_driver_init: Exit(1525)
+[    0.709767] ILITEK: (ilitek_plat_dev_init, 441): ILITEK TP driver init for MTK
+[    0.709894] mtk-tpd:[tpd_get_dts_info:140] can't find touch compatible custom node
+[    0.710091] mtk-tpd:[tpd_get_dts_info:140] can't find touch compatible custom node
+[    0.710366] i2c /dev entries driver
+[    0.710566] Cannot find dma_node
+[    0.710662] Cannot find i2c_common node
+[    0.710719]  mt_i2c_init driver as platform device
+[    0.712283] IR NEC protocol handler initialized
+[    0.712374] IR RC5(x/sz) protocol handler initialized
+[    0.712444] IR RC6 protocol handler initialized
+[    0.712507] IR JVC protocol handler initialized
+[    0.712568] IR Sony protocol handler initialized
+[    0.712630] IR SANYO protocol handler initialized
+[    0.712692] IR Sharp protocol handler initialized
+[    0.712754] IR XMP protocol handler initialized
+[    0.713140] usbcore: registered new interface driver uvcvideo
+[    0.713224] USB Video Class driver (1.1.1)
+[    0.713983] device-mapper: uevent: version 1.0.3
+[    0.714503] device-mapper: ioctl: 4.39.0-ioctl (2018-04-03) initialised: dm-devel@redhat.com
+[    0.716002] CPU 0 failed to init idle CPU ops
+[    0.717139] hidraw: raw HID events driver (C) Jiri Kosina
+[    0.718936] usbcore: registered new interface driver usbhid
+[    0.719024] usbhid: USB HID core driver
+[    0.719376] ashmem: initialized
+[    0.719520] lowmemorykiller: lowmem_init: successful to register misc device!
+[    0.722118] [SCP] register scp A notify callback..
+[    0.722368] nanohub: loaded; ret=0
+[    0.722544] initcall mtk_smi_init blacklisted
+[    0.724361] KernelSU: welcome to KernelSU version 33314
+[    0.724535] KernelSU: feature: feature management initialized
+[    0.724683] KernelSU: feature: registered handler for sulog (id=2)
+[    0.724891] KernelSU: feature: registered handler for adb_root (id=3)
+[    0.725012] KernelSU: feature: registered handler for shell_su_adb_only (id=6)
+[    0.725177] KernelSU: LSM hooks initialized.
+[    0.725238] KernelSU: feature: registered handler for selinux_hide (id=4)
+[    0.725852] KernelSU: KernelSU IOCTL Commands:
+[    0.726021] KernelSU:   GRANT_ROOT         = 0x00004b01
+[    0.726360] KernelSU:   GET_INFO           = 0x80104b02
+[    0.726510] KernelSU:   GET_INFO_LEGACY    = 0x80004b02
+[    0.726526] selinux_hide: track type: :ksu:
+[    0.726583] KernelSU:   REPORT_EVENT       = 0x40004b03
+[    0.726587] KernelSU:   SET_SEPOLICY       = 0xc0004b04
+[    0.726589] KernelSU:   CHECK_SAFEMODE     = 0x80004b05
+[    0.726591] KernelSU:   GET_ALLOW_LIST     = 0xc0004b06
+[    0.726605] KernelSU:   GET_DENY_LIST      = 0xc0004b07
+[    0.727194] selinux_hide: track type: :ksu_file:
+[    0.727254] KernelSU:   NEW_GET_ALLOW_LIST = 0xc0044b06
+[    0.727687] KernelSU:   NEW_GET_DENY_LIST  = 0xc0044b07
+[    0.727729] selinux_hide: track rule: :ksu: -> :ksu_file:
+[    0.727755] KernelSU:   UID_GRANTED_ROOT   = 0xc0004b08
+[    0.727767] KernelSU:   UID_SHOULD_UMOUNT  = 0xc0004b09
+[    0.728065] KernelSU:   GET_MANAGER_APPID  = 0x80004b0a
+[    0.728346] selinux_hide: track type: :magisk:
+[    0.728358] KernelSU:   GET_APP_PROFILE    = 0xc0004b0b
+[    0.728370] KernelSU:   SET_APP_PROFILE    = 0x40004b0c
+[    0.729090] selinux_hide: track type: :magisk_file:
+[    0.729165] KernelSU:   GET_FEATURE        = 0xc0004b0d
+[    0.729580] selinux_hide: track type: :droidspacesd:
+[    0.729587] KernelSU:   SET_FEATURE        = 0x40004b0e
+[    0.729611] KernelSU:   GET_WRAPPER_FD     = 0x40004b0f
+[    0.730042] selinux_hide: track type: :droidspaces:
+[    0.730212] KernelSU:   MANAGE_MARK        = 0xc0004b10
+[    0.730498] KernelSU:   NUKE_EXT4_SYSFS    = 0x40004b11
+[    0.730861] selinux_hide: track type: :lsposed_file:
+[    0.730938] KernelSU:   ADD_TRY_UMOUNT     = 0x40004b12
+[    0.731209] KernelSU:   SET_INIT_PGRP      = 0x00004b13
+[    0.731697] KernelSU:   GET_SULOG_FD       = 0x40044b14
+[    0.731701] selinux_hide: track type: :xposed_data:
+[    0.732233] selinux_hide: track type: :msd_app:
+[    0.732309] KernelSU:   DISABLE_ESCAPE_TO_ROOT = 0x00004b15
+[    0.732647] KernelSU:   GET_HOOK_MODE      = 0x80004b62
+[    0.732855] selinux_hide: track type: :msd_daemon:
+[    0.732949] KernelSU:   GET_VERSION_TAG    = 0x80004b63
+[    0.733157] KernelSU: hook_manager: initializing..
+[    0.733180] selinux_hide: fake status ready seq=0
+[    0.733263] KernelSU: feature: registered handler for kernel_umount (id=1)
+[    0.733692] KernelSU: feature: registered handler for su_compat (id=0)
+[    0.733881] KernelSU: feature: registered handler for avc_spoof (id=10003)
+[    0.745700] usbcore: registered new interface driver snd-usb-audio
+[    0.749747] mtk_soc_capture_platform_init
+[    0.751714] mtk_soc_voice_platform_init()
+[    0.757093] Mirror/redirect action on
+[    0.757729] u32 classifier
+[    0.757828]     Performance counters on
+[    0.757924]     input device check on
+[    0.757971]     Actions configured
+[    0.763739] xt_time: kernel timezone is -0000
+[    0.764066] ipip: IPv4 and MPLS over IPv4 tunneling driver
+[    0.765897] IPv4 over IPsec tunneling driver
+[    0.772014] Initializing XFRM netlink socket
+[    0.772952] NET: Registered protocol family 10
+[    0.780381] Segment Routing with IPv6
+[    0.781178] mip6: Mobile IPv6
+[    0.787371] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.791559] NET: Registered protocol family 17
+[    0.791894] NET: Registered protocol family 15
+[    0.792415] Bridge firewalling registered
+[    0.792501] 8021q: 802.1Q VLAN Support v1.8
+[    0.795867] registered taskstats version 1
+[    0.795969] Loading compiled-in X.509 certificates
+[    0.796725] Key type ._fscrypt registered
+[    0.796797] Key type .fscrypt registered
+[    0.796881] Key type fscrypt-provisioning registered
+[    0.798978] pstore: Using compression: deflate
+[    0.800507] [dt_get_boot_type] 'atag,boot' is not found
+[    0.802185] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 39, base_baud = 0) is a PL011 rev1
+[    0.803352] console [ttyAMA0] enabled
+[    0.803352] console [ttyAMA0] enabled
+[    0.803643] bootconsole [pl11] disabled
+[    0.803643] bootconsole [pl11] disabled
+[    0.804308] [DFRC] Display does not start probe
+[    0.804878] [DFRC] Display does not start probe
+[    0.805167] initcall mtk_sleep_init blacklisted
+[    0.805321] [IDLE] node 'mediatek,infracfg_ao' not found!
+[    0.805432] [IDLE] node 'mediatek,infracfg_ao' cannot iomap!
+[    0.805846] [IDLE] node 'mediatek,mmsys_config' not found!
+[    0.805906] [IDLE] node 'mediatek,mmsys_config' cannot iomap!
+[    0.805980] [IDLE] node 'mediatek,imgsys' not found!
+[    0.806025] [IDLE] node 'mediatek,imgsys' cannot iomap!
+[    0.806091] [IDLE] node 'mediatek,mfgcfg' not found!
+[    0.806135] [IDLE] node 'mediatek,mfgcfg' cannot iomap!
+[    0.806200] [IDLE] node 'mediatek,venc_gcon' not found!
+[    0.806247] [IDLE] node 'mediatek,venc_gcon' cannot iomap!
+[    0.806322] [IDLE] node 'mediatek,apmixed' not found!
+[    0.806367] [IDLE] node 'mediatek,apmixed' cannot iomap!
+[    0.806435] [IDLE] node 'mediatek,sleep' not found!
+[    0.806479] [IDLE] node 'mediatek,sleep' cannot iomap!
+[    0.806542] [IDLE] node 'mediatek,topckgen' not found!
+[    0.806587] [IDLE] node 'mediatek,topckgen' cannot iomap!
+[    0.806714] initcall _mt_cpufreq_pdrv_init blacklisted
+[    0.806775] [devinfo] Already init done earlier. Extra times:10.
+[    0.806851] [devinfo] data index 50 is larger than total size 0
+[    0.806914] [devinfo] Already init done earlier. Extra times:11.
+[    0.806979] [devinfo] data index 51 is larger than total size 0
+[    0.807036] [devinfo] Already init done earlier. Extra times:12.
+[    0.807089] [devinfo] data index 52 is larger than total size 0
+[    0.807144] [devinfo] Already init done earlier. Extra times:13.
+[    0.807197] [devinfo] data index 53 is larger than total size 0
+[    0.807252] [devinfo] Already init done earlier. Extra times:14.
+[    0.807341] [devinfo] data index 57 is larger than total size 0
+[    0.807401] [devinfo] Already init done earlier. Extra times:15.
+[    0.807454] [devinfo] data index 58 is larger than total size 0
+[    0.810476] [Power/PPM] @ppm_lcmoff_policy_init: register PPM_POLICY_LCM_OFF done!
+[    0.810673] [Power/PPM] basic power table:
+[    0.810888] [Power/PPM] [0][0] = (642, 1024)
+[    0.810952] [Power/PPM] [0][1] = (631, 983)
+[    0.810995] [Power/PPM] [0][2] = (620, 944)
+[    0.811035] [Power/PPM] [0][3] = (609, 905)
+[    0.811075] [Power/PPM] [0][4] = (598, 866)
+[    0.811114] [Power/PPM] [0][5] = (573, 827)
+[    0.811154] [Power/PPM] [0][6] = (550, 787)
+[    0.811194] [Power/PPM] [0][7] = (515, 768)
+[    0.811233] [Power/PPM] [0][8] = (482, 748)
+[    0.811319] [Power/PPM] [0][9] = (429, 707)
+[    0.811363] [Power/PPM] [0][10] = (373, 663)
+[    0.811404] [Power/PPM] [0][11] = (326, 620)
+[    0.811444] [Power/PPM] [0][12] = (305, 598)
+[    0.811484] [Power/PPM] [0][13] = (282, 567)
+[    0.811525] [Power/PPM] [0][14] = (262, 535)
+[    0.811565] [Power/PPM] [0][15] = (227, 467)
+[    0.811621] [Power/PPM] [1][0] = (1064, 2048)
+[    0.811663] [Power/PPM] [1][1] = (1044, 1966)
+[    0.811704] [Power/PPM] [1][2] = (1024, 1888)
+[    0.811745] [Power/PPM] [1][3] = (1004, 1810)
+[    0.811786] [Power/PPM] [1][4] = (983, 1732)
+[    0.811850] [Power/PPM] [1][5] = (941, 1654)
+[    0.811899] [Power/PPM] [1][6] = (901, 1574)
+[    0.811939] [Power/PPM] [1][7] = (843, 1536)
+[    0.811979] [Power/PPM] [1][8] = (788, 1496)
+[    0.812019] [Power/PPM] [1][9] = (698, 1414)
+[    0.812058] [Power/PPM] [1][10] = (604, 1326)
+[    0.812100] [Power/PPM] [1][11] = (526, 1240)
+[    0.812141] [Power/PPM] [1][12] = (491, 1196)
+[    0.812182] [Power/PPM] [1][13] = (453, 1134)
+[    0.812222] [Power/PPM] [1][14] = (418, 1070)
+[    0.812262] [Power/PPM] [1][15] = (360, 934)
+[    0.812302] [Power/PPM] [2][0] = (1486, 3072)
+[    0.812343] [Power/PPM] [2][1] = (1457, 2949)
+[    0.812384] [Power/PPM] [2][2] = (1427, 2832)
+[    0.812425] [Power/PPM] [2][3] = (1398, 2715)
+[    0.812465] [Power/PPM] [2][4] = (1369, 2598)
+[    0.812506] [Power/PPM] [2][5] = (1309, 2481)
+[    0.812546] [Power/PPM] [2][6] = (1251, 2361)
+[    0.812586] [Power/PPM] [2][7] = (1171, 2304)
+[    0.812626] [Power/PPM] [2][8] = (1093, 2244)
+[    0.812667] [Power/PPM] [2][9] = (966, 2121)
+[    0.812707] [Power/PPM] [2][10] = (835, 1989)
+[    0.812747] [Power/PPM] [2][11] = (726, 1860)
+[    0.812788] [Power/PPM] [2][12] = (676, 1794)
+[    0.812849] [Power/PPM] [2][13] = (623, 1701)
+[    0.812893] [Power/PPM] [2][14] = (574, 1605)
+[    0.812935] [Power/PPM] [2][15] = (493, 1401)
+[    0.812976] [Power/PPM] [3][0] = (1908, 4096)
+[    0.813017] [Power/PPM] [3][1] = (1870, 3932)
+[    0.813058] [Power/PPM] [3][2] = (1831, 3776)
+[    0.813099] [Power/PPM] [3][3] = (1793, 3620)
+[    0.813139] [Power/PPM] [3][4] = (1754, 3464)
+[    0.813180] [Power/PPM] [3][5] = (1676, 3308)
+[    0.813220] [Power/PPM] [3][6] = (1602, 3148)
+[    0.813262] [Power/PPM] [3][7] = (1498, 3072)
+[    0.813303] [Power/PPM] [3][8] = (1399, 2992)
+[    0.813343] [Power/PPM] [3][9] = (1235, 2828)
+[    0.813383] [Power/PPM] [3][10] = (1067, 2652)
+[    0.813622] [Power/PPM] [3][11] = (926, 2480)
+[    0.813698] [Power/PPM] [3][12] = (862, 2392)
+[    0.813743] [Power/PPM] [3][13] = (794, 2268)
+[    0.813785] [Power/PPM] [3][14] = (730, 2140)
+[    0.813848] [Power/PPM] [3][15] = (626, 1868)
+[    0.813900] [Power/PPM] COBRA init done!
+[    0.814122] [Power/PPM] power data init done!
+[    0.814272] [Power/dcm] error: cannot find node mediatek,infracfg_ao
+[    0.814360] [Power/dcm] mt_dcm_init: failed due to DTS failed
+[    0.814428] [HPS] hps_init
+[    0.814485] [HPS] hps_cpu_init
+[    0.814543] [HPS] [New algo.] hps_sys.cluster_num 1
+[    0.814771] [HPS] 0: func_id 3840, enabled 1
+[    0.814871] [HPS] 1: func_id 3841, enabled 1
+[    0.814915] [HPS] 2: func_id 3842, enabled 1
+[    0.815407] [HPS] hps_probe
+[    0.815622] [DFRC] Display does not start probe
+[    0.816456] [HPS] hps_task_start success, ptr: 00000000cec18e79, pid: 134
+[    0.817575] [HPS] hps_ctxt.init_state: 0
+[    0.817963] initcall mcdi_init blacklisted
+[    0.818087] [HPS] hps_ctxt.state: 0
+[    0.818202] [HPS] hps_ctxt.enabled: 1
+[    0.818265] [HPS] hps_ctxt.suspend_enabled: 1
+[    0.818338] [HPS] hps_ctxt.is_hmp: 0
+[    0.818376] find mcucfg_mp0_counter node failed
+[    0.818400] [HPS] hps_ctxt.little_cpu_id_min: 0
+[    0.818480] base mcucfg_mp0_counter_base failed
+[    0.818580] [HPS] hps_ctxt.little_cpu_id_max: 3
+[    0.818650] FAILED TO CREATE REGISTER(-1)
+[    0.818701] [HPS] hps_ctxt.big_cpu_id_min: 4
+[    0.818768] FAILED TO INIT PLATFORM(-1)
+[    0.818873] [HPS] hps_ctxt.big_cpu_id_max: 7
+[    0.820759] CPU 0 ==>0
+[    0.820896] CPU 1 ==>0
+[    0.820906] [LED] get dts fail! Probe exit.
+[    0.820974] leds-ac8x: probe of leds-ac8x failed with error -1
+[    0.821020] CPU 2 ==>0
+[    0.821147] CPU 3 ==>0
+[    0.821192] CPU 4 ==>0
+[    0.821239] CPU 5 ==>0
+[    0.821294] CPU 6 ==>0
+[    0.821342] CPU 7 ==>0
+[    0.845069] [mmdvfs]force set step invalid: 0
+[    0.845225] [mmdvfs]mmdvfs qos is disabled
+[    0.845285] [mmdvfs]force flip step0 when late_init
+[    0.845393] [WRAP]driver need registered!!
+[    0.845405] [WRAP]driver need registered!!
+[    0.845465] mtk_rtc_hal_common: RTC_IRQ_EN = 0x0, RTC_PDN1 = 0x0
+[    0.845742] [WRAP]driver need registered!!
+[    0.845761] mtk_rtc_hal_common: hal_rtc_get_spare_register: cmd[12], get rg[0x5b8, 0x1 , 6] = 0x0
+[    0.845945] mtk_rtc_common: There is no Crystal
+[    0.846007] [WRAP]driver need registered!!
+[    0.846013] [WRAP]driver need registered!!
+[    0.846056] [WRAP]driver need registered!!
+[    0.846097] [WRAP]driver need registered!!
+[    0.846138] [WRAP]driver need registered!!
+[    0.846178] [WRAP]driver need registered!!
+[    0.846301] log_store: sram header DRAM buff is null.
+[    0.846412] [CMDQ]CMDQ driver late init begin
+[    0.848986] librehu_battery: ac registered (full, on mains)
+[    0.849624] librehu_battery: battery registered (full, on mains)
+[    0.849734] initcall init_wk blacklisted
+[    0.851559] cfg80211: Loading compiled-in X.509 certificates for regulatory database
+[    0.875711] cfg80211: Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+[    0.877148] cfg80211: Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'
+[    0.881745] clk: Not disabling unused clocks
+[    0.882330] ALSA device list:
+[    0.882411]   No soundcards found.
+[    0.885836] uart-pl011 9000000.pl011: no DMA platform data
+[    0.979156] Freeing unused kernel memory: 3520K
+[    0.983531] Run /init as init process
+
+=== LIBREHU QEMU INIT: userspace reached ===
+mount proc: 0
+mount sysfs: 0
+Linux version 4.19.325+ (dokt@librehu) (Ubuntu clang version 14.0.6, GNU ld (GNU Binutils for Ubuntu) 2.42) #9 SMP PREEMPT Sat Nov 14 22:00:45 UTC 2026
+console=ttyAMA0 earlycon=pl011,0x9000000 panic=-1 loglevel=8 initcall_blacklist=hotplug_cb_init,dram_test_init,mt_freqhopping_drv_init,BTIF_init,scp_init,atc_gpio_config_init,mtktspmic_init,mtk_cooler_dtm_init,mtk_cooler_sysrst_init,mt6357tsbuck1_init,mt6357tsbuck2_init,fiq_cache_init,mtk_smi_init,mtk_cooler_atm_init,tscpu_init,mtk_sleep_init,_mt_cpufreq_pdrv_init,mcdi_init,init_wk rdinit=/init
+--- /proc/cpuinfo (head) via online cpus:
+0-3
+--- meminfo:
+MemTotal:        2034460 kB
+MemFree:         1994176 kB
+MemAvailable:    1987240 kB
+Buffers:               0 kB
+Cached:                0 kB
+SwapCached:            0 kB
+Active:                0 kB
+Inactive:              0 kB
+Active(anon):          0 kB
+Inactive(anon):        0 kB
+Active(file):          0 kB
+Inactive(file):        0 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:                 0 kB
+Writeback:             0 kB
+AnonPages:             0 kB
+Mapped:                0 kB
+Shmem:                 0 kB
+KReclaimable:       5640 kB
+Slab:              11752 kB
+SReclaimable:       5640 kB
+SUnreclaim:         6112 kB
+KernelStack:        1392 kB
+PageTables:            0 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     1017228 kB
+Committed_AS:          0 kB
+VmallocTotal:   263061440 kB
+VmallocUsed:       14268 kB
+VmallocChunk:          0 kB
+Percpu:              624 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+socket(AF_INET,SOCK_STREAM) as root: 4
+--- filesystems:
+nodev	sysfs
+nodev	rootfs
+nodev	tmpfs
+nodev	bdev
+nodev	proc
+nodev	cpuset
+nodev	cgroup
+nodev	cgroup2
+nodev	configfs
+nodev	debugfs
+nodev	tracefs
+nodev	sockfs
+nodev	bpf
+nodev	pipefs
+nodev	ramfs
+nodev	devpts
+	ext3
+	ext2
+	ext4
+	vfat
+	msdos
+	iso9660
+	fuseblk
+nodev	fuse
+nodev	fusectl
+	udf
+nodev	selinuxfs
+nodev	pstore
+=== LIBREHU QEMU INIT: done, powering off ===
+[    1.019634] reboot: Power down
+[    1.035390] mtk_rtc_common: mt_power_off
+[    1.035672] CPU: 0 PID: 1 Comm: init Not tainted 4.19.325+ #9
+[    1.035747] Hardware name: linux,dummy-virt (DT)
+[    1.035941] Call trace:
+[    1.036036]  dump_backtrace+0x0/0x19c
+[    1.036121]  show_stack+0x14/0x1c
+[    1.036166]  dump_stack+0xd8/0x110
+[    1.036208]  mt_power_off+0x24/0x284
+[    1.036248]  machine_power_off+0x20/0x28
+[    1.036292]  kernel_power_off+0xe4/0xf0
+[    1.036333]  __arm64_sys_reboot+0x21c/0x268
+[    1.036378]  el0_svc_common+0x98/0x160
+[    1.036419]  el0_svc_handler+0x68/0x80
+[    1.036460]  el0_svc+0x8/0x300
+[    1.036583] [WRAP]driver need registered!!
+[    1.036592] [WRAP]driver need registered!!
+[    1.036640] [WRAP]driver need registered!!
+[    1.036683] [WRAP]driver need registered!!
+[    1.036753] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.036897] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.036961] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.037020] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.037097] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.037156] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.037212] [WRAP]driver need registered!!
+[    1.037218] [WRAP]driver need registered!!
+[    1.037263] [WRAP]driver need registered!!
+[    1.037306] [WRAP]driver need registered!!
+[    1.037350] [WRAP]driver need registered!!
+[    1.037397] [WRAP]driver need registered!!
+[    1.037441] [WRAP]driver need registered!!
+[    1.037483] [WRAP]driver need registered!!
+[    1.037526] [WRAP]driver need registered!!
+[    1.037587] [WRAP]driver need registered!!
+[    1.044165] [WRAP]driver need registered!!
+[    1.044257] [WRAP]driver need registered!!
+[    1.044307] [WRAP]driver need registered!!
+[    1.044354] [WRAP]driver need registered!!
+[    1.044400] [WRAP]driver need registered!!
+[    1.044453] [WRAP]driver need registered!!
+[    1.044501] [WRAP]driver need registered!!
+[    1.044546] [WRAP]driver need registered!!
+[    1.044590] [WRAP]driver need registered!!
+[    1.044654] mtk_rtc_hal: RTC_enable_k_eosc
+[    1.044744] [WRAP]driver need registered!!
+[    1.044753] [WRAP]driver need registered!!
+[    1.044798] [WRAP]driver need registered!!
+[    1.044874] [WRAP]driver need registered!!
+[    1.044920] [WRAP]driver need registered!!
+[    1.044966] mtk_rtc_hal: clear lpsd solution
+[    1.045052] [WRAP]driver need registered!!
+[    1.045056] [WRAP]driver need registered!!
+[    1.045101] [WRAP]driver need registered!!
+[    1.045267] [WRAP]driver need registered!!
+[    1.045329] [WRAP]driver need registered!!
+[    1.045476] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.045590] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.045649] pmic_ipi_to_sspm ap_ret_w = -101 ipi_ret_w =0
+[    1.045714] [WRAP]driver need registered!!
+[    1.045720] [WRAP]driver need registered!!
+[    1.045764] [WRAP]driver need registered!!
+[    1.045836] [WRAP]driver need registered!!
+[    1.045887] [WRAP]driver need registered!!
+[    1.045934] [WRAP]driver need registered!!
+[    1.045983] mtk_rtc_hal: RTC_AL_MASK= 0x0 RTC_IRQ_EN= 0x0
+[    1.046175] mtk_rtc_common: Phone with charger
+[    1.156671] mtk_rtc_common: arch_reset
+[    1.157493] mtk_rtc_common: Phone with charger
+[    1.287345] mtk_rtc_common: arch_reset
+[    1.287496] mtk_rtc_common: Phone with charger
+[    1.410354] mtk_rtc_common: arch_reset
+[    1.410496] mtk_rtc_common: Phone with charger
+qemu-system-aarch64: terminating on signal 15 from pid 2526 (/bin/bash)

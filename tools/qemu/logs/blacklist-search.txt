@@ -1,0 +1,23 @@
+How initcall_blacklist.txt was found (14/11/2026), QEMU 8.2 "virt", 4 x Cortex-A53, kernel = ac8257_ujc201_defconfig +
+PL011 console. Each line: the initcall running when the kernel oopsed, then added to the list for the next boot.
+
+GICv3 ("virt,gic-version=3"):
+  hotplug_cb_init      pc: mp_enter_suspend+0x14 (APMIXEDSYS base NULL)
+  then gic_sched_hotplug_callback (CPU_ONLINE notifier of mt_gic_ext_init(), called from the GICv3 init, MCUSYS_BASE
+  NULL: "mediatek,mcucfg" node absent) -> GICv2 used from there on, not an initcall
+GICv2 ("virt,gic-version=2"):
+  dram_test_init, mt_freqhopping_drv_init, BTIF_init, scp_init
+  atc_gpio_config_init         pc: (null)
+  mtktspmic_init               pc: iio_read_channel_processed+0x28
+  mtk_cooler_dtm_init          pc: mtk_wdt_request_en_set+0x44
+  mtk_cooler_sysrst_init       pc: mtk_wdt_request_en_set+0x44
+  mt6357tsbuck1_init           pc: iio_read_channel_processed+0x28
+  mt6357tsbuck2_init           pc: iio_read_channel_processed+0x28
+  fiq_cache_init               pc: (null)
+  mtk_smi_init                 pc: smi_register+0x94
+  timer oops tscpu_thermal_read_tc_temp <- atm_loop: mtk_cooler_atm_init and tscpu_init added by hand
+  mtk_sleep_init               pc: (null)
+  _mt_cpufreq_pdrv_init        pc: cpuhvfs_set_sched_dvfs_disable+0xc
+  mcdi_init                    pc: memcpy_to_sspm+0x18
+  work oops mtk_wdt_restart <- wdk_work_callback: init_wk (late_initcall of the watchdog kicker) added by hand
+-> userspace reached with the 19 names of initcall_blacklist.txt.
