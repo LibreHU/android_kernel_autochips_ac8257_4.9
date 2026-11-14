@@ -1,0 +1,9 @@
+Wireless regulatory database built into the kernel (CONFIG_EXTRA_FIRMWARE), LibreHU 4.19 port of the AutoChips
+AC8257 kernel: the 4.9 kernel had it compiled in (CONFIG_CFG80211_INTERNAL_REGDB, removed in 4.15); since 4.15
+cfg80211 loads regulatory.db and its signature regulatory.db.p7s as firmware, checked against the keys of
+net/wireless/certs (CONFIG_CFG80211_REQUIRE_SIGNED_REGDB, CONFIG_CFG80211_USE_KERNEL_REGDB_KEYS).
+
+Source: wireless-regdb 2026.09.03, https://mirrors.edge.kernel.org/pub/software/network/wireless-regdb/
+(regulatory.db and regulatory.db.p7s unchanged, signed by wens: same certificate as net/wireless/certs/wens.hex,
+signature checked with openssl cms -verify). License: regulatory.db.LICENSE (ISC).
+To update: copy regulatory.db and regulatory.db.p7s of a newer release.
