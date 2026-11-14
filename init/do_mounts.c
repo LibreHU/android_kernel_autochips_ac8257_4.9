@@ -576,6 +576,21 @@ void __init prepare_namespace(void)
 	if (initrd_load())
 		goto out;
 
+	/*
+	 * LibreHU (AC8257): the eMMC partitions appear asynchronously (the MSDC host is added from a workqueue, then the
+	 * card is scanned). Without rootwait, wait up to 10 s for a root=PARTUUID= device before giving up.
+	 */
+	if (ROOT_DEV == 0 && !root_wait && !strncmp(saved_root_name, "PARTUUID=", 9)) {
+		unsigned int waited = 0;
+
+		while ((ROOT_DEV = name_to_dev_t(saved_root_name)) == 0 && waited < 10000) {
+			msleep(100);
+			waited += 100;
+		}
+		pr_info("root device %s %s after %u ms\n", saved_root_name, ROOT_DEV ? "found" : "still missing",
+			waited);
+	}
+
 	/* wait for any asynchronous scanning to complete */
 	if ((ROOT_DEV == 0) && root_wait) {
 		printk(KERN_INFO "Waiting for root device %s...\n",
