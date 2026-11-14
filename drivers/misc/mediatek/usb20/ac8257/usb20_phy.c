@@ -531,7 +531,7 @@ void usb_rev6_setting(int value)
 }
 
 #ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-void usb_phy_reset(void)
+void mt_usb_phy_reset(void)
 {
 	/* Reset USB PHY to default state */
 	USBPHY_SET32(0x68, 0x4000);

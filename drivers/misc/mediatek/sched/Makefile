@@ -30,7 +30,7 @@ obj-$(CONFIG_MTK_SCHED_RQAVG_US) += rq_stats.o
 obj-$(CONFIG_MTK_SCHED_RQAVG_KS) += sched_avg.o
 
 # sysfs interface for user to get EAS related info
-obj-y += eas_plus.o
+# LibreHU 4.19: eas_plus.c and sched_ctl.c need the MediaTek 4.9 scheduler, not built (see sched_ctl_4_19.c)
 
 # For CPU topology to user space
-obj-y += sched_ctl.o
+obj-y += sched_ctl_4_19.o

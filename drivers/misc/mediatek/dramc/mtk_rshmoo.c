@@ -209,7 +209,7 @@ static int dram_rshmoo_probe(struct platform_device *pdev)
 	}
 
 	init_timer(&rshmoo_timer);
-	rshmoo_timer.function = dram_rshmoo_timer_callback;
+	rshmoo_timer.legacy_function = dram_rshmoo_timer_callback;
 	rshmoo_timer.data = 0;
 	mod_timer(&rshmoo_timer, jiffies + msecs_to_jiffies(TIMER_INTERVAL));
 

@@ -733,7 +733,7 @@ int cm_mgr_platform_init(void)
 #endif /* 0 */
 
 	init_timer_deferrable(&cm_mgr_ratio_timer);
-	cm_mgr_ratio_timer.function = cm_mgr_ratio_timer_fn;
+	cm_mgr_ratio_timer.legacy_function = cm_mgr_ratio_timer_fn;
 	cm_mgr_ratio_timer.data = 0;
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);

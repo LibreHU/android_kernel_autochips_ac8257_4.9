@@ -16,11 +16,14 @@
 # kernel build system and can use its language.
 ifneq ($(KERNELRELEASE),)
     subdir-ccflags-y += -I$(srctree)/
+    # LibreHU 4.19: the MediaTek platform layer (PMIC, RTC, clock buffer, PM QoS) of this kernel is the one of 4.9:
+    # the platform code below takes its 4.9 paths (the kernel API ones stay on LINUX_VERSION_CODE)
+    subdir-ccflags-y += -DLIBREHU_MTK_PLATFORM_LEGACY
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/$(MTK_PLATFORM)
-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+    subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+    subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat
     subdir-ccflags-y += -I$(srctree)/drivers/mmc/core
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/

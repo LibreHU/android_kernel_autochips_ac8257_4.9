@@ -13,7 +13,7 @@
 
 #$(call all-subdir-src-or-makefile)
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-subdir-ccflags-y += -Werror
+subdir-ccflags-y += 
 subdir-ccflags-$(CONFIG_MACH_AC8257) += -I$(srctree)/drivers/misc/mediatek/scp/ac8257
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
@@ -154,3 +154,6 @@ obj-$(CONFIG_MTK_PERF_TRACKER) += perf/
 #io boost
 obj-y += io_boost/
 obj-$(CONFIG_MTK_RDI) += rdi/
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

@@ -137,7 +137,7 @@ static int cpuloadings[NO_CPU_CORES];
 /* ********************************************* */
 #include <linux/kernel_stat.h>
 #include <linux/cpumask.h>
-#include <asm/cputime.h>
+#include <linux/sched/cputime.h>	/* LibreHU 4.19: <asm/cputime.h> is gone (4.11) */
 #include <linux/sched.h>
 #include <linux/tick.h>
 #include <linux/time.h>
@@ -177,7 +177,7 @@ static u64 get_idle_time(int cpu)
 		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
 	else
-		idle = usecs_to_cputime64(idle_time);
+		idle = idle_time * NSEC_PER_USEC;	/* 4.11: cpustat in ns, as fs/proc/stat.c */
 
 	return idle;
 }
@@ -193,7 +193,7 @@ static u64 get_iowait_time(int cpu)
 		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
 	else
-		iowait = usecs_to_cputime64(iowait_time);
+		iowait = iowait_time * NSEC_PER_USEC;
 
 	return iowait;
 }

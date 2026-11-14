@@ -53,7 +53,12 @@
 #include "arm2_log_buffer.h"
 
 #ifdef CONFIG_ARM64
-extern void __inval_cache_range(unsigned long start, unsigned long end);
+#include <asm/cacheflush.h>
+/* LibreHU 4.19: arm64 __inval_cache_range(start, end) became __inval_dcache_area(addr, len) (4.14) */
+static inline void __inval_cache_range(unsigned long start, unsigned long end)
+{
+	__inval_dcache_area((void *)start, end - start);
+}
 #endif
 
 typedef struct Arm2Log {

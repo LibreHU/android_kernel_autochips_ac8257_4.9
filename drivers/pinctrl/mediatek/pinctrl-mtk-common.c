@@ -2063,6 +2063,19 @@ static int mtk_gpio_create_attr(struct device *dev)
 }
 #endif
 
+/* LibreHU 4.19: gpio_chip.set_debounce became .set_config (4.11), as in the upstream 4.19 driver */
+static int mtk_gpio_set_config(struct gpio_chip *chip, unsigned int offset,
+			       unsigned long config)
+{
+	u32 debounce;
+
+	if (pinconf_to_config_param(config) != PIN_CONFIG_INPUT_DEBOUNCE)
+		return -ENOTSUPP;
+
+	debounce = pinconf_to_config_argument(config);
+	return mtk_gpio_set_debounce(chip, offset, debounce);
+}
+
 static struct gpio_chip mtk_gpio_chip = {
 	.owner			= THIS_MODULE,
 	.request		= gpiochip_generic_request,
@@ -2073,7 +2086,7 @@ static struct gpio_chip mtk_gpio_chip = {
 	.get			= mtk_gpio_get,
 	.set			= mtk_gpio_set,
 	.to_irq			= mtk_gpio_to_irq,
-	.set_debounce		= mtk_gpio_set_debounce,
+	.set_config		= mtk_gpio_set_config,
 	.of_gpio_n_cells	= 2,
 };
 
@@ -2441,7 +2454,7 @@ static void mtk_eint_sw_debounce_start(struct mtk_pinctrl *pctl,
 
 	t->expires = jiffies + usecs_to_jiffies(debounce);
 	t->data = (unsigned long)d;
-	t->function = mtk_eint_sw_debounce_end;
+	t->legacy_function = mtk_eint_sw_debounce_end;
 
 	if (!timer_pending(t)) {
 		init_timer(t);

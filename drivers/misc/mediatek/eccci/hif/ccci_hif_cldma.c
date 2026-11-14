@@ -703,7 +703,7 @@ again:
 			ret = 0;
 		} else {
 #ifdef CCCI_SKB_TRACE
-			skb->tstamp.tv64 = sched_clock();
+			skb->tstamp = sched_clock();
 #endif
 			ccci_skb_enqueue(&queue->skb_list, skb);
 			ret = 0;
@@ -935,7 +935,7 @@ static int cldma_net_rx_push_thread(void *arg)
 #ifdef CCCI_SKB_TRACE
 		per_md_data->netif_rx_profile[6] = sched_clock();
 		if (count > 0)
-			skb->tstamp.tv64 = sched_clock();
+			skb->tstamp = sched_clock();
 #endif
 		ccci_md_recv_skb(md_ctrl->md_id, md_ctrl->hif_id, skb);
 		count++;
@@ -1584,7 +1584,7 @@ static void cldma_tx_queue_init(struct md_cd_queue *queue)
 		queue->index, &queue->cldma_tx_work);
 #ifdef ENABLE_CLDMA_TIMER
 	init_timer(&queue->timeout_timer);
-	queue->timeout_timer.function = cldma_timeout_timer_func;
+	queue->timeout_timer.legacy_function = cldma_timeout_timer_func;
 	queue->timeout_timer.data = (unsigned long)queue;
 	queue->timeout_start = 0;
 	queue->timeout_end = 0;
@@ -3212,7 +3212,7 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 	atomic_set(&md_ctrl->cldma_irq_enabled, 1);
 #if TRAFFIC_MONITOR_INTERVAL
 	init_timer(&md_ctrl->traffic_monitor);
-	md_ctrl->traffic_monitor.function =
+	md_ctrl->traffic_monitor.legacy_function =
 		md_cd_traffic_monitor_func;
 	md_ctrl->traffic_monitor.data = (unsigned long)md_ctrl;
 #endif

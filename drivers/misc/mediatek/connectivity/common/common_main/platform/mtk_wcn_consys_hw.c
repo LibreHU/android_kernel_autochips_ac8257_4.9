@@ -45,7 +45,7 @@
 #include <connectivity_build_in_adapter.h>
 #include "wmt_lib.h"
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 #include <linux/regulator/consumer.h>
 #include <linux/mfd/mt6397/core.h>
 #include <linux/of.h>
@@ -171,7 +171,7 @@ struct pinctrl *consys_pinctrl;
 struct work_struct plt_resume_worker;
 static void plat_resume_handler(struct work_struct *work);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 struct regmap *g_regmap;
 #endif
 
@@ -235,7 +235,7 @@ P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID)
 	return (P_WMT_CONSYS_IC_OPS)of_id->data;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 static VOID mtk_wcn_get_regmap(struct platform_device *pdev)
 {
 	struct device_node *pmic_node;
@@ -396,7 +396,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 	if (wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init)
 		wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init();
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 	mtk_wcn_get_regmap(pdev);
 #endif
 	if (wmt_consys_ic_ops->consys_ic_pmic_get_from_dts)

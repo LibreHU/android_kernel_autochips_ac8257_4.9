@@ -259,8 +259,8 @@ static ssize_t wch_write_reg_proc(struct file *pFile, const char __user *pBuffer
 			u32 i = 0;
 			WCH_LOG(WCH_LOG_LVL_INFO, "Read => wch_id: %d.\r\n", wch_id);
 			for(i=0; i<=0x88; i+=4) {
-				WCH_LOG(WCH_LOG_LVL_INFO, "Addr: 0x%08X value: 0x%08X.\r\n",
-					(unsigned int)(base + i), WCH_READ32(base, i));
+				WCH_LOG(WCH_LOG_LVL_INFO, "Addr: %p value: 0x%08X.\r\n",
+					(base + i), WCH_READ32(base, i));
 			}
 		} else {
 			WCH_LOG(WCH_LOG_LVL_INFO, "Read => wch_id: %d, Addr: 0x%08X, Read Data: 0x%08X.\r\n",

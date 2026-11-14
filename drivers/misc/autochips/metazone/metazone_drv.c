@@ -1823,7 +1823,7 @@ static int mtz_release(struct inode *inode, struct file *file)
 	if (private_data == NULL)
 		return -1;
 
-	MTZ_Close((unsigned int)private_data);
+	MTZ_Close((unsigned int)(uintptr_t)private_data);
 
 	file->private_data = NULL;
 
@@ -1907,7 +1907,7 @@ static long mtz_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			goto ioctl_err;
 		}
 	}
-	bRet = MTZ_IOControl((int)private_data,
+	bRet = MTZ_IOControl((int)(uintptr_t)private_data,
 				cmd,
 				(u8 *) win_ioctl.pInBuf,
 				win_ioctl.InSize,

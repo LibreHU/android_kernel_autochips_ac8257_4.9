@@ -10,3 +10,6 @@ nanohub-$(CONFIG_NANOHUB_MTK_IPI) += nanohub-mtk.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(CONFIG_MTK_PLATFORM)/
 ccflags-$(CONFIG_MACH_AC8257) += -I$(srctree)/drivers/misc/mediatek/scp/mt6765
 #ccflags-y += -I$(srctree)/arch/arm/mach-mt2601/pike/dct/dct
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

@@ -307,14 +307,8 @@ void pstore_console_show(enum pstore_type_id type_id, struct seq_file *m,
 		void *v)
 {
 	struct pstore_info *psi = psinfo;
-	char *buf = NULL;
+	struct pstore_record record;
 	ssize_t size;
-	u64 id;
-	int count;
-	enum pstore_type_id type;
-	struct timespec time;
-	bool compressed;
-	ssize_t ecc_notice_size = 0;
 
 	if (!psi)
 		return;
@@ -322,12 +316,16 @@ void pstore_console_show(enum pstore_type_id type_id, struct seq_file *m,
 	if (psi->open && psi->open(psi))
 		goto out;
 
-	while ((size = psi->read(&id, &type, &count, &time, &buf, &compressed,
-					&ecc_notice_size, psi)) > 0) {
-		if (type == type_id)
-			seq_write(m, buf, size);
-		kfree(buf);
-		buf = NULL;
+	/* LibreHU 4.19: backends read struct pstore_record (4.12), as pstore_get_backend_records() */
+	for (;;) {
+		memset(&record, 0, sizeof(record));
+		record.psi = psi;
+		size = psi->read(&record);
+		if (size <= 0)
+			break;
+		if (record.type == type_id)
+			seq_write(m, record.buf, size);
+		kfree(record.buf);
 	}
 
 	if (psi->close)

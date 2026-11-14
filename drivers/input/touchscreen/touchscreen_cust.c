@@ -416,9 +416,9 @@ static int init_ts(struct customize_ts_data *ts)
 	struct touuch_data * tsd = NULL;
 	int ret = 0;
 
-    tsd = kmalloc(sizeof(*tsd), GFP_KERNEL);
-    if (!ts)
-        return -ENOMEM;
+	tsd = kmalloc(sizeof(*tsd), GFP_KERNEL);
+	if (!tsd)	/* LibreHU 4.19: tested ts before (found by clang -Wmisleading-indentation) */
+		return -ENOMEM;
 
 	ts->private_data = tsd;
 

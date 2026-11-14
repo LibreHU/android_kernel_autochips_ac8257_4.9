@@ -25,7 +25,7 @@ static struct rc_map_list jancar_map = {
 	.map = {
 		.scan    = jancar,
 		.size    = ARRAY_SIZE(jancar),
-		.rc_type = RC_TYPE_NEC,
+		.rc_proto = RC_PROTO_NEC,	/* 4.12: rc_type renamed rc_proto */
 		.name    = "rc-jancar",
 	}
 };

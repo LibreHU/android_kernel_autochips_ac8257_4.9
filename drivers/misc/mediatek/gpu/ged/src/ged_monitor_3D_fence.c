@@ -18,7 +18,7 @@
 #include <linux/module.h>
 
 #include <linux/sync_file.h>
-#include <linux/fence.h>
+#include <linux/dma-fence.h>
 
 #include <mt-plat/mtk_gpu_utility.h>
 #include <trace/events/gpu.h>
@@ -50,12 +50,12 @@ extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
 
 typedef struct GED_MONITOR_3D_FENCE_TAG
 {
-	struct fence_cb sSyncWaiter;
+	struct dma_fence_cb sSyncWaiter;
 	struct work_struct sWork;
-	struct fence *psSyncFence;
+	struct dma_fence *psSyncFence;
 } GED_MONITOR_3D_FENCE;
 
-static void ged_sync_cb(struct fence *sFence, struct fence_cb *waiter)
+static void ged_sync_cb(struct dma_fence *sFence, struct dma_fence_cb *waiter)
 {
 	GED_MONITOR_3D_FENCE *psMonitor;
 	unsigned long long t;
@@ -109,7 +109,7 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 		GED_LOGI("[-]3D fences count = %d\n", atomic_read(&g_i32Count));
 
 	psMonitor = GED_CONTAINER_OF(psWork, GED_MONITOR_3D_FENCE, sWork);
-	fence_put(psMonitor->psSyncFence);
+	dma_fence_put(psMonitor->psSyncFence);
 	ged_free(psMonitor, sizeof(GED_MONITOR_3D_FENCE));
 }
 
@@ -123,7 +123,7 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 	int err;
 	unsigned long long t;
 	GED_MONITOR_3D_FENCE* psMonitor;
-	struct fence *psDebugAddress;
+	struct dma_fence *psDebugAddress;
 
 	if (ged_monitor_3D_fence_disable)
 		return GED_OK;
@@ -152,7 +152,7 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 
 	psDebugAddress = psMonitor->psSyncFence;
 
-	err = fence_add_callback(psMonitor->psSyncFence,
+	err = dma_fence_add_callback(psMonitor->psSyncFence,
 		&psMonitor->sSyncWaiter, ged_sync_cb);
 
 	ged_log_buf_print(ghLogBuf_DVFS,
@@ -160,12 +160,12 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 
 
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
-	ged_log_buf_print(ghLogBuf_GED, "fence_add_callback, err = %d", err);
+	ged_log_buf_print(ghLogBuf_GED, "dma_fence_add_callback, err = %d", err);
 #endif
 
 
 	if (err < 0) {
-		fence_put(psMonitor->psSyncFence);
+		dma_fence_put(psMonitor->psSyncFence);
 		ged_free(psMonitor, sizeof(GED_MONITOR_3D_FENCE));
 	} else {
 		int iCount = atomic_add_return (1, &g_i32Count);

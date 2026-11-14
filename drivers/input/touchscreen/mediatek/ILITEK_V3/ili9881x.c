@@ -1003,7 +1003,7 @@ int ili_tddi_init(void)
 	ilits->boot = true;
 #endif
 
-	ilits->ws = wakeup_source_register("ili_wakelock");
+	ilits->ws = wakeup_source_register(NULL, "ili_wakelock");
 	if (!ilits->ws)
 		ILI_ERR("wakeup source request failed\n");
 

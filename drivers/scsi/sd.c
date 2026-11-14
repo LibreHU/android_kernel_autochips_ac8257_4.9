@@ -3468,7 +3468,6 @@ static int sd_probe(struct device *dev)
 	dev_set_drvdata(dev, sdkp);
 
 	get_device(&sdkp->dev);	/* prevent release before async_schedule */
-
 	async_schedule_domain(sd_probe_async, sdkp, &scsi_sd_probe_domain);
 
 	return 0;
@@ -3506,7 +3505,6 @@ static int sd_remove(struct device *dev)
 
 	async_synchronize_full_domain(&scsi_sd_pm_domain);
 	async_synchronize_full_domain(&scsi_sd_probe_domain);
-
 	device_del(&sdkp->dev);
 	del_gendisk(sdkp->disk);
 	sd_shutdown(dev);
@@ -3522,9 +3520,7 @@ static int sd_remove(struct device *dev)
 	dev_set_drvdata(dev, NULL);
 	put_device(&sdkp->dev);
 	mutex_unlock(&sd_ref_mutex);
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-	printk("[sd] sd_remove end\n");
-#endif
+
 	return 0;
 }
 
@@ -3685,9 +3681,11 @@ static int sd_resume(struct device *dev)
 		return 0;
 
 #ifndef CONFIG_ATC_AOSP_ENHANCEMENT
+	/* AutoChips: disks (USB storage) are started at resume even without manage_start_stop */
 	if (!sdkp->device->manage_start_stop)
 		return 0;
 #endif
+
 	sd_printk(KERN_NOTICE, sdkp, "Starting disk\n");
 	ret = sd_start_stop_device(sdkp, 1);
 	if (!ret)

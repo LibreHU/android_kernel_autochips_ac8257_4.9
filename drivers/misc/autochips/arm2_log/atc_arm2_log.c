@@ -50,7 +50,12 @@ wait_queue_head_t arm2_log_wait;
 static struct timer_list poll_timer;
 
 #ifdef CONFIG_ARM64
-extern void __inval_cache_range(unsigned long start, unsigned long end);
+#include <asm/cacheflush.h>
+/* LibreHU 4.19: arm64 __inval_cache_range(start, end) became __inval_dcache_area(addr, len) (4.14) */
+static inline void __inval_cache_range(unsigned long start, unsigned long end)
+{
+	__inval_dcache_area((void *)start, end - start);
+}
 #endif
 
 
@@ -304,7 +309,7 @@ static int __init arm2_log_init(void)
 	/* init the timer to update log info */
 	init_timer(&poll_timer);
 	poll_timer.expires = jiffies + msecs_to_jiffies(1000);  //1s
-	poll_timer.function = &arm2_log_worker;
+	poll_timer.legacy_function = &arm2_log_worker;
 	poll_timer.data = 0;
 	add_timer(&poll_timer);
 

@@ -431,13 +431,12 @@ void fg_time_handler(void)
 		if (is_charger_exist)
 			return;
 
-		//if (is_charger_exist == false) {
-			ui_soc = ui_soc - 100;
-			if (ui_soc <= 0) {
-				ui_soc = 0;
-				low_tracking_enable = 0;
-			}
-		//}
+		/* LibreHU 4.19: indentation of the former if (is_charger_exist == false) block (-Wmisleading-indentation) */
+		ui_soc = ui_soc - 100;
+		if (ui_soc <= 0) {
+			ui_soc = 0;
+			low_tracking_enable = 0;
+		}
 	} else
 		set_fg_time(0);
 }

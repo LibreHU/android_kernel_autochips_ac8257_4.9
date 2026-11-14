@@ -101,7 +101,6 @@ static const struct gpio_config gconf[] = {
 };
 
 static const struct iio_info nanohub_iio_info = {
-	.driver_module = THIS_MODULE,
 };
 
 static const struct file_operations nanohub_fileops = {

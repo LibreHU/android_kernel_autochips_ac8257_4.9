@@ -37,7 +37,7 @@
 #include <asm/dma-iommu.h>
 #endif
 
-#include "io-pgtable.h"
+#include <linux/io-pgtable.h>
 #include "mtk_iommu.h"
 
 #include "mach/mt_iommu.h"
@@ -274,7 +274,7 @@ static void mtk_iommu_isr_restart(unsigned long unused)
 static int mtk_iommu_isr_pause_timer_init(void)
 {
 	init_timer(&iommu_isr_pause_timer);
-	iommu_isr_pause_timer.function = mtk_iommu_isr_restart;
+	iommu_isr_pause_timer.legacy_function = mtk_iommu_isr_restart;
 	return 0;
 }
 
@@ -784,19 +784,23 @@ err_free_mem:
 
 #ifdef CONFIG_MTK_MEMCFG
 bool dm_region;
+/*
+ * LibreHU 4.19: the direct-mapped regions (get_dm_regions) became reserved regions of type IOMMU_RESV_DIRECT
+ * (get_resv_regions, 4.11): the IOMMU core still maps them 1:1 in the default domain, and reserves them in the
+ * IOVA space of the DMA domain.
+ */
 static void mtk_iommu_get_dm_region(struct device *dev, struct list_head *list)
 {
-	struct iommu_dm_region *region;
+	struct iommu_resv_region *region;
 
-	/* for framebuffer region */
-	region = kzalloc(sizeof(*region), GFP_KERNEL);
+	/* for framebuffer region (none without one: the core reserves start .. start + length - 1) */
+	if (!mtkfb_get_fb_size())
+		return;
+	region = iommu_alloc_resv_region(mtkfb_get_fb_base(), mtkfb_get_fb_size(),
+					 IOMMU_READ | IOMMU_WRITE, IOMMU_RESV_DIRECT);
 	if (!region)
 		return;
 
-	INIT_LIST_HEAD(&region->list);
-	region->start = mtkfb_get_fb_base();
-	region->length = mtkfb_get_fb_size();
-	region->prot = IOMMU_READ | IOMMU_WRITE;
 	list_add_tail(&region->list, list);
 
 	dm_region = true;
@@ -804,7 +808,7 @@ static void mtk_iommu_get_dm_region(struct device *dev, struct list_head *list)
 
 static void mtk_iommu_put_dm_region(struct device *dev, struct list_head *list)
 {
-	struct  iommu_dm_region *region, *tmp;
+	struct  iommu_resv_region *region, *tmp;
 
 	list_for_each_entry_safe(region, tmp, list, list)
 		kfree(region);
@@ -812,20 +816,11 @@ static void mtk_iommu_put_dm_region(struct device *dev, struct list_head *list)
 #else
 static void mtk_iommu_get_dm_region(struct device *dev, struct list_head *list)
 {
-	struct iommu_dm_region *region;
-
-	/* for framebuffer region */
-	region = kzalloc(sizeof(*region), GFP_KERNEL);
-	if (!region)
-		return;
-
-	INIT_LIST_HEAD(&region->list);
-	list_add_tail(&region->list, list);
 }
 
 static void mtk_iommu_put_dm_region(struct device *dev, struct list_head *list)
 {
-	struct  iommu_dm_region *region, *tmp;
+	struct  iommu_resv_region *region, *tmp;
 
 	list_for_each_entry_safe(region, tmp, list, list)
 		kfree(region);
@@ -848,8 +843,8 @@ static struct iommu_ops mtk_iommu_ops = {
 	.of_xlate	= mtk_iommu_of_xlate,
 #endif
 	.pgsize_bitmap	= SZ_4K | SZ_64K | SZ_1M | SZ_16M,
-	.get_dm_regions	= mtk_iommu_get_dm_region,
-	.put_dm_regions	= mtk_iommu_put_dm_region,
+	.get_resv_regions	= mtk_iommu_get_dm_region,
+	.put_resv_regions	= mtk_iommu_put_dm_region,
 };
 
 static int mtk_iommu_hw_init(const struct mtk_iommu_data *data)
@@ -988,6 +983,16 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
+	/*
+	 * LibreHU 4.19: IOMMU_OF_DECLARE() and of_iommu_set_ops() are gone (4.15 - 4.17); the client devices find
+	 * this IOMMU through its fwnode once registered (of_iommu_configure() defers their probe until then).
+	 */
+	iommu_device_set_ops(&data->iommu, &mtk_iommu_ops);
+	iommu_device_set_fwnode(&data->iommu, &pdev->dev.of_node->fwnode);
+	ret = iommu_device_register(&data->iommu);
+	if (ret)
+		return ret;
+
 	list_add_tail(&data->list, &m4ulist);
 
 	iommu_cnt++;
@@ -1011,6 +1016,7 @@ static int mtk_iommu_remove(struct platform_device *pdev)
 	if (iommu_present(&platform_bus_type))
 		bus_set_iommu(&platform_bus_type, NULL);
 
+	iommu_device_unregister(&data->iommu);
 	free_io_pgtable_ops(data->m4u_dom->iop);
 	devm_free_irq(&pdev->dev, data->irq, data);
 	component_master_del(&pdev->dev, &mtk_iommu_com_ops);
@@ -1077,45 +1083,17 @@ static struct platform_driver mtk_iommu_driver = {
 	}
 };
 
-#ifdef CONFIG_ARM64
-static int mtk_iommu_init_fn(struct device_node *np)
-{
-	static bool init_done;
-	int ret;
-	struct platform_device *pdev;
-
-	dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
-	if (!init_done) {
-		pdev = of_platform_device_create(np, NULL,
-						 platform_bus_type.dev_root);
-		if (!pdev)
-			return -ENOMEM;
-
-		ret = platform_driver_register(&mtk_iommu_driver);
-		if (ret) {
-			pr_err("%s: Failed to register driver\n", __func__);
-			return ret;
-		}
-		init_done = true;
-	}
-
-	of_iommu_set_ops(np, &mtk_iommu_ops);
-	return 0;
-}
-#else
-static int mtk_iommu_init_fn(struct device_node *np)
+/*
+ * LibreHU 4.19: a plain platform driver (the device comes from the device tree), registered early enough for the
+ * client devices, which of_iommu_configure() defers until the IOMMU is registered; dma-debug sets itself up.
+ */
+static int __init mtk_iommu_init(void)
 {
 	int ret;
 
-	dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
 	ret = platform_driver_register(&mtk_iommu_driver);
-	if (ret) {
+	if (ret)
 		pr_err("%s: Failed to register driver\n", __func__);
-		return ret;
-	}
-
-	return 0;
+	return ret;
 }
-#endif
-
-IOMMU_OF_DECLARE(mtk_iommu, "mediatek,iommu_v0", mtk_iommu_init_fn);
+subsys_initcall(mtk_iommu_init);

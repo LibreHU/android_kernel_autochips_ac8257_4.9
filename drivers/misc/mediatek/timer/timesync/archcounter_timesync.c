@@ -205,7 +205,7 @@ static int __init archcounter_timesync_entry(void)
 #ifdef CONFIG_TIMESYNC_TEST
 	INIT_WORK(&timesync_test_work, timesync_test_work_func);
 	init_timer(&timesync_test_timer);
-	timesync_test_timer.function = timesync_test_timer_timeout;
+	timesync_test_timer.legacy_function = timesync_test_timer_timeout;
 	mod_timer(&timesync_test_timer,
 		jiffies + msecs_to_jiffies(TIMESYNC_TEST_TIME));
 #endif

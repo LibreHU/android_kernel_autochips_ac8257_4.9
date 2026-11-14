@@ -947,7 +947,7 @@ static inline int ccmni_inst_init(int md_id, struct ccmni_instance *ccmni,
 	/* register napi device */
 	if (dev && (ctlb->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
 		init_timer(ccmni->timer);
-		ccmni->timer->function = ccmni_napi_poll_timeout;
+		ccmni->timer->legacy_function = ccmni_napi_poll_timeout;
 		ccmni->timer->data = (unsigned long)ccmni;
 		netif_napi_add(dev, ccmni->napi, ccmni_napi_poll,
 			ctlb->ccci_ops->napi_poll_weigh);

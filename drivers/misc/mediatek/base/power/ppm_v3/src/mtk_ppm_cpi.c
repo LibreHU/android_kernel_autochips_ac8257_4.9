@@ -22,6 +22,16 @@
 
 #include "mtk_ppm_internal.h"
 
+/* LibreHU 4.19: perf_event_read_local() returns an error code and the count through a pointer since 4.13 */
+static u64 ppm_perf_event_read_local(struct perf_event *event)
+{
+	u64 value = 0;
+
+	if (perf_event_read_local(event, &value, NULL, NULL))
+		return 0;
+	return value;
+}
+
 
 static int ppm_cpi_pmu_probe_cpu(int cpu);
 
@@ -59,7 +69,7 @@ static unsigned long long ppm_cpi_get_cpu_cycle_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		new = perf_event_read_local(event);
+		new = ppm_perf_event_read_local(event);
 		if (new > old)
 			diff = new - old;
 
@@ -80,7 +90,7 @@ static unsigned long long ppm_cpi_get_inst_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		new = perf_event_read_local(event);
+		new = ppm_perf_event_read_local(event);
 		if (new > old)
 			diff = (new - old);
 
@@ -111,12 +121,12 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 		if (c_event) {
 			perf_event_enable(c_event);
 			per_cpu(cpu_cycle_count, cpu) =
-				perf_event_read_local(c_event);
+				ppm_perf_event_read_local(c_event);
 		}
 		if (i_event) {
 			perf_event_enable(i_event);
 			per_cpu(inst_count, cpu) =
-				perf_event_read_local(i_event);
+				ppm_perf_event_read_local(i_event);
 		}
 	} else {
 		if (c_event)

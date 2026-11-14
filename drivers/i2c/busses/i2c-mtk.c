@@ -12,6 +12,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/sched/clock.h>	/* LibreHU 4.19: sched_clock() / local_clock() */
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>

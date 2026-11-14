@@ -33,7 +33,7 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 #include <linux/regmap.h>
 #endif
 
@@ -456,7 +456,7 @@ extern UINT32 gCoClockFlag;
 extern UINT64 gConEmiSize;
 extern phys_addr_t gConEmiPhyBase;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 extern struct regmap *g_regmap;
 #endif
 

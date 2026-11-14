@@ -13,10 +13,10 @@
 
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/pmic/include
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 ifeq ($(CONFIG_MTK_PMIC_COMMON),y)
@@ -47,3 +47,6 @@ else
 	endif
 endif
 
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

@@ -243,7 +243,7 @@ static void lbat_user_init_timer(struct lbat_user *user)
 	init_timer(&user->deb_timer);
 	user->deb_timer.data = (unsigned long)user;
 	user->deb_timer.expires = 0;
-	user->deb_timer.function = lbat_timer_func;
+	user->deb_timer.legacy_function = lbat_timer_func;
 }
 
 static int lbat_user_update(struct lbat_user *user)

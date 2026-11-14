@@ -2,10 +2,10 @@
 # Makefile for mtee kree components
 #
 
-#subdir-ccflags-y += -Werror
+#subdir-ccflags-y += 
 $(info ************  drivers/trusty/mtee-kree mk ************)
 
-ccflags-y := -I$(srctree)/drivers/misc/mediatek/geniezone/public -Werror $(ccflags-y)
+ccflags-y := -I$(srctree)/drivers/misc/mediatek/geniezone/public  $(ccflags-y)
 
 
 ifeq ($(CONFIG_MTK_TEE_GP_SUPPORT),y)

@@ -552,7 +552,7 @@ retry:
 		goto retry;
 	}
 
-	iovad = domain->iova_cookie;
+	iovad = iommu_dma_get_iovad(domain);	/* LibreHU 4.19: was domain->iova_cookie */
 	shift = iova_shift(iovad);
 
 	/* iovad->start_pfn is 0x1, so limit_pfn need to add 1,*/
@@ -596,7 +596,7 @@ static void pseudo_free_iova(int port, dma_addr_t dma_addr)
 		return;
 	}
 
-	iovad = domain->iova_cookie;
+	iovad = iommu_dma_get_iovad(domain);	/* LibreHU 4.19: was domain->iova_cookie */
 	shift = iova_shift(iovad);
 	pfn = dma_addr >> shift;
 	iova = find_iova(iovad, pfn);
@@ -1804,7 +1804,7 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 	if (!domain) {
 		M4U_MSG("iovad para pfn2, get iommu_domain fail\n");
 	} else {
-		iovad = domain->iova_cookie;
+		iovad = iommu_dma_get_iovad(domain);	/* LibreHU 4.19: was domain->iova_cookie */
 		M4U_DBG("pfn2 0x%x, 0x%lx, %p, 0x%lx, 0x%lx,0x%lx-0x%x-0x%x\n",
 			port, iovad->dma_32bit_pfn, iovad->cached32_node,
 			iovad->granule, iovad->start_pfn,
@@ -2777,7 +2777,7 @@ retry:
 		goto retry;
 	}
 
-	iovad = domain->iova_cookie;
+	iovad = iommu_dma_get_iovad(domain);	/* LibreHU 4.19: was domain->iova_cookie */
 
 	/* iovad->start_pfn is 0x1, so limit_pfn need to add 1, */
 	/* do not align the size */
@@ -2910,19 +2910,19 @@ static int reserve_mva_isp_get(struct reserved_mem *rmem)
 static struct dma_iommu_mapping *dmapping;
 static int pseudo_reserve_dm(void)
 {
-	struct iommu_dm_region *entry;
+	struct iommu_resv_region *entry;
 	struct list_head mappings;
 	struct device *dev = pseudo_get_larbdev(0);
 	struct iommu_domain *domain;/// = dmapping->domain;
 	struct iova_domain *iovad;
 	struct iova *iova;
-	unsigned long pg_size = SZ_4K, limit, shift;
+	unsigned long pg_size = SZ_4K, shift;
 
 	if (!dev)
 		return -1;
 
 	INIT_LIST_HEAD(&mappings);
-	iommu_get_dm_regions(dev, &mappings);
+	iommu_get_resv_regions(dev, &mappings);
 
 	/* We need to consider overlapping regions for different devices */
 	list_for_each_entry(entry, &mappings, list) {
@@ -2939,18 +2939,20 @@ retry:
 			goto retry;
 		}
 
-		iovad = domain->iova_cookie;
+		iovad = iommu_dma_get_iovad(domain);	/* LibreHU 4.19: was domain->iova_cookie */
 
 		M4U_MSG("pfn 0x%lx, node %p, granule 0x%lx, start_pfn 0x%lx\n",
 			iovad->dma_32bit_pfn, iovad->cached32_node,
 			iovad->granule, iovad->start_pfn);
 
 		shift = iova_shift(iovad);
-		limit = (start + entry->length) >> shift;
-		/* add plus one page for the size of allocation */
-		/* or there maybe overlap */
-		iova = alloc_iova(iovad, (entry->length >> shift) + 1,
-				  limit, false);
+		/*
+		 * LibreHU 4.19: the IOMMU core already reserves the direct regions in the IOVA space of the DMA
+		 * domain (iova_reserve_iommu_regions(), 4.15): alloc_iova() would now get another range below it.
+		 * Reserve the region itself instead (reserve_iova() merges with the core's reservation).
+		 */
+		iova = reserve_iova(iovad, start >> shift,
+				    (start + entry->length - 1) >> shift);
 		if (!iova) {
 			M4U_ERR("%s pseudo alloc_iova failed dm: 0x%lx-%zu\n",
 				dev_name(dev),
@@ -2979,7 +2981,7 @@ retry:
 #else
 
 #ifdef ATC_USE_RESERVE_M4U
-static struct iommu_dm_region reserve_mva[RESERVE_CNT];
+static struct iommu_resv_region reserve_mva[RESERVE_CNT];
 
 #include <linux/of_reserved_mem.h>
 static int reserve_mva_mdp_get(struct reserved_mem *rmem)
@@ -3030,7 +3032,7 @@ static void pseudo_add_reserve_dm(struct list_head *mappings)
 
 static int __pseudo_reserve_dm(struct iommu_domain	*domain, struct list_head *mappings)
 {
-	struct iommu_dm_region *entry;
+	struct iommu_resv_region *entry;
 	int ret = 0;
 	unsigned long pg_size = 1UL << __ffs(domain->ops->pgsize_bitmap);
 	/* We need to consider overlapping regions for different devices */
@@ -3079,7 +3081,7 @@ static int pseudo_reserve_dm(void)
 	INIT_LIST_HEAD(&mappings2);
 #endif
 
-	iommu_get_dm_regions(dev, &mappings1);
+	iommu_get_resv_regions(dev, &mappings1);
 #ifdef ATC_USE_RESERVE_M4U
 	pseudo_add_reserve_dm(&mappings2);
 #endif
@@ -3093,7 +3095,7 @@ static int pseudo_reserve_dm(void)
 #endif
 
 out:
-	iommu_put_dm_regions(dev, &mappings1);
+	iommu_put_resv_regions(dev, &mappings1);
 
 	return ret;
 }

@@ -289,13 +289,11 @@ static void thermal_zone_device_set_polling(struct thermal_zone_device *tz,
 					    int delay)
 {
 	if (delay > 1000)
-		mod_delayed_work(system_freezable_power_efficient_wq,
-					&tz->poll_queue,
-					round_jiffies(msecs_to_jiffies(delay)));
+		mod_delayed_work(system_freezable_wq, &tz->poll_queue,
+				 round_jiffies(msecs_to_jiffies(delay)));
 	else if (delay)
-		mod_delayed_work(system_freezable_power_efficient_wq,
-					&tz->poll_queue,
-					msecs_to_jiffies(delay));
+		mod_delayed_work(system_freezable_wq, &tz->poll_queue,
+				 msecs_to_jiffies(delay));
 	else
 		cancel_delayed_work(&tz->poll_queue);
 }
@@ -1308,8 +1306,6 @@ thermal_zone_device_register(const char *type, int trips, int mask,
 			goto unregister;
 	}
 
-	INIT_DELAYED_WORK(&(tz->poll_queue), thermal_zone_device_check);
-
 	mutex_lock(&thermal_list_lock);
 	list_add_tail(&tz->node, &thermal_tz_list);
 	mutex_unlock(&thermal_list_lock);
@@ -1358,12 +1354,6 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 	tzp = tz->tzp;
 
 	mutex_lock(&thermal_list_lock);
-
-	tz->polling_delay = 0;
-
-	/* force stop pending/running delayed work*/
-	cancel_delayed_work_sync(&(tz->poll_queue));
-
 	list_for_each_entry(pos, &thermal_tz_list, node)
 		if (pos == tz)
 			break;
@@ -1587,7 +1577,6 @@ static int thermal_pm_notify(struct notifier_block *nb,
 	case PM_POST_RESTORE:
 	case PM_POST_SUSPEND:
 		atomic_set(&in_suspend, 0);
-		mutex_lock(&thermal_list_lock);
 		list_for_each_entry(tz, &thermal_tz_list, node) {
 			if (tz->ops && tz->ops->is_wakeable &&
 			    tz->ops->is_wakeable(tz))
@@ -1596,7 +1585,6 @@ static int thermal_pm_notify(struct notifier_block *nb,
 			thermal_zone_device_update(tz,
 						   THERMAL_EVENT_UNSPECIFIED);
 		}
-		mutex_unlock(&thermal_list_lock);
 		break;
 	default:
 		break;

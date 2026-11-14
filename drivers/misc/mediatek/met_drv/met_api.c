@@ -357,9 +357,14 @@ void met_show_pmic_info(unsigned int RegNum, unsigned int pmic_reg)
 }
 EXPORT_SYMBOL(met_show_pmic_info);
 
+/* LibreHU 4.19: perf_event_read_local() returns an error code and the count through a pointer (4.13) */
 u64 met_perf_event_read_local(struct perf_event *ev)
 {
-	return perf_event_read_local(ev);
+	u64 value = 0;
+
+	if (perf_event_read_local(ev, &value, NULL, NULL))
+		return 0;
+	return value;
 }
 EXPORT_SYMBOL(met_perf_event_read_local);
 

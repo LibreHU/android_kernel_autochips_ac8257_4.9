@@ -13,7 +13,7 @@
 #include <topo_ctrl.h>
 #include "gl_os.h"
 
-#if KERNEL_VERSION(4, 19, 0) <= CFG80211_VERSION_CODE
+#if KERNEL_VERSION(4, 19, 0) <= CFG80211_VERSION_CODE && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 #include <linux/soc/mediatek/mtk-pm-qos.h>
 #define pm_qos_add_request(_req, _class, _value) \
 		mtk_pm_qos_add_request(_req, _class, _value)

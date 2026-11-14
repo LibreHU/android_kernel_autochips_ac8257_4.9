@@ -14,7 +14,7 @@
 /* common and private utility for mtprintk */
 #include <linux/seq_file.h>
 #include <linux/sched.h>
-#include <linux/cputime.h>
+#include <linux/sched/cputime.h>	/* LibreHU 4.19: <linux/cputime.h> is gone (4.11) */
 
 #define SEQ_printf(m, x...)	    \
 	do {			    \

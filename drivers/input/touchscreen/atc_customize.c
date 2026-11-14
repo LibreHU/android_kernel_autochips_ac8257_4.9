@@ -8,6 +8,7 @@
 #include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/irq.h>
+#include <linux/pinctrl/consumer.h>	/* LibreHU 4.19 */
 #include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <linux/acpi.h>

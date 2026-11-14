@@ -18,6 +18,7 @@
 
 #define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
 
+#include <linux/sched/clock.h>	/* LibreHU 4.19: sched_clock() / local_clock() */
 #include <linux/clk.h>
 #include <linux/clockchips.h>
 #include <linux/interrupt.h>

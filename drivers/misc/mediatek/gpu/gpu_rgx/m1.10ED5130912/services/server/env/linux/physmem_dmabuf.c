@@ -85,8 +85,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * and using our dmabuf.
  */
 
+/* LibreHU 4.19: attach() lost its device argument (the attachment has it) in 4.19 */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+static int PVRDmaBufOpsAttach(struct dma_buf *psDmaBuf,
+                           struct dma_buf_attachment *psAttachment)
+#else
 static int PVRDmaBufOpsAttach(struct dma_buf *psDmaBuf, struct device *psDev,
                            struct dma_buf_attachment *psAttachment)
+#endif
 {
 	return -ENOSYS;
 }
@@ -127,7 +133,10 @@ static const struct dma_buf_ops sPVRDmaBufOps =
 	.map_dma_buf   = PVRDmaBufOpsMap,
 	.unmap_dma_buf = PVRDmaBufOpsUnmap,
 	.release       = PVRDmaBufOpsRelease,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+	/* LibreHU 4.19: map_atomic is gone (4.19) */
+	.map           = PVRDmaBufOpsKMap,
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0))
 	.map_atomic    = PVRDmaBufOpsKMap,
 	.map           = PVRDmaBufOpsKMap,
 #else

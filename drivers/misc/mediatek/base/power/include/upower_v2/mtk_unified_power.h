@@ -47,6 +47,14 @@ struct upower_tbl_row {
 };
 
 /* struct idle_state defined at sched.h */
+/*
+ * LibreHU 4.19: struct idle_state of the 4.9 EAS energy model (include/linux/sched.h there) is gone; same layout
+ * here, the table below is shared with the SSPM firmware (its size must not change).
+ */
+struct idle_state {
+	unsigned long power; /* power consumption in this idle state */
+};
+
 /* sizeof(struct upower_tbl) = 5264bytes */
 struct upower_tbl {
 	struct upower_tbl_row row[UPOWER_OPP_NUM];

@@ -1693,7 +1693,7 @@ static void m4u_isr_restart(unsigned long unused)
 static int m4u_isr_pause_timer_init(void)
 {
 	init_timer(&m4u_isr_pause_timer);
-	m4u_isr_pause_timer.function = m4u_isr_restart;
+	m4u_isr_pause_timer.legacy_function = m4u_isr_restart;
 	return 0;
 }
 

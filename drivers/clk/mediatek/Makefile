@@ -1,4 +1,4 @@
-subdir-ccflags-y += -Werror
+subdir-ccflags-y += 
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 
@@ -11,3 +11,6 @@ ifeq ($(CONFIG_DEBUG_FS), y)
 obj-$(CONFIG_COMMON_CLK_MEDIATEK) += clkdbg.o clkchk.o
 obj-$(CONFIG_COMMON_CLK_AC8257) += clkdbg_ac8257.o clkchk-ac8257.o
 endif
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

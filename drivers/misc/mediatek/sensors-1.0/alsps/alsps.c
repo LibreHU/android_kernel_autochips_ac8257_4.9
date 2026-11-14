@@ -293,12 +293,12 @@ static struct alsps_context *alsps_context_alloc_object(void)
 	init_timer(&obj->timer_ps);
 	obj->timer_als.expires =
 		jiffies + atomic_read(&obj->delay_als) / (1000 / HZ);
-	obj->timer_als.function = als_poll;
+	obj->timer_als.legacy_function = als_poll;
 	obj->timer_als.data = (unsigned long)obj;
 
 	obj->timer_ps.expires =
 		jiffies + atomic_read(&obj->delay_ps) / (1000 / HZ);
-	obj->timer_ps.function = ps_poll;
+	obj->timer_ps.legacy_function = ps_poll;
 	obj->timer_ps.data = (unsigned long)obj;
 
 	obj->is_als_first_data_after_enable = false;

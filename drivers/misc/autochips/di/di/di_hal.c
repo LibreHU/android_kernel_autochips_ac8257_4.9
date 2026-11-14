@@ -1308,7 +1308,7 @@ void di_read_template(uintptr_t virt_addr, const unsigned int size, const unsign
 		return;
 	}
 
-	ret = kernel_read(fp, offset, (void *)virt_addr, size);
+	ret = kernel_read(fp, (void *)virt_addr, size, &offset);	/* 4.14: (file, buf, count, pos) */
 	VDO_LOG(VDO_LOG_LVL_INFO, "kernel read ret code is %d\n", ret);
 	filp_close(fp, NULL);
 	VDO_LOG(VDO_LOG_LVL_DBG, "%s out.\n.", __func__);

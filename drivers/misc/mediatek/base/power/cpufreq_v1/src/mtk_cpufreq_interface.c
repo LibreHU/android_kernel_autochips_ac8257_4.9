@@ -447,7 +447,7 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file,
 	else {
 		if (temp == 1) {
 			for (i = 0; i < NR_SET_V_F; i++)
-				max[i].tv64 = 0;
+				max[i] = 0;
 		}
 	}
 

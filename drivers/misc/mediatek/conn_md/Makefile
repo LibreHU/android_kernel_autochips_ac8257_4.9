@@ -16,8 +16,9 @@
 # kernel build system and can use its language.
 ifneq ($(KERNELRELEASE),)
 
-    ccflags-$(CONFIG_MTK_ECCCI_DRIVER) += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
-    ccflags-$(CONFIG_MTK_ECCCI_DRIVER) += -I$(srctree)/drivers/misc/mediatek/eccci/
+    # LibreHU 4.19: the CCCI modem driver is off (no modem on the UJC201); conn_md only uses its IPC headers
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
     ccflags-$(CONFIG_MTK_CCCI_EXT) += -I$(srctree)/drivers/misc/mediatek/dual_ccci/
 
     ccflags-y += -I$(src)/include/

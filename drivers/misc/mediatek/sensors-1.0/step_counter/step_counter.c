@@ -133,7 +133,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 	INIT_WORK(&obj->report, step_c_work_func);
 	init_timer(&obj->timer);
 	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);
-	obj->timer.function = step_c_poll;
+	obj->timer.legacy_function = step_c_poll;
 	obj->timer.data = (unsigned long)obj;
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;

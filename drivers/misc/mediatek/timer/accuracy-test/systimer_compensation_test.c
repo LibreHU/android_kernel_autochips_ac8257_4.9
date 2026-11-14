@@ -149,7 +149,7 @@ static int __init systimer_compensation_init(void)
 	pr_debug("[systimer] systimer_compensation_init\n");
 	INIT_WORK(&work_poll, minute_timer_work_func);
 	init_timer(&minute_timer);
-	minute_timer.function = minute_timer_timeout;
+	minute_timer.legacy_function = minute_timer_timeout;
 	rtc_dev = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
 	if (rtc_dev == NULL) {
 		pr_info("[systimer] rtc_class_open rtc_dev fail\n");

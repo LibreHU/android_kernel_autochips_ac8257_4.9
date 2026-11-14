@@ -34,7 +34,7 @@ static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 		fence, fence->name, atomic_read(&fence->status));
 
 	for (i = 0; i < fence->num_fences; ++i) {
-		struct fence *pt = fence->cbs[i].sync_pt;
+		struct dma_fence *pt = fence->cbs[i].sync_pt;
 		char fence_val[10], timeline_val[10];
 		const char *timeline_name;
 		const char *drv_name;
@@ -50,7 +50,7 @@ static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 			"pt%d:tl=%s,drv=%s,val(%s/%s),sig=%d,stat=%d\n",
 			i, timeline_name, drv_name,
 			fence_val, timeline_val,
-			fence_is_signaled(pt), pt->status);
+			dma_fence_is_signaled(pt), pt->status);
 	}
 	return 0;
 }

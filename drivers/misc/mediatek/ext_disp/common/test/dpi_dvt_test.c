@@ -2534,7 +2534,7 @@ static void BW_Timer_handler(unsigned long timer)
 	schedule_work(&bw_work);
 
 	del_timer(&bw_timer);
-	bw_timer.function = BW_Timer_handler;
+	bw_timer.legacy_function = BW_Timer_handler;
 	bw_timer.data = 0;
 	bw_timer.expires = jiffies + 10;
 	add_timer(&bw_timer);
@@ -2549,7 +2549,7 @@ int init_bw_monitor_timer(void)
 	INIT_WORK(&bw_work, BW_Worker_handler);
 
 	init_timer(&bw_timer);
-	bw_timer.function = BW_Timer_handler;
+	bw_timer.legacy_function = BW_Timer_handler;
 	bw_timer.data = 0;
 	bw_timer.expires = jiffies + HZ;
 	add_timer(&bw_timer);

@@ -44,7 +44,7 @@
 #endif
 
 #include <linux/sync_file.h>
-#include <linux/fence.h>
+#include <linux/dma-fence.h>
 
 #ifdef GED_ENABLE_FB_DVFS
 #include <ged_notify_sw_vsync.h>
@@ -181,8 +181,8 @@ typedef struct GED_KPI_GPU_TS_TAG {
 	int pid;
 	u64 ullWdnd;
 	unsigned long i32FrameID;
-	struct fence_cb sSyncWaiter;
-	struct fence *psSyncFence;
+	struct dma_fence_cb sSyncWaiter;
+	struct dma_fence *psSyncFence;
 } GED_KPI_GPU_TS;
 
 
@@ -1732,7 +1732,7 @@ static GED_ERROR ged_kpi_timeS(int pid, u64 ullWdnd, int i32FrameID)
 }
 /* ----------------------------------------------------------------------------- */
 static
-void ged_kpi_pre_fence_sync_cb(struct fence *sFence, struct fence_cb *waiter)
+void ged_kpi_pre_fence_sync_cb(struct dma_fence *sFence, struct dma_fence_cb *waiter)
 {
 	GED_KPI_GPU_TS *psMonitor;
 
@@ -1740,12 +1740,12 @@ void ged_kpi_pre_fence_sync_cb(struct fence *sFence, struct fence_cb *waiter)
 
 	ged_kpi_timeP(psMonitor->pid, psMonitor->ullWdnd, psMonitor->i32FrameID);
 
-	fence_put(psMonitor->psSyncFence);
+	dma_fence_put(psMonitor->psSyncFence);
 	ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 }
 /* ----------------------------------------------------------------------------- */
 static
-void ged_kpi_gpu_3d_fence_sync_cb(struct fence *sFence, struct fence_cb *waiter)
+void ged_kpi_gpu_3d_fence_sync_cb(struct dma_fence *sFence, struct dma_fence_cb *waiter)
 {
 	GED_KPI_GPU_TS *psMonitor;
 
@@ -1753,7 +1753,7 @@ void ged_kpi_gpu_3d_fence_sync_cb(struct fence *sFence, struct fence_cb *waiter)
 
 	ged_kpi_time2(psMonitor->pid, psMonitor->ullWdnd, psMonitor->i32FrameID);
 
-	fence_put(psMonitor->psSyncFence);
+	dma_fence_put(psMonitor->psSyncFence);
 	ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 }
 #endif
@@ -1785,7 +1785,7 @@ GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 #ifdef MTK_GED_KPI
 	int ret;
 	GED_KPI_GPU_TS *psMonitor;
-	struct fence *psSyncFence;
+	struct dma_fence *psSyncFence;
 
 	psSyncFence = sync_file_get_fence(fence_fd);
 
@@ -1807,11 +1807,11 @@ GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 		ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 		ret = ged_kpi_timeP(pid, ullWdnd, i32FrameID);
 	} else {
-		ret = fence_add_callback(psMonitor->psSyncFence,
+		ret = dma_fence_add_callback(psMonitor->psSyncFence,
 			&psMonitor->sSyncWaiter, ged_kpi_pre_fence_sync_cb);
 
 		if (ret < 0) {
-			fence_put(psMonitor->psSyncFence);
+			dma_fence_put(psMonitor->psSyncFence);
 			ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 			ret = ged_kpi_timeP(pid, ullWdnd, i32FrameID);
 		}
@@ -1828,7 +1828,7 @@ GED_ERROR ged_kpi_queue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 #ifdef MTK_GED_KPI
 	int ret;
 	GED_KPI_GPU_TS *psMonitor;
-	struct fence *psSyncFence;
+	struct dma_fence *psSyncFence;
 
 	psSyncFence = sync_file_get_fence(fence_fd);
 
@@ -1854,12 +1854,12 @@ GED_ERROR ged_kpi_queue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 		ret = ged_kpi_time2(pid, ullWdnd, i32FrameID);
 	} else {
 
-		ret = fence_add_callback(psMonitor->psSyncFence
+		ret = dma_fence_add_callback(psMonitor->psSyncFence
 			, &psMonitor->sSyncWaiter
 			, ged_kpi_gpu_3d_fence_sync_cb);
 
 		if (ret < 0) {
-			fence_put(psMonitor->psSyncFence);
+			dma_fence_put(psMonitor->psSyncFence);
 			ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 			ret = ged_kpi_time2(pid, ullWdnd, i32FrameID);
 		}

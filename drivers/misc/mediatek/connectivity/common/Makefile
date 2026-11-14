@@ -82,7 +82,7 @@ ccflags-y += -I$(srctree)/drivers/gpu/drm/mediatek/mediatek_v2
 ###############################################################################
 
 
-ccflags-y += -Werror
+ccflags-y += 
 
 ifeq ($(CONFIG_MTK_COMBO_CHIP_MT6628),y)
     ccflags-y += -D MT6628

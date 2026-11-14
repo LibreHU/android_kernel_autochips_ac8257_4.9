@@ -127,7 +127,7 @@ static struct act_context *act_context_alloc_object(void)
 	INIT_WORK(&obj->report, act_work_func);
 	init_timer(&obj->timer);
 	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);
-	obj->timer.function = act_poll;
+	obj->timer.legacy_function = act_poll;
 	obj->timer.data = (unsigned long)obj;
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;

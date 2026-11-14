@@ -90,7 +90,7 @@ extern void usb_phy_context_save(void);
 extern bool usb_enable_clock(bool enable);
 extern void usb_rev6_setting(int value);
 #ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-extern void usb_phy_reset(void);
+extern void mt_usb_phy_reset(void);
 #endif
 
 #ifdef CONFIG_ATC_USB_BC12

@@ -19,3 +19,6 @@ obj-$(CONFIG_ATC_BOOT_STATE) += boot_state/
 obj-$(CONFIG_ATC_METAZONE) += metazone/
 obj-$(CONFIG_ATC_ARM2_LOG_BUFFER) += arm2_log_buffer/
 obj-y += rsv_cpu/
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

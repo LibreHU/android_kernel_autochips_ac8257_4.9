@@ -41,8 +41,10 @@ void mmap_open(struct vm_area_struct *vma)
 	struct mmap_info *info = (struct mmap_info *)vma->vm_private_data;
 }
 
-static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+/* LibreHU 4.19: fault handlers take only the vm_fault (4.11) and return a vm_fault_t (4.17) */
+static vm_fault_t mmap_fault(struct vm_fault *vmf)
 {
+	struct vm_area_struct *vma = vmf->vma;
 	struct page *page;
 	struct mmap_info *info;
 	/* is the address valid? */			//--changed
@@ -55,7 +57,7 @@ static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	info = (struct mmap_info *)vma->vm_private_data;
 	if (!info) {
 		printk("no data\n");
-		return NULL;	
+		return VM_FAULT_SIGBUS;	/* was NULL (0: success without a page) */
 	}
 
 	/* get the page */

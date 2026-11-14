@@ -341,7 +341,7 @@ static void ion_handle_get(struct ion_handle *handle)
 static struct ion_handle *ion_handle_get_check_overflow(
 					struct ion_handle *handle)
 {
-	if (atomic_read(&handle->ref.refcount) + 1 == 0)
+	if (kref_read(&handle->ref) + 1 == 0)
 		return ERR_PTR(-EOVERFLOW);
 	ion_handle_get(handle);
 	return handle;
@@ -930,7 +930,7 @@ void ion_client_destroy(struct ion_client *client)
 		mutex_lock(&client->lock);
 		IONMSG("%s:hdl=%p,buf=%p,ref=%d,kmp=%d,clnt=%s,dbg=%s\n",
 		       __func__, handle, handle->buffer,
-		       atomic_read(&handle->buffer->ref.refcount),
+		       kref_read(&handle->buffer->ref),
 		       handle->buffer->kmap_cnt,
 		       client->name ? client->name : NULL,
 		       client->dbg_name);
@@ -1041,28 +1041,29 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 	list_for_each_entry(vma_list, &buffer->vmas, list) {
 		struct vm_area_struct *vma = vma_list->vma;
 
-		zap_page_range(vma, vma->vm_start, vma->vm_end - vma->vm_start,
-			       NULL);
+		zap_page_range(vma, vma->vm_start, vma->vm_end - vma->vm_start);
 	}
 	mutex_unlock(&buffer->lock);
 }
 
-static int ion_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+/* LibreHU 4.19: fault handlers take only the vm_fault (4.11) and return a vm_fault_t (4.17) */
+static vm_fault_t ion_vm_fault(struct vm_fault *vmf)
 {
+	struct vm_area_struct *vma = vmf->vma;
 	struct ion_buffer *buffer = vma->vm_private_data;
 	unsigned long pfn;
-	int ret;
+	vm_fault_t ret;
 
 	mutex_lock(&buffer->lock);
 	ion_buffer_page_dirty(buffer->pages + vmf->pgoff);
 	BUG_ON(!buffer->pages || !buffer->pages[vmf->pgoff]);
 
 	pfn = page_to_pfn(ion_buffer_page(buffer->pages[vmf->pgoff]));
-	ret = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, pfn);
+	ret = vmf_insert_pfn(vma, vmf->address, pfn);
 	mutex_unlock(&buffer->lock);
-	if (ret) {
-		IONMSG("%s vm insert pfn fail,vma =0x%p,addr =0x%p,pfn =%lu\n",
-		       __func__, vma, vmf->virtual_address, pfn);
+	if (ret != VM_FAULT_NOPAGE) {
+		IONMSG("%s vm insert pfn fail,vma =0x%p,addr =0x%lx,pfn =%lu\n",
+		       __func__, vma, vmf->address, pfn);
 		return VM_FAULT_ERROR;
 	}
 
@@ -1203,10 +1204,9 @@ static struct dma_buf_ops dma_buf_ops = {
 	.release = ion_dma_buf_release,
 	.begin_cpu_access = ion_dma_buf_begin_cpu_access,
 	.end_cpu_access = ion_dma_buf_end_cpu_access,
-	.kmap_atomic = ion_dma_buf_kmap,
-	.kunmap_atomic = ion_dma_buf_kunmap,
-	.kmap = ion_dma_buf_kmap,
-	.kunmap = ion_dma_buf_kunmap,
+	/* 4.19: kmap / kunmap renamed map / unmap, the atomic variants are gone */
+	.map = ion_dma_buf_kmap,
+	.unmap = ion_dma_buf_kunmap,
 };
 
 static struct dma_buf *__ion_share_dma_buf(struct ion_client *client,
@@ -1569,7 +1569,7 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 			seq_printf(s, "%16.s %16u %16zu %d %d\n",
 				   buffer->task_comm, buffer->pid,
 				   buffer->size, buffer->kmap_cnt,
-				   atomic_read(&buffer->ref.refcount));
+				   kref_read(&buffer->ref));
 			total_orphaned_size += buffer->size;
 		}
 	}

@@ -18,3 +18,6 @@ subdir-ccflags-$(CONFIG_MTK_USB_TYPEC_U3_MUX) += -I$(srctree)/drivers/misc/media
 obj-y += extcon_usb.o boost_manager.o
 obj-$(CONFIG_USB_MTK_IDDIG) += usb-iddig.o
 obj-$(CONFIG_TCPC_CLASS) += usb-tcpc.o
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

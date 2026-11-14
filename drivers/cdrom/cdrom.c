@@ -2179,7 +2179,6 @@ static int cdrom_read_cdda_bpc(struct cdrom_device_info *cdi, __u8 __user *ubuf,
 	struct bio *bio;
 	unsigned int len;
 	int nr, ret = 0;
-	unsigned char sense[SCSI_SENSE_BUFFERSIZE];
 
 	if (!q)
 		return -ENXIO;

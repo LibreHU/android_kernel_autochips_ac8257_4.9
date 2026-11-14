@@ -16,8 +16,11 @@ MTK_KPD_PLATFORM:=ac8257
 else
 MTK_KPD_PLATFORM:=$(CONFIG_MTK_PLATFORM)
 endif
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_KPD_PLATFORM)/include/
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_KPD_PLATFORM)/include/
 subdir-ccflags-y += -I$(srctree)/drivers/input/keyboard/mediatek/$(MTK_KPD_PLATFORM)/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 obj-$(CONFIG_KEYBOARD_MTK) := kpd.o
 obj-y += $(subst ",,$(MTK_KPD_PLATFORM))/
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

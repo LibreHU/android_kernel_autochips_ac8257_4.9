@@ -1982,18 +1982,18 @@ int mt_accdet_probe(struct platform_device *dev)
 	/* init the timer to disable micbias. */
 	init_timer(&micbias_timer);
 	micbias_timer.expires = jiffies + MICBIAS_DISABLE_TIMER;
-	micbias_timer.function = &dis_micbias_timerhandler;
+	micbias_timer.legacy_function = &dis_micbias_timerhandler;
 	micbias_timer.data = 0;
 
 	/* set the timer ensure accdet can be init even audio never call */
 	init_timer(&accdet_init_timer);
 	accdet_init_timer.expires = jiffies + ACCDET_INIT_WAIT_TIMER;
-	accdet_init_timer.function = &delay_init_timerhandler;
+	accdet_init_timer.legacy_function = &delay_init_timerhandler;
 	accdet_init_timer.data = 0;
 
 	/* wake lock */
-	accdet_irq_lock = wakeup_source_register("accdet_irq_lock");
-	accdet_timer_lock = wakeup_source_register("accdet_timer_lock");
+	accdet_irq_lock = wakeup_source_register(NULL, "accdet_irq_lock");
+	accdet_timer_lock = wakeup_source_register(NULL, "accdet_timer_lock");
 
 	/* Create workqueue */
 	accdet_workqueue = create_singlethread_workqueue("accdet");

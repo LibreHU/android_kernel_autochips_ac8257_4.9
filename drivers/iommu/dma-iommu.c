@@ -57,6 +57,20 @@ struct iommu_dma_cookie {
 	spinlock_t			msi_lock;
 };
 
+/*
+ * LibreHU (MediaTek pseudo_m4u): the IOVA allocator of a DMA domain. The 4.9 driver read domain->iova_cookie as
+ * the iova_domain, its first member in 4.9; since 4.11 the cookie starts with its type.
+ */
+struct iova_domain *iommu_dma_get_iovad(struct iommu_domain *domain)
+{
+	struct iommu_dma_cookie *cookie = domain ? domain->iova_cookie : NULL;
+
+	if (!cookie || cookie->type != IOMMU_DMA_IOVA_COOKIE)
+		return NULL;
+	return &cookie->iovad;
+}
+EXPORT_SYMBOL_GPL(iommu_dma_get_iovad);
+
 static inline size_t cookie_msi_granule(struct iommu_dma_cookie *cookie)
 {
 	if (cookie->type == IOMMU_DMA_IOVA_COOKIE)
@@ -864,7 +878,9 @@ int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,
 	iova_len = iommu_dma_prepare_map_sg(dev, iovad, sg, nents);
 
 	iova = iommu_dma_alloc_iova(domain, iova_len, dma_get_mask(dev), dev);
-	if (!iova)
+	if (!iova) {
+		pr_info("iommu map_sg2 size %zu, 0x%llx\n",
+			iova_len, dma_get_mask(dev));
 		goto out_restore_sg;
 	}
 

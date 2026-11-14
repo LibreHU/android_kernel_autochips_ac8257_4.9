@@ -44,7 +44,7 @@
 #include <linux/delay.h>
 
 /* ALPS header files */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)) || defined(LIBREHU_MTK_PLATFORM_LEGACY)
 #ifndef CONFIG_RTC_DRV_MT6397
 #include <mtk_rtc.h>
 #else
@@ -848,7 +848,7 @@ static INT32 wmt_plat_rtc_ctrl(ENUM_PIN_STATE state)
 {
 	switch (state) {
 	case PIN_STA_INIT:
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)) || defined(LIBREHU_MTK_PLATFORM_LEGACY)
 		rtc_gpio_enable_32k(RTC_GPIO_USER_GPS);
 		WMT_DBG_FUNC("WMT-PLAT:RTC init\n");
 #endif

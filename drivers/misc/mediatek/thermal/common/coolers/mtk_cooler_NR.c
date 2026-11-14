@@ -61,8 +61,10 @@ static char *clNR_mmap;
 /*=============================================================
  */
 
-static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+/* LibreHU 4.19: fault handlers take only the vm_fault (4.11) and return a vm_fault_t (4.17) */
+static vm_fault_t mmap_fault(struct vm_fault *vmf)
 {
+	struct vm_area_struct *vma = vmf->vma;
 	struct page *page;
 	char *info;
 
@@ -72,7 +74,7 @@ static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	if (!info) {
 		clNR_printk("no data\n");
-		return -1;
+		return VM_FAULT_SIGBUS;	/* was -1: every VM_FAULT_* bit, VM_FAULT_OOM included */
 	}
 
 	/* get the page */

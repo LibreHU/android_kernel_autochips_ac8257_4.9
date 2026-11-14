@@ -440,8 +440,8 @@ static int port_net_recv_skb(struct port_t *port, struct sk_buff *skb)
 
 #ifdef CCCI_SKB_TRACE
 	netif_rx_profile[4] = sched_clock() -
-		(unsigned long long)skb->tstamp.tv64;
-	skb->tstamp.tv64 = 0;
+		(unsigned long long)skb->tstamp;
+	skb->tstamp = 0;
 	netif_time = sched_clock();
 #endif
 	ccmni_ops.rx_callback(port->md_id, GET_CCMNI_IDX(port), skb, NULL);

@@ -297,7 +297,6 @@ static int mt635x_auxadc_of_xlate(struct iio_dev *indio_dev,
 }
 
 static const struct iio_info mt635x_auxadc_info = {
-	.driver_module = THIS_MODULE,
 	.read_raw = &mt635x_auxadc_read_raw,
 	.of_xlate = &mt635x_auxadc_of_xlate,
 };

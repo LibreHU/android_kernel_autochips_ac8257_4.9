@@ -45,7 +45,7 @@ static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 	    (end - last_alloc_ts > 1000000000ULL)) { /* unit is ns, 1s */
 		IONMSG("warn: alloc pages order: %d time: %lld ns\n",
 		       pool->order, end - start);
-		show_free_areas(0);
+		show_free_areas(0, NULL);
 		last_alloc_ts = end;
 	}
 

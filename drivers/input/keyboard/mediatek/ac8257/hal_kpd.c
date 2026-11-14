@@ -196,7 +196,7 @@ void kpd_pmic_rstkey_hal(unsigned long pressed)
 			init_timer(&Long_press_timer);
 			Long_press_timer.expires = jiffies + 5*HZ;
 			Long_press_timer.data = (unsigned long)pressed;
-			Long_press_timer.function = vol_up_long_press;
+			Long_press_timer.legacy_function = vol_up_long_press;
 			add_timer(&Long_press_timer);
 		} else {
 			del_timer_sync(&Long_press_timer);

@@ -75,6 +75,14 @@ static int gauge_resume(struct device *dev)
 	return ret;
 }
 
+/* LibreHU 4.19: struct class lost its legacy suspend / resume (4.13), dev_pm_ops instead */
+static int gauge_pm_suspend(struct device *dev)
+{
+	return gauge_suspend(dev, PMSG_SUSPEND);
+}
+
+static SIMPLE_DEV_PM_OPS(gauge_pm_ops, gauge_pm_suspend, gauge_resume);
+
 int gauge_dev_initial(struct gauge_device *gauge_dev)
 {
 	int ret = -ENOTSUPP;
@@ -1034,8 +1042,7 @@ static int __init gauge_class_init(void)
 		return PTR_ERR(gauge_class);
 	}
 	gauge_class->dev_groups = gauge_groups;
-	gauge_class->suspend = gauge_suspend;
-	gauge_class->resume = gauge_resume;
+	gauge_class->pm = &gauge_pm_ops;
 	return 0;
 }
 

@@ -1226,12 +1226,12 @@ int __init cm_mgr_module_init(void)
 	vcore_power_gain = vcore_power_gain_ptr(cm_mgr_get_idx());
 
 	init_timer_deferrable(&cm_mgr_perf_timer);
-	cm_mgr_perf_timer.function = cm_mgr_perf_timer_fn;
+	cm_mgr_perf_timer.legacy_function = cm_mgr_perf_timer_fn;
 	cm_mgr_perf_timer.data = 0;
 
 #ifdef USE_TIMER_CHECK
 	init_timer_deferrable(&cm_mgr_timer);
-	cm_mgr_timer.function = cm_mgr_timer_fn;
+	cm_mgr_timer.legacy_function = cm_mgr_timer_fn;
 	cm_mgr_timer.data = 0;
 #endif /* USE_TIMER_CHECK */
 

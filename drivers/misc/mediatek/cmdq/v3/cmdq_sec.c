@@ -1831,7 +1831,7 @@ static int cmdq_mbox_startup(struct mbox_chan *chan)
 	struct cmdq_sec_thread *thread = chan->con_priv;
 
 	init_timer(&thread->timeout);
-	thread->timeout.function = cmdq_sec_thread_handle_timeout;
+	thread->timeout.legacy_function = cmdq_sec_thread_handle_timeout;
 	thread->timeout.data = (unsigned long)thread;
 	INIT_WORK(&thread->timeout_work, cmdq_sec_task_timeout_work);
 	thread->task_exec_wq = create_singlethread_workqueue("task_exec_wq");

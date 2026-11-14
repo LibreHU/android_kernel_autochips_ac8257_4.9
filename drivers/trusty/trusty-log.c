@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  *
  */
+#include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/trusty/smcall.h>
 #include <linux/trusty/trusty.h>

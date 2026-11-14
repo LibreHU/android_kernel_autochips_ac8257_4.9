@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/sched/clock.h>	/* LibreHU 4.19: sched_clock() / local_clock() */
 #include <linux/devfreq.h>
 #include <linux/device.h>
 #include <linux/err.h>

@@ -388,7 +388,7 @@ static int _hps_task_main(void *data)
 		/* policy = cpufreq_cpu_get(0); */
 		/* dbs_freq_increase(policy, policy->max); */
 		/* cpufreq_cpu_put(policy); */
-#ifdef CONFIG_CPU_ISOLATION
+#ifdef CONFIG_MTK_CPU_ISOLATION_4_9	/* LibreHU 4.19: MediaTek 4.9 isolation (never set), not the 4.19 housekeeping CONFIG_CPU_ISOLATION */
 		if (hps_ctxt.wake_up_by_fasthotplug) {
 
 			mutex_lock(&hps_ctxt.lock);
@@ -511,7 +511,7 @@ ACAO_HPS_END:
 		/*execute hotplug algorithm */
 		(*algo_func_ptr) ();
 
-#ifdef CONFIG_CPU_ISOLATION
+#ifdef CONFIG_MTK_CPU_ISOLATION_4_9	/* LibreHU 4.19: MediaTek 4.9 isolation (never set), not the 4.19 housekeeping CONFIG_CPU_ISOLATION */
 HPS_WAIT_EVENT:
 #endif
 		if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_WAIT_QUEUE) {

@@ -278,7 +278,6 @@ static struct platform_driver nanohub_ipi_pdrv = {
 };
 
 static const struct iio_info nanohub_iio_info = {
-	.driver_module = THIS_MODULE,
 };
 
 int __init nanohub_ipi_init(void)

@@ -63,8 +63,8 @@ struct hps_ctxt_struct hps_ctxt = {
 	.state = STATE_LATE_RESUME,
 
 	.is_interrupt = 0,
-	.hps_regular_ktime = {0},
-	.hps_hrt_ktime = {0},
+	.hps_regular_ktime = 0,
+	.hps_hrt_ktime = 0,
 	/* enabled */
 	.enabled = 1,
 	.eas_enabled = 1,

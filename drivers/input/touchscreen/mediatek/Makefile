@@ -1,4 +1,4 @@
-subdir-ccflags-y += -Werror
+subdir-ccflags-y += 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
@@ -21,3 +21,6 @@ obj-$(CONFIG_TOUCHSCREEN_MTK_NT36xxx)	+=  NT36xxx/
 obj-$(CONFIG_TOUCHSCREEN_FTS)	+=  $(subst ",,$(CONFIG_TOUCHSCREEN_FTS_DIRECTORY))/
 obj-$(CONFIG_TOUCHSCREEN_MTK_ILITEK_V3)	+=  ILITEK_V3/
 obj-$(CONFIG_TOUCHSCREEN_HIMAX_CHIPSET)	+=  hxchipset/
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

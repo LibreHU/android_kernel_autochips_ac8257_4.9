@@ -506,9 +506,7 @@ skip_client_entry:
 							     buffer->pid,
 							     buffer->size,
 							     buffer->kmap_cnt,
-							     atomic_read
-							     (&buffer->ref.
-							      refcount));
+							     kref_read(&buffer->ref));
 					total_orphaned_size += buffer->size;
 				}
 			}
@@ -559,7 +557,7 @@ static int ion_sec_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 		ION_PRINT_LOG_OR_SEQ(s,
 				     "0x%p %8zu %3d %3d %3d 0x%x %3lu %3d %s",
 				     buffer, buffer->size, buffer->kmap_cnt,
-				     atomic_read(&buffer->ref.refcount),
+				     kref_read(&buffer->ref),
 				     buffer->handle_count, *secur_handle,
 				     buffer->flags, buffer->pid,
 				     buffer->task_comm);

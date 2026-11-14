@@ -157,29 +157,36 @@ u16 hal_rtc_get_spare_register(enum rtc_spare_enum cmd)
 	return 0;
 }
 
-static void rtc_get_tick(struct rtc_time *tm)
+/*
+ * LibreHU 4.19: the AutoChips 4.9 kernel kept the RTC_INT_CNT count in an extra tm_cnt field of struct
+ * rtc_time (uapi header), which made RTC_RD_TIME copy 4 bytes more than userspace's struct; the count is
+ * returned here instead.
+ */
+static u16 rtc_get_tick(struct rtc_time *tm)
 {
-	tm->tm_cnt = rtc_read(RTC_INT_CNT);
+	u16 cnt = rtc_read(RTC_INT_CNT);
+
 	tm->tm_sec = rtc_read(RTC_TC_SEC);
 	tm->tm_min = rtc_read(RTC_TC_MIN);
 	tm->tm_hour = rtc_read(RTC_TC_HOU);
 	tm->tm_mday = rtc_read(RTC_TC_DOM);
 	tm->tm_mon = rtc_read(RTC_TC_MTH);
 	tm->tm_year = rtc_read(RTC_TC_YEA);
+	return cnt;
 }
 
 void hal_rtc_get_tick_time(struct rtc_time *tm)
 {
-	u16 bbpu;
+	u16 bbpu, cnt;
 
 	bbpu = rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD;
 	rtc_write(RTC_BBPU, bbpu);
 	rtc_write_trigger();
-	rtc_get_tick(tm);
+	cnt = rtc_get_tick(tm);
 	bbpu = rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD;
 	rtc_write(RTC_BBPU, bbpu);
 	rtc_write_trigger();
-	if (rtc_read(RTC_INT_CNT) < tm->tm_cnt) {	/* SEC has carried */
+	if (rtc_read(RTC_INT_CNT) < cnt) {	/* SEC has carried */
 		rtc_get_tick(tm);
 	}
 }

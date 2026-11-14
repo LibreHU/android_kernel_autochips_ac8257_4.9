@@ -84,7 +84,7 @@ static void do_low_power_timer_monitor_work(struct work_struct *work)
 }
 
 static void low_power_timer_wakeup_func(unsigned long data);
-static DEFINE_TIMER(low_power_timer, low_power_timer_wakeup_func, 0, 0);
+static DEFINE_LEGACY_TIMER(low_power_timer, low_power_timer_wakeup_func, 0, 0);	/* LibreHU 4.19 */
 
 void low_power_timer_resource_reset(void)
 {
@@ -166,7 +166,7 @@ void try_trigger_low_power_timer(signed int sleep_ms)
 		}
 
 		init_timer(timer);
-		timer->function = low_power_timer_wakeup_func;
+		timer->legacy_function = low_power_timer_wakeup_func;
 		timer->data = (unsigned long)timer;
 		timer->expires = jiffies + msecs_to_jiffies(sleep_ms);
 		add_timer(timer);

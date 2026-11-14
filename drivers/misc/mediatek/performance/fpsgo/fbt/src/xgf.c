@@ -838,7 +838,7 @@ void xgf_igather_timer(const void * const timer, int fire)
 void xgf_epoll_igather_timer(const void * const timer,
 				ktime_t *expires, int fire)
 {
-	if (expires && expires->tv64)
+	if (expires && *expires)
 		xgf_igather_timer(timer, fire);
 }
 

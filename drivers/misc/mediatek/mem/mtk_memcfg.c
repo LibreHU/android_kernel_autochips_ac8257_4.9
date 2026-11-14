@@ -458,7 +458,7 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 
 	/* oom may cause system hang, reboot after 60 sec */
 	init_timer(&timer);
-	timer.function = oom_reboot;
+	timer.legacy_function = oom_reboot;
 	timer.expires = jiffies + 300 * HZ;
 	add_timer(&timer);
 

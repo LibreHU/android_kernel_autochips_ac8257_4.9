@@ -28,6 +28,8 @@
 struct iova_domain;
 
 int iommu_dma_init(void);
+/* LibreHU: IOVA allocator of a DMA domain, for the MediaTek pseudo_m4u driver */
+struct iova_domain *iommu_dma_get_iovad(struct iommu_domain *domain);
 
 /* Domain management interface for IOMMU drivers */
 int iommu_get_dma_cookie(struct iommu_domain *domain);

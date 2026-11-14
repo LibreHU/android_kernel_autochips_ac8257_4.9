@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/sched/clock.h>	/* LibreHU 4.19: sched_clock() / local_clock() */
 #include <linux/bitops.h>
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
@@ -1203,7 +1204,7 @@ static int cmdq_probe(struct platform_device *pdev)
 		cmdq->thread[i].gce_pa = cmdq->base_pa;
 		INIT_LIST_HEAD(&cmdq->thread[i].task_busy_list);
 		init_timer(&cmdq->thread[i].timeout);
-		cmdq->thread[i].timeout.function = cmdq_thread_handle_timeout;
+		cmdq->thread[i].timeout.legacy_function = cmdq_thread_handle_timeout;
 		cmdq->thread[i].timeout.data = (unsigned long)&cmdq->thread[i];
 		cmdq->thread[i].idx = i;
 		cmdq->mbox.chans[i].con_priv = &cmdq->thread[i];

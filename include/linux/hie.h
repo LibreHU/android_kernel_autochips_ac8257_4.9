@@ -53,11 +53,19 @@ struct hie_dev {
 typedef int (*hie_act)(unsigned int, const char *, int,
 	struct request *, void *);
 
+#ifdef CONFIG_HIE
 static inline bool hie_request_crypted(struct request *req)
 {
 	return (req && req->bio) ?
 		(req->bio->bi_crypt_ctx.bc_flags & BC_CRYPT) : 0;
 }
+#else
+/* LibreHU 4.19: struct bio has no bi_crypt_ctx (MediaTek 4.9 block layer) */
+static inline bool hie_request_crypted(struct request *req)
+{
+	return false;
+}
+#endif
 
 #ifdef CONFIG_HIE
 int hie_is_ready(void);

@@ -990,7 +990,7 @@ static int ion_drv_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, g_ion_device);
 
-	g_ion_device->dev.this_device->archdata.dma_ops = NULL;
+	g_ion_device->dev.this_device->dma_ops = NULL;	/* 4.15: dma_ops moved from archdata to struct device */
 	arch_setup_dma_ops(g_ion_device->dev.this_device, 0, 0, NULL, false);
 	/* debugfs_create_file("ion_profile", 0644, g_ion_device->debug_root,*/
 	/*  NULL, &debug_profile_fops); */

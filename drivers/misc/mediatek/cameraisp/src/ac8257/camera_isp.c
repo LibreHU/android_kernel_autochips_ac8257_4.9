@@ -1065,7 +1065,7 @@ static unsigned int g_DmaErr_p1[nDMA_ERR] = {0};
 	{                                                                      \
 		ktime_t time;                                                  \
 		time = ktime_get();                                            \
-		sec = time.tv64;                                               \
+		sec = time;                                               \
 		do_div(sec, 1000);                                             \
 		usec = do_div(sec, 1000000);                                   \
 	}
@@ -11140,7 +11140,7 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 		/*              ktime_t time;*/
 
 		time = ktime_get(); /* ns */
-		sec = time.tv64;
+		sec = time;
 #ifdef T_STAMP_2_0
 		if (g1stSof[_IRQ] == MTRUE)
 			m_T_STAMP.T_ns = sec;
@@ -11430,7 +11430,7 @@ if (bSlowMotion == MFALSE) {
 		/*              ktime_t time;*/
 		/*      */
 		time = ktime_get(); /* ns */
-		sec = time.tv64;
+		sec = time;
 		do_div(sec, 1000);	   /*     usec */
 		usec = do_div(sec, 1000000); /* sec and usec */
 		/* update SOF time stamp for eis user(need match with the time

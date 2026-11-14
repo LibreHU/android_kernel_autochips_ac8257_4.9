@@ -1107,7 +1107,7 @@ unsigned int mtkfb_fm_auto_test(void)
 
 	return result;
 }
-int sync_fence_wait(struct fence *fence, long timeout)
+int sync_fence_wait(struct dma_fence *fence, long timeout)
 {
 	long ret;
 
@@ -1116,7 +1116,7 @@ int sync_fence_wait(struct fence *fence, long timeout)
 	else
 		timeout = msecs_to_jiffies(timeout);
 
-	ret = fence_wait_timeout(fence, false, timeout);
+	ret = dma_fence_wait_timeout(fence, false, timeout);
 	if (ret < 0)
 		return ret;
 	return (ret == 0) ? -ETIME : 0;
@@ -3472,11 +3472,14 @@ static int mtkfb_probe(struct platform_device *pdev)
 #endif
 	fbdev->state = MTKFB_ACTIVE;
 
+#ifdef CONFIG_MTK_ECCCI_DRIVER
+	/* LibreHU 4.19: modem callback of a phone panel; the CCCI modem driver is off (no modem on the UJC201) */
 	if (!strcmp(mtkfb_find_lcm_driver(),
 		"nt35521_hd_dsi_vdo_truly_rt5081_drv")) {
 		register_ccci_sys_call_back(MD_SYS1,
 			MD_DISPLAY_DYNAMIC_MIPI, mipi_clk_change);
 	}
+#endif
 #ifdef ATC_DYNAMIC_FREE_FB_MEM_ENABLE
 	/*dynamic reserve memory cutdown*/
 	mtkfb_fb_reserve_mem_free();

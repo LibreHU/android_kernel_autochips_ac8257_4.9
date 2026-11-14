@@ -15,7 +15,7 @@
 /* ALPS header files */
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)) || defined(LIBREHU_MTK_PLATFORM_LEGACY)
 #ifndef CONFIG_RTC_DRV_MT6397
 #include <mtk_rtc.h>
 #else
@@ -161,7 +161,7 @@ static int wmt_detect_chip_pwr_on(void)
 	msleep(MAX_LDO_STABLE_TIME);
 
 	/*export RTC clock, sleep for RTC stable time*/
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)) || defined(LIBREHU_MTK_PLATFORM_LEGACY)
 	rtc_gpio_enable_32k(RTC_GPIO_USER_GPS);
 #endif
 	msleep(MAX_RTC_STABLE_TIME);

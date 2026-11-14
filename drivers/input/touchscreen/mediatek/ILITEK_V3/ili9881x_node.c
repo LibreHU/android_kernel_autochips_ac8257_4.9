@@ -341,7 +341,7 @@ static int dev_mkdir(char *name, umode_t mode)
 	ILI_INFO("mkdir: %s\n", name);
 	fs = get_fs();
 	set_fs(KERNEL_DS);
-	err = sys_mkdir(name, mode);
+	err = ksys_mkdir((const char __user *)name, mode);	/* LibreHU 4.19: sys_mkdir() is not callable any more */
 	set_fs(fs);
 
 	return err;

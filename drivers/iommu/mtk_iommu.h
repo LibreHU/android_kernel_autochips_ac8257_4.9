@@ -24,7 +24,7 @@
 #include <linux/spinlock.h>
 #include <soc/mediatek/smi.h>
 
-#include "io-pgtable.h"
+#include <linux/io-pgtable.h>
 
 struct mtk_iommu_suspend_reg {
 	u32				standard_axi_mode;
@@ -64,6 +64,7 @@ struct mtk_iommu_data {
 	bool                            enable_4GB;
 	const struct mtk_iommu_match_data  *match_data;
 	struct list_head		list;
+	struct iommu_device		iommu;	/* LibreHU 4.19: iommu_device_register() */
 };
 
 static inline int compare_of(struct device *dev, void *data)

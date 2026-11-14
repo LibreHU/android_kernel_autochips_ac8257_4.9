@@ -1732,7 +1732,7 @@ static int tipc_virtio_probe(struct virtio_device *vdev)
 	vds->cdev_name[sizeof(vds->cdev_name)-1] = '\0';
 
 	/* find tx virtqueues (rx and tx and in this order) */
-	err = vdev->config->find_vqs(vdev, 2, vqs, vq_cbs, vq_names);
+	err = virtio_find_vqs(vdev, 2, vqs, vq_cbs, vq_names, NULL);
 	if (err)
 		goto err_find_vqs;
 

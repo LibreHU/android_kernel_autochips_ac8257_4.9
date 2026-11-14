@@ -496,10 +496,10 @@ $(PVRSRV_MODNAME)-y += \
  generated/synctracking_bridge/client_synctracking_direct_bridge.o
 endif
 
-# Enable -Werror for all built object files (suppress for Fiasco.OC/L4Linux)
+# Enable  for all built object files (suppress for Fiasco.OC/L4Linux)
 ifeq ($(CONFIG_L4),)
 ifneq ($(W),1)
-$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Werror))
+$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := ))
 endif
 endif
 

@@ -13,9 +13,9 @@
 
 #$(call all-subdir-src-or-makefile)
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/masp/asfv2/asf_inc
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/masp/asfv2/asf_inc
 
 obj-$(CONFIG_MTK_WATCHDOG)		+= wdk/
 
@@ -23,3 +23,6 @@ ifneq ($(CONFIG_MEDIATEK_WATCHDOG), y)
 obj-$(CONFIG_MTK_WATCHDOG)		+= wdt/
 endif
 
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

@@ -47,7 +47,7 @@
 #include "wmt_lib.h"
 #include "stp_dbg.h"
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 #include <mtk-clkbuf-bridge.h>
 #else
 #include <mtk_clkbuf_ctl.h>
@@ -59,7 +59,7 @@
 
 #if CONSYS_PMIC_CTRL_ENABLE
 #include <linux/regulator/consumer.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 #include <linux/regulator/consumer.h>
 #include <linux/mfd/mt6357/registers.h>
 #include <linux/regmap.h>
@@ -869,7 +869,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 {
 #if CONSYS_PMIC_CTRL_ENABLE
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)) && !defined(LIBREHU_MTK_PLATFORM_LEGACY)
 	if (!g_regmap)
 		return;
 

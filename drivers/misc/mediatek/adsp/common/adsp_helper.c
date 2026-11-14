@@ -483,7 +483,7 @@ int reset_adsp(void)
 			init_timer(&adsp_ready_timer[ADSP_A_ID]);
 			adsp_ready_timer[ADSP_A_ID].expires =
 						jiffies + ADSP_READY_TIMEOUT;
-			adsp_ready_timer[ADSP_A_ID].function =
+			adsp_ready_timer[ADSP_A_ID].legacy_function =
 						&adsp_wait_ready_timeout;
 			adsp_ready_timer[ADSP_A_ID].data =
 						(unsigned long)ADSP_A_TIMER;
@@ -1524,7 +1524,7 @@ static int __init adsp_module_init(void)
 	init_timer(&adsp_ready_timer[ADSP_A_ID]);
 	adsp_ready_timer[ADSP_A_ID].expires =
 				jiffies + ADSP_READY_TIMEOUT;
-	adsp_ready_timer[ADSP_A_ID].function =
+	adsp_ready_timer[ADSP_A_ID].legacy_function =
 				&adsp_wait_ready_timeout;
 	adsp_ready_timer[ADSP_A_ID].data =
 				(unsigned long)ADSP_A_TIMER;

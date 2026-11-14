@@ -2229,7 +2229,7 @@ static int sensorHub_probe(struct platform_device *pdev)
 	INIT_WORK(&obj->sync_time_worker, SCP_sensorHub_sync_time_work);
 	obj->sync_time_timer.expires =
 		jiffies + msecs_to_jiffies(SYNC_TIME_START_CYCLC);
-	obj->sync_time_timer.function = SCP_sensorHub_sync_time_func;
+	obj->sync_time_timer.legacy_function = SCP_sensorHub_sync_time_func;
 	init_timer(&obj->sync_time_timer);
 	mod_timer(&obj->sync_time_timer,
 		jiffies + msecs_to_jiffies(SYNC_TIME_START_CYCLC));

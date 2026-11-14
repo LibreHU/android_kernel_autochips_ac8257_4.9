@@ -1505,7 +1505,7 @@ int ccci_ccif_hif_init(unsigned char hif_id, unsigned char md_id)
 
 	INIT_WORK(&md_ctrl->ccif_sram_work, md_ccif_sram_rx_work);
 	init_timer(&md_ctrl->traffic_monitor);
-	md_ctrl->traffic_monitor.function = md_ccif_traffic_monitor_func;
+	md_ctrl->traffic_monitor.legacy_function = md_ccif_traffic_monitor_func;
 	md_ctrl->traffic_monitor.data = (unsigned long)md_ctrl;
 	md_ctrl->heart_beat_counter = 0;
 	INIT_WORK(&md_ctrl->traffic_info.traffic_work_struct,

@@ -643,7 +643,7 @@ int ccci_subsys_bm_init(void)
 
 #ifdef CCCI_BM_TRACE
 	init_timer(&ccci_bm_stat_timer);
-	ccci_bm_stat_timer.function = ccci_bm_stat_timer_func;
+	ccci_bm_stat_timer.legacy_function = ccci_bm_stat_timer_func;
 	mod_timer(&ccci_bm_stat_timer, jiffies + 10 * HZ);
 #endif
 	return 0;

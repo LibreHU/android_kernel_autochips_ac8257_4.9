@@ -5649,7 +5649,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	/* init dynamtic timer */
 	init_timer(&host->timer);
 	/*host->timer.expires = jiffies + HZ;*/
-	host->timer.function = msdc_timer_pm;
+	host->timer.legacy_function = msdc_timer_pm;
 	host->timer.data = (unsigned long)host;
 
 	ret = request_irq((unsigned int)host->irq, msdc_irq, IRQF_TRIGGER_NONE,

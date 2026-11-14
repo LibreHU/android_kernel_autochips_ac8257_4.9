@@ -61,6 +61,15 @@
 #define CREATE_TRACE_POINTS
 #include "trace/lowmemorykiller.h"
 
+/*
+ * LibreHU 4.19: pgdat_reclaimable() is gone (4.12); a node is now unreclaimable once kswapd failed
+ * MAX_RECLAIM_RETRIES times in a row (mm/internal.h, as pgdat_balanced() and the OOM killer use it).
+ */
+static inline bool lmk_pgdat_reclaimable(pg_data_t *pgdat)
+{
+	return pgdat->kswapd_failures < MAX_RECLAIM_RETRIES;
+}
+
 static DEFINE_SPINLOCK(lowmem_shrink_lock);
 static short lowmem_warn_adj, lowmem_no_warn_adj = 200;
 static u32 lowmem_debug_level = 1;
@@ -198,8 +207,8 @@ static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
 			 * 2. Memory node is reclaimable, but nearly no user
 			 *    pages(under high wmark)
 			 */
-			if (!pgdat_reclaimable(pgdat) ||
-			    (pgdat_reclaimable(pgdat) && memory_pressure < 0))
+			if (!lmk_pgdat_reclaimable(pgdat) ||
+			    (lmk_pgdat_reclaimable(pgdat) && memory_pressure < 0))
 				unreclaimable++;
 		}
 
@@ -351,7 +360,7 @@ static void dump_memory_status(short selected_oom_score_adj)
 		return;
 
 	show_task_mem();
-	show_free_areas(0);
+	show_free_areas(0, NULL);
 	oom_dump_extra_info();
 }
 
@@ -367,7 +376,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	int selected_tasksize = 0;
 	short selected_oom_score_adj;
 	int array_size = ARRAY_SIZE(lowmem_adj);
-	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
+	int other_free = global_zone_page_state(NR_FREE_PAGES) - totalreserve_pages;
 	int other_file = global_node_page_state(NR_FILE_PAGES) -
 				global_node_page_state(NR_SHMEM) -
 				global_node_page_state(NR_UNEVICTABLE) -

@@ -80,7 +80,7 @@ static void issue_dpidle_timer(void)
 
 	DBG(2, "add dpidle_timer<%p>\n", timer);
 	init_timer(timer);
-	timer->function = dpidle_timer_wakeup_func;
+	timer->legacy_function = dpidle_timer_wakeup_func;
 	timer->data = (unsigned long)timer;
 	timer->expires = jiffies + msecs_to_jiffies(DPIDLE_TIMER_INTERVAL_MS);
 	add_timer(timer);
@@ -2015,7 +2015,7 @@ static void ac8257_usb_resume(struct musb* musb)
 	//init PHY REG
 	/* usb_clock_enable(); */
 	/* reset controller */
-	usb_phy_reset();
+	mt_usb_phy_reset();
 	usb_phy_recover();
 
 	if(musb->is_host) {

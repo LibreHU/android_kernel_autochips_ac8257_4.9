@@ -1661,7 +1661,7 @@ static int __init scp_init(void)
 	int i = 0;
 #if SCP_BOOT_TIME_OUT_MONITOR
 	init_timer(&scp_ready_timer[SCP_A_ID]);
-	scp_ready_timer[SCP_A_ID].function = &scp_wait_ready_timeout;
+	scp_ready_timer[SCP_A_ID].legacy_function = &scp_wait_ready_timeout;
 	scp_ready_timer[SCP_A_ID].data = (unsigned long) SCP_A_TIMER;
 #endif
     /* scp platform initialise */

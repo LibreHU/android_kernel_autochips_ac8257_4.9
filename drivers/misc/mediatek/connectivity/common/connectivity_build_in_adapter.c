@@ -275,7 +275,6 @@ EXPORT_SYMBOL(connectivity_export_dump_gpio_info);
 
 void connectivity_export_dump_thread_state(const char *name)
 {
-	static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
 	struct task_struct *p;
 	int cpu;
 	struct rq *rq;
@@ -302,8 +301,8 @@ void connectivity_export_dump_thread_state(const char *name)
 		ti = task_thread_info(curr);
 		if (state)
 			state = __ffs(state) + 1;
-		pr_info("%d:%-15.15s %c", p->pid, p->comm,
-			state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+		/* LibreHU 4.19: TASK_STATE_TO_CHAR_STR is gone (4.14), task_state_to_char() replaces it */
+		pr_info("%d:%-15.15s %c", p->pid, p->comm, task_state_to_char(p));
 		pr_info("cpu=%d on_cpu=%d ", cpu, p->on_cpu);
 		show_stack(p, NULL);
 		pr_info("CPU%d curr=%d:%-15.15s preempt_count=0x%x", cpu,

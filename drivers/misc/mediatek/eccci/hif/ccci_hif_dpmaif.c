@@ -561,7 +561,7 @@ static int dpmaif_net_rx_push_thread(void *arg)
 #ifdef CCCI_SKB_TRACE
 		per_md_data->netif_rx_profile[6] = sched_clock();
 		if (count > 0)
-			skb->tstamp.tv64 = sched_clock();
+			skb->tstamp = sched_clock();
 #endif
 		ccci_md_recv_skb(hif_ctrl->md_id, hif_ctrl->hif_id, skb);
 		count++;
@@ -2958,7 +2958,7 @@ int ccci_dpmaif_hif_init(unsigned char hif_id, unsigned char md_id)
 	/* set debug related */
 #if DPMAIF_TRAFFIC_MONITOR_INTERVAL
 	init_timer(&hif_ctrl->traffic_monitor);
-	hif_ctrl->traffic_monitor.function = dpmaif_traffic_monitor_func;
+	hif_ctrl->traffic_monitor.legacy_function = dpmaif_traffic_monitor_func;
 	hif_ctrl->traffic_monitor.data = (unsigned long)hif_ctrl;
 #endif
 	ccci_hif[hif_id] = (void *)hif_ctrl;

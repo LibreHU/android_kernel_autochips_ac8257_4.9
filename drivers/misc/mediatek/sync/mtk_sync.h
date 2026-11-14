@@ -45,7 +45,7 @@ struct fence_data {
  * sync_timeline, sync_fence API
  */
 
-extern struct sync_timeline *sync_timeline_create(const char *name);
+/* LibreHU 4.19: sync_timeline_create() is static in sw_sync.c, see timeline_create() */
 
 /**
  * timeline_create() - creates a sync object

@@ -224,7 +224,7 @@ static void kpd_keymap_handler(unsigned long data)
 				Long_press_key_timer.expires = jiffies + 5*HZ;
 				Long_press_key_timer.data =
 					(unsigned long)pressed;
-				Long_press_key_timer.function =
+				Long_press_key_timer.legacy_function =
 					vol_down_long_press;
 				add_timer(&Long_press_key_timer);
 			} else {

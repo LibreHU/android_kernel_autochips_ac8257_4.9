@@ -15,3 +15,6 @@ endif
 obj-$(CONFIG_TRUSTY)		+= trusty-mem.o
 obj-$(CONFIG_TRUSTY_VIRTIO)	+= trusty-virtio.o
 obj-$(CONFIG_TRUSTY_VIRTIO_IPC)	+= trusty-ipc.o
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

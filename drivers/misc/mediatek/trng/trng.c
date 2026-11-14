@@ -84,8 +84,11 @@ int add_crng_entropy(void *data)
 	(void) data;
 
 	msleep(1000);
-	while (sys_getrandom((char *)&index, sizeof(index), GRND_NONBLOCK)
-	== -EAGAIN) {
+	/*
+	 * LibreHU 4.19: syscalls are not callable from the kernel on arm64 any more (syscall wrappers, 4.19);
+	 * getrandom(GRND_NONBLOCK) returned -EAGAIN exactly while the CRNG was not ready.
+	 */
+	while (!rng_is_initialized()) {
 		trng[0] = mt_secure_call_ret4(MTK_SIP_KERNEL_GET_RND,
 				TRNG_MAGIC, 0, 0, 0, (void *)(trng+1),
 				(void *)(trng+2), (void *)(trng+3));

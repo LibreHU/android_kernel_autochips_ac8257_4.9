@@ -1176,7 +1176,7 @@ void dlpt_notify_init(void)
 
 	dlpt_notify_interval = HZ * 30;
 	init_timer_deferrable(&dlpt_notify_timer);
-	dlpt_notify_timer.function = dlpt_notify_task;
+	dlpt_notify_timer.legacy_function = dlpt_notify_task;
 	dlpt_notify_timer.data = (unsigned long)&dlpt_notify_timer;
 	mod_timer(&dlpt_notify_timer, jiffies + dlpt_notify_interval);
 

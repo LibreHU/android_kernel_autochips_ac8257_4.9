@@ -173,8 +173,8 @@ static ssize_t fts_debug_write(struct file *filp, const char __user *buff,
 		break;
 
 	case PROC_HW_RESET:
-		snprintf(tmp, PAGE_SIZE, "%s", writebuf + 1);
-		tmp[buflen - 1] = '\0';
+		snprintf(tmp, sizeof(tmp), "%s", writebuf + 1);
+		tmp[min_t(int, buflen, sizeof(tmp)) - 1] = '\0';	/* LibreHU: bounded (buflen <= PAGE_SIZE) */
 		if (strncmp(tmp, "focal_driver", 12) == 0) {
 			FTS_INFO("APK execute HW Reset");
 			fts_reset_proc(0);
@@ -387,8 +387,8 @@ static int fts_debug_write(struct file *filp, const char __user *buff,
 		break;
 
 	case PROC_HW_RESET:
-		snprintf(tmp, PAGE_SIZE, "%s", writebuf + 1);
-		tmp[buflen - 1] = '\0';
+		snprintf(tmp, sizeof(tmp), "%s", writebuf + 1);
+		tmp[min_t(int, buflen, sizeof(tmp)) - 1] = '\0';	/* LibreHU: bounded (buflen <= PAGE_SIZE) */
 		if (strncmp(tmp, "focal_driver", 12) == 0) {
 			FTS_INFO("APK execute HW Reset");
 			fts_reset_proc(0);
@@ -939,7 +939,7 @@ static ssize_t fts_fwupgradebin_store(struct device *dev,
 		return -EINVAL;
 	}
 	memset(fwname, 0, sizeof(fwname));
-	snprintf(fwname, PAGE_SIZE, "%s", buf);
+	snprintf(fwname, sizeof(fwname), "%s", buf);
 	fwname[count - 1] = '\0';
 
 	FTS_INFO("upgrade with bin file through sysfs node");
@@ -969,7 +969,7 @@ static ssize_t fts_fwforceupg_store(struct device *dev,
 		return -EINVAL;
 	}
 	memset(fwname, 0, sizeof(fwname));
-	snprintf(fwname, PAGE_SIZE, "%s", buf);
+	snprintf(fwname, sizeof(fwname), "%s", buf);
 	fwname[count - 1] = '\0';
 
 	FTS_INFO("force upgrade through sysfs node");

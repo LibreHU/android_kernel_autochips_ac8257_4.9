@@ -414,7 +414,7 @@ void vVdpIsr(u32 u4VdpIdx)
 	if (!fgLockInit) {
 		spin_lock_init(&_vdp_lock);
 		fgLockInit = TRUE;
-		VDO_LOG(VDO_LOG_LVL_DBG, "vdpisr spin lock init %x\r\n", (unsigned int)&_vdp_lock);
+		VDO_LOG(VDO_LOG_LVL_DBG, "vdpisr spin lock init %p\r\n", &_vdp_lock);
 	}
 #endif
 	SpinLock(u4VdpIdx);
@@ -567,8 +567,8 @@ void vDumpVdpParam(int index)
 
 void vDumpParam(VDP_PARAM *prParam)
 {
-	VDO_LOG(VDO_LOG_LVL_DBG, "##############VDP Param Data Start Vdp 0x%x##############\r\n"
-		, (unsigned int)prParam);
+	VDO_LOG(VDO_LOG_LVL_DBG, "##############VDP Param Data Start Vdp %p##############\r\n"
+		, prParam);
 	VDO_LOG(VDO_LOG_LVL_DBG, "prParam->u4SrcWidth: %d\r\n", (int)prParam->u4SrcWidth);
 	VDO_LOG(VDO_LOG_LVL_DBG, "prParam->u4SrcHeight: %d\r\n", (int)prParam->u4SrcHeight);
 	VDO_LOG(VDO_LOG_LVL_DBG, "prParam->rSrcRect: %d %d %d %d\r\n", (int)prParam->rSrcRect.left,
@@ -1340,7 +1340,7 @@ int VDP_IOControl(u32 dwCode, void *pBufIn,  void *pBufOut)
 	if (!fgLockInit) {
 		spin_lock_init(&_vdp_lock);
 		fgLockInit = TRUE;
-		VDO_LOG(VDO_LOG_LVL_DBG, "vdpisr spin lock init %x\r\n", (unsigned int)&_vdp_lock);
+		VDO_LOG(VDO_LOG_LVL_DBG, "vdpisr spin lock init %p\r\n", &_vdp_lock);
 	}
 #endif
 	if (!pBufIn) {
@@ -1420,8 +1420,8 @@ int VDP_IOControl(u32 dwCode, void *pBufIn,  void *pBufOut)
 
 			VDO_LOG(VDO_LOG_LVL_DBG, "VDP_IOControl: VIDIOC_QBUF cmd 0x%x\n", dwCode);
 			if (pOverlay->u4Flags & VDP_UPDATE_OVERLAY) {
-				VDO_LOG(VDO_LOG_LVL_INFO, "VIDIOC_QBUF param 0x%x id=%d, src %d,%d, {%d,%d,%d,%d}\r\n"
-					, (unsigned int)pBufIn, (int)pOverlay->u4Idx
+				VDO_LOG(VDO_LOG_LVL_INFO, "VIDIOC_QBUF param %p id=%d, src %d,%d, {%d,%d,%d,%d}\r\n"
+					, pBufIn, (int)pOverlay->u4Idx
 					, (int)pOverlay->u4SrcWidth, (int)pOverlay->u4SrcHeight
 					, (int)pOverlay->rSrcRect.left, (int)pOverlay->rSrcRect.top
 					, (int)pOverlay->rSrcRect.right, (int)pOverlay->rSrcRect.bottom);
@@ -1483,8 +1483,8 @@ int VDP_IOControl(u32 dwCode, void *pBufIn,  void *pBufOut)
 			}
 			u4VdpIdx = pOverlay->u4Idx;
 			VDO_LOG(VDO_LOG_LVL_DBG, "VDP_IOControl: STIOC_SET_VDP_PARAM cmd 0x%x\n", dwCode);
-			VDO_LOG(VDO_LOG_LVL_INFO, "STIOC_SET_VDP_PARAM param 0x%x id=%d, src %d,%d, {%d,%d,%d,%d}\r\n"
-				, (unsigned int)pBufIn, (int)pOverlay->u4Idx
+			VDO_LOG(VDO_LOG_LVL_INFO, "STIOC_SET_VDP_PARAM param %p id=%d, src %d,%d, {%d,%d,%d,%d}\r\n"
+				, pBufIn, (int)pOverlay->u4Idx
 				, (int)pOverlay->u4SrcWidth, (int)pOverlay->u4SrcHeight
 				, (int)pOverlay->rSrcRect.left, (int)pOverlay->rSrcRect.top
 				, (int)pOverlay->rSrcRect.right, (int)pOverlay->rSrcRect.bottom);

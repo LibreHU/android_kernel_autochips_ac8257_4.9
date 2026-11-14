@@ -15,6 +15,8 @@
 #include "mach/pseudo_m4u.h"
 #include "mtk_iommu_ext.h"
 #include "mach/mt_iommu_plat.h"
+#include <linux/sched/clock.h>	/* LibreHU 4.19: sched_clock() */
+#include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
 #include <linux/string.h>

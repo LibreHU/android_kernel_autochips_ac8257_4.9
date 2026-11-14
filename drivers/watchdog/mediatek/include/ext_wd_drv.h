@@ -76,11 +76,8 @@ int mtk_local_wdt_misc_config(int bit, int set_value, int *reserved);
 void mpcore_wk_wdt_stop(void);
 extern void dump_wdk_bind_info(void);
 
-#if NR_CPUS == 1
-#define nr_cpu_ids		1
-#else
-extern int nr_cpu_ids;
-#endif
+/* LibreHU 4.19: nr_cpu_ids comes from <linux/cpumask.h> (unsigned int since 4.15) */
+#include <linux/cpumask.h>
 
 #define __ENABLE_WDT_SYSFS__
 #ifdef __ENABLE_WDT_SYSFS__

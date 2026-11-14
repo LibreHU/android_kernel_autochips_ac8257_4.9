@@ -231,7 +231,7 @@ int hf_manager_create(struct hf_device *device)
 	device->manager = manager;
 
 	manager->io_enabled = false;
-	manager->io_poll_interval.tv64 = S64_MAX;
+	manager->io_poll_interval = S64_MAX;
 
 	clear_bit(HF_MANAGER_IO_IN_PROGRESS, &manager->flags);
 	clear_bit(HF_MANAGER_IO_READY, &manager->flags);
@@ -448,8 +448,8 @@ static int hf_manager_device_enable(struct hf_device *device,
 		/* must update io_enabled before hrtimer_start */
 		manager->io_enabled = true;
 		if (device->device_poll == HF_DEVICE_IO_POLLING &&
-				manager->io_poll_interval.tv64 != best_delay) {
-			manager->io_poll_interval.tv64 = best_delay;
+				manager->io_poll_interval != best_delay) {
+			manager->io_poll_interval = best_delay;
 			hrtimer_start(&manager->io_poll_timer,
 				manager->io_poll_interval, HRTIMER_MODE_REL);
 		}
@@ -459,7 +459,7 @@ static int hf_manager_device_enable(struct hf_device *device,
 			err = device->enable(device, sensor_id, best_action);
 		manager->io_enabled = false;
 		if (device->device_poll == HF_DEVICE_IO_POLLING) {
-			manager->io_poll_interval.tv64 = best_delay;
+			manager->io_poll_interval = best_delay;
 			hrtimer_cancel(&manager->io_poll_timer);
 			if (device->device_bus == HF_DEVICE_IO_ASYNC)
 				tasklet_kill(&manager->io_work_tasklet);

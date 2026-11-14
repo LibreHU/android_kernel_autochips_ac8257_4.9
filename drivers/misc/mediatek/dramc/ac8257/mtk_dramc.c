@@ -1770,7 +1770,7 @@ static int dram_probe(struct platform_device *pdev)
 			(dram_sw_tx || dram_sw_zq)) {
 		low_freq_counter = 10;
 		init_timer_deferrable(&zqcs_timer);
-		zqcs_timer.function = zqcs_timer_callback;
+		zqcs_timer.legacy_function = zqcs_timer_callback;
 		zqcs_timer.data = 0;
 		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
 			dramc_info("Error in ZQCS mod_timer\n");
