@@ -1626,7 +1626,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
 			  "WARN: xHC returned failed port status event\n");
 
 	port_id = GET_PORT_ID(le32_to_cpu(event->generic.field[0]));
-	xhci_info(xhci, "Port Status Change Event for port %d\n", port_id);
+	xhci_dbg(xhci, "Port Status Change Event for port %d\n", port_id);
 
 	max_ports = HCS_MAX_PORTS(xhci->hcs_params1);
 	if ((port_id <= 0) || (port_id > max_ports)) {

@@ -927,7 +927,7 @@ static u32 xhci_get_port_status(struct usb_hcd *hcd,
 					 bus_state->resume_done[wIndex])) {
 			int time_left;
 
-			xhci_info(xhci, "Resume USB2 port %d\n",
+			xhci_dbg(xhci, "Resume USB2 port %d\n",
 					wIndex + 1);
 			bus_state->resume_done[wIndex] = 0;
 			clear_bit(wIndex, &bus_state->resuming_ports);
@@ -1047,10 +1047,6 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 	u16 test_mode = 0;
 	struct xhci_hub *rhub;
 	struct xhci_port **ports;
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-	int i = 0;
-	u16 test_mode = 0;
-#endif
 
 	rhub = xhci_get_rhub(hcd);
 	ports = rhub->ports;
@@ -1091,8 +1087,6 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 	case GetPortStatus:
 		if (!wIndex || wIndex > max_ports)
 			goto error;
-
-		xhci_info(xhci, "%s, GetPortStatus\n", __func__);
 		wIndex--;
 		temp = readl(ports[wIndex]->addr);
 		if (temp == ~(u32)0) {
@@ -1106,7 +1100,7 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 		if (status == 0xffffffff)
 			goto error;
 
-		xhci_info(xhci, "get port status, actual port %d status  = 0x%x\n",
+		xhci_dbg(xhci, "get port status, actual port %d status  = 0x%x\n",
 				wIndex, temp);
 		xhci_dbg(xhci, "Get port status returned 0x%x\n", status);
 
@@ -1345,73 +1339,6 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 			retval = xhci_enter_test_mode(xhci, test_mode, wIndex,
 						      &flags);
 			break;
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-		case USB_PORT_FEAT_TEST:
-			/* 4.19.6 Port Test Modes (USB2 Test Mode) */
-			if (hcd->speed != HCD_USB2)
-				goto error;
-
-			/* FIXME: Test_Force_Enable case to be implemented */
-			if (test_mode < TEST_J || test_mode > TEST_PACKET)
-				goto error;
-
-			/* Disable all Device Slots */
-			for (i = 0; i < MAX_HC_SLOTS; i++) {
-				struct xhci_command *command;
-
-				if (!xhci->dcbaa->dev_context_ptrs[i])
-					continue;
-				command = xhci_alloc_command(xhci, false,
-									false, GFP_ATOMIC);
-				if (!command) {
-					spin_unlock_irqrestore(&xhci->lock, flags);
-					return -ENOMEM;
-				}
-				if (xhci_queue_slot_control(xhci, command,
-								TRB_DISABLE_SLOT, i)) {
-					xhci_err(xhci,
-						"Disable slot[%d] fail!\n", i);
-					goto error;
-				}
-				xhci_dbg(xhci, "Disable Slot[%d].\n", i);
-			}
-
-			/* Put all ports to the Disable state by clear PP */
-			xhci_dbg(xhci, "Disable all port (PP = 0)\n");
-			for (i = 0; i < max_ports; i++) {
-				temp = readl(port_array[i]);
-				temp &= ~PORT_POWER;
-				writel(temp, port_array[i]);
-			}
-
-			/* Stop the controller */
-			xhci_dbg(xhci, "Stop controller\n");
-			temp = readl(&xhci->op_regs->command);
-			temp &= ~CMD_RUN;
-			writel(temp, &xhci->op_regs->command);
-
-			if (xhci_handshake(&xhci->op_regs->status,
-					STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
-				xhci_warn(xhci, "Stop controller timeout\n");
-				spin_unlock_irqrestore(&xhci->lock, flags);
-				return -ETIMEDOUT;
-			}
-
-			/* Disable runtime PM for test mode */
-			pm_runtime_forbid(hcd->self.controller);
-
-			/* Set PORTPMSC.PTC field for selected test mode */
-			xhci_dbg(xhci, "Enter Test Mode: %d\n", test_mode);
-			temp = readl(port_array[wIndex] + PORTPMSC);
-			temp |= test_mode << 28;
-			writel(temp, port_array[wIndex] + PORTPMSC);
-
-			xhci->test_mode = test_mode;
-			if (test_mode == TEST_FORCE_EN)
-				xhci_start(xhci);
-
-			break;
-#endif
 		default:
 			goto error;
 		}
@@ -1486,27 +1413,6 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 		case USB_PORT_FEAT_TEST:
 			retval = xhci_exit_test_mode(xhci);
 			break;
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-		case USB_PORT_FEAT_TEST:
-			if (!xhci->test_mode) {
-				xhci_err(xhci, "Not in test mode, do nothing.\n");
-				spin_unlock_irqrestore(&xhci->lock, flags);
-				return 0;
-			}
-			if (xhci->test_mode == TEST_FORCE_EN &&
-				!(xhci->xhc_state & XHCI_STATE_HALTED)) {
-				retval = xhci_halt(xhci);
-				if (retval) {
-					spin_unlock_irqrestore(&xhci->lock, flags);
-					return retval;
-				}
-			}
-			/* Enable runtime PM*/
-			pm_runtime_allow(hcd->self.controller);
-			xhci->test_mode = 0;
-			retval = xhci_reset(xhci);
-			break;
-#endif
 		default:
 			goto error;
 		}

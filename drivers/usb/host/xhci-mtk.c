@@ -31,7 +31,7 @@
 #ifdef CONFIG_ATC_AOSP_ENHANCEMENT
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
-#include "xhci-debugfs.h"
+#include "xhci-mtk-debugfs.h"
 #endif
 
 #include "xhci.h"
@@ -858,8 +858,8 @@ static int xhci_mtk_setup(struct usb_hcd *hcd)
 		return ret;
 
 	if (usb_hcd_is_primary_hcd(hcd)) {
-		mtk->num_u3_ports = xhci->num_usb3_ports;
-		mtk->num_u2_ports = xhci->num_usb2_ports;
+		mtk->num_u3_ports = xhci->usb3_rhub.num_ports;	/* 4.15: per-roothub port arrays */
+		mtk->num_u2_ports = xhci->usb2_rhub.num_ports;
 		ret = xhci_mtk_sch_init(mtk);
 		if (ret)
 			return ret;

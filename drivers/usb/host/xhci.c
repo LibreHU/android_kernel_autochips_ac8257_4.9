@@ -3885,9 +3885,6 @@ int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)
 
 	spin_lock_irqsave(&xhci->lock, flags);
 
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-	virt_dev->udev = NULL;
-#endif
 	/* Don't disable the slot if the host controller is dead. */
 	state = readl(&xhci->op_regs->status);
 	if (state == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING) ||

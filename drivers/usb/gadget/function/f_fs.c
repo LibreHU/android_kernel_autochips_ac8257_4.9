@@ -132,7 +132,7 @@ struct ffs_epfile {
 
 	/*
 	 * Buffer for holding data from partial reads which may happen since
-	 * we?�re rounding user read requests to a multiple of a max packet size.
+	 * we’re rounding user read requests to a multiple of a max packet size.
 	 *
 	 * The pointer is initialised with NULL value and may be set by
 	 * __ffs_epfile_read_data function to point to a temporary buffer.
@@ -156,33 +156,34 @@ struct ffs_epfile {
 	 *
 	 * == State transitions ==
 	 *
-	 * ??ptr == NULL:  (initial state)
-	 *   ??__ffs_epfile_read_buffer_free: go to ptr == DROP
-	 *   ??__ffs_epfile_read_buffered:    nop
-	 *   ??__ffs_epfile_read_data allocates temp buffer: go to ptr == buf
-	 *   ??reading finishes:              n/a, not in ?�and reading??state
-	 * ??ptr == DROP:
-	 *   ??__ffs_epfile_read_buffer_free: nop
-	 *   ??__ffs_epfile_read_buffered:    go to ptr == NULL
-	 *   ??__ffs_epfile_read_data allocates temp buffer: free buf, nop
-	 *   ??reading finishes:              n/a, not in ?�and reading??state
-	 * ??ptr == buf:
-	 *   ??__ffs_epfile_read_buffer_free: free buf, go to ptr == DROP
-	 *   ??__ffs_epfile_read_buffered:    go to ptr == NULL and reading
-	 *   ??__ffs_epfile_read_data:        n/a, __ffs_epfile_read_buffered
+	 * • ptr == NULL:  (initial state)
+	 *   ◦ __ffs_epfile_read_buffer_free: go to ptr == DROP
+	 *   ◦ __ffs_epfile_read_buffered:    nop
+	 *   ◦ __ffs_epfile_read_data allocates temp buffer: go to ptr == buf
+	 *   ◦ reading finishes:              n/a, not in ‘and reading’ state
+	 * • ptr == DROP:
+	 *   ◦ __ffs_epfile_read_buffer_free: nop
+	 *   ◦ __ffs_epfile_read_buffered:    go to ptr == NULL
+	 *   ◦ __ffs_epfile_read_data allocates temp buffer: free buf, nop
+	 *   ◦ reading finishes:              n/a, not in ‘and reading’ state
+	 * • ptr == buf:
+	 *   ◦ __ffs_epfile_read_buffer_free: free buf, go to ptr == DROP
+	 *   ◦ __ffs_epfile_read_buffered:    go to ptr == NULL and reading
+	 *   ◦ __ffs_epfile_read_data:        n/a, __ffs_epfile_read_buffered
 	 *                                    is always called first
-	 *   ??reading finishes:              n/a, not in ?�and reading??state
-	 * ??ptr == NULL and reading:
-	 *   ??__ffs_epfile_read_buffer_free: go to ptr == DROP and reading
-	 *   ??__ffs_epfile_read_buffered:    n/a, mutex is held
-	 *   ??__ffs_epfile_read_data:        n/a, mutex is held
-	 *   ??reading finishes and ??	 *     ??all data read:               free buf, go to ptr == NULL
-	 *     ??otherwise:                   go to ptr == buf and reading
-	 * ??ptr == DROP and reading:
-	 *   ??__ffs_epfile_read_buffer_free: nop
-	 *   ??__ffs_epfile_read_buffered:    n/a, mutex is held
-	 *   ??__ffs_epfile_read_data:        n/a, mutex is held
-	 *   ??reading finishes:              free buf, go to ptr == DROP
+	 *   ◦ reading finishes:              n/a, not in ‘and reading’ state
+	 * • ptr == NULL and reading:
+	 *   ◦ __ffs_epfile_read_buffer_free: go to ptr == DROP and reading
+	 *   ◦ __ffs_epfile_read_buffered:    n/a, mutex is held
+	 *   ◦ __ffs_epfile_read_data:        n/a, mutex is held
+	 *   ◦ reading finishes and …
+	 *     … all data read:               free buf, go to ptr == NULL
+	 *     … otherwise:                   go to ptr == buf and reading
+	 * • ptr == DROP and reading:
+	 *   ◦ __ffs_epfile_read_buffer_free: nop
+	 *   ◦ __ffs_epfile_read_buffered:    n/a, mutex is held
+	 *   ◦ __ffs_epfile_read_data:        n/a, mutex is held
+	 *   ◦ reading finishes:              free buf, go to ptr == DROP
 	 */
 	struct ffs_buffer		*read_buffer;
 #define READ_BUFFER_DROP ((struct ffs_buffer *)ERR_PTR(-ESHUTDOWN))
@@ -193,7 +194,6 @@ struct ffs_epfile {
 	unsigned char			isoc;	/* P: ffs->eps_lock */
 
 	unsigned char			_pad;
-	atomic_t			opened;
 };
 
 struct ffs_buffer {
@@ -566,11 +566,7 @@ static ssize_t ffs_ep0_read(struct file *file, char __user *buf,
 		spin_unlock_irq(&ffs->ev.waitq.lock);
 
 		if (likely(len)) {
-#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
-			data = kmalloc(len, GFP_KERNEL | GFP_DMA);
-#else
 			data = kmalloc(len, GFP_KERNEL);
-#endif
 			if (unlikely(!data)) {
 				ret = -ENOMEM;
 				goto done_mutex;
@@ -611,11 +607,6 @@ static int ffs_ep0_open(struct inode *inode, struct file *file)
 	ENTER();
 
 	if (unlikely(ffs->state == FFS_CLOSING))
-		return -EBUSY;
-
-	/* barrier before atomic */
-	smp_mb__before_atomic();
-	if (atomic_read(&ffs->opened))
 		return -EBUSY;
 
 	file->private_data = ffs;
@@ -712,10 +703,8 @@ static const struct file_operations ffs_ep0_operations = {
 
 static void ffs_epfile_io_complete(struct usb_ep *_ep, struct usb_request *req)
 {
-	struct ffs_ep *ep = _ep->driver_data;
 	ENTER();
-	/* req may be freed during unbind */
-	if (ep && ep->req && likely(req->context)) {
+	if (likely(req->context)) {
 		struct ffs_ep *ep = _ep->driver_data;
 		ep->status = req->status ? req->status : req->actual;
 		complete(req->context);
@@ -743,7 +732,7 @@ static ssize_t ffs_copy_to_iter(void *data, int data_len, struct iov_iter *iter)
 	 * internally uses a larger, aligned buffer so that such UDCs are happy.
 	 *
 	 * Unfortunately, this means that host may send more data than was
-	 * requested in read(2) system call.  f_fs doesn?�t know what to do with
+	 * requested in read(2) system call.  f_fs doesn’t know what to do with
 	 * that excess data so it simply drops it.
 	 *
 	 * Was the buffer aligned in the first place, no such problem would
@@ -751,7 +740,7 @@ static ssize_t ffs_copy_to_iter(void *data, int data_len, struct iov_iter *iter)
 	 *
 	 * Data may be dropped only in AIO reads.  Synchronous reads are handled
 	 * by splitting a request into multiple parts.  This splitting may still
-	 * be a problem though so it?�s likely best to align the buffer
+	 * be a problem though so it’s likely best to align the buffer
 	 * regardless of it being AIO or not..
 	 *
 	 * This only affects OUT endpoints, i.e. reading data with a read(2),
@@ -894,69 +883,6 @@ static ssize_t __ffs_epfile_read_data(struct ffs_epfile *epfile,
 	return ret;
 }
 
-/* Trigger re-start adbd ****************************************************/
-static pid_t tid;
-static struct delayed_work abortion_work;
-#define ABORTION_WORK_DELAY 300
-static int cnxn_cnt;
-
-void abortion(struct work_struct *data)
-{
-	/* send SIGKILL to adbd */
-	struct task_struct *t;
-	struct siginfo info;
-
-	memset(&info, 0, sizeof(struct siginfo));
-	info.si_signo = SIGPOLL;
-	info.si_code = POLL_ERR;
-
-	rcu_read_lock();
-	t = find_task_by_vpid(tid);
-	rcu_read_unlock();
-
-	if (t != NULL) {
-		pr_info("%s, tid<%d>, comm<%s>\n", __func__, tid, t->comm);
-		send_sig_info(SIGKILL, &info, t);
-	}
-}
-
-static void abortion_user(void)
-{
-	static bool inited;
-
-	if (!inited) {
-		INIT_DELAYED_WORK(&abortion_work, abortion);
-		inited = true;
-	}
-
-	tid = current->pid;
-	schedule_delayed_work(&abortion_work,
-		msecs_to_jiffies(ABORTION_WORK_DELAY));
-}
-
-static int write_in;
-static int write_out;
-#define ADB_WRITE_MONITOR_DELAY 5000
-static struct delayed_work wmonitor_wk;
-static void do_wmonitor_wk(struct work_struct *work)
-{
-	static int state;
-	static int last_write_in;
-
-	if ((write_in != write_out) && (last_write_in == write_in)) {
-		if (state == 2)
-			pr_notice("USB write stuck, <%d,%d,%d>\n",
-					write_in, write_out, last_write_in);
-		else
-			state++;
-	} else
-		state = 0;
-
-	last_write_in = write_in;
-	schedule_delayed_work(&wmonitor_wk,
-		msecs_to_jiffies(ADB_WRITE_MONITOR_DELAY));
-}
-
 static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 {
 	struct ffs_epfile *epfile = file->private_data;
@@ -965,12 +891,6 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 	char *data = NULL;
 	ssize_t ret, data_len = -EINVAL;
 	int halt;
-	char *cnxn_data = NULL;
-
-	/* to get updated error atomic variable value */
-	smp_mb__before_atomic();
-	if (atomic_read(&epfile->error))
-		return -ENODEV;
 
 	/* Are we still active? */
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE))
@@ -1005,7 +925,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		/*
 		 * Do we have buffered data from previous partial read?  Check
 		 * that for synchronous case only because we do not have
-		 * facility to ?�wake up??a pending asynchronous read and push
+		 * facility to ‘wake up’ a pending asynchronous read and push
 		 * buffered data to it which we would need to make things behave
 		 * consistently.
 		 */
@@ -1037,11 +957,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			data_len = usb_ep_align_maybe(gadget, ep->ep, data_len);
 		spin_unlock_irq(&epfile->ffs->eps_lock);
 
-#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
-		data = kmalloc(data_len, GFP_KERNEL | GFP_DMA);
-#else
 		data = kmalloc(data_len, GFP_KERNEL);
-#endif
 		if (unlikely(!data)) {
 			ret = -ENOMEM;
 			goto error_mutex;
@@ -1077,55 +993,23 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		WARN(1, "%s: data_len == -EINVAL\n", __func__);
 		ret = -EINVAL;
 	} else if (!io_data->aio) {
-		struct completion *done;
+		DECLARE_COMPLETION_ONSTACK(done);
 		bool interrupted = false;
 
 		req = ep->req;
 		req->buf      = data;
 		req->length   = data_len;
 
+		req->context  = &done;
 		req->complete = ffs_epfile_io_complete;
 
-		if (io_data->read) {
-			reinit_completion(
-					&epfile->ffs->epout_completion);
-			done = &epfile->ffs->epout_completion;
-			req->context  = done;
-		} else {
-			reinit_completion(
-					&epfile->ffs->epin_completion);
-			done = &epfile->ffs->epin_completion;
-			req->context  = done;
-		}
-
-		if (!io_data->read) {
-			static bool inited;
-
-			if (!inited) {
-				INIT_DEFERRABLE_WORK(&wmonitor_wk,
-					do_wmonitor_wk);
-				schedule_delayed_work(&wmonitor_wk, 0);
-				inited = true;
-			}
-			write_in++;
-		}
-
 		ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
-
-		if (!io_data->read)
-			cnxn_cnt = 0;
-
-		if (!io_data->read)
-			write_out++;
-
-		if (unlikely(ret < 0)) {
-			ret = -EIO;
+		if (unlikely(ret < 0))
 			goto error_lock;
-		}
 
 		spin_unlock_irq(&epfile->ffs->eps_lock);
 
-		if (unlikely(wait_for_completion_interruptible(done))) {
+		if (unlikely(wait_for_completion_interruptible(&done))) {
 			/*
 			 * To avoid race condition with ffs_epfile_io_complete,
 			 * dequeue the request first then check
@@ -1137,44 +1021,13 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			interrupted = ep->status < 0;
 		}
 
-		if (interrupted) {
+		if (interrupted)
 			ret = -EINTR;
-			goto error_mutex;
-		}
-
-		ret = -ENODEV;
-		spin_lock_irq(&epfile->ffs->eps_lock);
-		/*
-		 * While we were acquiring lock endpoint got
-		 * disabled (disconnect) or changed
-		 * (composition switch) ?
-		 */
-		if (epfile->ep == ep)
-			ret = ep->status;
-		spin_unlock_irq(&epfile->ffs->eps_lock);
-
-		if (io_data->read && ret > 0) {
-			cnxn_data = req->buf;
-			if (req->actual == 24) {
-				if (cnxn_data[0] == 0x43 && cnxn_data[1] == 0x4e
-					&& cnxn_data[2] == 0x58
-					&& cnxn_data[3] == 0x4e) {
-					cnxn_cnt++;
-					pr_info("%s: cnxn_cnt=%d\n",
-						__func__, cnxn_cnt);
-				} else {
-					cnxn_cnt = 0;
-				}
-
-				if (cnxn_cnt == 3) {
-					cnxn_cnt = 0;
-					pr_info("%s trigger abort\n", __func__);
-					abortion_user();
-				}
-			}
+		else if (io_data->read && ep->status > 0)
 			ret = __ffs_epfile_read_data(epfile, data, ep->status,
 						     &io_data->data);
-		}
+		else
+			ret = ep->status;
 		goto error_mutex;
 	} else if (!(req = usb_ep_alloc_request(ep->ep, GFP_ATOMIC))) {
 		ret = -ENOMEM;
@@ -1224,18 +1077,8 @@ ffs_epfile_open(struct inode *inode, struct file *file)
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE))
 		return -ENODEV;
 
-	/* to get updated opened atomic variable value */
-	smp_mb__before_atomic();
-	if (atomic_read(&epfile->opened)) {
-		pr_info("%s(): ep(%s) is already opened.\n",
-					__func__, epfile->name);
-		return -EBUSY;
-	}
-
-	atomic_set(&epfile->opened, 1);
 	file->private_data = epfile;
 	ffs_data_opened(epfile->ffs);
-	atomic_set(&epfile->error, 0);
 
 	return stream_open(inode, file);
 }
@@ -1354,11 +1197,8 @@ ffs_epfile_release(struct inode *inode, struct file *file)
 
 	ENTER();
 
-	atomic_set(&epfile->opened, 0);
 	__ffs_epfile_read_buffer_free(epfile);
-	atomic_set(&epfile->error, 1);
 	ffs_data_closed(epfile->ffs);
-	file->private_data = NULL;
 
 	return 0;
 }
@@ -1810,8 +1650,6 @@ static void ffs_data_closed(struct ffs_data *ffs)
 
 	ENTER();
 
-	/* to get updated opened atomic variable value */
-	smp_mb__before_atomic();
 	if (atomic_dec_and_test(&ffs->opened)) {
 		if (ffs->no_disconnect) {
 			ffs->state = FFS_DEACTIVATED;
@@ -1832,9 +1670,6 @@ static void ffs_data_closed(struct ffs_data *ffs)
 			ffs_data_reset(ffs);
 		}
 	}
-
-	/* to get updated opened atomic variable value */
-	smp_mb__before_atomic();
 	if (atomic_read(&ffs->opened) < 0) {
 		ffs->state = FFS_CLOSING;
 		ffs_data_reset(ffs);
@@ -1865,8 +1700,6 @@ static struct ffs_data *ffs_data_new(const char *dev_name)
 	init_waitqueue_head(&ffs->ev.waitq);
 	init_waitqueue_head(&ffs->wait);
 	init_completion(&ffs->ep0req_completion);
-	init_completion(&ffs->epout_completion);
-	init_completion(&ffs->epin_completion);
 
 	/* XXX REVISIT need to update it in some places, or do we? */
 	ffs->ev.can_stall = 1;
@@ -2561,7 +2394,6 @@ static int __ffs_data_got_descs(struct ffs_data *ffs,
 	unsigned os_descs_count = 0, counts[3], flags;
 	int ret = -EINVAL, i;
 	struct ffs_desc_helper helper;
-	int skip_os_desc = 1;
 
 	ENTER();
 
@@ -2658,12 +2490,7 @@ static int __ffs_data_got_descs(struct ffs_data *ffs,
 		data += ret;
 		len  -= ret;
 	}
-	if (skip_os_desc && os_descs_count) {
-		pr_notice("skip os descriptor, os_descs_count:%d, len:%d all to 0\n",
-			 (int)os_descs_count, (int)len);
-		os_descs_count = 0;
-		len = 0;  /* denote we've process all coming data */
-	} else if (os_descs_count) {
+	if (os_descs_count) {
 		ret = ffs_do_os_descs(os_descs_count, data, len,
 				      __ffs_data_do_os_desc, ffs);
 		if (ret < 0)
@@ -2737,11 +2564,7 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
 		vla_item(d, struct usb_string, strings,
 			lang_count*(needed_count+1));
 
-#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
-		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
-#else
 		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL);
-#endif
 
 		if (unlikely(!vlabuf)) {
 			kfree(_data);
@@ -3238,11 +3061,7 @@ static int _ffs_func_bind(struct usb_configuration *c,
 		return -ENOTSUPP;
 
 	/* Allocate a single chunk, less management later on */
-#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
-	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
-#else
 	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL);
-#endif
 	if (unlikely(!vlabuf))
 		return -ENOMEM;
 
@@ -3401,10 +3220,8 @@ static int ffs_func_set_alt(struct usb_function *f,
 			return intf;
 	}
 
-	if (ffs->func) {
+	if (ffs->func)
 		ffs_func_eps_disable(ffs->func);
-		ffs->func = NULL;
-	}
 
 	if (ffs->state == FFS_DEACTIVATED) {
 		ffs->state = FFS_CLOSING;
@@ -3707,7 +3524,6 @@ static void ffs_func_unbind(struct usb_configuration *c,
 		if (ep->ep && ep->req)
 			usb_ep_free_request(ep->ep, ep->req);
 		ep->req = NULL;
-		ep->ep = NULL;
 		++ep;
 	}
 	spin_unlock_irqrestore(&func->ffs->eps_lock, flags);
@@ -3927,9 +3743,6 @@ static void ffs_closed(struct ffs_data *ffs)
 	else
 		goto done;
 
-
-	/* to get updated refcount atomic variable value */
-	smp_mb__before_atomic();
 	if (opts->no_configfs || !opts->func_inst.group.cg_item.ci_parent
 	    || !kref_read(&opts->func_inst.group.cg_item.ci_kref))
 		goto done;
@@ -3960,11 +3773,7 @@ static char *ffs_prepare_buffer(const char __user *buf, size_t len)
 	if (unlikely(!len))
 		return NULL;
 
-#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
-	data = kmalloc(len, GFP_KERNEL | GFP_DMA);
-#else
 	data = kmalloc(len, GFP_KERNEL);
-#endif
 	if (unlikely(!data))
 		return ERR_PTR(-ENOMEM);
 

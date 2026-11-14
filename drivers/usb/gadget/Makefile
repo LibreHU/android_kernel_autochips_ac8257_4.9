@@ -20,7 +20,9 @@ ccflags-y += -I$(srctree)/drivers/usb/gadget/
 obj-$(CONFIG_USB_LIBCOMPOSITE)	+= libcomposite.o
 libcomposite-y			:= usbstring.o config.o epautoconf.o
 libcomposite-y			+= composite.o functions.o configfs.o u_f.o
-libcomposite-$(CONFIG_USB_CONFIGFS_UEVENT)			+= meta.o
+# LibreHU 4.19: meta.c (USB of the MediaTek factory META boot mode only, never in a normal boot) needs the
+# MediaTek mass storage additions of 4.9 that this port does not carry: not built
+# libcomposite-$(CONFIG_USB_CONFIGFS_UEVENT)			+= meta.o
 
 g_android-y			:= android.o
 

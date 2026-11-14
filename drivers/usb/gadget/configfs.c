@@ -48,12 +48,14 @@ struct device *create_function_device(char *name)
 EXPORT_SYMBOL_GPL(create_function_device);
 #endif
 
-#ifndef CONFIG_USB_CONFIGFS_UEVENT
+/*
+ * LibreHU 4.19: meta.c (the ACM gadget of the MediaTek factory META boot mode) is not built in this port, so the
+ * shortcut never applies: the gadget always comes from configfs, as in a normal boot of the 4.9 kernel.
+ */
 int acm_shortcut(void)
 {
 	return 0;
 }
-#endif
 
 int check_user_usb_string(const char *name,
 		struct usb_gadget_strings *stringtab_dev)
@@ -1854,10 +1856,10 @@ static ssize_t	\
 field ## _store(struct device *dev, struct device_attribute *attr,	\
 		const char *buf, size_t size)	\
 {	\
-	if (size >= MAX_USB_STRING_LEN)	\
+	if (size >= USB_MAX_STRING_LEN)	\
 		return -EINVAL;	\
 	pr_info("%s %s len=%zu\n", __func__, buf, size); \
-	return strlcpy(buffer, buf, MAX_USB_STRING_LEN);	\
+	return strlcpy(buffer, buf, USB_MAX_STRING_LEN);	\
 }									\
 static DEVICE_ATTR(field, 0644, field ## _show, field ## _store)
 
@@ -1910,10 +1912,13 @@ static int android_device_create(struct gadget_info *gi)
 	if (IS_ERR(android_device))
 		return PTR_ERR(android_device);
 
-	serial_string = kzalloc(sizeof(char)*MAX_USB_STRING_WITH_NULL_LEN,
+	serial_string = kzalloc(sizeof(char)*USB_MAX_STRING_WITH_NULL_LEN,
 		GFP_KERNEL);
-
-	serial_string[0] = '\0';
+	if (!serial_string) {
+		device_unregister(android_device);
+		android_device = NULL;
+		return -ENOMEM;
+	}
 
 	dev_set_drvdata(android_device, gi);
 

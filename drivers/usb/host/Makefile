@@ -20,7 +20,7 @@ ifneq ($(CONFIG_USB_XHCI_DBGCAP), )
 endif
 
 ifneq ($(CONFIG_USB_XHCI_MTK), )
-	xhci-hcd-y += xhci-mtk-sch.o xhci-debugfs.o
+	xhci-hcd-y += xhci-mtk-sch.o xhci-mtk-debugfs.o
 endif
 
 xhci-plat-hcd-y := xhci-plat.o
