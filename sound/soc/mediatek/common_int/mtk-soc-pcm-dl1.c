@@ -116,7 +116,7 @@ static struct device *mDev;
 /*void StopAudioPcmHardware(void);*/
 static int mtk_soc_dl1_probe(struct platform_device *pdev);
 static int mtk_soc_pcm_dl1_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform);
+static int mtk_asoc_dl1_probe(struct snd_soc_component *component);
 
 static bool mPrepareDone;
 
@@ -363,8 +363,8 @@ static int mtk_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
-			snd_pcm_uframes_t pos, void __user *dst,
-			snd_pcm_uframes_t count)
+			unsigned long pos, void __user *dst,
+			unsigned long count)
 {
 	struct afe_block_t *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
@@ -375,7 +375,7 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 	pr_debug("mtk_pcm_copy pos = %lu count = %lu\n ", pos, count);
 #endif
 	/* get total bytes to copy */
-	count = audio_frame_to_bytes(substream, count);
+	/* 4.13: copy_user() gets bytes, not frames */
 
 	/* check which memif nned to be write */
 	Afe_Block = &pMemControl->rBlock;
@@ -551,7 +551,7 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 }
 
 static int mtk_pcm_silence(struct snd_pcm_substream *substream, int channel,
-			   snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
+			   unsigned long pos, unsigned long count)
 {
 #if defined(DL1_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
@@ -579,22 +579,23 @@ static struct snd_pcm_ops mtk_afe_ops = {
 	.prepare = mtk_pcm_prepare,
 	.trigger = mtk_pcm_trigger,
 	.pointer = mtk_pcm_pointer,
-	.copy = mtk_pcm_copy,
-	.silence = mtk_pcm_silence,
+	.copy_user = mtk_pcm_copy,
+	.fill_silence = mtk_pcm_silence,
 	.page = mtk_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_soc_platform = {
+static const struct snd_soc_component_driver mtk_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_afe_ops, .probe = mtk_asoc_dl1_probe,
 };
 
-static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform)
+static int mtk_asoc_dl1_probe(struct snd_soc_component *component)
 {
 #if defined(DL1_DEBUG_LOG)
 	pr_debug("mtk_asoc_dl1_probe\n");
 #endif
 	/* allocate dram */
-	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
+	AudDrv_Allocate_mem_Buffer(component->dev, Soc_Aud_Digital_Block_MEM_DL1,
 				   Dl1_MAX_BUFFER_SIZE);
 	Dl1_Playback_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
 	return 0;
@@ -607,7 +608,7 @@ static int mtk_afe_remove(struct platform_device *pdev)
 #endif
 	AudDrv_Clk_Deinit(&pdev->dev);
 
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 
 	return 0;
 }
@@ -705,7 +706,7 @@ static int mtk_soc_dl1_probe(struct platform_device *pdev)
 	AudDrv_GPIO_SMARTPA_Select(0);
 #endif
 
-	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_platform, NULL, 0);
 }
 
 static struct platform_driver mtk_afe_driver = {

@@ -401,9 +401,9 @@ static struct snd_pcm_ops mtk_usb_echoref_ops = {
 	.pointer = mtk_usb_echoref_pointer,
 };
 
-static int mtk_usb_echoref_platform_probe(struct snd_soc_platform *platform)
+static int mtk_usb_echoref_platform_probe(struct snd_soc_component *component)
 {
-	snd_soc_add_platform_controls(platform, speech_usb_controls,
+	snd_soc_add_component_controls(component, speech_usb_controls,
 				      ARRAY_SIZE(speech_usb_controls));
 	return 0;
 }
@@ -425,7 +425,8 @@ static void mtk_usb_echoref_pcm_free(struct snd_pcm *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static struct snd_soc_platform_driver mtk_soc_usb_echoref_platform = {
+static const struct snd_soc_component_driver mtk_soc_usb_echoref_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_usb_echoref_ops,
 	.probe = mtk_usb_echoref_platform_probe,
 	.pcm_new = mtk_usb_echoref_pcm_new,
@@ -443,14 +444,13 @@ static int mtk_usb_echoref_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOICE_USB_ECHOREF);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev,
-					 &mtk_soc_usb_echoref_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_usb_echoref_platform, NULL, 0);
 }
 
 static int mtk_usb_echoref_remove(struct platform_device *pdev)
 {
 	pr_debug("%s()\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

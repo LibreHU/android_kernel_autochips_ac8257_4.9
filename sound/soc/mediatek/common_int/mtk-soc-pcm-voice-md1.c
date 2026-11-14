@@ -406,15 +406,15 @@ static int mtk_voice_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int mtk_voice_pcm_copy(struct snd_pcm_substream *substream, int channel,
-			      snd_pcm_uframes_t pos, void __user *dst,
-			      snd_pcm_uframes_t count)
+			      unsigned long pos, void __user *dst,
+			      unsigned long count)
 {
 	return 0;
 }
 
 static int mtk_voice_pcm_silence(struct snd_pcm_substream *substream,
-				 int channel, snd_pcm_uframes_t pos,
-				 snd_pcm_uframes_t count)
+				 int channel, unsigned long pos,
+				 unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -434,22 +434,23 @@ static struct snd_pcm_ops mtk_voice_ops = {
 	.hw_free = mtk_voice_hw_free,
 	.prepare = mtk_voice1_prepare,
 	.trigger = mtk_voice_trigger,
-	.copy = mtk_voice_pcm_copy,
-	.silence = mtk_voice_pcm_silence,
+	.copy_user = mtk_voice_pcm_copy,
+	.fill_silence = mtk_voice_pcm_silence,
 	.page = mtk_pcm_page,
 };
 
-static int mtk_voice_platform_probe(struct snd_soc_platform *platform)
+static int mtk_voice_platform_probe(struct snd_soc_component *component)
 {
 	pr_info("%s()\n", __func__);
 
-	snd_soc_add_platform_controls(platform, mtk_voice_speech_controls,
+	snd_soc_add_component_controls(component, mtk_voice_speech_controls,
 				      ARRAY_SIZE(mtk_voice_speech_controls));
 
 	return 0;
 }
 
-static struct snd_soc_platform_driver mtk_soc_voice_platform = {
+static const struct snd_soc_component_driver mtk_soc_voice_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_voice_ops, .probe = mtk_voice_platform_probe,
 };
 
@@ -464,14 +465,13 @@ static int mtk_voice_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOICE_MD1);
 
 	pr_info("%s(), dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev,
-					 &mtk_soc_voice_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_voice_platform, NULL, 0);
 }
 
 static int mtk_voice_remove(struct platform_device *pdev)
 {
 	pr_info("%s()\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

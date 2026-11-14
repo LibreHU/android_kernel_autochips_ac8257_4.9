@@ -69,7 +69,7 @@ static struct device *mDev;
 
 static int mtk_i2s0_probe(struct platform_device *pdev);
 static int mtk_pcm_i2s0_close(struct snd_pcm_substream *substream);
-static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform);
+static int mtk_afe_i2s0_probe(struct snd_soc_component *component);
 
 int mtk_soc_always_hd;
 int extcodec_echoref_control;
@@ -634,16 +634,16 @@ static int mtk_pcm_i2s0_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int mtk_pcm_i2s0_copy(struct snd_pcm_substream *substream, int channel,
-			     snd_pcm_uframes_t pos, void __user *dst,
-			     snd_pcm_uframes_t count)
+			     unsigned long pos, void __user *dst,
+			     unsigned long count)
 {
 	return mtk_memblk_copy(substream, channel, pos, dst, count,
 			       pI2s0MemControl, Soc_Aud_Digital_Block_MEM_DL1);
 }
 
 static int mtk_pcm_i2s0_silence(struct snd_pcm_substream *substream,
-				int channel, snd_pcm_uframes_t pos,
-				snd_pcm_uframes_t count)
+				int channel, unsigned long pos,
+				unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -665,12 +665,13 @@ static struct snd_pcm_ops mtk_i2s0_ops = {
 	.prepare = mtk_pcm_i2s0_prepare,
 	.trigger = mtk_pcm_i2s0_trigger,
 	.pointer = mtk_pcm_i2s0_pointer,
-	.copy = mtk_pcm_i2s0_copy,
-	.silence = mtk_pcm_i2s0_silence,
+	.copy_user = mtk_pcm_i2s0_copy,
+	.fill_silence = mtk_pcm_i2s0_silence,
 	.page = mtk_i2s0_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_i2s0_soc_platform = {
+static const struct snd_soc_component_driver mtk_i2s0_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_i2s0_ops, .probe = mtk_afe_i2s0_probe,
 };
 
@@ -689,20 +690,20 @@ static int mtk_i2s0_probe(struct platform_device *pdev)
 
 	mDev = &pdev->dev;
 
-	return snd_soc_register_platform(&pdev->dev, &mtk_i2s0_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_i2s0_soc_platform, NULL, 0);
 }
 
-static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform)
+static int mtk_afe_i2s0_probe(struct snd_soc_component *component)
 {
 	pr_debug("mtk_afe_i2s0_probe\n");
-	snd_soc_add_platform_controls(platform, Audio_snd_i2s0_controls,
+	snd_soc_add_component_controls(component, Audio_snd_i2s0_controls,
 				      ARRAY_SIZE(Audio_snd_i2s0_controls));
 	return 0;
 }
 
 static int mtk_i2s0_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

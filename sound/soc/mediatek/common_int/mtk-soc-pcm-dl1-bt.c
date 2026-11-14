@@ -113,7 +113,7 @@ static const struct snd_kcontrol_new mtk_dl1bt_control[] = {
 
 static int mtk_dl1bt_probe(struct platform_device *pdev);
 static int mtk_Dl1Bt_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform);
+static int mtk_asoc_dl1bt_probe(struct snd_soc_component *component);
 
 static struct snd_pcm_hardware mtk_dl1bt_pcm_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
@@ -358,16 +358,16 @@ static int mtk_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream, int channel,
-			      snd_pcm_uframes_t pos, void __user *dst,
-			      snd_pcm_uframes_t count)
+			      unsigned long pos, void __user *dst,
+			      unsigned long count)
 {
 	return mtk_memblk_copy(substream, channel, pos, dst, count,
 			       pdl1btMemControl, bt_dl_mem_blk);
 }
 
 static int mtk_pcm_dl1bt_silence(struct snd_pcm_substream *substream,
-				 int channel, snd_pcm_uframes_t pos,
-				 snd_pcm_uframes_t count)
+				 int channel, unsigned long pos,
+				 unsigned long count)
 {
 #if defined(AUD_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
@@ -392,12 +392,13 @@ static struct snd_pcm_ops mtk_d1lbt_ops = {
 	.prepare = mtk_dl1bt_pcm_prepare,
 	.trigger = mtk_pcm_trigger,
 	.pointer = mtk_dl1bt_pcm_pointer,
-	.copy = mtk_pcm_dl1bt_copy,
-	.silence = mtk_pcm_dl1bt_silence,
+	.copy_user = mtk_pcm_dl1bt_copy,
+	.fill_silence = mtk_pcm_dl1bt_silence,
 	.page = mtk_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_soc_dl1bt_platform = {
+static const struct snd_soc_component_driver mtk_soc_dl1bt_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_d1lbt_ops, .probe = mtk_asoc_dl1bt_probe,
 };
 
@@ -417,18 +418,18 @@ static int mtk_dl1bt_probe(struct platform_device *pdev)
 #endif
 	mDev = &pdev->dev;
 
-	return snd_soc_register_platform(&pdev->dev, &mtk_soc_dl1bt_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_dl1bt_platform, NULL, 0);
 }
 
-static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform)
+static int mtk_asoc_dl1bt_probe(struct snd_soc_component *component)
 {
 #if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_asoc_dl1bt_probe\n");
 #endif
-	AudDrv_Allocate_mem_Buffer(platform->dev, bt_dl_mem_blk,
+	AudDrv_Allocate_mem_Buffer(component->dev, bt_dl_mem_blk,
 				   Dl1_MAX_BUFFER_SIZE);
 	dl1bt_Playback_dma_buf = Get_Mem_Buffer(bt_dl_mem_blk);
-	snd_soc_add_platform_controls(platform, mtk_dl1bt_control,
+	snd_soc_add_component_controls(component, mtk_dl1bt_control,
 				      ARRAY_SIZE(mtk_dl1bt_control));
 
 	return 0;
@@ -436,7 +437,7 @@ static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform)
 
 static int mtk_asoc_dl1bt_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

@@ -65,7 +65,7 @@
 
 static int mtk_voice_md2_bt_probe(struct platform_device *pdev);
 static int mtk_voice_md2_bt_close(struct snd_pcm_substream *substream);
-static int mtk_voice_md2_bt_platform_probe(struct snd_soc_platform *platform);
+static int mtk_voice_md2_bt_platform_probe(struct snd_soc_component *component);
 static bool SetModemSpeechDAIBTAttribute(int sample_rate);
 
 static bool voice_md2_bt_Status;
@@ -197,15 +197,15 @@ static int mtk_voice_md2_bt_trigger(struct snd_pcm_substream *substream,
 }
 
 static int mtk_voice_md2_bt_pcm_copy(struct snd_pcm_substream *substream,
-				     int channel, snd_pcm_uframes_t pos,
-				     void __user *dst, snd_pcm_uframes_t count)
+				     int channel, unsigned long pos,
+				     void __user *dst, unsigned long count)
 {
 	return 0;
 }
 
 static int mtk_voice_md2_bt_pcm_silence(struct snd_pcm_substream *substream,
-					int channel, snd_pcm_uframes_t pos,
-					snd_pcm_uframes_t count)
+					int channel, unsigned long pos,
+					unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -307,12 +307,13 @@ static struct snd_pcm_ops mtk_voice_md2_bt_ops = {
 	.hw_free = mtk_voice_md2_bt_hw_free,
 	.prepare = mtk_voice_md2_bt_prepare,
 	.trigger = mtk_voice_md2_bt_trigger,
-	.copy = mtk_voice_md2_bt_pcm_copy,
-	.silence = mtk_voice_md2_bt_pcm_silence,
+	.copy_user = mtk_voice_md2_bt_pcm_copy,
+	.fill_silence = mtk_voice_md2_bt_pcm_silence,
 	.page = mtk_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_soc_voice_md2_bt_platform = {
+static const struct snd_soc_component_driver mtk_soc_voice_md2_bt_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_voice_md2_bt_ops, .probe = mtk_voice_md2_bt_platform_probe,
 };
 
@@ -326,11 +327,10 @@ static int mtk_voice_md2_bt_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOICE_MD2_BT);
 
 	pr_debug("%s(), dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev,
-					 &mtk_soc_voice_md2_bt_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_voice_md2_bt_platform, NULL, 0);
 }
 
-static int mtk_voice_md2_bt_platform_probe(struct snd_soc_platform *platform)
+static int mtk_voice_md2_bt_platform_probe(struct snd_soc_component *component)
 {
 	pr_debug("%s()\n", __func__);
 	return 0;
@@ -339,7 +339,7 @@ static int mtk_voice_md2_bt_platform_probe(struct snd_soc_platform *platform)
 static int mtk_voice_md2_bt_remove(struct platform_device *pdev)
 {
 	pr_debug("%s()\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

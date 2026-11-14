@@ -370,8 +370,8 @@ static int mtk_pcm_btcvsd_rx_trigger(struct snd_pcm_substream *substream,
 }
 
 static int mtk_pcm_btcvsd_rx_copy(struct snd_pcm_substream *substream,
-				  int channel, snd_pcm_uframes_t pos,
-				  void __user *dst, snd_pcm_uframes_t count)
+				  int channel, unsigned long pos,
+				  void __user *dst, unsigned long count)
 {
 	/* get total bytes to copy */
 	char *Read_Data_Ptr = (char *)dst;
@@ -387,8 +387,8 @@ static int mtk_pcm_btcvsd_rx_copy(struct snd_pcm_substream *substream,
 }
 
 static int mtk_pcm_btcvsd_rx_silence(struct snd_pcm_substream *substream,
-				     int channel, snd_pcm_uframes_t pos,
-				     snd_pcm_uframes_t count)
+				     int channel, unsigned long pos,
+				     unsigned long count)
 {
 #if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
@@ -405,8 +405,8 @@ static struct snd_pcm_ops mtk_btcvsd_rx_ops = {
 	.prepare = mtk_pcm_btcvsd_rx_prepare,
 	.trigger = mtk_pcm_btcvsd_rx_trigger,
 	.pointer = mtk_pcm_btcvsd_rx_pointer,
-	.copy = mtk_pcm_btcvsd_rx_copy,
-	.silence = mtk_pcm_btcvsd_rx_silence,
+	.copy_user = mtk_pcm_btcvsd_rx_copy,
+	.fill_silence = mtk_pcm_btcvsd_rx_silence,
 };
 
 /* btsco band info */
@@ -587,14 +587,15 @@ static const struct snd_kcontrol_new btcvsd_controls[] = {
 		     btcvsd_tx_timeout_set),
 };
 
-static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_platform *platform)
+static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_component *component)
 {
-	snd_soc_add_platform_controls(platform, btcvsd_controls,
+	snd_soc_add_component_controls(component, btcvsd_controls,
 				      ARRAY_SIZE(btcvsd_controls));
 	return 0;
 }
 
-static struct snd_soc_platform_driver mtk_btcvsd_rx_soc_platform = {
+static const struct snd_soc_component_driver mtk_btcvsd_rx_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_btcvsd_rx_ops, .probe = mtk_asoc_pcm_btcvsd_rx_probe,
 };
 
@@ -665,8 +666,7 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 		__func__, BTSYS_PKV_BASE_ADDRESS,
 		BTSYS_SRAM_BANK2_BASE_ADDRESS);
 
-	return snd_soc_register_platform(&pdev->dev,
-					 &mtk_btcvsd_rx_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_btcvsd_rx_soc_platform, NULL, 0);
 }
 
 static int mtk_btcvsd_rx_remove(struct platform_device *pdev)
@@ -674,7 +674,7 @@ static int mtk_btcvsd_rx_remove(struct platform_device *pdev)
 #if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
 #endif
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

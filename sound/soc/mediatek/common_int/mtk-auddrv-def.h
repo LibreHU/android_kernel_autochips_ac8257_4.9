@@ -88,6 +88,9 @@
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) WARN_ON(value)
 
+/* LibreHU 4.19: name of the AFE PCM components (snd_soc_component_driver.name), as in the MediaTek 4.19 driver */
+#define AFE_PCM_NAME "mtk-afe-pcm"
+
 #ifdef CONFIG_MTK_AEE_FEATURE
 #define AUDIO_AEE(message)                                                     \
 	(aee_kernel_exception_api(__FILE__, __LINE__, DB_OPT_FTRACE, message,  \

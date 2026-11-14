@@ -71,8 +71,8 @@ static bool vcore_dvfs_enable;
  */
 //static int mtk_I2S0dl1_probe(struct platform_device *pdev);
 //static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream);
-//static int mtk_afe_I2S0dl1_probe(struct snd_soc_platform *platform);
-//static int mtk_afe_I2S0dl1_remove(struct snd_soc_platform *platform);
+//static int mtk_afe_I2S0dl1_probe(struct snd_soc_component *component);
+//static int mtk_afe_I2S0dl1_remove(struct snd_soc_component *component);
 
 static bool mPrepareDone;
 static struct device *mDev;
@@ -303,8 +303,8 @@ mtk_pcm_I2S0dl1_pointer(struct snd_pcm_substream *substream)
 }
 
 static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
-				int channel, snd_pcm_uframes_t pos,
-				void __user *dst, snd_pcm_uframes_t count)
+				int channel, unsigned long pos,
+				void __user *dst, unsigned long count)
 {
 	vcore_dvfs(&vcore_dvfs_enable, false);
 	return mtk_memblk_copy(substream, channel, pos, dst, count,
@@ -313,8 +313,8 @@ static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
 }
 
 static int mtk_pcm_I2S0dl1_silence(struct snd_pcm_substream *substream,
-				   int channel, snd_pcm_uframes_t pos,
-				   snd_pcm_uframes_t count)
+				   int channel, unsigned long pos,
+				   unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -336,18 +336,18 @@ static struct snd_pcm_ops mtk_I2S0dl1_ops = {
 	.prepare = mtk_pcm_I2S0dl1_prepare,
 	.trigger = mtk_pcm_I2S0dl1_trigger,
 	.pointer = mtk_pcm_I2S0dl1_pointer,
-	.copy = mtk_pcm_I2S0dl1_copy,
-	.silence = mtk_pcm_I2S0dl1_silence,
+	.copy_user = mtk_pcm_I2S0dl1_copy,
+	.fill_silence = mtk_pcm_I2S0dl1_silence,
 	.page = mtk_I2S0dl1_pcm_page,
 	.mmap = mtk_pcm_mmap,
 };
 
-static int mtk_afe_I2S0dl1_probe(struct snd_soc_platform *platform)
+static int mtk_afe_I2S0dl1_probe(struct snd_soc_component *component)
 {
 	pr_info("mtk_afe_I2S0dl1_probe\n");
 	/* allocate dram */
 	Dl1I2S0_Playback_dma_buf.area = dma_alloc_coherent(
-		platform->dev, SOC_HIFI_BUFFER_SIZE,
+		component->dev, SOC_HIFI_BUFFER_SIZE,
 		&Dl1I2S0_Playback_dma_buf.addr, GFP_KERNEL | GFP_DMA);
 	if (!Dl1I2S0_Playback_dma_buf.area)
 		return -ENOMEM;
@@ -363,7 +363,7 @@ static int mtk_afe_I2S0dl1_probe(struct snd_soc_platform *platform)
 	return 0;
 }
 
-static int mtk_afe_I2S0dl1_remove(struct snd_soc_platform *platform)
+static int mtk_afe_I2S0dl1_remove(struct snd_soc_component *component)
 {
 	pr_info("mtk_afe_I2S0dl1_remove\n");
 
@@ -375,7 +375,8 @@ static int mtk_afe_I2S0dl1_remove(struct snd_soc_platform *platform)
 	return 0;
 }
 
-static struct snd_soc_platform_driver mtk_I2S0dl1_soc_platform = {
+static const struct snd_soc_component_driver mtk_I2S0dl1_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_I2S0dl1_ops,
 	.probe = mtk_afe_I2S0dl1_probe,
 	.remove = mtk_afe_I2S0dl1_remove,
@@ -429,12 +430,12 @@ static int mtk_I2S0dl1_probe(struct platform_device *pdev)
 
 	mDev = &pdev->dev;
 
-	return snd_soc_register_platform(&pdev->dev, &mtk_I2S0dl1_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_I2S0dl1_soc_platform, NULL, 0);
 }
 
 static int mtk_I2S0dl1_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

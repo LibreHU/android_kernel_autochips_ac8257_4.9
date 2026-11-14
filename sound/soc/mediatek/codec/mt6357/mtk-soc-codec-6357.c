@@ -183,7 +183,7 @@ static void Audio_Amp_Change(int channels, bool enable);
 
 #ifdef CONFIG_ATC_AOSP_ENHANCEMENT
 #ifdef USE_TDA7729
-int tda7729_mode_controls_add(struct snd_soc_codec *codec);
+int tda7729_mode_controls_add(struct snd_soc_component *component);
 int tda7729_mute_control(bool enable);
 #endif
 #endif
@@ -5667,7 +5667,7 @@ static int read_efuse_hp_impedance_current_calibration(void)
 	pr_info("-%s(), efuse: %d\n", __func__, value);
 	return value;
 }
-static void mt6357_codec_init_reg(struct snd_soc_codec *codec)
+static void mt6357_codec_init_reg(struct snd_soc_component *component)
 {
 	pr_info("%s\n", __func__);
 	audckbufEnable(true);
@@ -5736,25 +5736,26 @@ static int dc_trim_thread(void *arg)
 	do_exit(0);
 	return 0;
 }
-static int mt6357_codec_probe(struct snd_soc_codec *codec)
+/* LibreHU 4.19: codecs are ASoC components since 4.18 */
+static int mt6357_codec_probe(struct snd_soc_component *component)
 {
 	int ret;
 	pr_info("%s()\n", __func__);
 	if (mInitCodec == true)
 		return 0;
 	/* add codec controls */
-	snd_soc_add_codec_controls(codec, mt6357_snd_controls,
+	snd_soc_add_component_controls(component, mt6357_snd_controls,
 				   ARRAY_SIZE(mt6357_snd_controls));
-	snd_soc_add_codec_controls(codec, mt6357_UL_Codec_controls,
+	snd_soc_add_component_controls(component, mt6357_UL_Codec_controls,
 				   ARRAY_SIZE(mt6357_UL_Codec_controls));
-	snd_soc_add_codec_controls(codec, mt6357_pmic_Test_controls,
+	snd_soc_add_component_controls(component, mt6357_pmic_Test_controls,
 				   ARRAY_SIZE(mt6357_pmic_Test_controls));
-	snd_soc_add_codec_controls(codec, Audio_snd_auxadc_controls,
+	snd_soc_add_component_controls(component, Audio_snd_auxadc_controls,
 				   ARRAY_SIZE(Audio_snd_auxadc_controls));
 #ifdef CONFIG_ATC_AOSP_ENHANCEMENT
 #ifdef USE_TDA7729
 	/* tda 7729 kcontrol */
-	tda7729_mode_controls_add(codec);
+	tda7729_mode_controls_add(component);
 #endif
 #endif
 
@@ -5764,9 +5765,9 @@ static int mt6357_codec_probe(struct snd_soc_codec *codec)
 		/*pr_debug("Failed to allocate private data\n");*/
 		return -ENOMEM;
 	}
-	snd_soc_codec_set_drvdata(codec, mCodec_data);
+	snd_soc_component_set_drvdata(component, mCodec_data);
 	memset((void *)mCodec_data, 0, sizeof(struct mt6357_codec_priv));
-	mt6357_codec_init_reg(codec);
+	mt6357_codec_init_reg(component);
 	InitCodecDefault();
 	efuse_current_calibrate =
 		read_efuse_hp_impedance_current_calibration();
@@ -5782,29 +5783,33 @@ static int mt6357_codec_probe(struct snd_soc_codec *codec)
 	}
 	return 0;
 }
-static int mt6357_codec_remove(struct snd_soc_codec *codec)
+static void mt6357_codec_remove(struct snd_soc_component *component)
 {
 	pr_debug("%s()\n", __func__);
-	return 0;
 }
-static unsigned int mt6357_read(struct snd_soc_codec *codec, unsigned int reg)
+static unsigned int mt6357_read(struct snd_soc_component *component, unsigned int reg)
 {
 	pr_debug("%s() reg = 0x%x", __func__, reg);
 	Ana_Get_Reg(reg);
 	return 0;
 }
-static int mt6357_write(struct snd_soc_codec *codec, unsigned int reg,
+static int mt6357_write(struct snd_soc_component *component, unsigned int reg,
 			unsigned int value)
 {
 	pr_debug("%s() reg = 0x%x  value= 0x%x\n", __func__, reg, value);
 	Ana_Set_Reg(reg, value, 0xffffffff);
 	return 0;
 }
-static struct snd_soc_codec_driver soc_mtk_codec = {
+static const struct snd_soc_component_driver soc_mtk_codec = {
 	.probe = mt6357_codec_probe,
 	.remove = mt6357_codec_remove,
 	.read = mt6357_read,
 	.write = mt6357_write,
+	/* the behaviour of snd_soc_register_codec() */
+	.idle_bias_on = 1,
+	.use_pmdown_time = 1,
+	.endianness = 1,
+	.non_legacy_dai_naming = 1,
 };
 static int mtk_mt6357_codec_dev_probe(struct platform_device *pdev)
 {
@@ -5823,13 +5828,13 @@ static int mtk_mt6357_codec_dev_probe(struct platform_device *pdev)
 		pr_debug("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
 	}
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_codec(&pdev->dev,
+	return snd_soc_register_component(&pdev->dev,
 				      &soc_mtk_codec, mtk_6357_dai_codecs,
 				      ARRAY_SIZE(mtk_6357_dai_codecs));
 }
 static int mtk_mt6357_codec_dev_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_codec(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 #ifdef CONFIG_OF

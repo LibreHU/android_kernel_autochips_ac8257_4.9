@@ -2182,6 +2182,7 @@ void snd_soc_dapm_debugfs_init(struct snd_soc_dapm_context *dapm,
 
 static void dapm_debugfs_add_widget(struct snd_soc_dapm_widget *w)
 {
+	/* AutoChips: no debugfs file per DAPM widget */
 #ifndef CONFIG_ATC_AOSP_ENHANCEMENT
 	struct snd_soc_dapm_context *dapm = w->dapm;
 	struct dentry *d;
@@ -2196,6 +2197,7 @@ static void dapm_debugfs_add_widget(struct snd_soc_dapm_widget *w)
 		dev_warn(w->dapm->dev,
 			 "ASoC: Failed to create %s debugfs file: %ld\n",
 			 w->name, PTR_ERR(d));
+#endif
 }
 
 static void dapm_debugfs_cleanup(struct snd_soc_dapm_context *dapm)

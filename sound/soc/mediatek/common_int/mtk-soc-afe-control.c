@@ -4139,8 +4139,8 @@ void mem_blk_spinunlock(enum soc_aud_digital_block mem_blk)
 	}
 }
 static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
-			      snd_pcm_uframes_t pos, void __user *dst,
-			      snd_pcm_uframes_t count,
+			      unsigned long pos, void __user *dst,
+			      unsigned long count,
 			      struct afe_mem_control_t *pMemControl,
 			      enum soc_aud_digital_block mem_blk)
 {
@@ -4148,7 +4148,7 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	char *data_w_ptr = (char *)dst;
 	/* get total bytes to copy */
-	count = audio_frame_to_bytes(substream, count);
+	/* 4.13: copy_user() gets bytes, not frames */
 	/* check which memif nned to be write */
 	Afe_Block = &pMemControl->rBlock;
 	/* handle for buffer management */
@@ -4305,8 +4305,8 @@ static bool CheckNullPointer(void *pointer)
 	return false;
 }
 static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
-			      snd_pcm_uframes_t pos, void __user *dst,
-			      snd_pcm_uframes_t count,
+			      unsigned long pos, void __user *dst,
+			      unsigned long count,
 			      struct afe_mem_control_t *pMemControl,
 			      enum soc_aud_digital_block mem_blk)
 {
@@ -4320,7 +4320,7 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 		       count);
 #endif
 	/* get total bytes to copy */
-	count = audio_frame_to_bytes(substream, count);
+	/* 4.13: copy_user() gets bytes, not frames */
 	/* check which memif nned to be write */
 	pVUL_MEM_ConTrol = pMemControl;
 	Vul_Block = &(pVUL_MEM_ConTrol->rBlock);
@@ -4462,8 +4462,8 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 	return bytes_to_frames(runtime, read_count);
 }
 int mtk_memblk_copy(struct snd_pcm_substream *substream, int channel,
-		    snd_pcm_uframes_t pos, void __user *dst,
-		    snd_pcm_uframes_t count,
+		    unsigned long pos, void __user *dst,
+		    unsigned long count,
 		    struct afe_mem_control_t *pMemControl,
 		    enum soc_aud_digital_block mem_blk)
 {

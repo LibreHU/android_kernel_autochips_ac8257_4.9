@@ -913,8 +913,8 @@ mtk_voice_usb_pointer(struct snd_pcm_substream *substream)
 #if 0
 static DEFINE_SPINLOCK(auddrv_usb_cap_lock);
 static int mtk_voice_usb_copy_cap(struct snd_pcm_substream *substream,
-				  int channel, snd_pcm_uframes_t pos,
-				  void __user *dst, snd_pcm_uframes_t count)
+				  int channel, unsigned long pos,
+				  void __user *dst, unsigned long count)
 {
 	struct afe_mem_control_t *pAWB_MEM_ConTrol = NULL;
 	struct afe_block_t  *Awb_Block = NULL;
@@ -924,7 +924,7 @@ static int mtk_voice_usb_copy_cap(struct snd_pcm_substream *substream,
 	int stream = substream->stream;
 
 	/* get total bytes to copy */
-	count = audio_frame_to_bytes(substream, count);
+	/* 4.13: copy_user() gets bytes, not frames */
 
 	pr_debug("%s(), pos = %lu count = %lu\n", __func__, pos, count);
 
@@ -1071,8 +1071,8 @@ static int mtk_voice_usb_copy_cap(struct snd_pcm_substream *substream,
 
 static DEFINE_SPINLOCK(auddrv_usb_play_lock);
 static int mtk_voice_usb_copy_play(struct snd_pcm_substream *substream,
-				   int channel, snd_pcm_uframes_t pos,
-				   void __user *dst, snd_pcm_uframes_t count)
+				   int channel, unsigned long pos,
+				   void __user *dst, unsigned long count)
 {
 	struct afe_block_t  *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
@@ -1082,7 +1082,7 @@ static int mtk_voice_usb_copy_play(struct snd_pcm_substream *substream,
 	int stream = substream->stream;
 
 	/* get total bytes to copy */
-	count = audio_frame_to_bytes(substream, count);
+	/* 4.13: copy_user() gets bytes, not frames */
 
 	/* check which memif nned to be write */
 	Afe_Block = &Get_Mem_ControlT(usb_mem_blk[stream])->rBlock;
@@ -1223,8 +1223,8 @@ static int mtk_voice_usb_copy_play(struct snd_pcm_substream *substream,
 }
 #endif
 static int mtk_voice_usb_copy(struct snd_pcm_substream *substream, int channel,
-			      snd_pcm_uframes_t pos, void __user *dst,
-			      snd_pcm_uframes_t count)
+			      unsigned long pos, void __user *dst,
+			      unsigned long count)
 {
 #if 1
 	int stream = substream->stream;
@@ -1251,12 +1251,12 @@ static struct snd_pcm_ops mtk_voice_usb_ops = {
 	.prepare = mtk_voice_usb_prepare,
 	.trigger = mtk_voice_usb_trigger,
 	.pointer = mtk_voice_usb_pointer,
-	.copy = mtk_voice_usb_copy,
+	.copy_user = mtk_voice_usb_copy,
 };
 
-static int mtk_voice_usb_platform_probe(struct snd_soc_platform *platform)
+static int mtk_voice_usb_platform_probe(struct snd_soc_component *component)
 {
-	snd_soc_add_platform_controls(platform, speech_usb_controls,
+	snd_soc_add_component_controls(component, speech_usb_controls,
 				      ARRAY_SIZE(speech_usb_controls));
 	return 0;
 }
@@ -1278,7 +1278,8 @@ static void mtk_voice_usb_pcm_free(struct snd_pcm *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static struct snd_soc_platform_driver mtk_soc_voice_usb_platform = {
+static const struct snd_soc_component_driver mtk_soc_voice_usb_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_voice_usb_ops,
 	.probe = mtk_voice_usb_platform_probe,
 	.pcm_new = mtk_voice_usb_pcm_new,
@@ -1298,13 +1299,12 @@ static int mtk_voice_usb_probe(struct platform_device *pdev)
 	usb_memif_lpbk.dev = &pdev->dev;
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev,
-					 &mtk_soc_voice_usb_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_voice_usb_platform, NULL, 0);
 }
 
 static int mtk_voice_usb_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

@@ -194,7 +194,7 @@ static const struct snd_kcontrol_new lpbk_controls[] = {
 
 static int mtk_uldlloopback_probe(struct platform_device *pdev);
 static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream);
-static int mtk_afe_uldlloopback_probe(struct snd_soc_platform *platform);
+static int mtk_afe_uldlloopback_probe(struct snd_soc_component *component);
 
 static struct snd_pcm_hardware mtk_uldlloopback_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
@@ -321,16 +321,16 @@ static int mtk_uldlloopbackpcm_trigger(struct snd_pcm_substream *substream,
 }
 
 static int mtk_uldlloopback_pcm_copy(struct snd_pcm_substream *substream,
-				     int channel, snd_pcm_uframes_t pos,
-				     void __user *dst, snd_pcm_uframes_t count)
+				     int channel, unsigned long pos,
+				     void __user *dst, unsigned long count)
 {
 	count = count << 2;
 	return 0;
 }
 
 static int mtk_uldlloopback_silence(struct snd_pcm_substream *substream,
-				    int channel, snd_pcm_uframes_t pos,
-				    snd_pcm_uframes_t count)
+				    int channel, unsigned long pos,
+				    unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -458,12 +458,13 @@ static struct snd_pcm_ops mtk_afe_ops = {
 	.hw_free = mtk_uldlloopback_pcm_hw_free,
 	.prepare = mtk_uldlloopback_pcm_prepare,
 	.trigger = mtk_uldlloopbackpcm_trigger,
-	.copy = mtk_uldlloopback_pcm_copy,
-	.silence = mtk_uldlloopback_silence,
+	.copy_user = mtk_uldlloopback_pcm_copy,
+	.fill_silence = mtk_uldlloopback_silence,
 	.page = mtk_uldlloopback_page,
 };
 
-static struct snd_soc_platform_driver mtk_soc_dummy_platform = {
+static const struct snd_soc_component_driver mtk_soc_dummy_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_afe_ops, .probe = mtk_afe_uldlloopback_probe,
 };
 
@@ -479,14 +480,14 @@ static int mtk_uldlloopback_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_ULDLLOOPBACK_PCM);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev, &mtk_soc_dummy_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_dummy_platform, NULL, 0);
 }
 
-static int mtk_afe_uldlloopback_probe(struct snd_soc_platform *platform)
+static int mtk_afe_uldlloopback_probe(struct snd_soc_component *component)
 {
 	pr_debug("mtk_afe_uldlloopback_probe\n");
 
-	snd_soc_add_platform_controls(platform, lpbk_controls,
+	snd_soc_add_component_controls(component, lpbk_controls,
 				      ARRAY_SIZE(lpbk_controls));
 	return 0;
 }
@@ -494,7 +495,7 @@ static int mtk_afe_uldlloopback_probe(struct snd_soc_platform *platform)
 static int mtk_afe_uldlloopback_remove(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

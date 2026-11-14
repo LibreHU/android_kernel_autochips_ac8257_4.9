@@ -64,7 +64,7 @@
 
 static int mtk_dummy_probe(struct platform_device *pdev);
 static int mtk_dummypcm_close(struct snd_pcm_substream *substream);
-static int mtk_afe_dummy_probe(struct snd_soc_platform *platform);
+static int mtk_afe_dummy_probe(struct snd_soc_component *component);
 
 static struct snd_pcm_hardware mtk_dummy_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
@@ -109,15 +109,15 @@ static int mtk_dummypcm_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
-			snd_pcm_uframes_t pos, void __user *dst,
-			snd_pcm_uframes_t count)
+			unsigned long pos, void __user *dst,
+			unsigned long count)
 {
 
 	return 0;
 }
 
 static int mtk_pcm_silence(struct snd_pcm_substream *substream, int channel,
-			   snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
+			   unsigned long pos, unsigned long count)
 {
 
 	return 0; /* do nothing */
@@ -158,12 +158,13 @@ static struct snd_pcm_ops mtk_afe_ops = {
 	.hw_free = mtk_dummy_pcm_hw_free,
 	.prepare = mtk_pcm_prepare,
 	.trigger = mtk_dummypcm_trigger,
-	.copy = mtk_pcm_copy,
-	.silence = mtk_pcm_silence,
+	.copy_user = mtk_pcm_copy,
+	.fill_silence = mtk_pcm_silence,
 	.page = mtk_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_soc_dummy_platform = {
+static const struct snd_soc_component_driver mtk_soc_dummy_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_afe_ops, .probe = mtk_afe_dummy_probe,
 };
 
@@ -179,10 +180,10 @@ static int mtk_dummy_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_DUMMY_PCM);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev, &mtk_soc_dummy_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_dummy_platform, NULL, 0);
 }
 
-static int mtk_afe_dummy_probe(struct snd_soc_platform *platform)
+static int mtk_afe_dummy_probe(struct snd_soc_component *component)
 {
 	pr_debug("mtk_afe_dummy_probe\n");
 	return 0;
@@ -190,7 +191,7 @@ static int mtk_afe_dummy_probe(struct snd_soc_platform *platform)
 
 static int mtk_afedummy_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

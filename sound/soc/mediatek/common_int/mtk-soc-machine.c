@@ -627,7 +627,8 @@ static int mt_soc_snd_probe(struct platform_device *pdev)
 static int mt_soc_snd_remove(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
+	/* LibreHU 4.19: the card is a devm one; as MediaTek 4.19 (was snd_soc_unregister_platform()) */
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

@@ -78,7 +78,7 @@ static int cap_mem_blk_io;
 /*
  *    function implementation
  */
-static int mtk_afe_capture_probe(struct snd_soc_platform *platform);
+static int mtk_afe_capture_probe(struct snd_soc_component *component);
 static int Audio_MICREF_Diff_Get(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
@@ -330,8 +330,8 @@ mtk_capture_pcm_pointer(struct snd_pcm_substream *substream)
 }
 
 static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
-				int channel, snd_pcm_uframes_t pos,
-				void __user *dst, snd_pcm_uframes_t count)
+				int channel, unsigned long pos,
+				void __user *dst, unsigned long count)
 {
 	vcore_dvfs(&vcore_dvfs_enable, false);
 	return mtk_memblk_copy(substream, channel, pos, dst, count,
@@ -339,8 +339,8 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 }
 
 static int mtk_capture_pcm_silence(struct snd_pcm_substream *substream,
-				   int channel, snd_pcm_uframes_t pos,
-				   snd_pcm_uframes_t count)
+				   int channel, unsigned long pos,
+				   unsigned long count)
 {
 	pr_info("dummy_pcm_silence\n");
 	return 0; /* do nothing */
@@ -363,13 +363,13 @@ static struct snd_pcm_ops mtk_afe_capture_ops = {
 	.prepare = mtk_capture_pcm_prepare,
 	.trigger = mtk_capture_pcm_trigger,
 	.pointer = mtk_capture_pcm_pointer,
-	.copy = mtk_capture_pcm_copy,
-	.silence = mtk_capture_pcm_silence,
+	.copy_user = mtk_capture_pcm_copy,
+	.fill_silence = mtk_capture_pcm_silence,
 	.page = mtk_capture_pcm_page,
 	.mmap = mtk_pcm_mmap,
 };
 
-static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
+static int mtk_afe_capture_probe(struct snd_soc_component *component)
 {
 	cap_mem_blk = get_usage_digital_block(AUDIO_USAGE_PCM_CAPTURE);
 	cap_mem_blk_io = get_usage_digital_block_io(AUDIO_USAGE_PCM_CAPTURE);
@@ -384,15 +384,16 @@ static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 	pr_info("%s(), cap_mem_blk %d, cap_mem_blk_io %d\n", __func__,
 		 cap_mem_blk, cap_mem_blk_io);
 
-	snd_soc_add_platform_controls(platform, Audio_snd_capture_controls,
+	snd_soc_add_component_controls(component, Audio_snd_capture_controls,
 				      ARRAY_SIZE(Audio_snd_capture_controls));
-	AudDrv_Allocate_mem_Buffer(platform->dev, cap_mem_blk,
+	AudDrv_Allocate_mem_Buffer(component->dev, cap_mem_blk,
 				   UL1_MAX_BUFFER_SIZE);
 	Capture_dma_buf = Get_Mem_Buffer(cap_mem_blk);
 	return 0;
 }
 
-static struct snd_soc_platform_driver mtk_soc_platform = {
+static const struct snd_soc_component_driver mtk_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_afe_capture_ops, .probe = mtk_afe_capture_probe,
 };
 
@@ -408,12 +409,12 @@ static int mtk_capture_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_UL1_PCM);
 
 	pr_info("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_platform, NULL, 0);
 }
 
 static int mtk_capture_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

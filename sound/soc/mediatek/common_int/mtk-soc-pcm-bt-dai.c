@@ -63,7 +63,7 @@ static void StartAudioBtDaiHardware(struct snd_pcm_substream *substream);
 static void StopAudioBtDaiHardware(struct snd_pcm_substream *substream);
 static int mtk_bt_dai_probe(struct platform_device *pdev);
 static int mtk_bt_dai_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_bt_dai_probe(struct snd_soc_platform *platform);
+static int mtk_asoc_bt_dai_probe(struct snd_soc_component *component);
 
 static struct snd_pcm_hardware mtk_btdai_hardware = {
 	.info = (SNDRV_PCM_INFO_INTERLEAVED),
@@ -313,8 +313,8 @@ static bool CheckNullPointer(void *pointer)
 }
 
 static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream, int channel,
-			       snd_pcm_uframes_t pos, void __user *dst,
-			       snd_pcm_uframes_t count)
+			       unsigned long pos, void __user *dst,
+			       unsigned long count)
 {
 	struct afe_mem_control_t *pDAI_MEM_ConTrol = NULL;
 	struct afe_block_t *Dai_Block = NULL;
@@ -326,7 +326,7 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream, int channel,
 	pr_debug("%s  pos = %lu count = %lu\n", __func__, pos, count);
 #endif
 	/* get total bytes to copy */
-	count = word_size_align(audio_frame_to_bytes(substream, count));
+	count = word_size_align(count);	/* 4.13: copy_user() gets bytes, not frames */
 
 	/* check which memif nned to be write */
 	pDAI_MEM_ConTrol = Bt_Dai_Control_context;
@@ -478,8 +478,8 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream, int channel,
 }
 
 static int mtk_bt_dai_capture_pcm_silence(struct snd_pcm_substream *substream,
-					  int channel, snd_pcm_uframes_t pos,
-					  snd_pcm_uframes_t count)
+					  int channel, unsigned long pos,
+					  unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -502,12 +502,13 @@ static struct snd_pcm_ops mtk_bt_dai_ops = {
 	.prepare = mtk_bt_dai_pcm_prepare,
 	.trigger = mtk_bt_dai_pcm_trigger,
 	.pointer = mtk_bt_dai_pcm_pointer,
-	.copy = mtk_bt_dai_pcm_copy,
-	.silence = mtk_bt_dai_capture_pcm_silence,
+	.copy_user = mtk_bt_dai_pcm_copy,
+	.fill_silence = mtk_bt_dai_capture_pcm_silence,
 	.page = mtk_bt_dai_capture_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_bt_dai_soc_platform = {
+static const struct snd_soc_component_driver mtk_bt_dai_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_bt_dai_ops, .probe = mtk_asoc_bt_dai_probe,
 };
 
@@ -523,13 +524,13 @@ static int mtk_bt_dai_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOIP_BT_IN);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev, &mtk_bt_dai_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_bt_dai_soc_platform, NULL, 0);
 }
 
-static int mtk_asoc_bt_dai_probe(struct snd_soc_platform *platform)
+static int mtk_asoc_bt_dai_probe(struct snd_soc_component *component)
 {
 	pr_debug("mtk_asoc_bt_dai_probe\n");
-	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DAI,
+	AudDrv_Allocate_mem_Buffer(component->dev, Soc_Aud_Digital_Block_MEM_DAI,
 				   BT_DAI_MAX_BUFFER_SIZE);
 	Bt_Dai_Capture_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DAI);
 	return 0;
@@ -537,7 +538,7 @@ static int mtk_asoc_bt_dai_probe(struct snd_soc_platform *platform)
 
 static int mtk_bt_dai_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

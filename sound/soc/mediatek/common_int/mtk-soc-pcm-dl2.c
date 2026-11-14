@@ -293,8 +293,8 @@ mtk_pcm_DL2_pointer(struct snd_pcm_substream *substream)
 }
 
 static int mtk_pcm_DL2_copy(struct snd_pcm_substream *substream,
-				int channel, snd_pcm_uframes_t pos,
-				void __user *dst, snd_pcm_uframes_t count)
+				int channel, unsigned long pos,
+				void __user *dst, unsigned long count)
 {
 	vcore_dvfs(&vcore_dvfs_enable, false);
 	return mtk_memblk_copy(substream, channel, pos, dst, count,
@@ -303,8 +303,8 @@ static int mtk_pcm_DL2_copy(struct snd_pcm_substream *substream,
 }
 
 static int mtk_pcm_DL2_silence(struct snd_pcm_substream *substream,
-				   int channel, snd_pcm_uframes_t pos,
-				   snd_pcm_uframes_t count)
+				   int channel, unsigned long pos,
+				   unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -326,18 +326,18 @@ static struct snd_pcm_ops mtk_DL2_ops = {
 	.prepare = mtk_pcm_DL2_prepare,
 	.trigger = mtk_pcm_DL2_trigger,
 	.pointer = mtk_pcm_DL2_pointer,
-	.copy = mtk_pcm_DL2_copy,
-	.silence = mtk_pcm_DL2_silence,
+	.copy_user = mtk_pcm_DL2_copy,
+	.fill_silence = mtk_pcm_DL2_silence,
 	.page = mtk_DL2_pcm_page,
 	.mmap = mtk_pcm_mmap,
 };
 
-static int mtk_afe_DL2_probe(struct snd_soc_platform *platform)
+static int mtk_afe_DL2_probe(struct snd_soc_component *component)
 {
 	pr_debug("mtk_afe_DL2_probe\n");
 	/* allocate dram */
 	DL2_Playback_dma_buf.area = dma_alloc_coherent(
-		platform->dev, SOC_HIFI_BUFFER_SIZE,
+		component->dev, SOC_HIFI_BUFFER_SIZE,
 		&DL2_Playback_dma_buf.addr, GFP_KERNEL | GFP_DMA);
 	if (!DL2_Playback_dma_buf.area)
 		return -ENOMEM;
@@ -348,7 +348,8 @@ static int mtk_afe_DL2_probe(struct snd_soc_platform *platform)
 	return 0;
 }
 
-static struct snd_soc_platform_driver mtk_DL2_soc_platform = {
+static const struct snd_soc_component_driver mtk_DL2_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_DL2_ops, .probe = mtk_afe_DL2_probe,
 };
 
@@ -367,12 +368,12 @@ static int mtk_DL2_probe(struct platform_device *pdev)
 
 	mDev = &pdev->dev;
 
-	return snd_soc_register_platform(&pdev->dev, &mtk_DL2_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_DL2_soc_platform, NULL, 0);
 }
 
 static int mtk_DL2_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

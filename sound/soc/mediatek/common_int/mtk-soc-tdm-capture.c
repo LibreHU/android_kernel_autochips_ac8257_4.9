@@ -82,7 +82,7 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream);
 static void StopAudioCaptureHardware(struct snd_pcm_substream *substream);
 static int mtk_capture_probe(struct platform_device *pdev);
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_afe_capture_probe(struct snd_soc_platform *platform);
+static int mtk_afe_capture_probe(struct snd_soc_component *component);
 
 static struct snd_pcm_hardware mtk_capture_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
@@ -348,8 +348,8 @@ static int mtk_capture_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
-				int channel, snd_pcm_uframes_t pos,
-				void __user *dst, snd_pcm_uframes_t count)
+				int channel, unsigned long pos,
+				void __user *dst, unsigned long count)
 {
 	return mtk_memblk_copy(substream, channel, pos, dst, count,
 			       TDM_VUL_Control_context,
@@ -357,8 +357,8 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 }
 
 static int mtk_capture_pcm_silence(struct snd_pcm_substream *substream,
-				   int channel, snd_pcm_uframes_t pos,
-				   snd_pcm_uframes_t count)
+				   int channel, unsigned long pos,
+				   unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -380,12 +380,13 @@ static struct snd_pcm_ops mtk_afe_capture_ops = {
 	.prepare = mtk_capture_pcm_prepare,
 	.trigger = mtk_capture_pcm_trigger,
 	.pointer = mtk_capture_pcm_pointer,
-	.copy = mtk_capture_pcm_copy,
-	.silence = mtk_capture_pcm_silence,
+	.copy_user = mtk_capture_pcm_copy,
+	.fill_silence = mtk_capture_pcm_silence,
 	.page = mtk_capture_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_soc_platform = {
+static const struct snd_soc_component_driver mtk_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_afe_capture_ops, .probe = mtk_afe_capture_probe,
 };
 
@@ -401,13 +402,13 @@ static int mtk_capture_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_TDMRX_PCM);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_soc_platform, NULL, 0);
 }
 
-static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
+static int mtk_afe_capture_probe(struct snd_soc_component *component)
 {
 	pr_debug("mtk_afe_capture_probe TODO\n");
-	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_VUL,
+	AudDrv_Allocate_mem_Buffer(component->dev, Soc_Aud_Digital_Block_MEM_VUL,
 				   UL1_MAX_BUFFER_SIZE);
 	Capture_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL);
 	mAudioDigitalI2S =
@@ -418,7 +419,7 @@ static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 static int mtk_capture_remove(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 

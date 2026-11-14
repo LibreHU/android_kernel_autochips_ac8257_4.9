@@ -67,7 +67,7 @@
 
 static int mtk_mrgrx_probe(struct platform_device *pdev);
 static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream);
-static int mtk_afe_mrgrx_probe(struct snd_soc_platform *platform);
+static int mtk_afe_mrgrx_probe(struct snd_soc_component *component);
 
 static unsigned int mmrgrx_Volume = 0x10000;
 static bool mPrepareDone;
@@ -341,16 +341,16 @@ static int mtk_pcm_mrgrx_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int mtk_pcm_mrgrx_copy(struct snd_pcm_substream *substream, int channel,
-			      snd_pcm_uframes_t pos, void __user *dst,
-			      snd_pcm_uframes_t count)
+			      unsigned long pos, void __user *dst,
+			      unsigned long count)
 {
-	count = audio_frame_to_bytes(substream, count);
+	/* 4.13: copy_user() gets bytes, not frames */
 	return count;
 }
 
 static int mtk_pcm_mrgrx_silence(struct snd_pcm_substream *substream,
-				 int channel, snd_pcm_uframes_t pos,
-				 snd_pcm_uframes_t count)
+				 int channel, unsigned long pos,
+				 unsigned long count)
 {
 	return 0; /* do nothing */
 }
@@ -372,12 +372,13 @@ static struct snd_pcm_ops mtk_mrgrx_ops = {
 	.prepare = mtk_pcm_mrgrx_prepare,
 	.trigger = mtk_pcm_mrgrx_trigger,
 	.pointer = mtk_pcm_mrgrx_pointer,
-	.copy = mtk_pcm_mrgrx_copy,
-	.silence = mtk_pcm_mrgrx_silence,
+	.copy_user = mtk_pcm_mrgrx_copy,
+	.fill_silence = mtk_pcm_mrgrx_silence,
 	.page = mtk_mrgrx_pcm_page,
 };
 
-static struct snd_soc_platform_driver mtk_mrgrx_soc_platform = {
+static const struct snd_soc_component_driver mtk_mrgrx_soc_platform = {
+	.name = AFE_PCM_NAME,
 	.ops = &mtk_mrgrx_ops, .probe = mtk_afe_mrgrx_probe,
 };
 
@@ -393,13 +394,13 @@ static int mtk_mrgrx_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_MRGRX_PCM);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-	return snd_soc_register_platform(&pdev->dev, &mtk_mrgrx_soc_platform);
+	return snd_soc_register_component(&pdev->dev, &mtk_mrgrx_soc_platform, NULL, 0);
 }
 
-static int mtk_afe_mrgrx_probe(struct snd_soc_platform *platform)
+static int mtk_afe_mrgrx_probe(struct snd_soc_component *component)
 {
 	pr_debug("mtk_afe_mrgrx_probe\n");
-	snd_soc_add_platform_controls(platform, Audio_snd_mrgrx_controls,
+	snd_soc_add_component_controls(component, Audio_snd_mrgrx_controls,
 				      ARRAY_SIZE(Audio_snd_mrgrx_controls));
 	return 0;
 }
@@ -407,7 +408,7 @@ static int mtk_afe_mrgrx_probe(struct snd_soc_platform *platform)
 static int mtk_mrgrx_remove(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
-	snd_soc_unregister_platform(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	return 0;
 }
 
