@@ -405,6 +405,19 @@ void dm_set_mdptr(struct mapped_device *md, void *ptr);
 void *dm_get_mdptr(struct mapped_device *md);
 
 /*
+ * LibreHU (4.19 port of the AutoChips AC8257 kernel): for the dm= boot parameter (init/do_mounts_dm.c), as in the
+ * Android 4.9 kernels. Export the device via the ioctl interface (uses mdptr), and the table type functions of
+ * drivers/md/dm.h.
+ */
+int dm_ioctl_export(struct mapped_device *md, const char *name,
+		    const char *uuid);
+void dm_lock_md_type(struct mapped_device *md);
+void dm_unlock_md_type(struct mapped_device *md);
+void dm_set_md_type(struct mapped_device *md, enum dm_queue_mode type);
+int dm_setup_md_queue(struct mapped_device *md, struct dm_table *t);
+enum dm_queue_mode dm_table_get_type(struct dm_table *t);
+
+/*
  * A device can still be used while suspended, but I/O is deferred.
  */
 int dm_suspend(struct mapped_device *md, unsigned suspend_flags);

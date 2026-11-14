@@ -61,3 +61,14 @@ void md_run_setup(void);
 static inline void md_run_setup(void) {}
 
 #endif
+
+/* LibreHU (4.19 port): dm= boot parameter of the Android 4.9 kernels (do_mounts_dm.c) */
+#ifdef CONFIG_BLK_DEV_DM
+
+void dm_run_setup(void);
+
+#else
+
+static inline void dm_run_setup(void) {}
+
+#endif
