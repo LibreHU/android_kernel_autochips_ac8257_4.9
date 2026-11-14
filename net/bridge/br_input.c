@@ -21,6 +21,7 @@
 #include <linux/export.h>
 #include <linux/rculist.h>
 #include "br_private.h"
+#include "br_private_tunnel.h"
 
 /* Hook for brouter */
 br_should_route_hook_t __rcu *br_should_route_hook __read_mostly;
@@ -46,6 +47,13 @@ static int br_pass_frame_up(struct sk_buff *skb)
 	u64_stats_update_end(&brstats->syncp);
 
 	vg = br_vlan_group_rcu(br);
+
+	/* Reset the offload_fwd_mark because there could be a stacked
+	 * bridge above, and it should not think this bridge it doing
+	 * that bridge's work forwarding out its ports.
+	 */
+	br_switchdev_frame_unmark(skb);
+
 	/* Bridge is just like any other port.  Make sure the
 	 * packet is allowed except in promisc modue when someone
 	 * may be running packet capture.
@@ -58,7 +66,7 @@ static int br_pass_frame_up(struct sk_buff *skb)
 
 	indev = skb->dev;
 	skb->dev = brdev;
-	skb = br_handle_vlan(br, vg, skb);
+	skb = br_handle_vlan(br, NULL, vg, skb);
 	if (!skb)
 		return NET_RX_DROP;
 	/* update the multicast stats if the packet is IGMP/MLD */
@@ -70,67 +78,10 @@ static int br_pass_frame_up(struct sk_buff *skb)
 		       br_netif_receive_skb);
 }
 
-static void br_do_proxy_arp(struct sk_buff *skb, struct net_bridge *br,
-			    u16 vid, struct net_bridge_port *p)
-{
-	struct net_device *dev = br->dev;
-	struct neighbour *n;
-	struct arphdr *parp;
-	u8 *arpptr, *sha;
-	__be32 sip, tip;
-
-	BR_INPUT_SKB_CB(skb)->proxyarp_replied = false;
-
-	if ((dev->flags & IFF_NOARP) ||
-	    !pskb_may_pull(skb, arp_hdr_len(dev)))
-		return;
-
-	parp = arp_hdr(skb);
-
-	if (parp->ar_pro != htons(ETH_P_IP) ||
-	    parp->ar_op != htons(ARPOP_REQUEST) ||
-	    parp->ar_hln != dev->addr_len ||
-	    parp->ar_pln != 4)
-		return;
-
-	arpptr = (u8 *)parp + sizeof(struct arphdr);
-	sha = arpptr;
-	arpptr += dev->addr_len;	/* sha */
-	memcpy(&sip, arpptr, sizeof(sip));
-	arpptr += sizeof(sip);
-	arpptr += dev->addr_len;	/* tha */
-	memcpy(&tip, arpptr, sizeof(tip));
-
-	if (ipv4_is_loopback(tip) ||
-	    ipv4_is_multicast(tip))
-		return;
-
-	n = neigh_lookup(&arp_tbl, &tip, dev);
-	if (n) {
-		struct net_bridge_fdb_entry *f;
-
-		if (!(n->nud_state & NUD_VALID)) {
-			neigh_release(n);
-			return;
-		}
-
-		f = __br_fdb_get(br, n->ha, vid);
-		if (f && ((p->flags & BR_PROXYARP) ||
-			  (f->dst && (f->dst->flags & BR_PROXYARP_WIFI)))) {
-			arp_send(ARPOP_REPLY, ETH_P_ARP, sip, skb->dev, tip,
-				 sha, n->ha, sha);
-			BR_INPUT_SKB_CB(skb)->proxyarp_replied = true;
-		}
-
-		neigh_release(n);
-	}
-}
-
 /* note: already called with rcu_read_lock */
 int br_handle_frame_finish(struct net *net, struct sock *sk, struct sk_buff *skb)
 {
 	struct net_bridge_port *p = br_port_get_rcu(skb->dev);
-	const unsigned char *dest = eth_hdr(skb)->h_dest;
 	enum br_pkt_type pkt_type = BR_PKT_UNICAST;
 	struct net_bridge_fdb_entry *dst = NULL;
 	struct net_bridge_mdb_entry *mdst;
@@ -152,9 +103,9 @@ int br_handle_frame_finish(struct net *net, struct sock *sk, struct sk_buff *skb
 		br_fdb_update(br, p, eth_hdr(skb)->h_source, vid, false);
 
 	local_rcv = !!(br->dev->flags & IFF_PROMISC);
-	if (is_multicast_ether_addr(dest)) {
+	if (is_multicast_ether_addr(eth_hdr(skb)->h_dest)) {
 		/* by definition the broadcast is also a multicast address */
-		if (is_broadcast_ether_addr(dest)) {
+		if (is_broadcast_ether_addr(eth_hdr(skb)->h_dest)) {
 			pkt_type = BR_PKT_BROADCAST;
 			local_rcv = true;
 		} else {
@@ -168,16 +119,31 @@ int br_handle_frame_finish(struct net *net, struct sock *sk, struct sk_buff *skb
 		goto drop;
 
 	BR_INPUT_SKB_CB(skb)->brdev = br->dev;
+	BR_INPUT_SKB_CB(skb)->src_port_isolated = !!(p->flags & BR_ISOLATED);
 
-	if (IS_ENABLED(CONFIG_INET) && skb->protocol == htons(ETH_P_ARP))
-		br_do_proxy_arp(skb, br, vid, p);
+	if (IS_ENABLED(CONFIG_INET) &&
+	    (skb->protocol == htons(ETH_P_ARP) ||
+	     skb->protocol == htons(ETH_P_RARP))) {
+		br_do_proxy_suppress_arp(skb, br, vid, p);
+	} else if (IS_ENABLED(CONFIG_IPV6) &&
+		   skb->protocol == htons(ETH_P_IPV6) &&
+		   br->neigh_suppress_enabled &&
+		   pskb_may_pull(skb, sizeof(struct ipv6hdr) +
+				 sizeof(struct nd_msg)) &&
+		   ipv6_hdr(skb)->nexthdr == IPPROTO_ICMPV6) {
+			struct nd_msg *msg, _msg;
+
+			msg = br_is_nd_neigh_msg(skb, &_msg);
+			if (msg)
+				br_do_suppress_nd(skb, br, vid, p, msg);
+	}
 
 	switch (pkt_type) {
 	case BR_PKT_MULTICAST:
 		mdst = br_mdb_get(br, skb, vid);
 		if ((mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) &&
 		    br_multicast_querier_exists(br, eth_hdr(skb))) {
-			if ((mdst && mdst->mglist) ||
+			if ((mdst && mdst->host_joined) ||
 			    br_multicast_is_router(br)) {
 				local_rcv = true;
 				br->dev->stats.multicast++;
@@ -189,16 +155,19 @@ int br_handle_frame_finish(struct net *net, struct sock *sk, struct sk_buff *skb
 		}
 		break;
 	case BR_PKT_UNICAST:
-		dst = __br_fdb_get(br, dest, vid);
+		dst = br_fdb_find_rcu(br, eth_hdr(skb)->h_dest, vid);
 	default:
 		break;
 	}
 
 	if (dst) {
-		if (dst->is_local)
+		unsigned long now = jiffies;
+
+		if (test_bit(BR_FDB_LOCAL, &dst->flags))
 			return br_pass_frame_up(skb);
 
-		dst->used = jiffies;
+		if (now != dst->used)
+			dst->used = now;
 		br_forward(dst->dst, skb, local_rcv, false);
 	} else {
 		if (!mcast_hit)
@@ -259,6 +228,11 @@ rx_handler_result_t br_handle_frame(struct sk_buff **pskb)
 		return RX_HANDLER_CONSUMED;
 
 	p = br_port_get_rcu(skb->dev);
+	if (p->flags & BR_VLAN_TUNNEL) {
+		if (br_handle_ingress_vlan_tunnel(skb, p,
+						  nbp_vlan_group_rcu(p)))
+			goto drop;
+	}
 
 	if (unlikely(is_link_local_ether_addr(dest))) {
 		u16 fwd_mask = p->br->group_fwd_mask_required;
@@ -276,6 +250,7 @@ rx_handler_result_t br_handle_frame(struct sk_buff **pskb)
 		 *
 		 * Others reserved for future standardization
 		 */
+		fwd_mask |= p->group_fwd_mask;
 		switch (dest[5]) {
 		case 0x00:	/* Bridge Group Address */
 			/* If STP is turned off,

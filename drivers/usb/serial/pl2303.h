@@ -1,11 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Prolific PL2303 USB to serial adaptor driver header file
- *
- *	This program is free software; you can redistribute it and/or modify
- *	it under the terms of the GNU General Public License as published by
- *	the Free Software Foundation; either version 2 of the License, or
- *	(at your option) any later version.
- *
  */
 
 #define BENQ_VENDOR_ID			0x04a5
@@ -31,6 +26,7 @@
 #define ATEN_VENDOR_ID2		0x0547
 #define ATEN_PRODUCT_ID		0x2008
 #define ATEN_PRODUCT_UC485	0x2021
+#define ATEN_PRODUCT_UC232B	0x2022
 #define ATEN_PRODUCT_ID2	0x2118
 
 #define IBM_VENDOR_ID		0x04b3
@@ -169,3 +165,7 @@
 /* Allied Telesis VT-Kit3 */
 #define AT_VENDOR_ID		0x0caa
 #define AT_VTKIT3_PRODUCT_ID	0x3001
+
+/* Macrosilicon MS3020 */
+#define MACROSILICON_VENDOR_ID		0x345f
+#define MACROSILICON_MS3020_PRODUCT_ID	0x3020

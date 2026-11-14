@@ -12,6 +12,7 @@
 #include <linux/pci.h>
 #include <linux/ptrace.h>
 #include <linux/syscore_ops.h>
+#include <linux/sched/clock.h>
 
 #include <asm/apic.h>
 
@@ -322,6 +323,16 @@ static int perf_ibs_init(struct perf_event *event)
 
 	hwc->config_base = perf_ibs->msr;
 	hwc->config = config;
+
+	/*
+	 * rip recorded by IbsOpRip will not be consistent with rsp and rbp
+	 * recorded as part of interrupt regs. Thus we need to use rip from
+	 * interrupt regs while unwinding call stack. Setting _EARLY flag
+	 * makes sure we unwind call-stack before perf sample rip is set to
+	 * IbsOpRip.
+	 */
+	if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
+		event->attr.sample_type |= __PERF_SAMPLE_CALLCHAIN_EARLY;
 
 	return 0;
 }
@@ -692,6 +703,14 @@ fail:
 		data.raw = &raw;
 	}
 
+	/*
+	 * rip recorded by IbsOpRip will not be consistent with rsp and rbp
+	 * recorded as part of interrupt regs. Thus we need to use rip from
+	 * interrupt regs while unwinding call stack.
+	 */
+	if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
+		data.callchain = perf_callchain(event, iregs);
+
 	throttle = perf_event_overflow(event, &data, &regs);
 out:
 	if (throttle) {
@@ -932,7 +951,7 @@ static void force_ibs_eilvt_setup(void)
 	if (!ibs_eilvt_valid())
 		goto out;
 
-	pr_info("IBS: LVT offset %d assigned\n", offset);
+	pr_info("LVT offset %d assigned\n", offset);
 
 	return;
 out:
@@ -1054,7 +1073,7 @@ static __init int amd_ibs_init(void)
 	 * all online cpus.
 	 */
 	cpuhp_setup_state(CPUHP_AP_PERF_X86_AMD_IBS_STARTING,
-			  "AP_PERF_X86_AMD_IBS_STARTING",
+			  "perf/x86/amd/ibs:starting",
 			  x86_pmu_amd_ibs_starting_cpu,
 			  x86_pmu_amd_ibs_dying_cpu);
 

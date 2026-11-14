@@ -499,10 +499,12 @@ static int spacc_aead_setkey(struct crypto_aead *tfm, const u8 *key,
 	memcpy(ctx->hash_ctx, keys.authkey, keys.authkeylen);
 	ctx->hash_key_len = keys.authkeylen;
 
+	memzero_explicit(&keys, sizeof(keys));
 	return 0;
 
 badkey:
 	crypto_aead_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+	memzero_explicit(&keys, sizeof(keys));
 	return -EINVAL;
 }
 
@@ -1125,9 +1127,9 @@ static irqreturn_t spacc_spacc_irq(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
-static void spacc_packet_timeout(unsigned long data)
+static void spacc_packet_timeout(struct timer_list *t)
 {
-	struct spacc_engine *engine = (struct spacc_engine *)data;
+	struct spacc_engine *engine = from_timer(engine, t, packet_timeout);
 
 	spacc_process_done(engine);
 }
@@ -1167,8 +1169,7 @@ static void spacc_spacc_complete(unsigned long data)
 #ifdef CONFIG_PM
 static int spacc_suspend(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
-	struct spacc_engine *engine = platform_get_drvdata(pdev);
+	struct spacc_engine *engine = dev_get_drvdata(dev);
 
 	/*
 	 * We only support standby mode. All we have to do is gate the clock to
@@ -1182,8 +1183,7 @@ static int spacc_suspend(struct device *dev)
 
 static int spacc_resume(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
-	struct spacc_engine *engine = platform_get_drvdata(pdev);
+	struct spacc_engine *engine = dev_get_drvdata(dev);
 
 	return clk_enable(engine->clk);
 }
@@ -1616,22 +1616,6 @@ static const struct of_device_id spacc_of_id_table[] = {
 MODULE_DEVICE_TABLE(of, spacc_of_id_table);
 #endif /* CONFIG_OF */
 
-static bool spacc_is_compatible(struct platform_device *pdev,
-				const char *spacc_type)
-{
-	const struct platform_device_id *platid = platform_get_device_id(pdev);
-
-	if (platid && !strcmp(platid->name, spacc_type))
-		return true;
-
-#ifdef CONFIG_OF
-	if (of_device_is_compatible(pdev->dev.of_node, spacc_type))
-		return true;
-#endif /* CONFIG_OF */
-
-	return false;
-}
-
 static void spacc_tasklet_kill(void *data)
 {
 	tasklet_kill(data);
@@ -1639,14 +1623,15 @@ static void spacc_tasklet_kill(void *data)
 
 static int spacc_probe(struct platform_device *pdev)
 {
-	int i, err, ret = -EINVAL;
+	int i, err, ret;
 	struct resource *mem, *irq;
+	struct device_node *np = pdev->dev.of_node;
 	struct spacc_engine *engine = devm_kzalloc(&pdev->dev, sizeof(*engine),
 						   GFP_KERNEL);
 	if (!engine)
 		return -ENOMEM;
 
-	if (spacc_is_compatible(pdev, "picochip,spacc-ipsec")) {
+	if (of_device_is_compatible(np, "picochip,spacc-ipsec")) {
 		engine->max_ctxs	= SPACC_CRYPTO_IPSEC_MAX_CTXS;
 		engine->cipher_pg_sz	= SPACC_CRYPTO_IPSEC_CIPHER_PG_SZ;
 		engine->hash_pg_sz	= SPACC_CRYPTO_IPSEC_HASH_PG_SZ;
@@ -1655,7 +1640,7 @@ static int spacc_probe(struct platform_device *pdev)
 		engine->num_algs	= ARRAY_SIZE(ipsec_engine_algs);
 		engine->aeads		= ipsec_engine_aeads;
 		engine->num_aeads	= ARRAY_SIZE(ipsec_engine_aeads);
-	} else if (spacc_is_compatible(pdev, "picochip,spacc-l2")) {
+	} else if (of_device_is_compatible(np, "picochip,spacc-l2")) {
 		engine->max_ctxs	= SPACC_CRYPTO_L2_MAX_CTXS;
 		engine->cipher_pg_sz	= SPACC_CRYPTO_L2_CIPHER_PG_SZ;
 		engine->hash_pg_sz	= SPACC_CRYPTO_L2_HASH_PG_SZ;
@@ -1707,23 +1692,14 @@ static int spacc_probe(struct platform_device *pdev)
 	engine->clk = clk_get(&pdev->dev, "ref");
 	if (IS_ERR(engine->clk)) {
 		dev_info(&pdev->dev, "clk unavailable\n");
-		device_remove_file(&pdev->dev, &dev_attr_stat_irq_thresh);
 		return PTR_ERR(engine->clk);
 	}
 
 	if (clk_prepare_enable(engine->clk)) {
 		dev_info(&pdev->dev, "unable to prepare/enable clk\n");
-		clk_put(engine->clk);
-		return -EIO;
+		ret = -EIO;
+		goto err_clk_put;
 	}
-
-	err = device_create_file(&pdev->dev, &dev_attr_stat_irq_thresh);
-	if (err) {
-		clk_disable_unprepare(engine->clk);
-		clk_put(engine->clk);
-		return err;
-	}
-
 
 	/*
 	 * Use an IRQ threshold of 50% as a default. This seems to be a
@@ -1731,6 +1707,10 @@ static int spacc_probe(struct platform_device *pdev)
 	 * changed at runtime.
 	 */
 	engine->stat_irq_thresh = (engine->fifo_sz / 2);
+
+	ret = device_create_file(&pdev->dev, &dev_attr_stat_irq_thresh);
+	if (ret)
+		goto err_clk_disable;
 
 	/*
 	 * Configure the interrupts. We only use the STAT_CNT interrupt as we
@@ -1742,8 +1722,7 @@ static int spacc_probe(struct platform_device *pdev)
 	writel(SPA_IRQ_EN_STAT_EN | SPA_IRQ_EN_GLBL_EN,
 	       engine->regs + SPA_IRQ_EN_REG_OFFSET);
 
-	setup_timer(&engine->packet_timeout, spacc_packet_timeout,
-		    (unsigned long)engine);
+	timer_setup(&engine->packet_timeout, spacc_packet_timeout, 0);
 
 	INIT_LIST_HEAD(&engine->pending);
 	INIT_LIST_HEAD(&engine->completed);
@@ -1752,6 +1731,7 @@ static int spacc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, engine);
 
+	ret = -EINVAL;
 	INIT_LIST_HEAD(&engine->registered_algs);
 	for (i = 0; i < engine->num_algs; ++i) {
 		engine->algs[i].engine = engine;
@@ -1786,6 +1766,16 @@ static int spacc_probe(struct platform_device *pdev)
 				engine->aeads[i].alg.base.cra_name);
 	}
 
+	if (!ret)
+		return 0;
+
+	del_timer_sync(&engine->packet_timeout);
+	device_remove_file(&pdev->dev, &dev_attr_stat_irq_thresh);
+err_clk_disable:
+	clk_disable_unprepare(engine->clk);
+err_clk_put:
+	clk_put(engine->clk);
+
 	return ret;
 }
 
@@ -1814,12 +1804,6 @@ static int spacc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct platform_device_id spacc_id_table[] = {
-	{ "picochip,spacc-ipsec", },
-	{ "picochip,spacc-l2", },
-	{ }
-};
-
 static struct platform_driver spacc_driver = {
 	.probe		= spacc_probe,
 	.remove		= spacc_remove,
@@ -1830,7 +1814,6 @@ static struct platform_driver spacc_driver = {
 #endif /* CONFIG_PM */
 		.of_match_table	= of_match_ptr(spacc_of_id_table),
 	},
-	.id_table	= spacc_id_table,
 };
 
 module_platform_driver(spacc_driver);

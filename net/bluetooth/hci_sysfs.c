@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /* Bluetooth HCI driver model support. */
 
 #include <linux/module.h>
@@ -13,7 +14,7 @@ static void bt_link_release(struct device *dev)
 	kfree(conn);
 }
 
-static struct device_type bt_link = {
+static const struct device_type bt_link = {
 	.name    = "link",
 	.release = bt_link_release,
 };
@@ -32,7 +33,7 @@ void hci_conn_init_sysfs(struct hci_conn *conn)
 {
 	struct hci_dev *hdev = conn->hdev;
 
-	BT_DBG("conn %p", conn);
+	bt_dev_dbg(hdev, "conn %p", conn);
 
 	conn->dev.type = &bt_link;
 	conn->dev.class = bt_class;
@@ -45,27 +46,30 @@ void hci_conn_add_sysfs(struct hci_conn *conn)
 {
 	struct hci_dev *hdev = conn->hdev;
 
-	BT_DBG("conn %p", conn);
+	bt_dev_dbg(hdev, "conn %p", conn);
 
 	if (device_is_registered(&conn->dev))
 		return;
 
 	dev_set_name(&conn->dev, "%s:%d", hdev->name, conn->handle);
 
-	if (device_add(&conn->dev) < 0) {
-		BT_ERR("Failed to register connection device");
-		return;
-	}
-
-	hci_dev_hold(hdev);
+	if (device_add(&conn->dev) < 0)
+		bt_dev_err(hdev, "failed to register connection device");
 }
 
 void hci_conn_del_sysfs(struct hci_conn *conn)
 {
 	struct hci_dev *hdev = conn->hdev;
 
-	if (!device_is_registered(&conn->dev))
+	bt_dev_dbg(hdev, "conn %p", conn);
+
+	if (!device_is_registered(&conn->dev)) {
+		/* If device_add() has *not* succeeded, use *only* put_device()
+		 * to drop the reference count.
+		 */
+		put_device(&conn->dev);
 		return;
+	}
 
 	while (1) {
 		struct device *dev;
@@ -77,9 +81,7 @@ void hci_conn_del_sysfs(struct hci_conn *conn)
 		put_device(dev);
 	}
 
-	device_del(&conn->dev);
-
-	hci_dev_put(hdev);
+	device_unregister(&conn->dev);
 }
 
 static void bt_host_release(struct device *dev)
@@ -92,7 +94,7 @@ static void bt_host_release(struct device *dev)
 	module_put(THIS_MODULE);
 }
 
-static struct device_type bt_host = {
+static const struct device_type bt_host = {
 	.name    = "host",
 	.release = bt_host_release,
 };

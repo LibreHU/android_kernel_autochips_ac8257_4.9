@@ -13,6 +13,7 @@
 #include <linux/kernel.h>
 #include <linux/moduleparam.h>
 #include <linux/sched.h>
+#include <linux/sched/clock.h>
 #include <linux/syscore_ops.h>
 #include <linux/hrtimer.h>
 #include <linux/sched_clock.h>
@@ -266,7 +267,7 @@ sched_clock_register(u64 (*read)(void), int bits, unsigned long rate)
 	pr_debug("Registered %pF as sched_clock source\n", read);
 }
 
-void __init sched_clock_postinit(void)
+void __init generic_sched_clock_init(void)
 {
 	/*
 	 * If no sched_clock() function has been provided at that point,
@@ -304,7 +305,7 @@ static u64 notrace suspended_sched_clock_read(void)
 	return cd.read_data[seq & 1].epoch_cyc;
 }
 
-static int sched_clock_suspend(void)
+int sched_clock_suspend(void)
 {
 	struct clock_read_data *rd = &cd.read_data[0];
 	update_sched_clock();
@@ -319,7 +320,7 @@ static int sched_clock_suspend(void)
 	return 0;
 }
 
-static void sched_clock_resume(void)
+void sched_clock_resume(void)
 {
 	struct clock_read_data *rd = &cd.read_data[0];
 	rd->epoch_cyc = cd.actual_read_sched_clock();

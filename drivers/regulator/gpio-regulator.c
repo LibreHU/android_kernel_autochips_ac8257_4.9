@@ -162,8 +162,8 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np,
 	of_property_read_u32(np, "startup-delay-us", &config->startup_delay);
 
 	config->enable_gpio = of_get_named_gpio(np, "enable-gpio", 0);
-	if (config->enable_gpio == -EPROBE_DEFER)
-		return ERR_PTR(-EPROBE_DEFER);
+	if (config->enable_gpio < 0 && config->enable_gpio != -ENOENT)
+		return ERR_PTR(config->enable_gpio);
 
 	/* Fetch GPIOs. - optional property*/
 	ret = of_gpio_count(np);
@@ -172,8 +172,8 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np,
 
 	if (ret > 0) {
 		config->nr_gpios = ret;
-		config->gpios = devm_kzalloc(dev,
-					sizeof(struct gpio) * config->nr_gpios,
+		config->gpios = devm_kcalloc(dev,
+					config->nr_gpios, sizeof(struct gpio),
 					GFP_KERNEL);
 		if (!config->gpios)
 			return ERR_PTR(-ENOMEM);
@@ -190,9 +190,13 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np,
 
 		for (i = 0; i < config->nr_gpios; i++) {
 			gpio = of_get_named_gpio(np, "gpios", i);
-			if (gpio < 0)
+			if (gpio < 0) {
+				if (gpio != -ENOENT)
+					return ERR_PTR(gpio);
 				break;
+			}
 			config->gpios[i].gpio = gpio;
+			config->gpios[i].label = config->supply_name;
 			if (proplen > 0) {
 				of_property_read_u32_index(np, "gpios-states",
 							   i, &ret);
@@ -210,9 +214,9 @@ of_get_gpio_regulator_config(struct device *dev, struct device_node *np,
 		return ERR_PTR(-EINVAL);
 	}
 
-	config->states = devm_kzalloc(dev,
-				sizeof(struct gpio_regulator_state)
-				* (proplen / 2),
+	config->states = devm_kcalloc(dev,
+				proplen / 2,
+				sizeof(struct gpio_regulator_state),
 				GFP_KERNEL);
 	if (!config->states)
 		return ERR_PTR(-ENOMEM);

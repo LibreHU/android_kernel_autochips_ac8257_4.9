@@ -115,6 +115,21 @@ nla_put_failure:
 	return -EMSGSIZE;
 }
 
+static int crypto_report_acomp(struct sk_buff *skb, struct crypto_alg *alg)
+{
+	struct crypto_report_acomp racomp;
+
+	strncpy(racomp.type, "acomp", sizeof(racomp.type));
+
+	if (nla_put(skb, CRYPTOCFGA_REPORT_ACOMP,
+		    sizeof(struct crypto_report_acomp), &racomp))
+		goto nla_put_failure;
+	return 0;
+
+nla_put_failure:
+	return -EMSGSIZE;
+}
+
 static int crypto_report_akcipher(struct sk_buff *skb, struct crypto_alg *alg)
 {
 	struct crypto_report_akcipher rakcipher;
@@ -157,7 +172,7 @@ static int crypto_report_one(struct crypto_alg *alg,
 	ualg->cru_type = 0;
 	ualg->cru_mask = 0;
 	ualg->cru_flags = alg->cra_flags;
-	ualg->cru_refcnt = atomic_read(&alg->cra_refcnt);
+	ualg->cru_refcnt = refcount_read(&alg->cra_refcnt);
 
 	if (nla_put_u32(skb, CRYPTOCFGA_PRIORITY_VAL, alg->cra_priority))
 		goto nla_put_failure;
@@ -189,7 +204,11 @@ static int crypto_report_one(struct crypto_alg *alg,
 			goto nla_put_failure;
 
 		break;
+	case CRYPTO_ALG_TYPE_ACOMPRESS:
+		if (crypto_report_acomp(skb, alg))
+			goto nla_put_failure;
 
+		break;
 	case CRYPTO_ALG_TYPE_AKCIPHER:
 		if (crypto_report_akcipher(skb, alg))
 			goto nla_put_failure;
@@ -255,7 +274,7 @@ static int crypto_report(struct sk_buff *in_skb, struct nlmsghdr *in_nlh,
 		return -ENOENT;
 
 	err = -ENOMEM;
-	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_ATOMIC);
+	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
 	if (!skb)
 		goto drop_alg;
 
@@ -376,7 +395,7 @@ static int crypto_del_alg(struct sk_buff *skb, struct nlmsghdr *nlh,
 		goto drop_alg;
 
 	err = -EBUSY;
-	if (atomic_read(&alg->cra_refcnt) > 2)
+	if (refcount_read(&alg->cra_refcnt) > 2)
 		goto drop_alg;
 
 	err = crypto_unregister_instance((struct crypto_instance *)alg);
@@ -472,7 +491,8 @@ static const struct crypto_link {
 	[CRYPTO_MSG_DELRNG	- CRYPTO_MSG_BASE] = { .doit = crypto_del_rng },
 };
 
-static int crypto_user_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+static int crypto_user_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh,
+			       struct netlink_ext_ack *extack)
 {
 	struct nlattr *attrs[CRYPTOCFGA_MAX+1];
 	const struct crypto_link *link;
@@ -511,7 +531,7 @@ static int crypto_user_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 	}
 
 	err = nlmsg_parse(nlh, crypto_msg_min[type], attrs, CRYPTOCFGA_MAX,
-			  crypto_policy);
+			  crypto_policy, extack);
 	if (err < 0)
 		return err;
 

@@ -19,6 +19,13 @@
 
 #define DEVFREQ_NAME_LEN 16
 
+/* DEVFREQ governor name */
+#define DEVFREQ_GOV_SIMPLE_ONDEMAND	"simple_ondemand"
+#define DEVFREQ_GOV_PERFORMANCE		"performance"
+#define DEVFREQ_GOV_POWERSAVE		"powersave"
+#define DEVFREQ_GOV_USERSPACE		"userspace"
+#define DEVFREQ_GOV_PASSIVE		"passive"
+
 /* DEVFREQ notifier interface */
 #define DEVFREQ_TRANSITION_NOTIFIER	(0)
 
@@ -27,6 +34,7 @@
 #define DEVFREQ_POSTCHANGE		(1)
 
 struct devfreq;
+struct devfreq_governor;
 
 /**
  * struct devfreq_dev_status - Data given from devfreq user device to
@@ -83,8 +91,9 @@ struct devfreq_dev_status {
  *			from devfreq_remove_device() call. If the user
  *			has registered devfreq->nb at a notifier-head,
  *			this is the time to unregister it.
- * @freq_table:	Optional list of frequencies to support statistics.
- * @max_state:	The size of freq_table.
+ * @freq_table:		Optional list of frequencies to support statistics
+ *			and freq_table must be generated in ascending order.
+ * @max_state:		The size of freq_table.
  */
 struct devfreq_dev_profile {
 	unsigned long initial_freq;
@@ -98,35 +107,6 @@ struct devfreq_dev_profile {
 
 	unsigned long *freq_table;
 	unsigned int max_state;
-};
-
-/**
- * struct devfreq_governor - Devfreq policy governor
- * @node:		list node - contains registered devfreq governors
- * @name:		Governor's name
- * @immutable:		Immutable flag for governor. If the value is 1,
- *			this govenror is never changeable to other governor.
- * @get_target_freq:	Returns desired operating frequency for the device.
- *			Basically, get_target_freq will run
- *			devfreq_dev_profile.get_dev_status() to get the
- *			status of the device (load = busy_time / total_time).
- *			If no_central_polling is set, this callback is called
- *			only with update_devfreq() notified by OPP.
- * @event_handler:      Callback for devfreq core framework to notify events
- *                      to governors. Events include per device governor
- *                      init and exit, opp changes out of devfreq, suspend
- *                      and resume of per device devfreq during device idle.
- *
- * Note that the callbacks are called with devfreq->lock locked by devfreq.
- */
-struct devfreq_governor {
-	struct list_head node;
-
-	const char name[DEVFREQ_NAME_LEN];
-	const unsigned int immutable;
-	int (*get_target_freq)(struct devfreq *this, unsigned long *freq);
-	int (*event_handler)(struct devfreq *devfreq,
-				unsigned int event, void *data);
 };
 
 /**
@@ -148,6 +128,8 @@ struct devfreq_governor {
  *		touch this.
  * @min_freq:	Limit minimum frequency requested by user (0: none)
  * @max_freq:	Limit maximum frequency requested by user (0: none)
+ * @scaling_min_freq:	Limit minimum frequency requested by OPP interface
+ * @scaling_max_freq:	Limit maximum frequency requested by OPP interface
  * @stop_polling:	 devfreq polling status of a device.
  * @total_trans:	Number of devfreq transitions
  * @trans_table:	Statistics of devfreq transitions
@@ -167,6 +149,7 @@ struct devfreq {
 	struct list_head node;
 
 	struct mutex lock;
+	struct mutex event_lock;
 	struct device dev;
 	struct devfreq_dev_profile *profile;
 	const struct devfreq_governor *governor;
@@ -181,6 +164,8 @@ struct devfreq {
 
 	unsigned long min_freq;
 	unsigned long max_freq;
+	unsigned long scaling_min_freq;
+	unsigned long scaling_max_freq;
 	bool stop_polling;
 
 	/* information for device frequency transition */
@@ -190,6 +175,7 @@ struct devfreq {
 	unsigned long last_stat_updated;
 
 	struct srcu_notifier_head transition_notifier_list;
+	bool dev_suspended;
 };
 
 struct devfreq_freqs {
@@ -242,19 +228,6 @@ extern void devm_devfreq_unregister_notifier(struct device *dev,
 extern struct devfreq *devfreq_get_devfreq_by_phandle(struct device *dev,
 						int index);
 
-/**
- * devfreq_update_stats() - update the last_status pointer in struct devfreq
- * @df:		the devfreq instance whose status needs updating
- *
- *  Governors are recommended to use this function along with last_status,
- * which allows other entities to reuse the last_status without affecting
- * the values fetched later by governors.
- */
-static inline int devfreq_update_stats(struct devfreq *df)
-{
-	return df->profile->get_dev_status(df->dev.parent, &df->last_status);
-}
-
 #if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
 /**
  * struct devfreq_simple_ondemand_data - void *data fed to struct devfreq
@@ -265,6 +238,9 @@ static inline int devfreq_update_stats(struct devfreq *df)
  *			the governor may consider slowing the frequency down.
  *			Specify 0 to use the default. Valid value = 0 to 100.
  *			downdifferential < upthreshold must hold.
+ * @simple_scaling:	Setting this flag will scale the clocks up only if the
+ *			load is above @upthreshold and will scale the clocks
+ *			down only if the load is below @downdifferential.
  *
  * If the fed devfreq_simple_ondemand_data pointer is NULL to the governor,
  * the governor uses the default values.
@@ -272,6 +248,7 @@ static inline int devfreq_update_stats(struct devfreq *df)
 struct devfreq_simple_ondemand_data {
 	unsigned int upthreshold;
 	unsigned int downdifferential;
+	unsigned int simple_scaling;
 };
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 - 2016 Jes Sorensen <Jes.Sorensen@redhat.com>
+ * Copyright (c) 2014 - 2017 Jes Sorensen <Jes.Sorensen@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -861,15 +861,10 @@ struct rtl8192eu_efuse {
 	u8 usb_optional_function;
 	u8 res9[2];
 	u8 mac_addr[ETH_ALEN];		/* 0xd7 */
-	u8 res10[2];
-	u8 vendor_name[7];
-	u8 res11[2];
-	u8 device_name[0x0b];		/* 0xe8 */
-	u8 res12[2];
-	u8 serial[0x0b];		/* 0xf5 */
-	u8 res13[0x30];
+	u8 device_info[80];
+	u8 res11[3];
 	u8 unknown[0x0d];		/* 0x130 */
-	u8 res14[0xc3];
+	u8 res12[0xc3];
 };
 
 struct rtl8xxxu_reg8val {
@@ -1141,6 +1136,15 @@ enum bt_mp_oper_opcode_8723b {
 	BT_MP_OP_ENABLE_CFO_TRACKING = 0x24,
 };
 
+enum rtl8xxxu_bw_mode {
+	RTL8XXXU_CHANNEL_WIDTH_20 = 0,
+	RTL8XXXU_CHANNEL_WIDTH_40 = 1,
+	RTL8XXXU_CHANNEL_WIDTH_80 = 2,
+	RTL8XXXU_CHANNEL_WIDTH_160 = 3,
+	RTL8XXXU_CHANNEL_WIDTH_80_80 = 4,
+	RTL8XXXU_CHANNEL_WIDTH_MAX = 5,
+};
+
 struct rtl8723bu_c2h {
 	u8 id;
 	u8 seq;
@@ -1172,7 +1176,7 @@ struct rtl8723bu_c2h {
 
 			u8 basic_rate:1;
 			u8 bt_has_reset:1;
-			u8 dummy4_1:1;;
+			u8 dummy4_1:1;
 			u8 ignore_wlan:1;
 			u8 auto_report:1;
 			u8 dummy4_2:3;
@@ -1268,6 +1272,7 @@ struct rtl8xxxu_priv {
 	u32 rege9c;
 	u32 regeb4;
 	u32 regebc;
+	u32 regrcr;
 	int next_mbox;
 	int nr_out_eps;
 
@@ -1337,10 +1342,11 @@ struct rtl8xxxu_fileops {
 				  u32 ramask, int sgi);
 	void (*report_connect) (struct rtl8xxxu_priv *priv,
 				u8 macid, bool connect);
-	void (*fill_txdesc) (struct ieee80211_hdr *hdr,
-			     struct rtl8xxxu_txdesc32 *tx_desc, u32 rate,
-			     u16 rate_flag, bool sgi, bool short_preamble,
-			     bool ampdu_enable);
+	void (*fill_txdesc) (struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
+			     struct ieee80211_tx_info *tx_info,
+			     struct rtl8xxxu_txdesc32 *tx_desc, bool sgi,
+			     bool short_preamble, bool ampdu_enable,
+			     u32 rts_rate);
 	int writeN_block_size;
 	int rx_agg_buf_size;
 	char tx_desc_size;
@@ -1435,14 +1441,16 @@ int rtl8xxxu_parse_rxdesc24(struct rtl8xxxu_priv *priv, struct sk_buff *skb);
 int rtl8xxxu_gen2_channel_to_group(int channel);
 bool rtl8xxxu_gen2_simularity_compare(struct rtl8xxxu_priv *priv,
 				      int result[][8], int c1, int c2);
-void rtl8xxxu_fill_txdesc_v1(struct ieee80211_hdr *hdr,
-			     struct rtl8xxxu_txdesc32 *tx_desc, u32 rate,
-			     u16 rate_flag, bool sgi, bool short_preamble,
-			     bool ampdu_enable);
-void rtl8xxxu_fill_txdesc_v2(struct ieee80211_hdr *hdr,
-			     struct rtl8xxxu_txdesc32 *tx_desc32, u32 rate,
-			     u16 rate_flag, bool sgi, bool short_preamble,
-			     bool ampdu_enable);
+void rtl8xxxu_fill_txdesc_v1(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
+			     struct ieee80211_tx_info *tx_info,
+			     struct rtl8xxxu_txdesc32 *tx_desc, bool sgi,
+			     bool short_preamble, bool ampdu_enable,
+			     u32 rts_rate);
+void rtl8xxxu_fill_txdesc_v2(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
+			     struct ieee80211_tx_info *tx_info,
+			     struct rtl8xxxu_txdesc32 *tx_desc32, bool sgi,
+			     bool short_preamble, bool ampdu_enable,
+			     u32 rts_rate);
 
 extern struct rtl8xxxu_fileops rtl8192cu_fops;
 extern struct rtl8xxxu_fileops rtl8192eu_fops;

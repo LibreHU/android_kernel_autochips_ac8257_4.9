@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __PPC64_VDSO_H__
 #define __PPC64_VDSO_H__
 
@@ -48,6 +49,7 @@ int vdso_getcpu_init(void);
 
 #define V_FUNCTION_BEGIN(name)		\
 	.globl name;			\
+	.type name,@function; 		\
 	name:				\
 
 #define V_FUNCTION_END(name)		\

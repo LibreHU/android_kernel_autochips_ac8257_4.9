@@ -1,14 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * Copyright (c) 2019 MediaTek Inc.
  */
 
 #include <generated/autoconf.h>
@@ -33,6 +25,8 @@
 
 #include "mtk_sd.h"
 #include <mmc/core/core.h>
+#include <mmc/core/card.h>
+#include <mmc/core/mmc_ops.h>
 #include <mt-plat/mtk_sd_misc.h>
 #include "msdc_io.h"
 #include "dbg.h"
@@ -139,19 +133,16 @@ static int simple_sd_ioctl_get_cid(struct msdc_ioctl *msdc_ctl)
 
 static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 {
-	u8 *l_buf;
+	u8 *l_buf = NULL;
 	struct msdc_host *host_ctl;
 	struct mmc_host *mmc;
 	int ret = 0;
 	int bootpart = 0;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	int is_cmdq_en = false;
-#endif
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 
 	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
-		pr_err("host_ctl or mmc or card is NULL\n");
+		pr_notice("host_ctl or mmc or card is NULL\n");
 		return -EINVAL;
 	}
 	mmc = host_ctl->mmc;
@@ -166,7 +157,7 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 
 	ret = mmc_get_ext_csd(mmc->card, &l_buf);
 	if (ret) {
-		pr_err("mmc_get_ext_csd error, set boot partition\n");
+		pr_debug("mmc_get_ext_csd error, set boot partition\n");
 		goto end;
 	}
 
@@ -178,30 +169,17 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 	if ((bootpart != EMMC_BOOT1_EN)
 	 && (bootpart != EMMC_BOOT2_EN)
 	 && (bootpart != EMMC_BOOT_USER)) {
-		pr_err("set boot partition error, not support %d\n",
+		pr_debug("set boot partition error, not support %d\n",
 			bootpart);
 		ret = -EFAULT;
 		goto end;
 	}
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (mmc->card->ext_csd.cmdq_mode_en) {
-		/* cmdq enabled, turn it off first */
-		pr_info("[MSDC_DBG] cmdq enabled, turn it off\n");
-		ret = mmc_blk_cmdq_switch(mmc->card, 0);
-		if (ret) {
-			pr_err("[MSDC_DBG] turn off cmdq en failed\n");
-			goto end;
-		} else
-			is_cmdq_en = true;
-	}
-#endif
-
 	if (((l_buf[EXT_CSD_PART_CFG] & 0x38) >> 3) != bootpart) {
 		/* active boot partition */
 		l_buf[EXT_CSD_PART_CFG] &= ~0x38;
 		l_buf[EXT_CSD_PART_CFG] |= (bootpart << 3);
-		pr_info("mmc_switch set %x\n", l_buf[EXT_CSD_PART_CFG]);
+		pr_debug("mmc_switch set %x\n", l_buf[EXT_CSD_PART_CFG]);
 		ret = mmc_switch(mmc->card, 0, EXT_CSD_PART_CFG,
 			l_buf[EXT_CSD_PART_CFG], 1000);
 		if (ret) {
@@ -214,16 +192,6 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 
 end:
 	msdc_ctl->result = ret;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (is_cmdq_en) {
-		pr_info("[MSDC_DBG] turn on cmdq\n");
-		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
-		if (ret)
-			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
-		else
-			is_cmdq_en = false;
-	}
-#endif
 
 	mmc_put_card(mmc->card);
 
@@ -302,10 +270,10 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 		msdc_ctl->partition);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (mmc->card->ext_csd.cmdq_mode_en) {
+	if (mmc->card->ext_csd.cmdq_en) {
 		/* cmdq enabled, turn it off first */
 		pr_debug("[MSDC_DBG] cmdq enabled, turn it off\n");
-		ret = mmc_blk_cmdq_switch(mmc->card, 0);
+		ret = mmc_cmdq_disable(mmc->card);
 		if (ret) {
 			pr_debug("[MSDC_DBG] turn off cmdq en failed\n");
 			goto rw_end;
@@ -427,7 +395,7 @@ skip_sbc_prepare:
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
-		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		ret = mmc_cmdq_enable(host_ctl->mmc->card);
 		if (ret)
 			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
 		else
@@ -459,7 +427,7 @@ rw_end:
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
-		ret = mmc_blk_cmdq_switch(mmc->card, 1);
+		ret = mmc_cmdq_enable(mmc->card);
 		if (ret)
 			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
 		else
@@ -539,7 +507,7 @@ static int simple_sd_ioctl_get_csd(struct msdc_ioctl *msdc_ctl)
 
 static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 {
-	u8 *l_buf;
+	u8 *l_buf = NULL;
 	struct msdc_host *host_ctl;
 	struct mmc_host *mmc;
 	int ret = 0;
@@ -774,6 +742,7 @@ end:
 	return 0;
 }
 
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 /* These definitiona and functions are coded by reference to
  * mmc_blk_issue_discard_rq()@block.c
  */
@@ -842,6 +811,7 @@ out:
 	return msdc_ctl->result;
 
 }
+#endif
 
 static int simple_mmc_erase_partition(unsigned char *name)
 {
@@ -984,10 +954,12 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 		msdc_ctl->result =
 			simple_mmc_erase_partition_wrap(msdc_ctl);
 		break;
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 	case MSDC_ERASE_SELECTED_AREA:
 		msdc_ctl->result = simple_sd_ioctl_erase_selected_area(
 			msdc_ctl);
 		break;
+#endif
 	case MSDC_SD30_MODE_SWITCH:
 		pr_notice("obsolete opcode!!\n");
 		kfree(msdc_ctl);
@@ -1002,7 +974,7 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 		break;
 #endif
 	default:
-		pr_notice("simple_sd_ioctl:invlalid opcode!!\n");
+		pr_notice("%s:invlalid opcode!!\n", __func__);
 		kfree(msdc_ctl);
 		return -EINVAL;
 	}

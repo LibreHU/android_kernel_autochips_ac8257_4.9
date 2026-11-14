@@ -82,7 +82,10 @@ static int vhci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
 	struct vhci_data *data = hci_get_drvdata(hdev);
 
 	memcpy(skb_push(skb, 1), &hci_skb_pkt_type(skb), 1);
+
+	mutex_lock(&data->open_mutex);
 	skb_queue_tail(&data->readq, skb);
+	mutex_unlock(&data->open_mutex);
 
 	wake_up_interruptible(&data->read_wait);
 	return 0;
@@ -146,8 +149,8 @@ static int __vhci_create_device(struct vhci_data *data, __u8 opcode)
 
 	hci_skb_pkt_type(skb) = HCI_VENDOR_PKT;
 
-	*skb_put(skb, 1) = 0xff;
-	*skb_put(skb, 1) = opcode;
+	skb_put_u8(skb, 0xff);
+	skb_put_u8(skb, opcode);
 	put_unaligned_le16(hdev->id, skb_put(skb, 2));
 	skb_queue_tail(&data->readq, skb);
 
@@ -181,7 +184,7 @@ static inline ssize_t vhci_get_user(struct vhci_data *data,
 	if (!skb)
 		return -ENOMEM;
 
-	if (copy_from_iter(skb_put(skb, len), len, from) != len) {
+	if (!copy_from_iter_full(skb_put(skb, len), len, from)) {
 		kfree_skb(skb);
 		return -EFAULT;
 	}
@@ -299,16 +302,16 @@ static ssize_t vhci_write(struct kiocb *iocb, struct iov_iter *from)
 	return vhci_get_user(data, from);
 }
 
-static unsigned int vhci_poll(struct file *file, poll_table *wait)
+static __poll_t vhci_poll(struct file *file, poll_table *wait)
 {
 	struct vhci_data *data = file->private_data;
 
 	poll_wait(file, &data->read_wait, wait);
 
 	if (!skb_queue_empty(&data->readq))
-		return POLLIN | POLLRDNORM;
+		return EPOLLIN | EPOLLRDNORM;
 
-	return POLLOUT | POLLWRNORM;
+	return EPOLLOUT | EPOLLWRNORM;
 }
 
 static void vhci_open_timeout(struct work_struct *work)

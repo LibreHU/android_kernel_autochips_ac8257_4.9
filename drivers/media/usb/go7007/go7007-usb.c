@@ -1144,7 +1144,8 @@ static int go7007_usb_probe(struct usb_interface *intf,
 	usb->intr_urb = usb_alloc_urb(0, GFP_KERNEL);
 	if (usb->intr_urb == NULL)
 		goto allocfail;
-	usb->intr_urb->transfer_buffer = kmalloc(2*sizeof(u16), GFP_KERNEL);
+	usb->intr_urb->transfer_buffer = kmalloc_array(2, sizeof(u16),
+						       GFP_KERNEL);
 	if (usb->intr_urb->transfer_buffer == NULL)
 		goto allocfail;
 
@@ -1205,7 +1206,9 @@ static int go7007_usb_probe(struct usb_interface *intf,
 				u16 channel;
 
 				/* read channel number from GPIO[1:0] */
-				go7007_read_addr(go, 0x3c81, &channel);
+				if (go7007_read_addr(go, 0x3c81, &channel))
+					goto allocfail;
+
 				channel &= 0x3;
 				go->board_id = GO7007_BOARDID_ADLINK_MPG24;
 				usb->board = board = &board_adlink_mpg24;

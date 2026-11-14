@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * drivers/pci/slot.c
  * Copyright (C) 2006 Matthew Wilcox <matthew@wil.cx>
  * Copyright (C) 2006-2009 Hewlett-Packard Development Company, L.P.
  *	Alex Chiang <achiang@hp.com>
@@ -14,7 +14,6 @@
 
 struct kset *pci_slots_kset;
 EXPORT_SYMBOL_GPL(pci_slots_kset);
-static DEFINE_MUTEX(pci_slot_mutex);
 
 static ssize_t pci_slot_attr_show(struct kobject *kobj,
 					struct attribute *attr, char *buf)
@@ -75,6 +74,8 @@ static const char *pci_bus_speed_strings[] = {
 	"2.5 GT/s PCIe",	/* 0x14 */
 	"5.0 GT/s PCIe",	/* 0x15 */
 	"8.0 GT/s PCIe",	/* 0x16 */
+	"16.0 GT/s PCIe",	/* 0x17 */
+	"32.0 GT/s PCIe",	/* 0x18 */
 };
 
 static ssize_t bus_speed_read(enum pci_bus_speed speed, char *buf)
@@ -114,6 +115,7 @@ static void pci_slot_release(struct kobject *kobj)
 	up_read(&pci_bus_sem);
 
 	list_del(&slot->list);
+	pci_bus_put(slot->bus);
 
 	kfree(slot);
 }
@@ -295,7 +297,7 @@ placeholder:
 		goto err;
 	}
 
-	slot->bus = parent;
+	slot->bus = pci_bus_get(parent);
 	slot->number = slot_nr;
 
 	slot->kobj.kset = pci_slots_kset;
@@ -303,6 +305,7 @@ placeholder:
 	slot_name = make_slot_name(name);
 	if (!slot_name) {
 		err = -ENOMEM;
+		pci_bus_put(slot->bus);
 		kfree(slot);
 		goto err;
 	}
@@ -347,7 +350,7 @@ EXPORT_SYMBOL_GPL(pci_create_slot);
 void pci_destroy_slot(struct pci_slot *slot)
 {
 	dev_dbg(&slot->bus->dev, "dev %02x, dec refcount to %d\n",
-		slot->number, atomic_read(&slot->kobj.kref.refcount) - 1);
+		slot->number, kref_read(&slot->kobj.kref) - 1);
 
 	mutex_lock(&pci_slot_mutex);
 	kobject_put(&slot->kobj);

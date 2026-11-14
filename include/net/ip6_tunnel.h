@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _NET_IP6_TUNNEL_H
 #define _NET_IP6_TUNNEL_H
 
@@ -33,6 +34,12 @@ struct __ip6_tnl_parm {
 	__be16			o_flags;
 	__be32			i_key;
 	__be32			o_key;
+
+	__u32			fwmark;
+	__u32			index;	/* ERSPAN type II index */
+	__u8			erspan_ver;	/* ERSPAN version */
+	__u8			dir;	/* direction */
+	__u16			hwid;	/* hwid */
 };
 
 /* IPv6 tunnel */
@@ -50,7 +57,7 @@ struct ip6_tnl {
 
 	/* These fields used only by GRE */
 	__u32 i_seqno;	/* The last seen seqno	*/
-	__u32 o_seqno;	/* The last output seqno */
+	atomic_t o_seqno;	/* The last output seqno */
 	int hlen;       /* tun_hlen + encap_hlen */
 	int tun_hlen;	/* Precalculated header length */
 	int encap_hlen; /* Encap header length (FOU,GUE) */

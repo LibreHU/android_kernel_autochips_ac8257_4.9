@@ -25,8 +25,9 @@
 #include <linux/init.h>
 #include <linux/coredump.h>
 #include <linux/slab.h>
+#include <linux/sched/task_stack.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/cacheflush.h>
 #include <asm/a.out-core.h>
 
@@ -243,6 +244,7 @@ static int load_aout_binary(struct linux_binprm * bprm)
 	set_personality(PER_LINUX);
 #endif
 	setup_new_exec(bprm);
+	install_exec_creds(bprm);
 
 	current->mm->end_code = ex.a_text +
 		(current->mm->start_code = N_TXTADDR(ex));
@@ -255,7 +257,6 @@ static int load_aout_binary(struct linux_binprm * bprm)
 	if (retval < 0)
 		return retval;
 
-	install_exec_creds(bprm);
 
 	if (N_MAGIC(ex) == OMAGIC) {
 		unsigned long text_addr, map_size;
@@ -329,6 +330,7 @@ beyond_if:
 #ifdef __alpha__
 	regs->gp = ex.a_gpvalue;
 #endif
+	finalize_exec(bprm);
 	start_thread(regs, ex.a_entry, current->mm->start_stack);
 	return 0;
 }
@@ -340,11 +342,12 @@ static int load_aout_library(struct file *file)
 	unsigned long error;
 	int retval;
 	struct exec ex;
+	loff_t pos = 0;
 
 	inode = file_inode(file);
 
 	retval = -ENOEXEC;
-	error = kernel_read(file, 0, (char *) &ex, sizeof(ex));
+	error = kernel_read(file, &ex, sizeof(ex), &pos);
 	if (error != sizeof(ex))
 		goto out;
 

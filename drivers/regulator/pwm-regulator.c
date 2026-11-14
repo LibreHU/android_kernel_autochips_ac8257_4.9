@@ -122,8 +122,7 @@ static int pwm_regulator_enable(struct regulator_dev *dev)
 {
 	struct pwm_regulator_data *drvdata = rdev_get_drvdata(dev);
 
-	if (drvdata->enb_gpio)
-		gpiod_set_value_cansleep(drvdata->enb_gpio, 1);
+	gpiod_set_value_cansleep(drvdata->enb_gpio, 1);
 
 	return pwm_enable(drvdata->pwm);
 }
@@ -134,8 +133,7 @@ static int pwm_regulator_disable(struct regulator_dev *dev)
 
 	pwm_disable(drvdata->pwm);
 
-	if (drvdata->enb_gpio)
-		gpiod_set_value_cansleep(drvdata->enb_gpio, 0);
+	gpiod_set_value_cansleep(drvdata->enb_gpio, 0);
 
 	return 0;
 }
@@ -166,6 +164,9 @@ static int pwm_regulator_get_voltage(struct regulator_dev *rdev)
 	pwm_get_state(drvdata->pwm, &pstate);
 
 	voltage = pwm_get_relative_duty_cycle(&pstate, duty_unit);
+	if (voltage < min(max_uV_duty, min_uV_duty) ||
+	    voltage > max(max_uV_duty, min_uV_duty))
+		return -ENOTRECOVERABLE;
 
 	/*
 	 * The dutycycle for min_uV might be greater than the one for max_uV.
@@ -287,7 +288,7 @@ static int pwm_regulator_init_table(struct platform_device *pdev,
 		return ret;
 	}
 
-	drvdata->state			= -EINVAL;
+	drvdata->state			= -ENOTRECOVERABLE;
 	drvdata->duty_cycle_table	= duty_cycle_table;
 	memcpy(&drvdata->ops, &pwm_regulator_voltage_table_ops,
 	       sizeof(drvdata->ops));

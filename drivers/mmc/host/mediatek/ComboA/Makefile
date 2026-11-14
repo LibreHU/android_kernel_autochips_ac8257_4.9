@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 MediaTek Inc.
+# Copyright (C) 2019 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -13,6 +13,11 @@
 
 #add kernel source code path as head file search path
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6893)))
+MMC_FOLDER := mt6885
+else
+MMC_FOLDER := $(MTK_PLATFORM)
+endif
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
@@ -21,13 +26,25 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
 #workaround for include mmc/card/queue.h and mmc/core/core.h
 ccflags-y += -I$(srctree)/drivers
-ifeq ($(CONFIG_MTK_PLATFORM), "ac8257")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/ac8257
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/$(MMC_FOLDER)
+
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6761")
+
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6765
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
+ccflags-y += -I$(srctree)/drivers/devfreq
+msdc-y += mt6765/msdc_cust.o
+msdc-y += mt6765/autok_dvfs.o
+
 else
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/$(MTK_PLATFORM)
+
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/$(MMC_FOLDER)
+msdc-y += $(MMC_FOLDER)/msdc_cust.o
+msdc-y += $(MTK_PLATFORM)/autok_dvfs.o
+
 endif
 
-ifeq ($(CONFIG_MTK_PLATFORM), "ac8257")
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6765")
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
 ccflags-y += -I$(srctree)/drivers/devfreq
 endif
@@ -42,22 +59,13 @@ obj-$(CONFIG_MMC_MTK_PRO) += msdc.o
 
 msdc-y += sd.o
 msdc-y += dbg.o
-msdc-y += mtk_sd_misc.o
 msdc-y += msdc_tune.o
-msdc-y += msdc_partition.o
-ifeq ($(CONFIG_MTK_PLATFORM), "ac8257")
-msdc-y += ac8257/msdc_cust.o
-else
-msdc-y += $(MTK_PLATFORM)/msdc_cust.o
-endif
 msdc-y += autok.o
-ifeq ($(CONFIG_MTK_PLATFORM), "ac8257")
-msdc-y += ac8257/autok_dvfs.o
-else
-msdc-y += $(MTK_PLATFORM)/autok_dvfs.o
+msdc-y += mmc-sec-sysfs.o
+ifeq ($(CONFIG_MMC_CRYPTO),y)
+msdc-y += sw-cqhci-crypto.o
 endif
 
 ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)
 msdc-y += $(MTK_PLATFORM)/msdc_fpga_io.o
 endif
-

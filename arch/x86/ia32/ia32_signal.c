@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/arch/x86_64/ia32/ia32_signal.c
  *
@@ -9,6 +10,7 @@
  */
 
 #include <linux/sched.h>
+#include <linux/sched/task_stack.h>
 #include <linux/mm.h>
 #include <linux/smp.h>
 #include <linux/kernel.h>
@@ -20,7 +22,7 @@
 #include <linux/compat.h>
 #include <linux/binfmts.h>
 #include <asm/ucontext.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/fpu/internal.h>
 #include <asm/fpu/signal.h>
 #include <asm/ptrace.h>
@@ -31,7 +33,6 @@
 #include <asm/vdso.h>
 #include <asm/sigframe.h>
 #include <asm/sighandling.h>
-#include <asm/sys_ia32.h>
 #include <asm/smap.h>
 
 /*
@@ -117,7 +118,7 @@ static int ia32_restore_sigcontext(struct pt_regs *regs,
 	return err;
 }
 
-asmlinkage long sys32_sigreturn(void)
+asmlinkage long sys32_sigreturn(const struct pt_regs *__unused)
 {
 	struct pt_regs *regs = current_pt_regs();
 	struct sigframe_ia32 __user *frame = (struct sigframe_ia32 __user *)(regs->sp-8);
@@ -143,7 +144,7 @@ badframe:
 	return 0;
 }
 
-asmlinkage long sys32_rt_sigreturn(void)
+asmlinkage long sys32_rt_sigreturn(const struct pt_regs *__unused)
 {
 	struct pt_regs *regs = current_pt_regs();
 	struct rt_sigframe_ia32 __user *frame;
@@ -230,12 +231,12 @@ static void __user *get_sigframe(struct ksignal *ksig, struct pt_regs *regs,
 	if (ksig->ka.sa.sa_flags & SA_ONSTACK)
 		sp = sigsp(sp, ksig);
 	/* This is the legacy signal stack switching. */
-	else if ((regs->ss & 0xffff) != __USER32_DS &&
+	else if (regs->ss != __USER32_DS &&
 		!(ksig->ka.sa.sa_flags & SA_RESTORER) &&
 		 ksig->ka.sa.sa_restorer)
 		sp = (unsigned long) ksig->ka.sa.sa_restorer;
 
-	if (fpu->fpstate_active) {
+	if (fpu->initialized) {
 		unsigned long fx_aligned, math_size;
 
 		sp = fpu__alloc_mathframe(sp, 1, &fx_aligned, &math_size);

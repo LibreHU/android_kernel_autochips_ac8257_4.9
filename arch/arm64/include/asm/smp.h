@@ -72,6 +72,12 @@ extern void set_smp_cross_call(void (*)(const struct cpumask *, unsigned int));
 extern void (*__smp_cross_call)(const struct cpumask *, unsigned int);
 
 /*
+ * Provide a function to set a callback function pointer for updating the ipi
+ * history.
+ */
+extern void set_update_ipi_history_callback(void (*fn)(int));
+
+/*
  * Called from the secondary holding pen, this is the secondary CPU entry point.
  */
 asmlinkage void secondary_start_kernel(void);
@@ -147,6 +153,9 @@ static inline void cpu_panic_kernel(void)
  * This function is used to inhibit features like kexec and hibernate.
  */
 bool cpus_are_stuck_in_kernel(void);
+
+extern void crash_smp_send_stop(void);
+extern bool smp_crash_stop_failed(void);
 
 #endif /* ifndef __ASSEMBLY__ */
 

@@ -15,7 +15,7 @@
 #include <linux/kernel.h>
 #include <linux/notifier.h>
 #include <linux/signal.h>
-#include <linux/sched.h>
+#include <linux/sched/signal.h>
 #include <linux/smp.h>
 #include <linux/init.h>
 #include <linux/uaccess.h>
@@ -34,11 +34,11 @@
 /*
  * Our undef handlers (in entry.S)
  */
-void vfp_testing_entry(void);
-void vfp_support_entry(void);
-void vfp_null_entry(void);
+asmlinkage void vfp_testing_entry(void);
+asmlinkage void vfp_support_entry(void);
+asmlinkage void vfp_null_entry(void);
 
-void (*vfp_vector)(void) = vfp_null_entry;
+asmlinkage void (*vfp_vector)(void) = vfp_null_entry;
 
 /*
  * Dual-use variable.
@@ -218,8 +218,7 @@ static void vfp_raise_sigfpe(unsigned int sicode, struct pt_regs *regs)
 {
 	siginfo_t info;
 
-	memset(&info, 0, sizeof(info));
-
+	clear_siginfo(&info);
 	info.si_signo = SIGFPE;
 	info.si_code = sicode;
 	info.si_addr = (void __user *)(instruction_pointer(regs) - 4);
@@ -257,7 +256,7 @@ static void vfp_raise_exceptions(u32 exceptions, u32 inst, u32 fpscr, struct pt_
 
 	if (exceptions == VFP_EXCEPTION_ERROR) {
 		vfp_panic("unhandled bounce", inst);
-		vfp_raise_sigfpe(0, regs);
+		vfp_raise_sigfpe(FPE_FLTINV, regs);
 		return;
 	}
 
@@ -792,7 +791,7 @@ static int __init vfp_init(void)
 	}
 
 	cpuhp_setup_state_nocalls(CPUHP_AP_ARM_VFP_STARTING,
-				  "AP_ARM_VFP_STARTING", vfp_starting_cpu,
+				  "arm/vfp:starting", vfp_starting_cpu,
 				  vfp_dying_cpu);
 
 	vfp_vector = vfp_support_entry;

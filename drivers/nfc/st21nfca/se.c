@@ -247,12 +247,18 @@ int st21nfca_hci_se_io(struct nfc_hci_dev *hdev, u32 se_idx,
 					ST21NFCA_EVT_TRANSMIT_DATA,
 					apdu, apdu_length);
 	default:
+		/* Need to free cb_context here as at the moment we can't
+		 * clearly indicate to the caller if the callback function
+		 * would be called (and free it) or not. In both cases a
+		 * negative value may be returned to the caller.
+		 */
+		kfree(cb_context);
 		return -ENODEV;
 	}
 }
 EXPORT_SYMBOL(st21nfca_hci_se_io);
 
-static void st21nfca_se_wt_timeout(unsigned long data)
+static void st21nfca_se_wt_work(struct work_struct *work)
 {
 	/*
 	 * No answer from the secure element
@@ -265,7 +271,9 @@ static void st21nfca_se_wt_timeout(unsigned long data)
 	 */
 	/* hardware reset managed through VCC_UICC_OUT power supply */
 	u8 param = 0x01;
-	struct st21nfca_hci_info *info = (struct st21nfca_hci_info *) data;
+	struct st21nfca_hci_info *info = container_of(work,
+						struct st21nfca_hci_info,
+						se_info.timeout_work);
 
 	pr_debug("\n");
 
@@ -283,9 +291,17 @@ static void st21nfca_se_wt_timeout(unsigned long data)
 	info->se_info.cb(info->se_info.cb_context, NULL, 0, -ETIME);
 }
 
-static void st21nfca_se_activation_timeout(unsigned long data)
+static void st21nfca_se_wt_timeout(struct timer_list *t)
 {
-	struct st21nfca_hci_info *info = (struct st21nfca_hci_info *) data;
+	struct st21nfca_hci_info *info = from_timer(info, t, se_info.bwi_timer);
+
+	schedule_work(&info->se_info.timeout_work);
+}
+
+static void st21nfca_se_activation_timeout(struct timer_list *t)
+{
+	struct st21nfca_hci_info *info = from_timer(info, t,
+						    se_info.se_active_timer);
 
 	pr_debug("\n");
 
@@ -381,6 +397,7 @@ int st21nfca_apdu_reader_event_received(struct nfc_hci_dev *hdev,
 	switch (event) {
 	case ST21NFCA_EVT_TRANSMIT_DATA:
 		del_timer_sync(&info->se_info.bwi_timer);
+		cancel_work_sync(&info->se_info.timeout_work);
 		info->se_info.bwi_active = false;
 		r = nfc_hci_send_event(hdev, ST21NFCA_DEVICE_MGNT_GATE,
 				ST21NFCA_EVT_SE_END_OF_APDU_TRANSFER, NULL, 0);
@@ -410,15 +427,13 @@ void st21nfca_se_init(struct nfc_hci_dev *hdev)
 	struct st21nfca_hci_info *info = nfc_hci_get_clientdata(hdev);
 
 	init_completion(&info->se_info.req_completion);
+	INIT_WORK(&info->se_info.timeout_work, st21nfca_se_wt_work);
 	/* initialize timers */
-	init_timer(&info->se_info.bwi_timer);
-	info->se_info.bwi_timer.data = (unsigned long)info;
-	info->se_info.bwi_timer.function = st21nfca_se_wt_timeout;
+	timer_setup(&info->se_info.bwi_timer, st21nfca_se_wt_timeout, 0);
 	info->se_info.bwi_active = false;
 
-	init_timer(&info->se_info.se_active_timer);
-	info->se_info.se_active_timer.data = (unsigned long)info;
-	info->se_info.se_active_timer.function = st21nfca_se_activation_timeout;
+	timer_setup(&info->se_info.se_active_timer,
+		    st21nfca_se_activation_timeout, 0);
 	info->se_info.se_active = false;
 
 	info->se_info.count_pipes = 0;
@@ -440,6 +455,7 @@ void st21nfca_se_deinit(struct nfc_hci_dev *hdev)
 	if (info->se_info.se_active)
 		del_timer_sync(&info->se_info.se_active_timer);
 
+	cancel_work_sync(&info->se_info.timeout_work);
 	info->se_info.bwi_active = false;
 	info->se_info.se_active = false;
 }

@@ -145,7 +145,8 @@ static int btsdio_rx_packet(struct btsdio_data *data)
 	if (!skb) {
 		/* Out of memory. Prepare a read retry and just
 		 * return with the expectation that the next time
-		 * we're called we'll have more memory. */
+		 * we're called we'll have more memory.
+		 */
 		return -ENOMEM;
 	}
 
@@ -355,6 +356,7 @@ static void btsdio_remove(struct sdio_func *func)
 	if (!data)
 		return;
 
+	cancel_work_sync(&data->work);
 	hdev = data->hdev;
 
 	sdio_set_drvdata(func, NULL);

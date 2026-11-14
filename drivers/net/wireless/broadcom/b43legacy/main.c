@@ -36,7 +36,7 @@
 #include <linux/etherdevice.h>
 #include <linux/firmware.h>
 #include <linux/workqueue.h>
-#include <linux/sched.h>
+#include <linux/sched/signal.h>
 #include <linux/skbuff.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
@@ -2612,7 +2612,7 @@ static void b43legacy_put_phy_into_reset(struct b43legacy_wldev *dev)
 static int b43legacy_switch_phymode(struct b43legacy_wl *wl,
 				      unsigned int new_mode)
 {
-	struct b43legacy_wldev *uninitialized_var(up_dev);
+	struct b43legacy_wldev *up_dev;
 	struct b43legacy_wldev *down_dev;
 	int err;
 	bool gmode = false;
@@ -3301,8 +3301,8 @@ static int b43legacy_wireless_core_init(struct b43legacy_wldev *dev)
 
 	if ((phy->type == B43legacy_PHYTYPE_B) ||
 	    (phy->type == B43legacy_PHYTYPE_G)) {
-		phy->_lo_pairs = kzalloc(sizeof(struct b43legacy_lopair)
-					 * B43legacy_LO_COUNT,
+		phy->_lo_pairs = kcalloc(B43legacy_LO_COUNT,
+					 sizeof(struct b43legacy_lopair),
 					 GFP_KERNEL);
 		if (!phy->_lo_pairs)
 			return -ENOMEM;
@@ -3840,7 +3840,9 @@ static int b43legacy_wireless_init(struct ssb_device *dev)
 	hw->wiphy->interface_modes =
 		BIT(NL80211_IFTYPE_AP) |
 		BIT(NL80211_IFTYPE_STATION) |
+#ifdef CONFIG_WIRELESS_WDS
 		BIT(NL80211_IFTYPE_WDS) |
+#endif
 		BIT(NL80211_IFTYPE_ADHOC);
 	hw->queues = 1; /* FIXME: hardware has more queues */
 	hw->max_rates = 2;
@@ -3849,6 +3851,8 @@ static int b43legacy_wireless_init(struct ssb_device *dev)
 		SET_IEEE80211_PERM_ADDR(hw, sprom->et1mac);
 	else
 		SET_IEEE80211_PERM_ADDR(hw, sprom->il0mac);
+
+	wiphy_ext_feature_set(hw->wiphy, NL80211_EXT_FEATURE_CQM_RSSI_LIST);
 
 	/* Get and initialize struct b43legacy_wl */
 	wl = hw_to_b43legacy_wl(hw);

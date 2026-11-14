@@ -28,7 +28,6 @@
 #include <linux/of_device.h>
 #include <linux/of_address.h>
 #include "edac_module.h"
-#include "edac_core.h"
 #include "fsl_ddr_edac.h"
 
 #define EDAC_MOD_STR	"fsl_ddr_edac"
@@ -146,12 +145,12 @@ static ssize_t fsl_mc_inject_ctrl_store(struct device *dev,
 	return 0;
 }
 
-DEVICE_ATTR(inject_data_hi, S_IRUGO | S_IWUSR,
-	    fsl_mc_inject_data_hi_show, fsl_mc_inject_data_hi_store);
-DEVICE_ATTR(inject_data_lo, S_IRUGO | S_IWUSR,
-	    fsl_mc_inject_data_lo_show, fsl_mc_inject_data_lo_store);
-DEVICE_ATTR(inject_ctrl, S_IRUGO | S_IWUSR,
-	    fsl_mc_inject_ctrl_show, fsl_mc_inject_ctrl_store);
+static DEVICE_ATTR(inject_data_hi, S_IRUGO | S_IWUSR,
+		   fsl_mc_inject_data_hi_show, fsl_mc_inject_data_hi_store);
+static DEVICE_ATTR(inject_data_lo, S_IRUGO | S_IWUSR,
+		   fsl_mc_inject_data_lo_show, fsl_mc_inject_data_lo_store);
+static DEVICE_ATTR(inject_ctrl, S_IRUGO | S_IWUSR,
+		   fsl_mc_inject_ctrl_show, fsl_mc_inject_ctrl_store);
 
 static struct attribute *fsl_ddr_dev_attrs[] = {
 	&dev_attr_inject_data_hi.attr,
@@ -328,21 +327,25 @@ static void fsl_mc_check(struct mem_ctl_info *mci)
 	 * TODO: Add support for 32-bit wide buses
 	 */
 	if ((err_detect & DDR_EDE_SBE) && (bus_width == 64)) {
+		u64 cap = (u64)cap_high << 32 | cap_low;
+		u32 s = syndrome;
+
 		sbe_ecc_decode(cap_high, cap_low, syndrome,
 				&bad_data_bit, &bad_ecc_bit);
 
-		if (bad_data_bit != -1)
-			fsl_mc_printk(mci, KERN_ERR,
-				"Faulty Data bit: %d\n", bad_data_bit);
-		if (bad_ecc_bit != -1)
-			fsl_mc_printk(mci, KERN_ERR,
-				"Faulty ECC bit: %d\n", bad_ecc_bit);
+		if (bad_data_bit >= 0) {
+			fsl_mc_printk(mci, KERN_ERR, "Faulty Data bit: %d\n", bad_data_bit);
+			cap ^= 1ULL << bad_data_bit;
+		}
+
+		if (bad_ecc_bit >= 0) {
+			fsl_mc_printk(mci, KERN_ERR, "Faulty ECC bit: %d\n", bad_ecc_bit);
+			s ^= 1 << bad_ecc_bit;
+		}
 
 		fsl_mc_printk(mci, KERN_ERR,
 			"Expected Data / ECC:\t%#8.8x_%08x / %#2.2x\n",
-			cap_high ^ (1 << (bad_data_bit - 32)),
-			cap_low ^ (1 << bad_data_bit),
-			syndrome ^ (1 << bad_ecc_bit));
+			upper_32_bits(cap), lower_32_bits(cap), s);
 	}
 
 	fsl_mc_printk(mci, KERN_ERR,

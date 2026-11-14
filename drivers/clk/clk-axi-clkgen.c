@@ -9,6 +9,7 @@
  */
 
 #include <linux/platform_device.h>
+#include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/slab.h>
 #include <linux/io.h>
@@ -302,13 +303,17 @@ static long axi_clkgen_round_rate(struct clk_hw *hw, unsigned long rate,
 	unsigned long *parent_rate)
 {
 	unsigned int d, m, dout;
+	unsigned long long tmp;
 
 	axi_clkgen_calc_params(*parent_rate, rate, &d, &m, &dout);
 
 	if (d == 0 || dout == 0 || m == 0)
 		return -EINVAL;
 
-	return *parent_rate / d * m / dout;
+	tmp = (unsigned long long)*parent_rate * m;
+	tmp = DIV_ROUND_CLOSEST_ULL(tmp, dout * d);
+
+	return min_t(unsigned long long, tmp, LONG_MAX);
 }
 
 static unsigned long axi_clkgen_recalc_rate(struct clk_hw *clk_hw,
@@ -344,8 +349,8 @@ static unsigned long axi_clkgen_recalc_rate(struct clk_hw *clk_hw,
 	if (d == 0 || dout == 0)
 		return 0;
 
-	tmp = (unsigned long long)(parent_rate / d) * m;
-	do_div(tmp, dout);
+	tmp = (unsigned long long)parent_rate * m;
+	tmp = DIV_ROUND_CLOSEST_ULL(tmp, dout * d);
 
 	return min_t(unsigned long long, tmp, ULONG_MAX);
 }
@@ -407,10 +412,10 @@ static int axi_clkgen_probe(struct platform_device *pdev)
 {
 	const struct of_device_id *id;
 	struct axi_clkgen *axi_clkgen;
-	struct clk_init_data init;
+	struct clk_init_data init = {};
 	const char *parent_names[2];
 	const char *clk_name;
-	struct resource *mem;
+	struct clk *axi_clk;
 	unsigned int i;
 	int ret;
 
@@ -425,14 +430,29 @@ static int axi_clkgen_probe(struct platform_device *pdev)
 	if (!axi_clkgen)
 		return -ENOMEM;
 
-	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	axi_clkgen->base = devm_ioremap_resource(&pdev->dev, mem);
+	axi_clkgen->base = devm_platform_ioremap_resource(pdev, 0);
 	if (IS_ERR(axi_clkgen->base))
 		return PTR_ERR(axi_clkgen->base);
 
 	init.num_parents = of_clk_get_parent_count(pdev->dev.of_node);
-	if (init.num_parents < 1 || init.num_parents > 2)
-		return -EINVAL;
+
+	axi_clk = devm_clk_get_enabled(&pdev->dev, "s_axi_aclk");
+	if (!IS_ERR(axi_clk)) {
+		if (init.num_parents < 2 || init.num_parents > 3)
+			return -EINVAL;
+
+		init.num_parents -= 1;
+	} else {
+		/*
+		 * Legacy... So that old DTs which do not have clock-names still
+		 * work. In this case we don't explicitly enable the AXI bus
+		 * clock.
+		 */
+		if (PTR_ERR(axi_clk) != -ENOENT)
+			return PTR_ERR(axi_clk);
+		if (init.num_parents < 1 || init.num_parents > 2)
+			return -EINVAL;
+	}
 
 	for (i = 0; i < init.num_parents; i++) {
 		parent_names[i] = of_clk_get_parent_name(pdev->dev.of_node, i);

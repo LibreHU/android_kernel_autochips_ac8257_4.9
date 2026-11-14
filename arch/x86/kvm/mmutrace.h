@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 #if !defined(_TRACE_KVMMMU_H) || defined(TRACE_HEADER_MULTI_READ)
 #define _TRACE_KVMMMU_H
 
@@ -30,8 +31,9 @@
 								        \
 	role.word = __entry->role;					\
 									\
-	trace_seq_printf(p, "sp gen %lx gfn %llx %u%s q%u%s %s%s"	\
-			 " %snxe root %u %s%c",	__entry->mmu_valid_gen,	\
+	trace_seq_printf(p, "sp gen %lx gfn %llx l%u%s q%u%s %s%s"	\
+			 " %snxe %sad root %u %s%c",			\
+			 __entry->mmu_valid_gen,			\
 			 __entry->gfn, role.level,			\
 			 role.cr4_pae ? " pae" : "",			\
 			 role.quadrant,					\
@@ -39,6 +41,7 @@
 			 access_str[role.access],			\
 			 role.invalid ? " invalid" : "",		\
 			 role.nxe ? "" : "!",				\
+			 role.ad_disabled ? "!" : "",			\
 			 __entry->root_count,				\
 			 __entry->unsync ? "unsync" : "sync", 0);	\
 	saved_ptr;							\
@@ -246,13 +249,13 @@ TRACE_EVENT(
 
 TRACE_EVENT(
 	fast_page_fault,
-	TP_PROTO(struct kvm_vcpu *vcpu, gva_t gva, u32 error_code,
+	TP_PROTO(struct kvm_vcpu *vcpu, gpa_t cr2_or_gpa, u32 error_code,
 		 u64 *sptep, u64 old_spte, bool retry),
-	TP_ARGS(vcpu, gva, error_code, sptep, old_spte, retry),
+	TP_ARGS(vcpu, cr2_or_gpa, error_code, sptep, old_spte, retry),
 
 	TP_STRUCT__entry(
 		__field(int, vcpu_id)
-		__field(gva_t, gva)
+		__field(gpa_t, cr2_or_gpa)
 		__field(u32, error_code)
 		__field(u64 *, sptep)
 		__field(u64, old_spte)
@@ -262,7 +265,7 @@ TRACE_EVENT(
 
 	TP_fast_assign(
 		__entry->vcpu_id = vcpu->vcpu_id;
-		__entry->gva = gva;
+		__entry->cr2_or_gpa = cr2_or_gpa;
 		__entry->error_code = error_code;
 		__entry->sptep = sptep;
 		__entry->old_spte = old_spte;
@@ -270,9 +273,9 @@ TRACE_EVENT(
 		__entry->retry = retry;
 	),
 
-	TP_printk("vcpu %d gva %lx error_code %s sptep %p old %#llx"
+	TP_printk("vcpu %d gva %llx error_code %s sptep %p old %#llx"
 		  " new %llx spurious %d fixed %d", __entry->vcpu_id,
-		  __entry->gva, __print_flags(__entry->error_code, "|",
+		  __entry->cr2_or_gpa, __print_flags(__entry->error_code, "|",
 		  kvm_mmu_trace_pferr_flags), __entry->sptep,
 		  __entry->old_spte, __entry->new_spte,
 		  __spte_satisfied(old_spte), __spte_satisfied(new_spte)
@@ -352,7 +355,7 @@ TRACE_EVENT(
 	TP_printk("gfn %llx spte %llx (%s%s%s%s) level %d at %llx",
 		  __entry->gfn, __entry->spte,
 		  __entry->r ? "r" : "-",
-		  __entry->spte & PT_PRESENT_MASK ? "w" : "-",
+		  __entry->spte & PT_WRITABLE_MASK ? "w" : "-",
 		  __entry->x ? "x" : "-",
 		  __entry->u == -1 ? "" : (__entry->u ? "u" : "-"),
 		  __entry->level, __entry->sptep

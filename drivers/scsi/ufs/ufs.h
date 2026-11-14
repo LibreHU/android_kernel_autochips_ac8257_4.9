@@ -73,18 +73,6 @@ enum {
 	UFS_UPIU_RPMB_WLUN		= 0xC4,
 };
 
-#if defined(CONFIG_UFSHPB)
-/**
- * ufs_is_valid_unit_desc_lun - checks if the given LUN has a unit descriptor
- * @lun: LU number to check
- * @return: true if the lun has a matching unit descriptor, false otherwise
- */
-static inline bool ufs_is_valid_unit_desc_lun(u8 lun)
-{
-	return (lun == UFS_UPIU_RPMB_WLUN || (lun < UFS_UPIU_MAX_GENERAL_LUN));
-}
-#endif
-
 /*
  * UFS Protocol Information Unit related definitions
  */
@@ -142,33 +130,44 @@ enum {
 
 /* Flag idn for Query Requests*/
 enum flag_idn {
-	QUERY_FLAG_IDN_FDEVICEINIT      = 0x01,
-	QUERY_FLAG_IDN_PWR_ON_WPE	= 0x03,
-	QUERY_FLAG_IDN_BKOPS_EN         = 0x04,
-	/* MTK PATCH: flag for fw update feasibility check */
-	QUERY_FLAG_IDN_PERMANENTLY_DISABLE_FW_UPDATE = 0xB,
+	QUERY_FLAG_IDN_FDEVICEINIT			= 0x01,
+	QUERY_FLAG_IDN_PERMANENT_WPE			= 0x02,
+	QUERY_FLAG_IDN_PWR_ON_WPE			= 0x03,
+	QUERY_FLAG_IDN_BKOPS_EN				= 0x04,
+	QUERY_FLAG_IDN_LIFE_SPAN_MODE_ENABLE		= 0x05,
+	QUERY_FLAG_IDN_PURGE_ENABLE			= 0x06,
+	QUERY_FLAG_IDN_RESERVED2			= 0x07,
+	QUERY_FLAG_IDN_FPHYRESOURCEREMOVAL		= 0x08,
+	QUERY_FLAG_IDN_BUSY_RTC				= 0x09,
+	QUERY_FLAG_IDN_RESERVED3			= 0x0A,
+	QUERY_FLAG_IDN_PERMANENTLY_DISABLE_FW_UPDATE	= 0x0B,
 };
 
 /* Attribute idn for Query requests */
 enum attr_idn {
-	/* MTK PATCH: attribute for BootLUN configuration */
-	QUERY_ATTR_IDN_BOOT_LUN_EN	= 0x00,
-	QUERY_ATTR_IDN_ACTIVE_ICC_LVL	= 0x03,
-	QUERY_ATTR_IDN_BKOPS_STATUS	= 0x05,
-	QUERY_ATTR_IDN_EE_CONTROL	= 0x0D,
-	QUERY_ATTR_IDN_EE_STATUS	= 0x0E,
-	/* MTK PATCH: attribute for FFU status check */
-	QUERY_ATTR_IDN_DEVICE_FFU_STATUS = 0x14,
-};
-
-/* MTK PATCH: status of FFU */
-enum ufs_ffu_status {
-	UFS_FFU_STATUS_NO_INFORMATION   = 0x0,
-	UFS_FFU_STATUS_OK               = 0x1,
-	UFS_FFU_STATUS_CORRUPTION       = 0x2,
-	UFS_FFU_STATUS_INTERNAL_ERROR   = 0x3,
-	UFS_FFU_STATUS_VERSION_MISMATCH = 0x4,
-	UFS_FFU_STATUS_GENERAL_ERROR    = 0xFF,
+	QUERY_ATTR_IDN_BOOT_LU_EN		= 0x00,
+	QUERY_ATTR_IDN_RESERVED			= 0x01,
+	QUERY_ATTR_IDN_POWER_MODE		= 0x02,
+	QUERY_ATTR_IDN_ACTIVE_ICC_LVL		= 0x03,
+	QUERY_ATTR_IDN_OOO_DATA_EN		= 0x04,
+	QUERY_ATTR_IDN_BKOPS_STATUS		= 0x05,
+	QUERY_ATTR_IDN_PURGE_STATUS		= 0x06,
+	QUERY_ATTR_IDN_MAX_DATA_IN		= 0x07,
+	QUERY_ATTR_IDN_MAX_DATA_OUT		= 0x08,
+	QUERY_ATTR_IDN_DYN_CAP_NEEDED		= 0x09,
+	QUERY_ATTR_IDN_REF_CLK_FREQ		= 0x0A,
+	QUERY_ATTR_IDN_CONF_DESC_LOCK		= 0x0B,
+	QUERY_ATTR_IDN_MAX_NUM_OF_RTT		= 0x0C,
+	QUERY_ATTR_IDN_EE_CONTROL		= 0x0D,
+	QUERY_ATTR_IDN_EE_STATUS		= 0x0E,
+	QUERY_ATTR_IDN_SECONDS_PASSED		= 0x0F,
+	QUERY_ATTR_IDN_CNTX_CONF		= 0x10,
+	QUERY_ATTR_IDN_CORR_PRG_BLK_NUM		= 0x11,
+	QUERY_ATTR_IDN_RESERVED2		= 0x12,
+	QUERY_ATTR_IDN_RESERVED3		= 0x13,
+	QUERY_ATTR_IDN_FFU_STATUS		= 0x14,
+	QUERY_ATTR_IDN_PSA_STATE		= 0x15,
+	QUERY_ATTR_IDN_PSA_DATA_SIZE		= 0x16,
 };
 
 /* Descriptor idn for Query requests */
@@ -182,7 +181,7 @@ enum desc_idn {
 	QUERY_DESC_IDN_RFU_1		= 0x6,
 	QUERY_DESC_IDN_GEOMETRY		= 0x7,
 	QUERY_DESC_IDN_POWER		= 0x8,
-	QUERY_DESC_IDN_HEALTH		= 0x9,/* MTK PATCH */
+	QUERY_DESC_IDN_HEALTH           = 0x9,
 	QUERY_DESC_IDN_MAX,
 };
 
@@ -196,24 +195,9 @@ enum ufs_desc_def_size {
 	QUERY_DESC_CONFIGURATION_DEF_SIZE	= 0x90,
 	QUERY_DESC_UNIT_DEF_SIZE		= 0x23,
 	QUERY_DESC_INTERCONNECT_DEF_SIZE	= 0x06,
-
-	/* MTK PATCH: Geometry Descriptor size shall be 0x48 since UFS 2.1 */
 	QUERY_DESC_GEOMETRY_DEF_SIZE		= 0x48,
 	QUERY_DESC_POWER_DEF_SIZE		= 0x62,
-	QUERY_DESC_HEALTH_MAX_SIZE		= 0x25, /* MTK PATCH */
-};
-
-/* MTK PATCH: Read Geometry Descriptor for RPMB initialization */
-enum geometry_desc_param_offset {
-	GEOMETRY_DESC_LEN		= 0x0,
-	GEOMETRY_DESC_TYPE		= 0x1,
-	GEOMETRY_DESC_RPMB_RW_SIZE	= 0x17,
-#if defined(CONFIG_UFSHPB)
-	GEOMETRY_DESC_HPB_REGION_SIZE			= 0x48,
-	GEOMETRY_DESC_HPB_NUMBER_LU			= 0x49,
-	GEOMETRY_DESC_HPB_SUBREGION_SIZE		= 0x4A,
-	GEOMETRY_DESC_HPB_DEVICE_MAX_ACTIVE_REGIONS	= 0x4B,
-#endif
+	QUERY_DESC_HEALTH_DEF_SIZE		= 0x25,
 };
 
 /* Unit descriptor parameters offsets in bytes*/
@@ -225,6 +209,7 @@ enum unit_desc_param {
 	UNIT_DESC_PARAM_BOOT_LUN_ID		= 0x4,
 	UNIT_DESC_PARAM_LU_WR_PROTECT		= 0x5,
 	UNIT_DESC_PARAM_LU_Q_DEPTH		= 0x6,
+	UNIT_DESC_PARAM_PSA_SENSITIVE		= 0x7,
 	UNIT_DESC_PARAM_MEM_TYPE		= 0x8,
 	UNIT_DESC_PARAM_DATA_RELIABILITY	= 0x9,
 	UNIT_DESC_PARAM_LOGICAL_BLK_SIZE	= 0xA,
@@ -234,11 +219,6 @@ enum unit_desc_param {
 	UNIT_DESC_PARAM_PHY_MEM_RSRC_CNT	= 0x18,
 	UNIT_DESC_PARAM_CTX_CAPABILITIES	= 0x20,
 	UNIT_DESC_PARAM_LARGE_UNIT_SIZE_M1	= 0x22,
-#if defined(CONFIG_UFSHPB)
-	UNIT_DESC_HPB_LU_MAX_ACTIVE_REGIONS		= 0x23,
-	UNIT_DESC_HPB_LU_PIN_REGION_START_OFFSET	= 0x25,
-	UNIT_DESC_HPB_LU_NUM_PIN_REGIONS		= 0x27,
-#endif
 };
 
 /* Device descriptor parameters offsets in bytes*/
@@ -270,14 +250,67 @@ enum device_desc_param {
 	DEVICE_DESC_PARAM_UD_LEN		= 0x1B,
 	DEVICE_DESC_PARAM_RTT_CAP		= 0x1C,
 	DEVICE_DESC_PARAM_FRQ_RTC		= 0x1D,
-#if defined(CONFIG_UFSHPB)
-	DEVICE_DESC_PARAM_FEAT_SUP		= 0x1F,
-#endif
-	/* MTK PATCH: Product Revision Level index in String Descriptor */
-	DEVICE_DESC_PARAM_PRL			= 0x2A,
-#if defined(CONFIG_UFSHPB)
-	DEVICE_DESC_PARAM_HPB_VER		= 0x40,
-#endif
+	DEVICE_DESC_PARAM_UFS_FEAT		= 0x1F,
+	DEVICE_DESC_PARAM_FFU_TMT		= 0x20,
+	DEVICE_DESC_PARAM_Q_DPTH		= 0x21,
+	DEVICE_DESC_PARAM_DEV_VER		= 0x22,
+	DEVICE_DESC_PARAM_NUM_SEC_WPA		= 0x24,
+	DEVICE_DESC_PARAM_PSA_MAX_DATA		= 0x25,
+	DEVICE_DESC_PARAM_PSA_TMT		= 0x29,
+	DEVICE_DESC_PARAM_PRDCT_REV		= 0x2A,
+};
+
+/* Interconnect descriptor parameters offsets in bytes*/
+enum interconnect_desc_param {
+	INTERCONNECT_DESC_PARAM_LEN		= 0x0,
+	INTERCONNECT_DESC_PARAM_TYPE		= 0x1,
+	INTERCONNECT_DESC_PARAM_UNIPRO_VER	= 0x2,
+	INTERCONNECT_DESC_PARAM_MPHY_VER	= 0x4,
+};
+
+/* Geometry descriptor parameters offsets in bytes*/
+enum geometry_desc_param {
+	GEOMETRY_DESC_PARAM_LEN			= 0x0,
+	GEOMETRY_DESC_PARAM_TYPE		= 0x1,
+	GEOMETRY_DESC_PARAM_DEV_CAP		= 0x4,
+	GEOMETRY_DESC_PARAM_MAX_NUM_LUN		= 0xC,
+	GEOMETRY_DESC_PARAM_SEG_SIZE		= 0xD,
+	GEOMETRY_DESC_PARAM_ALLOC_UNIT_SIZE	= 0x11,
+	GEOMETRY_DESC_PARAM_MIN_BLK_SIZE	= 0x12,
+	GEOMETRY_DESC_PARAM_OPT_RD_BLK_SIZE	= 0x13,
+	GEOMETRY_DESC_PARAM_OPT_WR_BLK_SIZE	= 0x14,
+	GEOMETRY_DESC_PARAM_MAX_IN_BUF_SIZE	= 0x15,
+	GEOMETRY_DESC_PARAM_MAX_OUT_BUF_SIZE	= 0x16,
+	GEOMETRY_DESC_PARAM_RPMB_RW_SIZE	= 0x17,
+	GEOMETRY_DESC_PARAM_DYN_CAP_RSRC_PLC	= 0x18,
+	GEOMETRY_DESC_PARAM_DATA_ORDER		= 0x19,
+	GEOMETRY_DESC_PARAM_MAX_NUM_CTX		= 0x1A,
+	GEOMETRY_DESC_PARAM_TAG_UNIT_SIZE	= 0x1B,
+	GEOMETRY_DESC_PARAM_TAG_RSRC_SIZE	= 0x1C,
+	GEOMETRY_DESC_PARAM_SEC_RM_TYPES	= 0x1D,
+	GEOMETRY_DESC_PARAM_MEM_TYPES		= 0x1E,
+	GEOMETRY_DESC_PARAM_SCM_MAX_NUM_UNITS	= 0x20,
+	GEOMETRY_DESC_PARAM_SCM_CAP_ADJ_FCTR	= 0x24,
+	GEOMETRY_DESC_PARAM_NPM_MAX_NUM_UNITS	= 0x26,
+	GEOMETRY_DESC_PARAM_NPM_CAP_ADJ_FCTR	= 0x2A,
+	GEOMETRY_DESC_PARAM_ENM1_MAX_NUM_UNITS	= 0x2C,
+	GEOMETRY_DESC_PARAM_ENM1_CAP_ADJ_FCTR	= 0x30,
+	GEOMETRY_DESC_PARAM_ENM2_MAX_NUM_UNITS	= 0x32,
+	GEOMETRY_DESC_PARAM_ENM2_CAP_ADJ_FCTR	= 0x36,
+	GEOMETRY_DESC_PARAM_ENM3_MAX_NUM_UNITS	= 0x38,
+	GEOMETRY_DESC_PARAM_ENM3_CAP_ADJ_FCTR	= 0x3C,
+	GEOMETRY_DESC_PARAM_ENM4_MAX_NUM_UNITS	= 0x3E,
+	GEOMETRY_DESC_PARAM_ENM4_CAP_ADJ_FCTR	= 0x42,
+	GEOMETRY_DESC_PARAM_OPT_LOG_BLK_SIZE	= 0x44,
+};
+
+/* Health descriptor parameters offsets in bytes*/
+enum health_desc_param {
+	HEALTH_DESC_PARAM_LEN			= 0x0,
+	HEALTH_DESC_PARAM_TYPE			= 0x1,
+	HEALTH_DESC_PARAM_EOL_INFO		= 0x2,
+	HEALTH_DESC_PARAM_LIFE_TIME_EST_A	= 0x3,
+	HEALTH_DESC_PARAM_LIFE_TIME_EST_B	= 0x4,
 };
 
 /*
@@ -487,36 +520,6 @@ struct utp_upiu_rsp {
 };
 
 /**
- * struct utp_upiu_task_req - Task request UPIU structure
- * @header - UPIU header structure DW0 to DW-2
- * @input_param1: Input parameter 1 DW-3
- * @input_param2: Input parameter 2 DW-4
- * @input_param3: Input parameter 3 DW-5
- * @reserved: Reserved double words DW-6 to DW-7
- */
-struct utp_upiu_task_req {
-	struct utp_upiu_header header;
-	__be32 input_param1;
-	__be32 input_param2;
-	__be32 input_param3;
-	__be32 reserved[2];
-};
-
-/**
- * struct utp_upiu_task_rsp - Task Management Response UPIU structure
- * @header: UPIU header structure DW0-DW-2
- * @output_param1: Ouput parameter 1 DW3
- * @output_param2: Output parameter 2 DW4
- * @reserved: Reserved double words DW-5 to DW-7
- */
-struct utp_upiu_task_rsp {
-	struct utp_upiu_header header;
-	__be32 output_param1;
-	__be32 output_param2;
-	__be32 reserved[3];
-};
-
-/**
  * struct ufs_query_req - parameters for building a query request
  * @query_func: UPIU header query function
  * @upiu_req: the query request data
@@ -586,5 +589,15 @@ struct ufs_dev_desc {
 	u16 wmanufacturerid;
 	char model[MAX_MODEL_LEN + 1];
 };
+
+/**
+ * ufs_is_valid_unit_desc_lun - checks if the given LUN has a unit descriptor
+ * @lun: LU number to check
+ * @return: true if the lun has a matching unit descriptor, false otherwise
+ */
+static inline bool ufs_is_valid_unit_desc_lun(u8 lun)
+{
+	return lun == UFS_UPIU_RPMB_WLUN || (lun < UFS_UPIU_MAX_GENERAL_LUN);
+}
 
 #endif /* End of Header */

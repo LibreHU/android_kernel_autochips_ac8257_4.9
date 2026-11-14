@@ -455,9 +455,11 @@ EXPORT_SYMBOL_GPL(fcoe_check_wait_queue);
  *
  * Calls fcoe_check_wait_queue on timeout
  */
-void fcoe_queue_timer(ulong lport)
+void fcoe_queue_timer(struct timer_list *t)
 {
-	fcoe_check_wait_queue((struct fc_lport *)lport, NULL);
+	struct fcoe_port *port = from_timer(port, t, timer);
+
+	fcoe_check_wait_queue(port->lport, NULL);
 }
 EXPORT_SYMBOL_GPL(fcoe_queue_timer);
 
@@ -871,7 +873,7 @@ static int fcoe_transport_create(const char *buffer,
 	int rc = -ENODEV;
 	struct net_device *netdev = NULL;
 	struct fcoe_transport *ft = NULL;
-	enum fip_state fip_mode = (enum fip_state)(long)kp->arg;
+	enum fip_mode fip_mode = (enum fip_mode)kp->arg;
 
 	mutex_lock(&ft_mutex);
 

@@ -646,7 +646,7 @@ error:
 	return rc;
 }
 
-int nfc_set_remote_general_bytes(struct nfc_dev *dev, u8 *gb, u8 gb_len)
+int nfc_set_remote_general_bytes(struct nfc_dev *dev, const u8 *gb, u8 gb_len)
 {
 	pr_debug("dev_name=%s gb_len=%d\n", dev_name(&dev->dev), gb_len);
 
@@ -675,7 +675,7 @@ int nfc_tm_data_received(struct nfc_dev *dev, struct sk_buff *skb)
 EXPORT_SYMBOL(nfc_tm_data_received);
 
 int nfc_tm_activated(struct nfc_dev *dev, u32 protocol, u8 comm_mode,
-		     u8 *gb, size_t gb_len)
+		     const u8 *gb, size_t gb_len)
 {
 	int rc;
 
@@ -1015,9 +1015,9 @@ exit:
 	device_unlock(&dev->dev);
 }
 
-static void nfc_check_pres_timeout(unsigned long data)
+static void nfc_check_pres_timeout(struct timer_list *t)
 {
-	struct nfc_dev *dev = (struct nfc_dev *)data;
+	struct nfc_dev *dev = from_timer(dev, t, check_pres_timer);
 
 	schedule_work(&dev->check_pres_work);
 }
@@ -1094,10 +1094,7 @@ struct nfc_dev *nfc_allocate_device(struct nfc_ops *ops,
 	dev->targets_generation = 1;
 
 	if (ops->check_presence) {
-		init_timer(&dev->check_pres_timer);
-		dev->check_pres_timer.data = (unsigned long)dev;
-		dev->check_pres_timer.function = nfc_check_pres_timeout;
-
+		timer_setup(&dev->check_pres_timer, nfc_check_pres_timeout, 0);
 		INIT_WORK(&dev->check_pres_work, nfc_check_pres_work);
 	}
 

@@ -24,6 +24,7 @@
 
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/sched/signal.h>
 #include <linux/kmod.h>
 #include <linux/init.h>
 #include <linux/list.h>
@@ -50,6 +51,7 @@
 #include <asm/unaligned.h>
 #include <net/slhc_vj.h>
 #include <linux/atomic.h>
+#include <linux/refcount.h>
 
 #include <linux/nsproxy.h>
 #include <net/net_namespace.h>
@@ -72,6 +74,7 @@
 #define MPHDRLEN_SSN	4	/* ditto with short sequence numbers */
 
 #define PPP_PROTO_LEN	2
+#define PPP_LCP_HDRLEN	4
 
 /*
  * An instance of /dev/ppp can be associated with either a ppp
@@ -85,7 +88,7 @@ struct ppp_file {
 	struct sk_buff_head xq;		/* pppd transmit queue */
 	struct sk_buff_head rq;		/* receive queue for pppd */
 	wait_queue_head_t rwait;	/* for poll on reading /dev/ppp */
-	atomic_t	refcnt;		/* # refs (incl /dev/ppp attached) */
+	refcount_t	refcnt;		/* # refs (incl /dev/ppp attached) */
 	int		hdrlen;		/* space to leave for headers */
 	int		index;		/* interface unit / channel number */
 	int		dead;		/* unit/channel has been shut down */
@@ -121,7 +124,7 @@ struct ppp {
 	int		n_channels;	/* how many channels are attached 54 */
 	spinlock_t	rlock;		/* lock for receive side 58 */
 	spinlock_t	wlock;		/* lock for transmit side 5c */
-	int		*xmit_recursion __percpu; /* xmit recursion detect */
+	int __percpu	*xmit_recursion; /* xmit recursion detect */
 	int		mru;		/* max receive unit 60 */
 	unsigned int	flags;		/* control bits 64 */
 	unsigned int	xstate;		/* transmit state bits 68 */
@@ -207,7 +210,7 @@ static atomic_t ppp_unit_count = ATOMIC_INIT(0);
 static atomic_t channel_count = ATOMIC_INIT(0);
 
 /* per-net private data for this module */
-static int ppp_net_id __read_mostly;
+static unsigned int ppp_net_id __read_mostly;
 struct ppp_net {
 	/* units to ppp mapping */
 	struct idr units_idr;
@@ -390,7 +393,7 @@ static int ppp_open(struct inode *inode, struct file *file)
 	/*
 	 * This could (should?) be enforced by the permissions on /dev/ppp.
 	 */
-	if (!capable(CAP_NET_ADMIN))
+	if (!ns_capable(file->f_cred->user_ns, CAP_NET_ADMIN))
 		return -EPERM;
 	return 0;
 }
@@ -409,7 +412,7 @@ static int ppp_release(struct inode *unused, struct file *file)
 				unregister_netdevice(ppp->dev);
 			rtnl_unlock();
 		}
-		if (atomic_dec_and_test(&pf->refcnt)) {
+		if (refcount_dec_and_test(&pf->refcnt)) {
 			switch (pf->kind) {
 			case INTERFACE:
 				ppp_destroy_interface(PF_TO_PPP(pf));
@@ -493,6 +496,15 @@ static ssize_t ppp_read(struct file *file, char __user *buf,
 	return ret;
 }
 
+static bool ppp_check_packet(struct sk_buff *skb, size_t count)
+{
+	/* LCP packets must include LCP header which 4 bytes long:
+	 * 1-byte code, 1-byte identifier, and 2-byte length.
+	 */
+	return get_unaligned_be16(skb->data) != PPP_LCP ||
+		count >= PPP_PROTO_LEN + PPP_LCP_HDRLEN;
+}
+
 static ssize_t ppp_write(struct file *file, const char __user *buf,
 			 size_t count, loff_t *ppos)
 {
@@ -515,6 +527,11 @@ static ssize_t ppp_write(struct file *file, const char __user *buf,
 		kfree_skb(skb);
 		goto out;
 	}
+	ret = -EINVAL;
+	if (unlikely(!ppp_check_packet(skb, count))) {
+		kfree_skb(skb);
+		goto out;
+	}
 
 	switch (pf->kind) {
 	case INTERFACE:
@@ -533,19 +550,19 @@ static ssize_t ppp_write(struct file *file, const char __user *buf,
 }
 
 /* No kernel lock - fine */
-static unsigned int ppp_poll(struct file *file, poll_table *wait)
+static __poll_t ppp_poll(struct file *file, poll_table *wait)
 {
 	struct ppp_file *pf = file->private_data;
-	unsigned int mask;
+	__poll_t mask;
 
 	if (!pf)
 		return 0;
 	poll_wait(file, &pf->rwait, wait);
-	mask = POLLOUT | POLLWRNORM;
+	mask = EPOLLOUT | EPOLLWRNORM;
 	if (skb_peek(&pf->rq))
-		mask |= POLLIN | POLLRDNORM;
+		mask |= EPOLLIN | EPOLLRDNORM;
 	if (pf->dead)
-		mask |= POLLHUP;
+		mask |= EPOLLHUP;
 	else if (pf->kind == INTERFACE) {
 		/* see comment in ppp_read */
 		struct ppp *ppp = PF_TO_PPP(pf);
@@ -553,7 +570,7 @@ static unsigned int ppp_poll(struct file *file, poll_table *wait)
 		ppp_recv_lock(ppp);
 		if (ppp->n_channels == 0 &&
 		    (ppp->flags & SC_LOOP_TRAFFIC) == 0)
-			mask |= POLLIN | POLLRDNORM;
+			mask |= EPOLLIN | EPOLLRDNORM;
 		ppp_recv_unlock(ppp);
 	}
 
@@ -608,30 +625,13 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	if (cmd == PPPIOCDETACH) {
 		/*
-		 * We have to be careful here... if the file descriptor
-		 * has been dup'd, we could have another process in the
-		 * middle of a poll using the same file *, so we had
-		 * better not free the interface data structures -
-		 * instead we fail the ioctl.  Even in this case, we
-		 * shut down the interface if we are the owner of it.
-		 * Actually, we should get rid of PPPIOCDETACH, userland
-		 * (i.e. pppd) could achieve the same effect by closing
-		 * this fd and reopening /dev/ppp.
+		 * PPPIOCDETACH is no longer supported as it was heavily broken,
+		 * and is only known to have been used by pppd older than
+		 * ppp-2.4.2 (released November 2003).
 		 */
+		pr_warn_once("%s (%d) used obsolete PPPIOCDETACH ioctl\n",
+			     current->comm, current->pid);
 		err = -EINVAL;
-		if (pf->kind == INTERFACE) {
-			ppp = PF_TO_PPP(pf);
-			rtnl_lock();
-			if (file == ppp->owner)
-				unregister_netdevice(ppp->dev);
-			rtnl_unlock();
-		}
-		if (atomic_long_read(&file->f_count) < 2) {
-			ppp_release(NULL, file);
-			err = 0;
-		} else
-			pr_warn("PPPIOCDETACH file->f_count=%ld\n",
-				atomic_long_read(&file->f_count));
 		goto out;
 	}
 
@@ -884,7 +884,7 @@ static int ppp_unattached_ioctl(struct net *net, struct ppp_file *pf,
 		mutex_lock(&pn->all_ppp_mutex);
 		ppp = ppp_find_unit(pn, unit);
 		if (ppp) {
-			atomic_inc(&ppp->file.refcnt);
+			refcount_inc(&ppp->file.refcnt);
 			file->private_data = &ppp->file;
 			err = 0;
 		}
@@ -899,7 +899,7 @@ static int ppp_unattached_ioctl(struct net *net, struct ppp_file *pf,
 		spin_lock_bh(&pn->all_channels_lock);
 		chan = ppp_find_channel(pn, unit);
 		if (chan) {
-			atomic_inc(&chan->file.refcnt);
+			refcount_inc(&chan->file.refcnt);
 			file->private_data = &chan->file;
 			err = 0;
 		}
@@ -964,6 +964,8 @@ static __net_exit void ppp_exit_net(struct net *net)
 
 	mutex_destroy(&pn->all_ppp_mutex);
 	idr_destroy(&pn->units_idr);
+	WARN_ON_ONCE(!list_empty(&pn->all_channels));
+	WARN_ON_ONCE(!list_empty(&pn->new_channels));
 }
 
 static struct pernet_operations ppp_net_ops = {
@@ -1092,7 +1094,8 @@ static const struct nla_policy ppp_nl_policy[IFLA_PPP_MAX + 1] = {
 	[IFLA_PPP_DEV_FD]	= { .type = NLA_S32 },
 };
 
-static int ppp_nl_validate(struct nlattr *tb[], struct nlattr *data[])
+static int ppp_nl_validate(struct nlattr *tb[], struct nlattr *data[],
+			   struct netlink_ext_ack *extack)
 {
 	if (!data)
 		return -EINVAL;
@@ -1106,7 +1109,8 @@ static int ppp_nl_validate(struct nlattr *tb[], struct nlattr *data[])
 }
 
 static int ppp_nl_newlink(struct net *src_net, struct net_device *dev,
-			  struct nlattr *tb[], struct nlattr *data[])
+			  struct nlattr *tb[], struct nlattr *data[],
+			  struct netlink_ext_ack *extack)
 {
 	struct ppp_config conf = {
 		.unit = -1,
@@ -1329,7 +1333,7 @@ ppp_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	return err;
 }
 
-static struct rtnl_link_stats64*
+static void
 ppp_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats64)
 {
 	struct ppp *ppp = netdev_priv(dev);
@@ -1349,8 +1353,6 @@ ppp_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats64)
 	stats64->rx_dropped       = dev->stats.rx_dropped;
 	stats64->tx_dropped       = dev->stats.tx_dropped;
 	stats64->rx_length_errors = dev->stats.rx_length_errors;
-
-	return stats64;
 }
 
 static int ppp_dev_init(struct net_device *dev)
@@ -1364,7 +1366,7 @@ static int ppp_dev_init(struct net_device *dev)
 	 * that ppp_destroy_interface() won't run before the device gets
 	 * unregistered.
 	 */
-	atomic_inc(&ppp->file.refcnt);
+	refcount_inc(&ppp->file.refcnt);
 
 	return 0;
 }
@@ -1393,7 +1395,7 @@ static void ppp_dev_priv_destructor(struct net_device *dev)
 	struct ppp *ppp;
 
 	ppp = netdev_priv(dev);
-	if (atomic_dec_and_test(&ppp->file.refcnt))
+	if (refcount_dec_and_test(&ppp->file.refcnt))
 		ppp_destroy_interface(ppp);
 }
 
@@ -1422,7 +1424,7 @@ static void ppp_setup(struct net_device *dev)
 	dev->tx_queue_len = 3;
 	dev->type = ARPHRD_PPP;
 	dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-	dev->destructor = ppp_dev_priv_destructor;
+	dev->priv_destructor = ppp_dev_priv_destructor;
 	netif_keep_dst(dev);
 }
 
@@ -1548,7 +1550,7 @@ ppp_send_frame(struct ppp *ppp, struct sk_buff *skb)
 		/* check if we should pass this packet */
 		/* the filter instructions are constructed assuming
 		   a four-byte PPP header on each packet */
-		*skb_push(skb, 2) = 1;
+		*(u8 *)skb_push(skb, 2) = 1;
 		if (ppp->pass_filter &&
 		    BPF_PROG_RUN(ppp->pass_filter, skb) == 0) {
 			if (ppp->debug & 1)
@@ -1676,7 +1678,7 @@ ppp_push(struct ppp *ppp)
 		list = list->next;
 		pch = list_entry(list, struct channel, clist);
 
-		spin_lock_bh(&pch->downl);
+		spin_lock(&pch->downl);
 		if (pch->chan) {
 			if (pch->chan->ops->start_xmit(pch->chan, skb))
 				ppp->xmit_pending = NULL;
@@ -1685,7 +1687,7 @@ ppp_push(struct ppp *ppp)
 			kfree_skb(skb);
 			ppp->xmit_pending = NULL;
 		}
-		spin_unlock_bh(&pch->downl);
+		spin_unlock(&pch->downl);
 		return;
 	}
 
@@ -1702,7 +1704,7 @@ ppp_push(struct ppp *ppp)
 
 #ifdef CONFIG_PPP_MULTILINK
 static bool mp_protocol_compress __read_mostly = true;
-module_param(mp_protocol_compress, bool, S_IRUGO | S_IWUSR);
+module_param(mp_protocol_compress, bool, 0644);
 MODULE_PARM_DESC(mp_protocol_compress,
 		 "compress protocol id in multilink fragments");
 
@@ -1815,7 +1817,7 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 		}
 
 		/* check the channel's mtu and whether it is still attached. */
-		spin_lock_bh(&pch->downl);
+		spin_lock(&pch->downl);
 		if (pch->chan == NULL) {
 			/* can't use this channel, it's being deregistered */
 			if (pch->speed == 0)
@@ -1823,7 +1825,7 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 			else
 				totspeed -= pch->speed;
 
-			spin_unlock_bh(&pch->downl);
+			spin_unlock(&pch->downl);
 			pch->avail = 0;
 			totlen = len;
 			totfree--;
@@ -1874,7 +1876,7 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 		 */
 		if (flen <= 0) {
 			pch->avail = 2;
-			spin_unlock_bh(&pch->downl);
+			spin_unlock(&pch->downl);
 			continue;
 		}
 
@@ -1919,14 +1921,14 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 		len -= flen;
 		++ppp->nxseq;
 		bits = 0;
-		spin_unlock_bh(&pch->downl);
+		spin_unlock(&pch->downl);
 	}
 	ppp->nxchan = i;
 
 	return 1;
 
  noskb:
-	spin_unlock_bh(&pch->downl);
+	spin_unlock(&pch->downl);
 	if (ppp->debug & 1)
 		netdev_err(ppp->dev, "PPP: no memory (fragment)\n");
 	++ppp->dev->stats.tx_errors;
@@ -1941,7 +1943,7 @@ static void __ppp_channel_push(struct channel *pch)
 	struct sk_buff *skb;
 	struct ppp *ppp;
 
-	spin_lock_bh(&pch->downl);
+	spin_lock(&pch->downl);
 	if (pch->chan) {
 		while (!skb_queue_empty(&pch->file.xq)) {
 			skb = skb_dequeue(&pch->file.xq);
@@ -1955,7 +1957,7 @@ static void __ppp_channel_push(struct channel *pch)
 		/* channel got deregistered */
 		skb_queue_purge(&pch->file.xq);
 	}
-	spin_unlock_bh(&pch->downl);
+	spin_unlock(&pch->downl);
 	/* see if there is anything from the attached unit to be sent */
 	if (skb_queue_empty(&pch->file.xq)) {
 		ppp = pch->ppp;
@@ -1998,6 +2000,46 @@ ppp_do_recv(struct ppp *ppp, struct sk_buff *skb, struct channel *pch)
 	ppp_recv_unlock(ppp);
 }
 
+/**
+ * __ppp_decompress_proto - Decompress protocol field, slim version.
+ * @skb: Socket buffer where protocol field should be decompressed. It must have
+ *	 at least 1 byte of head room and 1 byte of linear data. First byte of
+ *	 data must be a protocol field byte.
+ *
+ * Decompress protocol field in PPP header if it's compressed, e.g. when
+ * Protocol-Field-Compression (PFC) was negotiated. No checks w.r.t. skb data
+ * length are done in this function.
+ */
+static void __ppp_decompress_proto(struct sk_buff *skb)
+{
+	if (skb->data[0] & 0x01)
+		*(u8 *)skb_push(skb, 1) = 0x00;
+}
+
+/**
+ * ppp_decompress_proto - Check skb data room and decompress protocol field.
+ * @skb: Socket buffer where protocol field should be decompressed. First byte
+ *	 of data must be a protocol field byte.
+ *
+ * Decompress protocol field in PPP header if it's compressed, e.g. when
+ * Protocol-Field-Compression (PFC) was negotiated. This function also makes
+ * sure that skb data room is sufficient for Protocol field, before and after
+ * decompression.
+ *
+ * Return: true - decompressed successfully, false - not enough room in skb.
+ */
+static bool ppp_decompress_proto(struct sk_buff *skb)
+{
+	/* At least one byte should be present (if protocol is compressed) */
+	if (!pskb_may_pull(skb, 1))
+		return false;
+
+	__ppp_decompress_proto(skb);
+
+	/* Protocol field should occupy 2 bytes when not compressed */
+	return pskb_may_pull(skb, 2);
+}
+
 void
 ppp_input(struct ppp_channel *chan, struct sk_buff *skb)
 {
@@ -2010,7 +2052,7 @@ ppp_input(struct ppp_channel *chan, struct sk_buff *skb)
 	}
 
 	read_lock_bh(&pch->upl);
-	if (!pskb_may_pull(skb, 2)) {
+	if (!ppp_decompress_proto(skb)) {
 		kfree_skb(skb);
 		if (pch->ppp) {
 			++pch->ppp->dev->stats.rx_length_errors;
@@ -2107,6 +2149,9 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 	if (ppp->flags & SC_MUST_COMP && ppp->rstate & SC_DC_FERROR)
 		goto err;
 
+	/* At this point the "Protocol" field MUST be decompressed, either in
+	 * ppp_input(), ppp_decompress_frame() or in ppp_receive_mp_frame().
+	 */
 	proto = PPP_PROTO(skb);
 	switch (proto) {
 	case PPP_VJC_COMP:
@@ -2191,7 +2236,7 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 			if (skb_unclone(skb, GFP_ATOMIC))
 				goto err;
 
-			*skb_push(skb, 2) = 0;
+			*(u8 *)skb_push(skb, 2) = 0;
 			if (ppp->pass_filter &&
 			    BPF_PROG_RUN(ppp->pass_filter, skb) == 0) {
 				if (ppp->debug & 1)
@@ -2278,6 +2323,9 @@ ppp_decompress_frame(struct ppp *ppp, struct sk_buff *skb)
 		skb_put(skb, len);
 		skb_pull(skb, 2);	/* pull off the A/C bytes */
 
+		/* Don't call __ppp_decompress_proto() here, but instead rely on
+		 * corresponding algo (mppe/bsd/deflate) to decompress it.
+		 */
 	} else {
 		/* Uncompressed frame - pass to decompressor so it
 		   can update its dictionary if necessary. */
@@ -2323,9 +2371,11 @@ ppp_receive_mp_frame(struct ppp *ppp, struct sk_buff *skb, struct channel *pch)
 
 	/*
 	 * Do protocol ID decompression on the first fragment of each packet.
+	 * We have to do that here, because ppp_receive_nonmp_frame() expects
+	 * decompressed protocol field.
 	 */
-	if ((PPP_MP_CB(skb)->BEbits & B) && (skb->data[0] & 1))
-		*skb_push(skb, 1) = 0;
+	if (PPP_MP_CB(skb)->BEbits & B)
+		__ppp_decompress_proto(skb);
 
 	/*
 	 * Expand sequence number to 32 bits, making it as close
@@ -2699,7 +2749,7 @@ ppp_unregister_channel(struct ppp_channel *chan)
 
 	pch->file.dead = 1;
 	wake_up_interruptible(&pch->file.rwait);
-	if (atomic_dec_and_test(&pch->file.refcnt))
+	if (refcount_dec_and_test(&pch->file.refcnt))
 		ppp_destroy_channel(pch);
 }
 
@@ -3069,7 +3119,7 @@ init_ppp_file(struct ppp_file *pf, int kind)
 	pf->kind = kind;
 	skb_queue_head_init(&pf->xq);
 	skb_queue_head_init(&pf->rq);
-	atomic_set(&pf->refcnt, 1);
+	refcount_set(&pf->refcnt, 1);
 	init_waitqueue_head(&pf->rwait);
 }
 
@@ -3196,7 +3246,7 @@ ppp_connect_channel(struct channel *pch, int unit)
 	list_add_tail(&pch->clist, &ppp->channels);
 	++ppp->n_channels;
 	pch->ppp = ppp;
-	atomic_inc(&ppp->file.refcnt);
+	refcount_inc(&ppp->file.refcnt);
 	ppp_unlock(ppp);
 	ret = 0;
 
@@ -3227,7 +3277,7 @@ ppp_disconnect_channel(struct channel *pch)
 		if (--ppp->n_channels == 0)
 			wake_up_interruptible(&ppp->file.rwait);
 		ppp_unlock(ppp);
-		if (atomic_dec_and_test(&ppp->file.refcnt))
+		if (refcount_dec_and_test(&ppp->file.refcnt))
 			ppp_destroy_interface(ppp);
 		err = 0;
 	}

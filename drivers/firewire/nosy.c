@@ -161,10 +161,12 @@ packet_buffer_get(struct client *client, char __user *data, size_t user_length)
 	if (atomic_read(&buffer->size) == 0)
 		return -ENODEV;
 
-	/* FIXME: Check length <= user_length. */
+	length = buffer->head->length;
+
+	if (length > user_length)
+		return 0;
 
 	end = buffer->data + buffer->capacity;
-	length = buffer->head->length;
 
 	if (&buffer->head->data[length] < end) {
 		if (copy_to_user(data, buffer->head->data, length))
@@ -328,19 +330,19 @@ nosy_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static unsigned int
+static __poll_t
 nosy_poll(struct file *file, poll_table *pt)
 {
 	struct client *client = file->private_data;
-	unsigned int ret = 0;
+	__poll_t ret = 0;
 
 	poll_wait(file, &client->buffer.wait, pt);
 
 	if (atomic_read(&client->buffer.size) > 0)
-		ret = POLLIN | POLLRDNORM;
+		ret = EPOLLIN | EPOLLRDNORM;
 
 	if (list_empty(&client->lynx->link))
-		ret |= POLLHUP;
+		ret |= EPOLLHUP;
 
 	return ret;
 }

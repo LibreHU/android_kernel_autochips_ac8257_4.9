@@ -1,20 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /**
  * udc.c - Core UDC Framework
  *
  * Copyright (C) 2010 Texas Instruments
  * Author: Felipe Balbi <balbi@ti.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2  of
- * the License as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <linux/kernel.h>
@@ -23,6 +12,7 @@
 #include <linux/list.h>
 #include <linux/err.h>
 #include <linux/dma-mapping.h>
+#include <linux/sched/task_stack.h>
 #include <linux/workqueue.h>
 
 #include <linux/usb/ch9.h>
@@ -97,6 +87,8 @@ EXPORT_SYMBOL_GPL(usb_ep_set_maxpacket_limit);
  * configurable, with more generic names like "ep-a".  (remember that for
  * USB, "in" means "towards the USB master".)
  *
+ * This routine must be called in process context.
+ *
  * returns zero, or a negative error code.
  */
 int usb_ep_enable(struct usb_ep *ep)
@@ -107,12 +99,10 @@ int usb_ep_enable(struct usb_ep *ep)
 		goto out;
 
 	/* UDC drivers can't handle endpoints with maxpacket size 0 */
-	if (usb_endpoint_maxp(ep->desc) == 0) {
-		/*
-		 * We should log an error message here, but we can't call
-		 * dev_err() because there's no way to find the gadget
-		 * given only ep.
-		 */
+	if (!ep->desc || usb_endpoint_maxp(ep->desc) == 0) {
+		WARN_ONCE(1, "%s: ep%d (%s) has %s\n", __func__, ep->address, ep->name,
+			  (!ep->desc) ? "NULL descriptor" : "maxpacket 0");
+
 		ret = -EINVAL;
 		goto out;
 	}
@@ -139,6 +129,8 @@ EXPORT_SYMBOL_GPL(usb_ep_enable);
  * indicating disconnect (-ESHUTDOWN) before this call returns.
  * gadget drivers must call usb_ep_enable() again before queueing
  * requests to the endpoint.
+ *
+ * This routine must be called in process context.
  *
  * returns zero, or a negative error code.
  */
@@ -262,16 +254,26 @@ EXPORT_SYMBOL_GPL(usb_ep_free_request);
  * Note that @req's ->complete() callback must never be called from
  * within usb_ep_queue() as that can create deadlock situations.
  *
+ * This routine may be called in interrupt context.
+ *
  * Returns zero, or a negative error code.  Endpoints that are not enabled
  * report errors; errors will also be
  * reported when the usb peripheral is disconnected.
+ *
+ * If and only if @req is successfully queued (the return value is zero),
+ * @req->complete() will be called exactly once, when the Gadget core and
+ * UDC are finished with the request.  When the completion function is called,
+ * control of the request is returned to the device driver which submitted it.
+ * The completion handler may then immediately free or reuse @req.
  */
 int usb_ep_queue(struct usb_ep *ep,
 			       struct usb_request *req, gfp_t gfp_flags)
 {
 	int ret = 0;
 
-	if (WARN_ON_ONCE(!ep->enabled && ep->address)) {
+	if (!ep->enabled && ep->address) {
+		pr_debug("USB gadget: queue request to disabled ep 0x%x (%s)\n",
+				 ep->address, ep->name);
 		ret = -ESHUTDOWN;
 		goto out;
 	}
@@ -299,6 +301,8 @@ EXPORT_SYMBOL_GPL(usb_ep_queue);
  * at the head of the queue) except as part of disconnecting from usb. Such
  * restrictions prevent drivers from supporting configuration changes,
  * even to configuration zero (a "chapter 9" requirement).
+ *
+ * This routine may be called in interrupt context.
  */
 int usb_ep_dequeue(struct usb_ep *ep, struct usb_request *req)
 {
@@ -326,6 +330,8 @@ EXPORT_SYMBOL_GPL(usb_ep_dequeue);
  * current altsetting, see usb_ep_clear_halt().  When switching altsettings,
  * it's simplest to use usb_ep_enable() or usb_ep_disable() for the endpoints.
  *
+ * This routine may be called in interrupt context.
+ *
  * Returns zero, or a negative error code.  On success, this call sets
  * underlying hardware state that blocks data transfers.
  * Attempts to halt IN endpoints will fail (returning -EAGAIN) if any
@@ -351,6 +357,8 @@ EXPORT_SYMBOL_GPL(usb_ep_set_halt);
  * for endpoints that aren't reconfigured, after clearing any other state
  * in the endpoint's i/o queue.
  *
+ * This routine may be called in interrupt context.
+ *
  * Returns zero, or a negative error code.  On success, this call clears
  * the underlying hardware state reflecting endpoint halt and data toggle.
  * Note that some hardware can't support this request (like pxa2xx_udc),
@@ -374,6 +382,8 @@ EXPORT_SYMBOL_GPL(usb_ep_clear_halt);
  * Use this to stall an endpoint and ignore CLEAR_FEATURE(HALT_ENDPOINT)
  * requests. If the gadget driver clears the halt status, it will
  * automatically unwedge the endpoint.
+ *
+ * This routine may be called in interrupt context.
  *
  * Returns zero on success, else negative errno.
  */
@@ -403,6 +413,8 @@ EXPORT_SYMBOL_GPL(usb_ep_set_wedge);
  * written OUT to it by the host.  Drivers that need precise handling for
  * fault reporting or recovery may need to use this call.
  *
+ * This routine may be called in interrupt context.
+ *
  * This returns the number of such bytes in the fifo, or a negative
  * errno if the endpoint doesn't use a FIFO or doesn't support such
  * precise handling.
@@ -430,6 +442,8 @@ EXPORT_SYMBOL_GPL(usb_ep_fifo_status);
  * an endpoint fifo after abnormal transaction terminations.  The call
  * must never be used except when endpoint is not being used for any
  * protocol translation.
+ *
+ * This routine may be called in interrupt context.
  */
 void usb_ep_fifo_flush(struct usb_ep *ep)
 {
@@ -491,6 +505,43 @@ out:
 	return ret;
 }
 EXPORT_SYMBOL_GPL(usb_gadget_wakeup);
+
+/**
+ * usb_gsi_ep_op - performs operation on GSI accelerated EP based on EP op code
+ *
+ * Operations such as EP configuration, TRB allocation, StartXfer etc.
+ * See gsi_ep_op for more details.
+ */
+int usb_gsi_ep_op(struct usb_ep *ep,
+		struct usb_gsi_request *req, enum gsi_ep_op op)
+{
+	if (ep && ep->ops && ep->ops->gsi_ep_op)
+		return ep->ops->gsi_ep_op(ep, req, op);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL_GPL(usb_gsi_ep_op);
+
+/**
+ * usb_gadget_func_wakeup - send a function remote wakeup up notification
+ * to the host connected to this gadget
+ * @gadget: controller used to wake up the host
+ * @interface_id: the interface which triggered the remote wakeup event
+ *
+ * Returns zero on success. Otherwise, negative error code is returned.
+ */
+int usb_gadget_func_wakeup(struct usb_gadget *gadget,
+	int interface_id)
+{
+	if (!gadget || (gadget->speed != USB_SPEED_SUPER))
+		return -EOPNOTSUPP;
+
+	if (!gadget->ops || !gadget->ops->func_wakeup)
+		return -EOPNOTSUPP;
+
+	return gadget->ops->func_wakeup(gadget, interface_id);
+}
+EXPORT_SYMBOL_GPL(usb_gadget_func_wakeup);
 
 /**
  * usb_gadget_set_selfpowered - sets the device selfpowered feature.
@@ -810,6 +861,14 @@ int usb_gadget_map_request_by_dev(struct device *dev,
 
 		req->num_mapped_sgs = mapped;
 	} else {
+		if (is_vmalloc_addr(req->buf)) {
+			dev_err(dev, "buffer is not dma capable\n");
+			return -EFAULT;
+		} else if (object_is_on_stack(req->buf)) {
+			dev_err(dev, "buffer is on stack\n");
+			return -EFAULT;
+		}
+
 		req->dma = dma_map_single(dev, req->buf, req->length,
 				is_in ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
 
@@ -917,7 +976,7 @@ int usb_gadget_ep_match_desc(struct usb_gadget *gadget,
 		return 0;
 
 	type = usb_endpoint_type(desc);
-	max = 0x7ff & usb_endpoint_maxp(desc);
+	max = usb_endpoint_maxp(desc);
 
 	if (usb_endpoint_dir_in(desc) && !ep->caps.dir_in)
 		return 0;
@@ -1073,6 +1132,27 @@ static inline void usb_gadget_udc_stop(struct usb_udc *udc)
 }
 
 /**
+ * usb_gadget_udc_set_speed - tells usb device controller speed supported by
+ *    current driver
+ * @udc: The device we want to set maximum speed
+ * @speed: The maximum speed to allowed to run
+ *
+ * This call is issued by the UDC Class driver before calling
+ * usb_gadget_udc_start() in order to make sure that we don't try to
+ * connect on speeds the gadget driver doesn't support.
+ */
+static inline void usb_gadget_udc_set_speed(struct usb_udc *udc,
+					    enum usb_device_speed speed)
+{
+	if (udc->gadget->ops->udc_set_speed) {
+		enum usb_device_speed s;
+
+		s = min(speed, udc->gadget->max_speed);
+		udc->gadget->ops->udc_set_speed(udc->gadget, s);
+	}
+}
+
+/**
  * usb_udc_release - release the usb_udc struct
  * @dev: the dev member within usb_udc
  *
@@ -1106,7 +1186,7 @@ static int check_pending_gadget_drivers(struct usb_udc *udc)
 						dev_name(&udc->dev)) == 0) {
 			ret = udc_bind_to_driver(udc, driver);
 			if (ret != -EPROBE_DEFER)
-				list_del(&driver->pending);
+				list_del_init(&driver->pending);
 			break;
 		}
 
@@ -1121,16 +1201,13 @@ static int check_pending_gadget_drivers(struct usb_udc *udc)
  * @release: a gadget release function.
  *
  * Returns zero on success, negative errno otherwise.
+ * Calls the gadget release function in the latter case.
  */
 int usb_add_gadget_udc_release(struct device *parent, struct usb_gadget *gadget,
 		void (*release)(struct device *dev))
 {
 	struct usb_udc		*udc;
 	int			ret = -ENOMEM;
-
-	udc = kzalloc(sizeof(*udc), GFP_KERNEL);
-	if (!udc)
-		goto err1;
 
 	dev_set_name(&gadget->dev, "gadget");
 	INIT_WORK(&gadget->work, usb_gadget_state_work);
@@ -1141,9 +1218,11 @@ int usb_add_gadget_udc_release(struct device *parent, struct usb_gadget *gadget,
 	else
 		gadget->dev.release = usb_udc_nop_release;
 
-	ret = device_register(&gadget->dev);
-	if (ret)
-		goto err2;
+	device_initialize(&gadget->dev);
+
+	udc = kzalloc(sizeof(*udc), GFP_KERNEL);
+	if (!udc)
+		goto err_put_gadget;
 
 	device_initialize(&udc->dev);
 	udc->dev.release = usb_udc_release;
@@ -1152,7 +1231,11 @@ int usb_add_gadget_udc_release(struct device *parent, struct usb_gadget *gadget,
 	udc->dev.parent = parent;
 	ret = dev_set_name(&udc->dev, "%s", kobject_name(&parent->kobj));
 	if (ret)
-		goto err3;
+		goto err_put_udc;
+
+	ret = device_add(&gadget->dev);
+	if (ret)
+		goto err_put_udc;
 
 	udc->gadget = gadget;
 	gadget->udc = udc;
@@ -1162,7 +1245,7 @@ int usb_add_gadget_udc_release(struct device *parent, struct usb_gadget *gadget,
 
 	ret = device_add(&udc->dev);
 	if (ret)
-		goto err4;
+		goto err_unlist_udc;
 
 	usb_gadget_set_state(gadget, USB_STATE_NOTATTACHED);
 	udc->vbus = true;
@@ -1170,28 +1253,26 @@ int usb_add_gadget_udc_release(struct device *parent, struct usb_gadget *gadget,
 	/* pick up one of pending gadget drivers */
 	ret = check_pending_gadget_drivers(udc);
 	if (ret)
-		goto err5;
+		goto err_del_udc;
 
 	mutex_unlock(&udc_lock);
 
 	return 0;
 
-err5:
+ err_del_udc:
 	device_del(&udc->dev);
 
-err4:
+ err_unlist_udc:
 	list_del(&udc->list);
 	mutex_unlock(&udc_lock);
 
-err3:
-	put_device(&udc->dev);
 	device_del(&gadget->dev);
 
-err2:
-	put_device(&gadget->dev);
-	kfree(udc);
+ err_put_udc:
+	put_device(&udc->dev);
 
-err1:
+ err_put_gadget:
+	put_device(&gadget->dev);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(usb_add_gadget_udc_release);
@@ -1287,6 +1368,7 @@ void usb_del_gadget_udc(struct usb_gadget *gadget)
 	flush_work(&gadget->work);
 	device_unregister(&udc->dev);
 	device_unregister(&gadget->dev);
+	memset(&gadget->dev, 0x00, sizeof(gadget->dev));
 }
 EXPORT_SYMBOL_GPL(usb_del_gadget_udc);
 
@@ -1301,6 +1383,8 @@ static int udc_bind_to_driver(struct usb_udc *udc, struct usb_gadget_driver *dri
 
 	udc->driver = driver;
 	udc->gadget->dev.driver = &driver->driver;
+
+	usb_gadget_udc_set_speed(udc, driver->max_speed);
 
 	ret = driver->bind(udc->gadget, driver);
 	if (ret)
@@ -1409,7 +1493,7 @@ EXPORT_SYMBOL_GPL(usb_gadget_unregister_driver);
 
 /* ------------------------------------------------------------------------- */
 
-static ssize_t usb_udc_srp_store(struct device *dev,
+static ssize_t srp_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t n)
 {
 	struct usb_udc		*udc = container_of(dev, struct usb_udc, dev);
@@ -1419,9 +1503,9 @@ static ssize_t usb_udc_srp_store(struct device *dev,
 
 	return n;
 }
-static DEVICE_ATTR(srp, S_IWUSR, NULL, usb_udc_srp_store);
+static DEVICE_ATTR_WO(srp);
 
-static ssize_t usb_udc_softconn_store(struct device *dev,
+static ssize_t soft_connect_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t n)
 {
 	struct usb_udc		*udc = container_of(dev, struct usb_udc, dev);
@@ -1452,7 +1536,7 @@ out:
 	mutex_unlock(&udc_lock);
 	return ret;
 }
-static DEVICE_ATTR(soft_connect, S_IWUSR, NULL, usb_udc_softconn_store);
+static DEVICE_ATTR_WO(soft_connect);
 
 static ssize_t state_show(struct device *dev, struct device_attribute *attr,
 			  char *buf)
@@ -1464,12 +1548,24 @@ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR_RO(state);
 
+static ssize_t function_show(struct device *dev, struct device_attribute *attr,
+			     char *buf)
+{
+	struct usb_udc		*udc = container_of(dev, struct usb_udc, dev);
+	struct usb_gadget_driver *drv = udc->driver;
+
+	if (!drv || !drv->function)
+		return 0;
+	return scnprintf(buf, PAGE_SIZE, "%s\n", drv->function);
+}
+static DEVICE_ATTR_RO(function);
+
 #define USB_UDC_SPEED_ATTR(name, param)					\
 ssize_t name##_show(struct device *dev,					\
 		struct device_attribute *attr, char *buf)		\
 {									\
 	struct usb_udc *udc = container_of(dev, struct usb_udc, dev);	\
-	return snprintf(buf, PAGE_SIZE, "%s\n",				\
+	return scnprintf(buf, PAGE_SIZE, "%s\n",			\
 			usb_speed_string(udc->gadget->param));		\
 }									\
 static DEVICE_ATTR_RO(name)
@@ -1484,7 +1580,7 @@ ssize_t name##_show(struct device *dev,				\
 	struct usb_udc		*udc = container_of(dev, struct usb_udc, dev); \
 	struct usb_gadget	*gadget = udc->gadget;		\
 								\
-	return snprintf(buf, PAGE_SIZE, "%d\n", gadget->name);	\
+	return scnprintf(buf, PAGE_SIZE, "%d\n", gadget->name);	\
 }								\
 static DEVICE_ATTR_RO(name)
 
@@ -1499,6 +1595,7 @@ static struct attribute *usb_udc_attrs[] = {
 	&dev_attr_srp.attr,
 	&dev_attr_soft_connect.attr,
 	&dev_attr_state.attr,
+	&dev_attr_function.attr,
 	&dev_attr_current_speed.attr,
 	&dev_attr_maximum_speed.attr,
 

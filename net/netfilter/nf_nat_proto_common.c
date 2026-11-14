@@ -36,7 +36,7 @@ EXPORT_SYMBOL_GPL(nf_nat_l4proto_in_range);
 
 void nf_nat_l4proto_unique_tuple(const struct nf_nat_l3proto *l3proto,
 				 struct nf_conntrack_tuple *tuple,
-				 const struct nf_nat_range *range,
+				 const struct nf_nat_range2 *range,
 				 enum nf_nat_manip_type maniptype,
 				 const struct nf_conn *ct)
 {
@@ -83,6 +83,8 @@ void nf_nat_l4proto_unique_tuple(const struct nf_nat_l3proto *l3proto,
 						  : tuple->src.u.all);
 	} else if (range->flags & NF_NAT_RANGE_PROTO_RANDOM_FULLY) {
 		off = prandom_u32();
+	} else if (range->flags & NF_NAT_RANGE_PROTO_OFFSET) {
+		off = (ntohs(*portptr) - ntohs(range->base_proto.all));
 	} else {
 		off = prandom_u32();
 	}
@@ -114,7 +116,7 @@ EXPORT_SYMBOL_GPL(nf_nat_l4proto_unique_tuple);
 
 #if IS_ENABLED(CONFIG_NF_CT_NETLINK)
 int nf_nat_l4proto_nlattr_to_range(struct nlattr *tb[],
-				   struct nf_nat_range *range)
+				   struct nf_nat_range2 *range)
 {
 	if (tb[CTA_PROTONAT_PORT_MIN]) {
 		range->min_proto.all = nla_get_be16(tb[CTA_PROTONAT_PORT_MIN]);

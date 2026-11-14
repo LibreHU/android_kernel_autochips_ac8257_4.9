@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Only give sleepers 50% of their service deficit. This allows
  * them to run sooner, but does not allow tons of sleepers to
@@ -55,6 +56,14 @@ SCHED_FEAT(TTWU_QUEUE, true)
  * When doing wakeups, attempt to limit superfluous scans of the LLC domain.
  */
 SCHED_FEAT(SIS_AVG_CPU, false)
+SCHED_FEAT(SIS_PROP, true)
+
+/*
+ * Issue a WARN when we do multiple update_rq_clock() calls
+ * in a single rq->lock section. Default disabled because the
+ * annotations are not complete.
+ */
+SCHED_FEAT(WARN_DOUBLE_CLOCK, false)
 
 #ifdef HAVE_RT_PUSH_IPI
 /*
@@ -69,50 +78,46 @@ SCHED_FEAT(SIS_AVG_CPU, false)
 SCHED_FEAT(RT_PUSH_IPI, true)
 #endif
 
-SCHED_FEAT(FORCE_SD_OVERLAP, false)
-SCHED_FEAT(RT_RUNTIME_SHARE, false)
+SCHED_FEAT(RT_RUNTIME_SHARE, true)
 SCHED_FEAT(LB_MIN, false)
 SCHED_FEAT(ATTACH_AGE_LOAD, true)
 
-/*
- * Energy aware scheduling. Use platform energy model to guide scheduling
- * decisions optimizing for energy efficiency.
- */
-#ifdef CONFIG_DEFAULT_USE_ENERGY_AWARE
-SCHED_FEAT(ENERGY_AWARE, true)
-#else
-SCHED_FEAT(ENERGY_AWARE, false)
-#endif
+SCHED_FEAT(WA_IDLE, true)
+SCHED_FEAT(WA_WEIGHT, true)
+SCHED_FEAT(WA_BIAS, true)
 
 /*
- * HMP scheduling. Use dynamic threshold depends on system load and
- * CPU capacity to make schedule decisions.
+ * UtilEstimation. Use estimated CPU utilization.
  */
-#ifdef CONFIG_SCHED_HMP
-SCHED_FEAT(SCHED_HMP, true)
-#else
-SCHED_FEAT(SCHED_HMP, false)
-#endif
-
-SCHED_FEAT(SCHED_MTK_EAS, true)
-/*
- * Minimum capacity capping. Keep track of minimum capacity factor when
- * minimum frequency available to a policy is modified.
- * If enabled, this can be used to inform the scheduler about capacity
- * restrictions.
- */
-SCHED_FEAT(MIN_CAPACITY_CAPPING, false)
+SCHED_FEAT(UTIL_EST, true)
+SCHED_FEAT(UTIL_EST_FASTUP, true)
 
 /*
- * Enforce the priority of candidates selected by find_best_target()
- * ON: If the target CPU saves any energy, use that.
- * OFF: Use whichever of target or backup saves most.
+ * Fast pre-selection of CPU candidates for EAS.
  */
-SCHED_FEAT(FBT_STRICT_ORDER, true)
+SCHED_FEAT(FIND_BEST_TARGET, false)
 
 /*
- * Assign newly forked task util. New value designed from task's
- * priority and cfs rq's current average of util/weight
- * in post_init_entity_util_avg.
+ * Energy aware scheduling algorithm choices:
+ * EAS_PREFER_IDLE
+ *   Direct tasks in a schedtune.prefer_idle=1 group through
+ *   the EAS path for wakeup task placement. Otherwise, put
+ *   those tasks through the mainline slow path.
  */
-SCHED_FEAT(POST_INIT_UTIL, false)
+SCHED_FEAT(EAS_PREFER_IDLE, true)
+
+/*
+ * Request max frequency from schedutil whenever a RT task is running.
+ */
+SCHED_FEAT(SUGOV_RT_MAX_FREQ, false)
+
+/*
+ * Apply schedtune boost hold to tasks of all sched classes.
+ * If enabled, schedtune will hold the boost applied to a CPU
+ * for 50ms regardless of task activation - if the task is
+ * still running 50ms later, the boost hold expires and schedtune
+ * boost will expire immediately the task stops.
+ * If disabled, this behaviour will only apply to tasks of the
+ * RT class.
+ */
+SCHED_FEAT(SCHEDTUNE_BOOST_HOLD_ALL, false)

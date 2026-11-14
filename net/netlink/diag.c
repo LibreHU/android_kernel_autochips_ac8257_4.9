@@ -19,6 +19,27 @@ static int sk_diag_dump_groups(struct sock *sk, struct sk_buff *nlskb)
 		       nlk->groups);
 }
 
+static int sk_diag_put_flags(struct sock *sk, struct sk_buff *skb)
+{
+	struct netlink_sock *nlk = nlk_sk(sk);
+	u32 flags = 0;
+
+	if (nlk->cb_running)
+		flags |= NDIAG_FLAG_CB_RUNNING;
+	if (nlk->flags & NETLINK_F_RECV_PKTINFO)
+		flags |= NDIAG_FLAG_PKTINFO;
+	if (nlk->flags & NETLINK_F_BROADCAST_SEND_ERROR)
+		flags |= NDIAG_FLAG_BROADCAST_ERROR;
+	if (nlk->flags & NETLINK_F_RECV_NO_ENOBUFS)
+		flags |= NDIAG_FLAG_NO_ENOBUFS;
+	if (nlk->flags & NETLINK_F_LISTEN_ALL_NSID)
+		flags |= NDIAG_FLAG_LISTEN_ALL_NSID;
+	if (nlk->flags & NETLINK_F_CAP_ACK)
+		flags |= NDIAG_FLAG_CAP_ACK;
+
+	return nla_put_u32(skb, NETLINK_DIAG_FLAGS, flags);
+}
+
 static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
 			struct netlink_diag_req *req,
 			u32 portid, u32 seq, u32 flags, int sk_ino)
@@ -52,6 +73,10 @@ static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
 	    sock_diag_put_meminfo(sk, skb, NETLINK_DIAG_MEMINFO))
 		goto out_nlmsg_trim;
 
+	if ((req->ndiag_show & NDIAG_SHOW_FLAGS) &&
+	    sk_diag_put_flags(sk, skb))
+		goto out_nlmsg_trim;
+
 	nlmsg_end(skb, nlh);
 	return 0;
 
@@ -68,6 +93,7 @@ static int __netlink_diag_dump(struct sk_buff *skb, struct netlink_callback *cb,
 	struct net *net = sock_net(skb->sk);
 	struct netlink_diag_req *req;
 	struct netlink_sock *nlsk;
+	unsigned long flags;
 	struct sock *sk;
 	int num = 2;
 	int ret = 0;
@@ -90,11 +116,7 @@ static int __netlink_diag_dump(struct sk_buff *skb, struct netlink_callback *cb,
 	if (!s_num)
 		rhashtable_walk_enter(&tbl->hash, hti);
 
-	ret = rhashtable_walk_start(hti);
-	if (ret == -EAGAIN)
-		ret = 0;
-	if (ret)
-		goto stop;
+	rhashtable_walk_start(hti);
 
 	while ((nlsk = rhashtable_walk_next(hti))) {
 		if (IS_ERR(nlsk)) {
@@ -121,8 +143,8 @@ static int __netlink_diag_dump(struct sk_buff *skb, struct netlink_callback *cb,
 		}
 	}
 
-stop:
 	rhashtable_walk_stop(hti);
+
 	if (ret)
 		goto done;
 
@@ -130,7 +152,7 @@ stop:
 	num++;
 
 mc_list:
-	read_lock(&nl_table_lock);
+	read_lock_irqsave(&nl_table_lock, flags);
 	sk_for_each_bound(sk, &tbl->mc_list) {
 		if (sk_hashed(sk))
 			continue;
@@ -145,13 +167,13 @@ mc_list:
 				 NETLINK_CB(cb->skb).portid,
 				 cb->nlh->nlmsg_seq,
 				 NLM_F_MULTI,
-				 sock_i_ino(sk)) < 0) {
+				 __sock_i_ino(sk)) < 0) {
 			ret = 1;
 			break;
 		}
 		num++;
 	}
-	read_unlock(&nl_table_lock);
+	read_unlock_irqrestore(&nl_table_lock, flags);
 
 done:
 	cb->args[0] = num;

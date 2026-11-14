@@ -14,14 +14,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
-/* We need to access legacy defines from linux/media.h */
-#define __NEED_MEDIA_LEGACY_API
 
 #include <linux/compat.h>
 #include <linux/export.h>
@@ -32,12 +25,23 @@
 #include <linux/types.h>
 #include <linux/pci.h>
 #include <linux/usb.h>
+#include <linux/version.h>
 
 #include <media/media-device.h>
 #include <media/media-devnode.h>
 #include <media/media-entity.h>
 
 #ifdef CONFIG_MEDIA_CONTROLLER
+
+/*
+ * Legacy defines from linux/media.h. This is the only place we need this
+ * so we just define it here. The media.h header doesn't expose it to the
+ * kernel to prevent it from being used by drivers, but here (and only here!)
+ * we need it to handle the legacy behavior.
+ */
+#define MEDIA_ENT_SUBTYPE_MASK			0x0000ffff
+#define MEDIA_ENT_T_DEVNODE_UNKNOWN		(MEDIA_ENT_F_OLD_BASE | \
+						 MEDIA_ENT_SUBTYPE_MASK)
 
 /* -----------------------------------------------------------------------------
  * Userspace API
@@ -74,9 +78,9 @@ static long media_device_get_info(struct media_device *dev, void *arg)
 	strlcpy(info->serial, dev->serial, sizeof(info->serial));
 	strlcpy(info->bus_info, dev->bus_info, sizeof(info->bus_info));
 
-	info->media_version = MEDIA_API_VERSION;
+	info->media_version = LINUX_VERSION_CODE;
+	info->driver_version = info->media_version;
 	info->hw_revision = dev->hw_revision;
-	info->driver_version = dev->driver_version;
 
 	return 0;
 }
@@ -195,6 +199,7 @@ static long media_device_enum_links(struct media_device *mdev, void *arg)
 			ulink_desc++;
 		}
 	}
+	memset(links->reserved, 0, sizeof(links->reserved));
 
 	return 0;
 }
@@ -222,6 +227,8 @@ static long media_device_setup_link(struct media_device *mdev, void *arg)
 				      &sink->pads[linkd->sink.index]);
 	if (link == NULL)
 		return -EINVAL;
+
+	memset(linkd->reserved, 0, sizeof(linkd->reserved));
 
 	/* Setup the link on both entities. */
 	return __media_entity_setup_link(link, linkd->flags);
@@ -260,7 +267,8 @@ static long media_device_get_topology(struct media_device *mdev, void *arg)
 		memset(&kentity, 0, sizeof(kentity));
 		kentity.id = entity->graph_obj.id;
 		kentity.function = entity->function;
-		strncpy(kentity.name, entity->name,
+		kentity.flags = entity->flags;
+		strlcpy(kentity.name, entity->name,
 			sizeof(kentity.name));
 
 		if (copy_to_user(uentity, &kentity, sizeof(kentity)))
@@ -268,6 +276,7 @@ static long media_device_get_topology(struct media_device *mdev, void *arg)
 		uentity++;
 	}
 	topo->num_entities = i;
+	topo->reserved1 = 0;
 
 	/* Get interfaces and number of interfaces */
 	i = 0;
@@ -303,6 +312,7 @@ static long media_device_get_topology(struct media_device *mdev, void *arg)
 		uintf++;
 	}
 	topo->num_interfaces = i;
+	topo->reserved2 = 0;
 
 	/* Get pads and number of pads */
 	i = 0;
@@ -323,12 +333,14 @@ static long media_device_get_topology(struct media_device *mdev, void *arg)
 		kpad.id = pad->graph_obj.id;
 		kpad.entity_id = pad->entity->graph_obj.id;
 		kpad.flags = pad->flags;
+		kpad.index = pad->index;
 
 		if (copy_to_user(upad, &kpad, sizeof(kpad)))
 			ret = -EFAULT;
 		upad++;
 	}
 	topo->num_pads = i;
+	topo->reserved3 = 0;
 
 	/* Get links and number of links */
 	i = 0;
@@ -360,6 +372,7 @@ static long media_device_get_topology(struct media_device *mdev, void *arg)
 		ulink++;
 	}
 	topo->num_links = i;
+	topo->reserved4 = 0;
 
 	return ret;
 }
@@ -550,9 +563,41 @@ static DEVICE_ATTR(model, S_IRUGO, show_model, NULL);
  * Registration/unregistration
  */
 
-static void media_device_release(struct media_devnode *mdev)
+static void media_device_release(struct media_devnode *devnode)
 {
-	dev_dbg(mdev->parent, "Media device released\n");
+	dev_dbg(devnode->parent, "Media device released\n");
+}
+
+static void __media_device_unregister_entity(struct media_entity *entity)
+{
+	struct media_device *mdev = entity->graph_obj.mdev;
+	struct media_link *link, *tmp;
+	struct media_interface *intf;
+	unsigned int i;
+
+	ida_free(&mdev->entity_internal_idx, entity->internal_idx);
+
+	/* Remove all interface links pointing to this entity */
+	list_for_each_entry(intf, &mdev->interfaces, graph_obj.list) {
+		list_for_each_entry_safe(link, tmp, &intf->links, list) {
+			if (link->entity == entity)
+				__media_remove_intf_link(link);
+		}
+	}
+
+	/* Remove all data links that belong to this entity */
+	__media_entity_remove_links(entity);
+
+	/* Remove all pads that belong to this entity */
+	for (i = 0; i < entity->num_pads; i++)
+		media_gobj_destroy(&entity->pads[i].graph_obj);
+
+	/* Remove the entity */
+	media_gobj_destroy(&entity->graph_obj);
+
+	/* invoke entity_notify callbacks to handle entity removal?? */
+
+	entity->graph_obj.mdev = NULL;
 }
 
 /**
@@ -580,18 +625,12 @@ int __must_check media_device_register_entity(struct media_device *mdev,
 	entity->num_links = 0;
 	entity->num_backlinks = 0;
 
-	if (!ida_pre_get(&mdev->entity_internal_idx, GFP_KERNEL))
-		return -ENOMEM;
+	ret = ida_alloc_min(&mdev->entity_internal_idx, 1, GFP_KERNEL);
+	if (ret < 0)
+		return ret;
+	entity->internal_idx = ret;
 
 	mutex_lock(&mdev->graph_mutex);
-
-	ret = ida_get_new_above(&mdev->entity_internal_idx, 1,
-				&entity->internal_idx);
-	if (ret < 0) {
-		mutex_unlock(&mdev->graph_mutex);
-		return ret;
-	}
-
 	mdev->entity_internal_idx_max =
 		max(mdev->entity_internal_idx_max, entity->internal_idx);
 
@@ -604,25 +643,25 @@ int __must_check media_device_register_entity(struct media_device *mdev,
 			       &entity->pads[i].graph_obj);
 
 	/* invoke entity_notify callbacks */
-	list_for_each_entry_safe(notify, next, &mdev->entity_notify, list) {
-		(notify)->notify(entity, notify->notify_data);
-	}
+	list_for_each_entry_safe(notify, next, &mdev->entity_notify, list)
+		notify->notify(entity, notify->notify_data);
 
 	if (mdev->entity_internal_idx_max
 	    >= mdev->pm_count_walk.ent_enum.idx_max) {
-		struct media_entity_graph new = { .top = 0 };
+		struct media_graph new = { .top = 0 };
 
 		/*
 		 * Initialise the new graph walk before cleaning up
 		 * the old one in order not to spoil the graph walk
 		 * object of the media device if graph walk init fails.
 		 */
-		ret = media_entity_graph_walk_init(&new, mdev);
+		ret = media_graph_walk_init(&new, mdev);
 		if (ret) {
+			__media_device_unregister_entity(entity);
 			mutex_unlock(&mdev->graph_mutex);
 			return ret;
 		}
-		media_entity_graph_walk_cleanup(&mdev->pm_count_walk);
+		media_graph_walk_cleanup(&mdev->pm_count_walk);
 		mdev->pm_count_walk = new;
 	}
 	mutex_unlock(&mdev->graph_mutex);
@@ -630,38 +669,6 @@ int __must_check media_device_register_entity(struct media_device *mdev,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(media_device_register_entity);
-
-static void __media_device_unregister_entity(struct media_entity *entity)
-{
-	struct media_device *mdev = entity->graph_obj.mdev;
-	struct media_link *link, *tmp;
-	struct media_interface *intf;
-	unsigned int i;
-
-	ida_simple_remove(&mdev->entity_internal_idx, entity->internal_idx);
-
-	/* Remove all interface links pointing to this entity */
-	list_for_each_entry(intf, &mdev->interfaces, graph_obj.list) {
-		list_for_each_entry_safe(link, tmp, &intf->links, list) {
-			if (link->entity == entity)
-				__media_remove_intf_link(link);
-		}
-	}
-
-	/* Remove all data links that belong to this entity */
-	__media_entity_remove_links(entity);
-
-	/* Remove all pads that belong to this entity */
-	for (i = 0; i < entity->num_pads; i++)
-		media_gobj_destroy(&entity->pads[i].graph_obj);
-
-	/* Remove the entity */
-	media_gobj_destroy(&entity->graph_obj);
-
-	/* invoke entity_notify callbacks to handle entity removal?? */
-
-	entity->graph_obj.mdev = NULL;
-}
 
 void media_device_unregister_entity(struct media_entity *entity)
 {
@@ -704,7 +711,7 @@ void media_device_cleanup(struct media_device *mdev)
 {
 	ida_destroy(&mdev->entity_internal_idx);
 	mdev->entity_internal_idx_max = 0;
-	media_entity_graph_walk_cleanup(&mdev->pm_count_walk);
+	media_graph_walk_cleanup(&mdev->pm_count_walk);
 	mutex_destroy(&mdev->graph_mutex);
 }
 EXPORT_SYMBOL_GPL(media_device_cleanup);
@@ -810,9 +817,13 @@ void media_device_unregister(struct media_device *mdev)
 	/* Remove all interfaces from the media device */
 	list_for_each_entry_safe(intf, tmp_intf, &mdev->interfaces,
 				 graph_obj.list) {
+		/*
+		 * Unlink the interface, but don't free it here; the
+		 * module which created it is responsible for freeing
+		 * it
+		 */
 		__media_remove_intf_links(intf);
 		media_gobj_destroy(&intf->graph_obj);
-		kfree(intf);
 	}
 
 	mutex_unlock(&mdev->graph_mutex);
@@ -825,32 +836,6 @@ void media_device_unregister(struct media_device *mdev)
 	mdev->devnode = NULL;
 }
 EXPORT_SYMBOL_GPL(media_device_unregister);
-
-static void media_device_release_devres(struct device *dev, void *res)
-{
-}
-
-struct media_device *media_device_get_devres(struct device *dev)
-{
-	struct media_device *mdev;
-
-	mdev = devres_find(dev, media_device_release_devres, NULL, NULL);
-	if (mdev)
-		return mdev;
-
-	mdev = devres_alloc(media_device_release_devres,
-				sizeof(struct media_device), GFP_KERNEL);
-	if (!mdev)
-		return NULL;
-	return devres_get(dev, mdev, NULL, NULL);
-}
-EXPORT_SYMBOL_GPL(media_device_get_devres);
-
-struct media_device *media_device_find_devres(struct device *dev)
-{
-	return devres_find(dev, media_device_release_devres, NULL, NULL);
-}
-EXPORT_SYMBOL_GPL(media_device_find_devres);
 
 #if IS_ENABLED(CONFIG_PCI)
 void media_device_pci_init(struct media_device *mdev,
@@ -868,8 +853,6 @@ void media_device_pci_init(struct media_device *mdev,
 
 	mdev->hw_revision = (pci_dev->subsystem_vendor << 16)
 			    | pci_dev->subsystem_device;
-
-	mdev->driver_version = LINUX_VERSION_CODE;
 
 	media_device_init(mdev);
 }
@@ -898,7 +881,6 @@ void __media_device_usb_init(struct media_device *mdev,
 		strlcpy(mdev->serial, udev->serial, sizeof(mdev->serial));
 	usb_make_path(udev, mdev->bus_info, sizeof(mdev->bus_info));
 	mdev->hw_revision = le16_to_cpu(udev->descriptor.bcdDevice);
-	mdev->driver_version = LINUX_VERSION_CODE;
 
 	media_device_init(mdev);
 }

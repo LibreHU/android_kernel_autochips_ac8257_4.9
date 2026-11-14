@@ -72,7 +72,7 @@ struct snd_info_private_data {
 };
 
 static int snd_info_version_init(void);
-static void snd_info_disconnect(struct snd_info_entry *entry);
+static void snd_info_clear_entries(struct snd_info_entry *entry);
 
 /*
 
@@ -203,20 +203,20 @@ static ssize_t snd_info_entry_write(struct file *file, const char __user *buffer
 	return size;
 }
 
-static unsigned int snd_info_entry_poll(struct file *file, poll_table *wait)
+static __poll_t snd_info_entry_poll(struct file *file, poll_table *wait)
 {
 	struct snd_info_private_data *data = file->private_data;
 	struct snd_info_entry *entry = data->entry;
-	unsigned int mask = 0;
+	__poll_t mask = 0;
 
 	if (entry->c.ops->poll)
 		return entry->c.ops->poll(entry,
 					  data->file_private_data,
 					  file, wait);
 	if (entry->c.ops->read)
-		mask |= POLLIN | POLLRDNORM;
+		mask |= EPOLLIN | EPOLLRDNORM;
 	if (entry->c.ops->write)
-		mask |= POLLOUT | POLLWRNORM;
+		mask |= EPOLLOUT | EPOLLWRNORM;
 	return mask;
 }
 
@@ -344,12 +344,12 @@ static ssize_t snd_info_text_entry_write(struct file *file,
 		}
 	}
 	if (next > buf->len) {
-		char *nbuf = krealloc(buf->buffer, PAGE_ALIGN(next),
-				      GFP_KERNEL | __GFP_ZERO);
+		char *nbuf = kvzalloc(PAGE_ALIGN(next), GFP_KERNEL);
 		if (!nbuf) {
 			err = -ENOMEM;
 			goto error;
 		}
+		kvfree(buf->buffer);
 		buf->buffer = nbuf;
 		buf->len = PAGE_ALIGN(next);
 	}
@@ -427,7 +427,7 @@ static int snd_info_text_entry_release(struct inode *inode, struct file *file)
 	single_release(inode, file);
 	kfree(data->rbuffer);
 	if (data->wbuffer) {
-		kfree(data->wbuffer->buffer);
+		kvfree(data->wbuffer->buffer);
 		kfree(data->wbuffer);
 	}
 
@@ -446,21 +446,33 @@ static const struct file_operations snd_info_text_entry_ops =
 	.read =			seq_read,
 };
 
-static struct snd_info_entry *create_subdir(struct module *mod,
-					    const char *name)
+/*
+ * snd_info_create_subdir - create and register a subdir for a given parent
+ * @mod: the module pointer
+ * @name: the module name
+ * @parent: the parent directory
+ *
+ * Creates and registers new subdir entry inside a given parent.
+ *
+ * Return: The pointer of the new instance, or NULL on failure.
+ */
+struct snd_info_entry *snd_info_create_subdir(struct module *mod,
+					      const char *name,
+					      struct snd_info_entry *parent)
 {
 	struct snd_info_entry *entry;
 
-	entry = snd_info_create_module_entry(mod, name, NULL);
+	entry = snd_info_create_module_entry(mod, name, parent);
 	if (!entry)
 		return NULL;
-	entry->mode = S_IFDIR | S_IRUGO | S_IXUGO;
+	entry->mode = S_IFDIR | 0555;
 	if (snd_info_register(entry) < 0) {
 		snd_info_free_entry(entry);
 		return NULL;
 	}
 	return entry;
 }
+EXPORT_SYMBOL(snd_info_create_subdir);
 
 static struct snd_info_entry *
 snd_info_create_entry(const char *name, struct snd_info_entry *parent);
@@ -470,17 +482,17 @@ int __init snd_info_init(void)
 	snd_proc_root = snd_info_create_entry("asound", NULL);
 	if (!snd_proc_root)
 		return -ENOMEM;
-	snd_proc_root->mode = S_IFDIR | S_IRUGO | S_IXUGO;
+	snd_proc_root->mode = S_IFDIR | 0555;
 	snd_proc_root->p = proc_mkdir("asound", NULL);
 	if (!snd_proc_root->p)
 		goto error;
 #ifdef CONFIG_SND_OSSEMUL
-	snd_oss_root = create_subdir(THIS_MODULE, "oss");
+	snd_oss_root = snd_info_create_subdir(THIS_MODULE, "oss", NULL);
 	if (!snd_oss_root)
 		goto error;
 #endif
 #if IS_ENABLED(CONFIG_SND_SEQUENCER)
-	snd_seq_root = create_subdir(THIS_MODULE, "seq");
+	snd_seq_root = snd_info_create_subdir(THIS_MODULE, "seq", NULL);
 	if (!snd_seq_root)
 		goto error;
 #endif
@@ -516,7 +528,7 @@ int snd_info_card_create(struct snd_card *card)
 		return -ENXIO;
 
 	sprintf(str, "card%i", card->number);
-	entry = create_subdir(card->module, str);
+	entry = snd_info_create_subdir(card->module, str, NULL);
 	if (!entry)
 		return -ENOMEM;
 	card->proc_root = entry;
@@ -598,11 +610,16 @@ void snd_info_card_disconnect(struct snd_card *card)
 {
 	if (!card)
 		return;
-	mutex_lock(&info_mutex);
+
 	proc_remove(card->proc_root_link);
-	card->proc_root_link = NULL;
 	if (card->proc_root)
-		snd_info_disconnect(card->proc_root);
+		proc_remove(card->proc_root->p);
+
+	mutex_lock(&info_mutex);
+	if (card->proc_root)
+		snd_info_clear_entries(card->proc_root);
+	card->proc_root_link = NULL;
+	card->proc_root = NULL;
 	mutex_unlock(&info_mutex);
 }
 
@@ -618,7 +635,6 @@ int snd_info_card_free(struct snd_card *card)
 	card->proc_root = NULL;
 	return 0;
 }
-
 
 /**
  * snd_info_get_line - read one line from the procfs buffer
@@ -654,7 +670,6 @@ int snd_info_get_line(struct snd_info_buffer *buffer, char *line, int len)
 	*line = '\0';
 	return 0;
 }
-
 EXPORT_SYMBOL(snd_info_get_line);
 
 /**
@@ -692,7 +707,6 @@ const char *snd_info_get_str(char *dest, const char *src, int len)
 		src++;
 	return src;
 }
-
 EXPORT_SYMBOL(snd_info_get_str);
 
 /*
@@ -720,7 +734,7 @@ snd_info_create_entry(const char *name, struct snd_info_entry *parent)
 		kfree(entry);
 		return NULL;
 	}
-	entry->mode = S_IFREG | S_IRUGO;
+	entry->mode = S_IFREG | 0444;
 	entry->content = SNDRV_INFO_CONTENT_TEXT;
 	mutex_init(&entry->access);
 	INIT_LIST_HEAD(&entry->children);
@@ -753,7 +767,6 @@ struct snd_info_entry *snd_info_create_module_entry(struct module * module,
 		entry->module = module;
 	return entry;
 }
-
 EXPORT_SYMBOL(snd_info_create_module_entry);
 
 /**
@@ -777,18 +790,16 @@ struct snd_info_entry *snd_info_create_card_entry(struct snd_card *card,
 	}
 	return entry;
 }
-
 EXPORT_SYMBOL(snd_info_create_card_entry);
 
-static void snd_info_disconnect(struct snd_info_entry *entry)
+static void snd_info_clear_entries(struct snd_info_entry *entry)
 {
 	struct snd_info_entry *p;
 
 	if (!entry->p)
 		return;
 	list_for_each_entry(p, &entry->children, list)
-		snd_info_disconnect(p);
-	proc_remove(entry->p);
+		snd_info_clear_entries(p);
 	entry->p = NULL;
 }
 
@@ -805,8 +816,9 @@ void snd_info_free_entry(struct snd_info_entry * entry)
 	if (!entry)
 		return;
 	if (entry->p) {
+		proc_remove(entry->p);
 		mutex_lock(&info_mutex);
-		snd_info_disconnect(entry);
+		snd_info_clear_entries(entry);
 		mutex_unlock(&info_mutex);
 	}
 
@@ -825,7 +837,6 @@ void snd_info_free_entry(struct snd_info_entry * entry)
 		entry->private_free(entry);
 	kfree(entry);
 }
-
 EXPORT_SYMBOL(snd_info_free_entry);
 
 /**
@@ -868,7 +879,6 @@ int snd_info_register(struct snd_info_entry * entry)
 	mutex_unlock(&info_mutex);
 	return 0;
 }
-
 EXPORT_SYMBOL(snd_info_register);
 
 /*

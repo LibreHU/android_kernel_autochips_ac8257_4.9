@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * kernel/lockdep_proc.c
  *
@@ -18,31 +19,10 @@
 #include <linux/debug_locks.h>
 #include <linux/vmalloc.h>
 #include <linux/sort.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/div64.h>
 
 #include "lockdep_internals.h"
-
-#ifdef CONFIG_MTK_BOOT
-#include <mt-plat/mtk_boot_common.h>
-#endif
-
-#ifdef MTK_ENHANCE_LOCKDEP_PROC
-static unsigned int lockdep_mode;
-
-#define __USAGE(__STATE)						\
-	[LOCK_USED_IN_##__STATE] = "IN-"__stringify(__STATE)"-W",	\
-	[LOCK_ENABLED_##__STATE] = __stringify(__STATE)"-ON-W",		\
-	[LOCK_USED_IN_##__STATE##_READ] = "IN-"__stringify(__STATE)"-R",\
-	[LOCK_ENABLED_##__STATE##_READ] = __stringify(__STATE)"-ON-R",
-
-static const char * const usage_str[] = {
-#define LOCKDEP_STATE(__STATE) __USAGE(__STATE)
-#include "lockdep_states.h"
-#undef LOCKDEP_STATE
-	[LOCK_USED] = "INITIAL USE",
-};
-#endif
 
 static void *l_next(struct seq_file *m, void *v, loff_t *pos)
 {
@@ -75,18 +55,6 @@ static void print_name(struct seq_file *m, struct lock_class *class)
 	}
 }
 
-void lock_show_trace(struct seq_file *m, struct stack_trace *trace)
-{
-	int i;
-
-	if (!trace->entries)
-		return;
-
-	for (i = 0; i < trace->nr_entries; i++)
-		seq_printf(m, "%*c%pS\n", 7, ' ',
-			(void *)trace->entries[i]);
-}
-
 static int l_show(struct seq_file *m, void *v)
 {
 	struct lock_class *class = list_entry(v, struct lock_class, lock_entry);
@@ -114,44 +82,6 @@ static int l_show(struct seq_file *m, void *v)
 	print_name(m, class);
 	seq_puts(m, "\n");
 
-#ifdef MTK_ENHANCE_LOCKDEP_PROC
-	/* 0x1: print usage traces of this lock */
-	if (lockdep_mode & 0x1) {
-		int bit;
-
-		for (bit = 0; bit < LOCK_USAGE_STATES; bit++) {
-			if (class->usage_mask & (1 << bit)) {
-				seq_printf(m, "%s:\n", usage_str[bit]);
-				lock_show_trace(m, class->usage_traces + bit);
-			}
-		}
-		seq_puts(m, "-------------------------------------------\n");
-	}
-
-	list_for_each_entry(entry, &class->locks_after, entry) {
-		/* 0x4: print locks with all distance in locks_after */
-		if ((entry->distance == 1) || (lockdep_mode & 0x4)) {
-			seq_printf(m, " -> [%p] ", entry->class->key);
-			print_name(m, entry->class);
-			seq_printf(m, " [FD][%d]", entry->distance);
-			seq_puts(m, "\n");
-		/* 0x2: print entry trace of dependency locks in locks_after */
-			if (lockdep_mode & 0x2)
-				lock_show_trace(m, &entry->trace);
-		}
-	}
-
-	/* 0x8: print locks with all distance in locks_before */
-	if (lockdep_mode & 0x8) {
-		list_for_each_entry(entry, &class->locks_before, entry) {
-			seq_printf(m, " -> [%p] ", entry->class->key);
-			print_name(m, entry->class);
-			seq_printf(m, " [BD][%d]", entry->distance);
-			seq_puts(m, "\n");
-		}
-	}
-	seq_puts(m, "\n");
-#else
 	list_for_each_entry(entry, &class->locks_after, entry) {
 		if (entry->distance == 1) {
 			seq_printf(m, " -> [%p] ", entry->class->key);
@@ -160,7 +90,6 @@ static int l_show(struct seq_file *m, void *v)
 		}
 	}
 	seq_puts(m, "\n");
-#endif
 
 	return 0;
 }
@@ -170,54 +99,6 @@ static const struct seq_operations lockdep_ops = {
 	.next	= l_next,
 	.stop	= l_stop,
 	.show	= l_show,
-};
-
-static int lockdep_open(struct inode *inode, struct file *file)
-{
-	return seq_open(file, &lockdep_ops);
-}
-
-#ifdef MTK_ENHANCE_LOCKDEP_PROC
-/*
- * 0x0: print basic dependency information
- * 0x1: print usage traces of this lock
- * 0x2: print entry trace of dependency locks in locks_after
- * 0x4: print locks with all distance in locks_after
- * 0x8: print locks with all distance in locks_before
- */
-static ssize_t lockdep_write(struct file *filp,
-	const char *ubuf, size_t cnt, loff_t *data)
-{
-	char buf[16];
-	int ret;
-
-	if (cnt >= sizeof(buf) || cnt <= 0)
-		return cnt;
-
-	if (copy_from_user(&buf, ubuf, cnt))
-		return -EFAULT;
-
-	buf[cnt] = 0;
-
-	ret = kstrtouint(buf, 16, &lockdep_mode);
-	if (ret)
-		return ret;
-
-	if (lockdep_mode > 0x15)
-		lockdep_mode = 0;
-
-	return cnt;
-}
-#endif
-
-static const struct file_operations proc_lockdep_operations = {
-	.open		= lockdep_open,
-#ifdef MTK_ENHANCE_LOCKDEP_PROC
-	.write		= lockdep_write,
-#endif
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= seq_release,
 };
 
 #ifdef CONFIG_PROVE_LOCKING
@@ -277,18 +158,6 @@ static const struct seq_operations lockdep_chains_ops = {
 	.stop	= lc_stop,
 	.show	= lc_show,
 };
-
-static int lockdep_chains_open(struct inode *inode, struct file *file)
-{
-	return seq_open(file, &lockdep_chains_ops);
-}
-
-static const struct file_operations proc_lockdep_chains_operations = {
-	.open		= lockdep_chains_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= seq_release,
-};
 #endif /* CONFIG_PROVE_LOCKING */
 
 static void lockdep_stats_debug_show(struct seq_file *m)
@@ -309,6 +178,10 @@ static void lockdep_stats_debug_show(struct seq_file *m)
 		debug_atomic_read(chain_lookup_hits));
 	seq_printf(m, " cyclic checks:                 %11llu\n",
 		debug_atomic_read(nr_cyclic_checks));
+	seq_printf(m, " redundant checks:              %11llu\n",
+		debug_atomic_read(nr_redundant_checks));
+	seq_printf(m, " redundant links:               %11llu\n",
+		debug_atomic_read(nr_redundant));
 	seq_printf(m, " find-mask forwards checks:     %11llu\n",
 		debug_atomic_read(nr_find_usage_forwards_checks));
 	seq_printf(m, " find-mask backwards checks:    %11llu\n",
@@ -459,18 +332,6 @@ static int lockdep_stats_show(struct seq_file *m, void *v)
 
 	return 0;
 }
-
-static int lockdep_stats_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, lockdep_stats_show, NULL);
-}
-
-static const struct file_operations proc_lockdep_stats_operations = {
-	.open		= lockdep_stats_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
-};
 
 #ifdef CONFIG_LOCK_STAT
 
@@ -787,32 +648,16 @@ static const struct file_operations proc_lock_stat_operations = {
 
 static int __init lockdep_proc_init(void)
 {
-#ifdef CONFIG_MTK_BOOT
-	if (get_boot_mode() == META_BOOT)
-		debug_locks_off();
-#endif
-#ifdef MTK_ENHANCE_LOCKDEP_PROC
-	proc_create("lockdep", 0600, NULL, &proc_lockdep_operations);
-#else
-	proc_create("lockdep", S_IRUSR, NULL, &proc_lockdep_operations);
-#endif
-
+	proc_create_seq("lockdep", S_IRUSR, NULL, &lockdep_ops);
 #ifdef CONFIG_PROVE_LOCKING
-	proc_create("lockdep_chains", S_IRUSR, NULL,
-		    &proc_lockdep_chains_operations);
+	proc_create_seq("lockdep_chains", S_IRUSR, NULL, &lockdep_chains_ops);
 #endif
-	proc_create("lockdep_stats", S_IRUSR, NULL,
-		    &proc_lockdep_stats_operations);
-
+	proc_create_single("lockdep_stats", S_IRUSR, NULL, lockdep_stats_show);
 #ifdef CONFIG_LOCK_STAT
 	proc_create("lock_stat", S_IRUSR | S_IWUSR, NULL,
 		    &proc_lock_stat_operations);
 #endif
 
-#ifdef MTK_LOCK_MONITOR
-	lock_monitor_init();
-#endif
-	lockdep_test_init();
 	return 0;
 }
 

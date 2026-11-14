@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  * Based on arch/arm/include/asm/setup.h
  *
@@ -21,7 +22,9 @@
 
 #include <linux/types.h>
 
-#define COMMAND_LINE_SIZE	2048
+#define COMMAND_LINE_SIZE	4096
+
+/* MediaTek: memory blocks and reserved regions passed by the LK bootloader */
 #define MBLOCK_RESERVED_NAME_SIZE 128
 #define MBLOCK_RESERVED_NUM_MAX  128
 #define MBLOCK_NUM_MAX 128

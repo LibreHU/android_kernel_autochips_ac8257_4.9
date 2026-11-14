@@ -25,7 +25,7 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 
-#include "dvb_frontend.h"
+#include <media/dvb_frontend.h>
 #include "stb6100.h"
 
 static unsigned int verbose;
@@ -61,7 +61,7 @@ struct stb6100_lkup {
 	u8   reg;
 };
 
-static int stb6100_release(struct dvb_frontend *fe);
+static void stb6100_release(struct dvb_frontend *fe);
 
 static const struct stb6100_lkup lkup[] = {
 	{       0,  950000, 0x0a },
@@ -527,9 +527,8 @@ static int stb6100_set_params(struct dvb_frontend *fe)
 static const struct dvb_tuner_ops stb6100_ops = {
 	.info = {
 		.name			= "STB6100 Silicon Tuner",
-		.frequency_min		= 950000,
-		.frequency_max		= 2150000,
-		.frequency_step		= 0,
+		.frequency_min_hz	=  950 * MHz,
+		.frequency_max_hz	= 2150 * MHz,
 	},
 
 	.init		= stb6100_init,
@@ -562,17 +561,15 @@ struct dvb_frontend *stb6100_attach(struct dvb_frontend *fe,
 	return fe;
 }
 
-static int stb6100_release(struct dvb_frontend *fe)
+static void stb6100_release(struct dvb_frontend *fe)
 {
 	struct stb6100_state *state = fe->tuner_priv;
 
 	fe->tuner_priv = NULL;
 	kfree(state);
-
-	return 0;
 }
 
-EXPORT_SYMBOL(stb6100_attach);
+EXPORT_SYMBOL_GPL(stb6100_attach);
 MODULE_PARM_DESC(verbose, "Set Verbosity level");
 
 MODULE_AUTHOR("Manu Abraham");

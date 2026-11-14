@@ -1,14 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2017 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * Copyright (c) 2019 MediaTek Inc.
  */
 
 #ifdef pr_fmt
@@ -22,6 +14,7 @@
 
 #include "mtk_sd.h"
 #include <mmc/core/core.h>
+#include <mmc/core/card.h>
 #include "dbg.h"
 #include "autok.h"
 #include "autok_dvfs.h"
@@ -485,6 +478,12 @@ void msdc_init_tune_setting(struct msdc_host *host)
 		MSDC_PB2_DEFAULT_RESPSTENSEL);
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
 		MSDC_PB2_DEFAULT_CRCSTSENSEL);
+
+	/* FIX ME: check if can be moved to msdc_cust.c */
+#ifdef CONFIG_MACH_MT6799
+	if (CHIP_IS_VER2())
+		SET_EMMC50_CFG_END_BIT_CHK_CNT(EMMC50_CFG_END_BIT_CHK_CNT);
+#endif
 
 	autok_path_sel(host);
 }

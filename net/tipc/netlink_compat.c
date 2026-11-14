@@ -101,6 +101,7 @@ static int tipc_add_tlv(struct sk_buff *skb, u16 type, void *data, u16 len)
 		return -EMSGSIZE;
 
 	skb_put(skb, TLV_SPACE(len));
+	memset(tlv, 0, TLV_SPACE(len));
 	tlv->tlv_type = htons(type);
 	tlv->tlv_len = htons(TLV_LENGTH(len));
 	if (len && data)
@@ -196,6 +197,10 @@ static int __tipc_nl_compat_dumpit(struct tipc_nl_compat_cmd_dump *cmd,
 		return -ENOMEM;
 
 	buf->sk = msg->dst_sk;
+	if (__tipc_dump_start(&cb, msg->net)) {
+		kfree_skb(buf);
+		return -ENOMEM;
+	}
 
 	do {
 		int rem;
@@ -227,6 +232,7 @@ static int __tipc_nl_compat_dumpit(struct tipc_nl_compat_cmd_dump *cmd,
 	err = 0;
 
 err_out:
+	tipc_dump_done(&cb);
 	kfree_skb(buf);
 
 	if (err == -EMSGSIZE) {
@@ -313,38 +319,42 @@ static int __tipc_nl_compat_doit(struct tipc_nl_compat_cmd_doit *cmd,
 	if (!trans_buf)
 		return -ENOMEM;
 
-	err = (*cmd->transcode)(cmd, trans_buf, msg);
-	if (err)
-		goto trans_out;
-
-	attrbuf = kmalloc((tipc_genl_family.maxattr + 1) *
-			sizeof(struct nlattr *), GFP_KERNEL);
+	attrbuf = kmalloc_array(tipc_genl_family.maxattr + 1,
+				sizeof(struct nlattr *),
+				GFP_KERNEL);
 	if (!attrbuf) {
 		err = -ENOMEM;
 		goto trans_out;
 	}
 
-	err = nla_parse(attrbuf, tipc_genl_family.maxattr,
-			(const struct nlattr *)trans_buf->data,
-			trans_buf->len, NULL);
-	if (err)
-		goto parse_out;
-
 	doit_buf = alloc_skb(NLMSG_GOODSIZE, GFP_KERNEL);
 	if (!doit_buf) {
 		err = -ENOMEM;
-		goto parse_out;
+		goto attrbuf_out;
 	}
-
-	doit_buf->sk = msg->dst_sk;
 
 	memset(&info, 0, sizeof(info));
 	info.attrs = attrbuf;
 
+	rtnl_lock();
+	err = (*cmd->transcode)(cmd, trans_buf, msg);
+	if (err)
+		goto doit_out;
+
+	err = nla_parse(attrbuf, tipc_genl_family.maxattr,
+			(const struct nlattr *)trans_buf->data,
+			trans_buf->len, NULL, NULL);
+	if (err)
+		goto doit_out;
+
+	doit_buf->sk = msg->dst_sk;
+
 	err = (*cmd->doit)(doit_buf, &info);
+doit_out:
+	rtnl_unlock();
 
 	kfree_skb(doit_buf);
-parse_out:
+attrbuf_out:
 	kfree(attrbuf);
 trans_out:
 	kfree_skb(trans_buf);
@@ -383,7 +393,7 @@ static int tipc_nl_compat_bearer_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(bearer, TIPC_NLA_BEARER_MAX,
-			       attrs[TIPC_NLA_BEARER], NULL);
+			       attrs[TIPC_NLA_BEARER], NULL, NULL);
 	if (err)
 		return err;
 
@@ -523,7 +533,7 @@ static int tipc_nl_compat_link_stat_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(link, TIPC_NLA_LINK_MAX, attrs[TIPC_NLA_LINK],
-			       NULL);
+			       NULL, NULL);
 	if (err)
 		return err;
 
@@ -531,7 +541,7 @@ static int tipc_nl_compat_link_stat_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(prop, TIPC_NLA_PROP_MAX,
-			       link[TIPC_NLA_LINK_PROP], NULL);
+			       link[TIPC_NLA_LINK_PROP], NULL, NULL);
 	if (err)
 		return err;
 
@@ -539,7 +549,7 @@ static int tipc_nl_compat_link_stat_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(stats, TIPC_NLA_STATS_MAX,
-			       link[TIPC_NLA_LINK_STATS], NULL);
+			       link[TIPC_NLA_LINK_STATS], NULL, NULL);
 	if (err)
 		return err;
 
@@ -658,7 +668,7 @@ static int tipc_nl_compat_link_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(link, TIPC_NLA_LINK_MAX, attrs[TIPC_NLA_LINK],
-			       NULL);
+			       NULL, NULL);
 	if (err)
 		return err;
 
@@ -800,13 +810,13 @@ static int tipc_nl_compat_link_set(struct tipc_nl_compat_cmd_doit *cmd,
 
 	media = tipc_media_find(lc->name);
 	if (media) {
-		cmd->doit = &tipc_nl_media_set;
+		cmd->doit = &__tipc_nl_media_set;
 		return tipc_nl_compat_media_set(skb, msg);
 	}
 
 	bearer = tipc_bearer_find(msg->net, lc->name);
 	if (bearer) {
-		cmd->doit = &tipc_nl_bearer_set;
+		cmd->doit = &__tipc_nl_bearer_set;
 		return tipc_nl_compat_bearer_set(skb, msg);
 	}
 
@@ -886,7 +896,7 @@ static int tipc_nl_compat_name_table_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(nt, TIPC_NLA_NAME_TABLE_MAX,
-			       attrs[TIPC_NLA_NAME_TABLE], NULL);
+			       attrs[TIPC_NLA_NAME_TABLE], NULL, NULL);
 	if (err)
 		return err;
 
@@ -894,7 +904,7 @@ static int tipc_nl_compat_name_table_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(publ, TIPC_NLA_PUBL_MAX,
-			       nt[TIPC_NLA_NAME_TABLE_PUBL], NULL);
+			       nt[TIPC_NLA_NAME_TABLE_PUBL], NULL, NULL);
 	if (err)
 		return err;
 
@@ -954,7 +964,7 @@ static int __tipc_nl_compat_publ_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(publ, TIPC_NLA_PUBL_MAX, attrs[TIPC_NLA_PUBL],
-			       NULL);
+			       NULL, NULL);
 	if (err)
 		return err;
 
@@ -1024,7 +1034,7 @@ static int tipc_nl_compat_sk_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(sock, TIPC_NLA_SOCK_MAX, attrs[TIPC_NLA_SOCK],
-			       NULL);
+			       NULL, NULL);
 	if (err)
 		return err;
 
@@ -1035,8 +1045,11 @@ static int tipc_nl_compat_sk_dump(struct tipc_nl_compat_msg *msg,
 		u32 node;
 		struct nlattr *con[TIPC_NLA_CON_MAX + 1];
 
-		nla_parse_nested(con, TIPC_NLA_CON_MAX, sock[TIPC_NLA_SOCK_CON],
-				 NULL);
+		err = nla_parse_nested(con, TIPC_NLA_CON_MAX,
+				       sock[TIPC_NLA_SOCK_CON], NULL, NULL);
+
+		if (err)
+			return err;
 
 		node = nla_get_u32(con[TIPC_NLA_CON_NODE]);
 		tipc_tlv_sprintf(msg->rep, "  connected to <%u.%u.%u:%u>",
@@ -1072,8 +1085,8 @@ static int tipc_nl_compat_media_dump(struct tipc_nl_compat_msg *msg,
 	if (!attrs[TIPC_NLA_MEDIA])
 		return -EINVAL;
 
-	err = nla_parse_nested(media, TIPC_NLA_MEDIA_MAX, attrs[TIPC_NLA_MEDIA],
-			       NULL);
+	err = nla_parse_nested(media, TIPC_NLA_MEDIA_MAX,
+			       attrs[TIPC_NLA_MEDIA], NULL, NULL);
 	if (err)
 		return err;
 
@@ -1093,7 +1106,7 @@ static int tipc_nl_compat_node_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(node, TIPC_NLA_NODE_MAX, attrs[TIPC_NLA_NODE],
-			       NULL);
+			       NULL, NULL);
 	if (err)
 		return err;
 
@@ -1140,7 +1153,7 @@ static int tipc_nl_compat_net_dump(struct tipc_nl_compat_msg *msg,
 		return -EINVAL;
 
 	err = nla_parse_nested(net, TIPC_NLA_NET_MAX, attrs[TIPC_NLA_NET],
-			       NULL);
+			       NULL, NULL);
 	if (err)
 		return err;
 
@@ -1182,12 +1195,12 @@ static int tipc_nl_compat_handle(struct tipc_nl_compat_msg *msg)
 		return tipc_nl_compat_dumpit(&dump, msg);
 	case TIPC_CMD_ENABLE_BEARER:
 		msg->req_type = TIPC_TLV_BEARER_CONFIG;
-		doit.doit = tipc_nl_bearer_enable;
+		doit.doit = __tipc_nl_bearer_enable;
 		doit.transcode = tipc_nl_compat_bearer_enable;
 		return tipc_nl_compat_doit(&doit, msg);
 	case TIPC_CMD_DISABLE_BEARER:
 		msg->req_type = TIPC_TLV_BEARER_NAME;
-		doit.doit = tipc_nl_bearer_disable;
+		doit.doit = __tipc_nl_bearer_disable;
 		doit.transcode = tipc_nl_compat_bearer_disable;
 		return tipc_nl_compat_doit(&doit, msg);
 	case TIPC_CMD_SHOW_LINK_STATS:
@@ -1241,12 +1254,12 @@ static int tipc_nl_compat_handle(struct tipc_nl_compat_msg *msg)
 		return tipc_nl_compat_dumpit(&dump, msg);
 	case TIPC_CMD_SET_NODE_ADDR:
 		msg->req_type = TIPC_TLV_NET_ADDR;
-		doit.doit = tipc_nl_net_set;
+		doit.doit = __tipc_nl_net_set;
 		doit.transcode = tipc_nl_compat_net_set;
 		return tipc_nl_compat_doit(&doit, msg);
 	case TIPC_CMD_SET_NETID:
 		msg->req_type = TIPC_TLV_UNSIGNED;
-		doit.doit = tipc_nl_net_set;
+		doit.doit = __tipc_nl_net_set;
 		doit.transcode = tipc_nl_compat_net_set;
 		return tipc_nl_compat_doit(&doit, msg);
 	case TIPC_CMD_GET_NETID:
@@ -1310,28 +1323,29 @@ send:
 	return err;
 }
 
-static struct genl_family tipc_genl_compat_family = {
-	.id		= GENL_ID_GENERATE,
-	.name		= TIPC_GENL_NAME,
-	.version	= TIPC_GENL_VERSION,
-	.hdrsize	= TIPC_GENL_HDRLEN,
-	.maxattr	= 0,
-	.netnsok	= true,
-};
-
-static struct genl_ops tipc_genl_compat_ops[] = {
+static const struct genl_ops tipc_genl_compat_ops[] = {
 	{
 		.cmd		= TIPC_GENL_CMD,
 		.doit		= tipc_nl_compat_recv,
 	},
 };
 
-int tipc_netlink_compat_start(void)
+static struct genl_family tipc_genl_compat_family __ro_after_init = {
+	.name		= TIPC_GENL_NAME,
+	.version	= TIPC_GENL_VERSION,
+	.hdrsize	= TIPC_GENL_HDRLEN,
+	.maxattr	= 0,
+	.netnsok	= true,
+	.module		= THIS_MODULE,
+	.ops		= tipc_genl_compat_ops,
+	.n_ops		= ARRAY_SIZE(tipc_genl_compat_ops),
+};
+
+int __init tipc_netlink_compat_start(void)
 {
 	int res;
 
-	res = genl_register_family_with_ops(&tipc_genl_compat_family,
-					    tipc_genl_compat_ops);
+	res = genl_register_family(&tipc_genl_compat_family);
 	if (res) {
 		pr_err("Failed to register legacy compat interface\n");
 		return res;

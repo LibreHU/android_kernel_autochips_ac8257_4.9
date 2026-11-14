@@ -18,7 +18,7 @@
 struct nft_range_expr {
 	struct nft_data		data_from;
 	struct nft_data		data_to;
-	enum nft_registers	sreg:8;
+	u8			sreg;
 	u8			len;
 	enum nft_range_ops	op:8;
 };
@@ -70,18 +70,28 @@ static int nft_range_init(const struct nft_ctx *ctx, const struct nft_expr *expr
 	if (err < 0)
 		return err;
 
+	if (desc_from.type != NFT_DATA_VALUE) {
+		err = -EINVAL;
+		goto err1;
+	}
+
 	err = nft_data_init(NULL, &priv->data_to, sizeof(priv->data_to),
 			    &desc_to, tb[NFTA_RANGE_TO_DATA]);
 	if (err < 0)
 		goto err1;
+
+	if (desc_to.type != NFT_DATA_VALUE) {
+		err = -EINVAL;
+		goto err2;
+	}
 
 	if (desc_from.len != desc_to.len) {
 		err = -EINVAL;
 		goto err2;
 	}
 
-	priv->sreg = nft_parse_register(tb[NFTA_RANGE_SREG]);
-	err = nft_validate_register_load(priv->sreg, desc_from.len);
+	err = nft_parse_register_load(tb[NFTA_RANGE_SREG], &priv->sreg,
+				      desc_from.len);
 	if (err < 0)
 		goto err2;
 
@@ -102,9 +112,9 @@ static int nft_range_init(const struct nft_ctx *ctx, const struct nft_expr *expr
 	priv->len = desc_from.len;
 	return 0;
 err2:
-	nft_data_uninit(&priv->data_to, desc_to.type);
+	nft_data_release(&priv->data_to, desc_to.type);
 err1:
-	nft_data_uninit(&priv->data_from, desc_from.type);
+	nft_data_release(&priv->data_from, desc_from.type);
 	return err;
 }
 
@@ -128,7 +138,6 @@ nla_put_failure:
 	return -1;
 }
 
-static struct nft_expr_type nft_range_type;
 static const struct nft_expr_ops nft_range_ops = {
 	.type		= &nft_range_type,
 	.size		= NFT_EXPR_SIZE(sizeof(struct nft_range_expr)),
@@ -137,20 +146,10 @@ static const struct nft_expr_ops nft_range_ops = {
 	.dump		= nft_range_dump,
 };
 
-static struct nft_expr_type nft_range_type __read_mostly = {
+struct nft_expr_type nft_range_type __read_mostly = {
 	.name		= "range",
 	.ops		= &nft_range_ops,
 	.policy		= nft_range_policy,
 	.maxattr	= NFTA_RANGE_MAX,
 	.owner		= THIS_MODULE,
 };
-
-int __init nft_range_module_init(void)
-{
-	return nft_register_expr(&nft_range_type);
-}
-
-void nft_range_module_exit(void)
-{
-	nft_unregister_expr(&nft_range_type);
-}

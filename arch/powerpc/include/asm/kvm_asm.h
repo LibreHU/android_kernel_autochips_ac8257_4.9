@@ -99,6 +99,7 @@
 #define BOOK3S_INTERRUPT_H_EMUL_ASSIST	0xe40
 #define BOOK3S_INTERRUPT_HMI		0xe60
 #define BOOK3S_INTERRUPT_H_DOORBELL	0xe80
+#define BOOK3S_INTERRUPT_H_VIRT		0xea0
 #define BOOK3S_INTERRUPT_PERFMON	0xf00
 #define BOOK3S_INTERRUPT_ALTIVEC	0xf20
 #define BOOK3S_INTERRUPT_VSX		0xf40
@@ -106,6 +107,8 @@
 #define BOOK3S_INTERRUPT_H_FAC_UNAVAIL	0xf80
 
 /* book3s_hv */
+
+#define BOOK3S_INTERRUPT_HV_SOFTPATCH	0x1500
 
 /*
  * Special trap used to indicate to host that this is a
@@ -159,5 +162,8 @@
 #define KVM_GUEST_MODE_HOST_HV	4
 
 #define KVM_INST_FETCH_FAILED	-1
+
+/* Extract PO and XOP opcode fields */
+#define PO_XOP_OPCODE_MASK 0xfc0007fe
 
 #endif /* __POWERPC_KVM_ASM_H__ */

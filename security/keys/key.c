@@ -54,10 +54,10 @@ void __key_check(const struct key *key)
 struct key_user *key_user_lookup(kuid_t uid)
 {
 	struct key_user *candidate = NULL, *user;
-	struct rb_node *parent = NULL;
-	struct rb_node **p;
+	struct rb_node *parent, **p;
 
 try_again:
+	parent = NULL;
 	p = &key_user_tree.rb_node;
 	spin_lock(&key_user_lock);
 
@@ -93,7 +93,7 @@ try_again:
 
 	/* if we get here, then the user record still hadn't appeared on the
 	 * second pass - so we use the candidate record */
-	atomic_set(&candidate->usage, 1);
+	refcount_set(&candidate->usage, 1);
 	atomic_set(&candidate->nkeys, 0);
 	atomic_set(&candidate->nikeys, 0);
 	candidate->uid = uid;
@@ -110,7 +110,7 @@ try_again:
 
 	/* okay - we found a user record for this UID */
 found:
-	atomic_inc(&user->usage);
+	refcount_inc(&user->usage);
 	spin_unlock(&key_user_lock);
 	kfree(candidate);
 out:
@@ -122,7 +122,7 @@ out:
  */
 void key_user_put(struct key_user *user)
 {
-	if (atomic_dec_and_lock(&user->usage, &key_user_lock)) {
+	if (refcount_dec_and_lock(&user->usage, &key_user_lock)) {
 		rb_erase(&user->node, &key_user_tree);
 		spin_unlock(&key_user_lock);
 
@@ -201,11 +201,14 @@ serial_exists:
  * @cred: The credentials specifying UID namespace.
  * @perm: The permissions mask of the new key.
  * @flags: Flags specifying quota properties.
- * @restrict_link: Optional link restriction method for new keyrings.
+ * @restrict_link: Optional link restriction for new keyrings.
  *
  * Allocate a key of the specified type with the attributes given.  The key is
  * returned in an uninstantiated state and the caller needs to instantiate the
  * key before returning.
+ *
+ * The restrict_link structure (if not NULL) will be freed when the
+ * keyring is destroyed, so it must be dynamically allocated.
  *
  * The user's key count quota is updated to reflect the creation of the key and
  * the user's key data quota has the default for the key type reserved.  The
@@ -225,9 +228,7 @@ serial_exists:
 struct key *key_alloc(struct key_type *type, const char *desc,
 		      kuid_t uid, kgid_t gid, const struct cred *cred,
 		      key_perm_t perm, unsigned long flags,
-		      int (*restrict_link)(struct key *,
-					   const struct key_type *,
-					   const union key_payload *))
+		      struct key_restriction *restrict_link)
 {
 	struct key_user *user = NULL;
 	struct key *key;
@@ -285,7 +286,7 @@ struct key *key_alloc(struct key_type *type, const char *desc,
 	if (!key->index_key.description)
 		goto no_memory_3;
 
-	atomic_set(&key->usage, 1);
+	refcount_set(&key->usage, 1);
 	init_rwsem(&key->sem);
 	lockdep_set_class(&key->sem, &type->lock_class);
 	key->index_key.type = type;
@@ -304,6 +305,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
 		key->flags |= 1 << KEY_FLAG_BUILTIN;
 	if (flags & KEY_ALLOC_UID_KEYRING)
 		key->flags |= 1 << KEY_FLAG_UID_KEYRING;
+	if (flags & KEY_ALLOC_SET_KEEP)
+		key->flags |= 1 << KEY_FLAG_KEEP;
 
 #ifdef KEY_DEBUGGING
 	key->magic = KEY_DEBUG_MAGIC;
@@ -460,7 +463,7 @@ static int __key_instantiate_and_link(struct key *key,
 			if (authkey)
 				key_revoke(authkey);
 
-			if (prep->expiry != TIME_T_MAX) {
+			if (prep->expiry != TIME64_MAX) {
 				key->expiry = prep->expiry;
 				key_schedule_gc(prep->expiry + key_gc_delay);
 			}
@@ -506,7 +509,7 @@ int key_instantiate_and_link(struct key *key,
 	prep.data = data;
 	prep.datalen = datalen;
 	prep.quotalen = key->type->def_datalen;
-	prep.expiry = TIME_T_MAX;
+	prep.expiry = TIME64_MAX;
 	if (key->type->preparse) {
 		ret = key->type->preparse(&prep);
 		if (ret < 0)
@@ -514,19 +517,23 @@ int key_instantiate_and_link(struct key *key,
 	}
 
 	if (keyring) {
-		if (keyring->restrict_link) {
-			ret = keyring->restrict_link(keyring, key->type,
-						     &prep.payload);
-			if (ret < 0)
-				goto error;
-		}
 		ret = __key_link_begin(keyring, &key->index_key, &edit);
 		if (ret < 0)
 			goto error;
+
+		if (keyring->restrict_link && keyring->restrict_link->check) {
+			struct key_restriction *keyres = keyring->restrict_link;
+
+			ret = keyres->check(keyring, key->type, &prep.payload,
+					    keyres->key);
+			if (ret < 0)
+				goto error_link_end;
+		}
 	}
 
 	ret = __key_instantiate_and_link(key, &prep, keyring, authkey, &edit);
 
+error_link_end:
 	if (keyring)
 		__key_link_end(keyring, &key->index_key, edit);
 
@@ -566,7 +573,6 @@ int key_reject_and_link(struct key *key,
 			struct key *authkey)
 {
 	struct assoc_array_edit *edit;
-	struct timespec now;
 	int ret, awaken, link_ret = 0;
 
 	key_check(key);
@@ -589,8 +595,7 @@ int key_reject_and_link(struct key *key,
 		/* mark the key as being negatively instantiated */
 		atomic_inc(&key->user->nikeys);
 		mark_key_instantiated(key, -error);
-		now = current_kernel_time();
-		key->expiry = now.tv_sec + timeout;
+		key->expiry = ktime_get_real_seconds() + timeout;
 		key_schedule_gc(key->expiry + key_gc_delay);
 
 		if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
@@ -633,7 +638,7 @@ void key_put(struct key *key)
 	if (key) {
 		key_check(key);
 
-		if (atomic_dec_and_test(&key->usage))
+		if (refcount_dec_and_test(&key->usage))
 			schedule_work(&key_gc_work);
 	}
 }
@@ -667,14 +672,11 @@ not_found:
 	goto error;
 
 found:
-	/* pretend it doesn't exist if it is awaiting deletion */
-	if (atomic_read(&key->usage) == 0)
-		goto not_found;
-
-	/* this races with key_put(), but that doesn't matter since key_put()
-	 * doesn't actually change the key
+	/* A key is allowed to be looked up only if someone still owns a
+	 * reference to it - otherwise it's awaiting the gc.
 	 */
-	__key_get(key);
+	if (!refcount_inc_not_zero(&key->usage))
+		goto not_found;
 
 error:
 	spin_unlock(&key_serial_lock);
@@ -709,16 +711,13 @@ found_kernel_type:
 
 void key_set_timeout(struct key *key, unsigned timeout)
 {
-	struct timespec now;
-	time_t expiry = 0;
+	time64_t expiry = 0;
 
 	/* make the changes with the locks held to prevent races */
 	down_write(&key->sem);
 
-	if (timeout > 0) {
-		now = current_kernel_time();
-		expiry = now.tv_sec + timeout;
-	}
+	if (timeout > 0)
+		expiry = ktime_get_real_seconds() + timeout;
 
 	key->expiry = expiry;
 	key_schedule_gc(key->expiry + key_gc_delay);
@@ -818,9 +817,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
 	struct key *keyring, *key = NULL;
 	key_ref_t key_ref;
 	int ret;
-	int (*restrict_link)(struct key *,
-			     const struct key_type *,
-			     const union key_payload *) = NULL;
+	struct key_restriction *restrict_link = NULL;
 
 	/* look up the key type to see if it's one of the registered kernel
 	 * types */
@@ -839,7 +836,6 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
 
 	key_check(keyring);
 
-	key_ref = ERR_PTR(-EPERM);
 	if (!(flags & KEY_ALLOC_BYPASS_RESTRICTION))
 		restrict_link = keyring->restrict_link;
 
@@ -851,7 +847,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
 	prep.data = payload;
 	prep.datalen = plen;
 	prep.quotalen = index_key.type->def_datalen;
-	prep.expiry = TIME_T_MAX;
+	prep.expiry = TIME64_MAX;
 	if (index_key.type->preparse) {
 		ret = index_key.type->preparse(&prep);
 		if (ret < 0) {
@@ -866,18 +862,19 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
 	}
 	index_key.desc_len = strlen(index_key.description);
 
-	if (restrict_link) {
-		ret = restrict_link(keyring, index_key.type, &prep.payload);
-		if (ret < 0) {
-			key_ref = ERR_PTR(ret);
-			goto error_free_prep;
-		}
-	}
-
 	ret = __key_link_begin(keyring, &index_key, &edit);
 	if (ret < 0) {
 		key_ref = ERR_PTR(ret);
 		goto error_free_prep;
+	}
+
+	if (restrict_link && restrict_link->check) {
+		ret = restrict_link->check(keyring, index_key.type,
+					   &prep.payload, restrict_link->key);
+		if (ret < 0) {
+			key_ref = ERR_PTR(ret);
+			goto error_link_end;
+		}
 	}
 
 	/* if we're going to allocate a new key, we're going to have
@@ -994,7 +991,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
 	prep.data = payload;
 	prep.datalen = plen;
 	prep.quotalen = key->type->def_datalen;
-	prep.expiry = TIME_T_MAX;
+	prep.expiry = TIME64_MAX;
 	if (key->type->preparse) {
 		ret = key->type->preparse(&prep);
 		if (ret < 0)
@@ -1028,8 +1025,7 @@ EXPORT_SYMBOL(key_update);
  */
 void key_revoke(struct key *key)
 {
-	struct timespec now;
-	time_t time;
+	time64_t time;
 
 	key_check(key);
 
@@ -1044,8 +1040,7 @@ void key_revoke(struct key *key)
 		key->type->revoke(key);
 
 	/* set the death time to no more than the expiry time */
-	now = current_kernel_time();
-	time = now.tv_sec;
+	time = ktime_get_real_seconds();
 	if (key->revoked_at == 0 || key->revoked_at > time) {
 		key->revoked_at = time;
 		key_schedule_gc(key->revoked_at + key_gc_delay);

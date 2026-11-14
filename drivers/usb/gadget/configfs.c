@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 #include <linux/configfs.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -25,7 +26,7 @@
 #include "mtk_gadget.h"
 
 #ifdef CONFIG_USB_CONFIGFS_F_ACC
-extern int acc_ctrlrequest(struct usb_composite_dev *cdev,
+extern int acc_ctrlrequest_composite(struct usb_composite_dev *cdev,
 				const struct usb_ctrlrequest *ctrl);
 void acc_disconnect(void);
 #endif
@@ -105,14 +106,14 @@ struct gadget_info {
 	bool use_os_desc;
 	char b_vendor_code;
 	char qw_sign[OS_STRING_QW_SIGN_LEN];
+	spinlock_t spinlock;
+	bool unbind;
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
 	bool connected;
 	bool sw_connected;
 	struct work_struct work;
 	struct device *dev;
 #endif
-	spinlock_t spinlock;
-	bool unbind;
 };
 
 static inline struct gadget_info *to_gadget_info(struct config_item *item)
@@ -159,26 +160,28 @@ struct gadget_config_name {
 	struct list_head list;
 };
 
-#define MAX_USB_STRING_LEN	126
-#define MAX_USB_STRING_WITH_NULL_LEN	(MAX_USB_STRING_LEN+1)
+#define USB_MAX_STRING_WITH_NULL_LEN	(USB_MAX_STRING_LEN+1)
 
 static int usb_string_copy(const char *s, char **s_copy)
 {
 	int ret;
 	char *str;
 	char *copy = *s_copy;
+
 	ret = strlen(s);
-	if (ret > MAX_USB_STRING_LEN)
+	if (ret > USB_MAX_STRING_LEN)
 		return -EOVERFLOW;
+	if (ret < 1)
+		return -EINVAL;
 
 	if (copy) {
 		str = copy;
 	} else {
-		str = kmalloc(MAX_USB_STRING_WITH_NULL_LEN, GFP_KERNEL);
+		str = kmalloc(USB_MAX_STRING_WITH_NULL_LEN, GFP_KERNEL);
 		if (!str)
 			return -ENOMEM;
 	}
-	strncpy(str, s, MAX_USB_STRING_WITH_NULL_LEN);
+	strcpy(str, s);
 	if (str[ret - 1] == '\n')
 		str[ret - 1] = '\0';
 	*s_copy = str;
@@ -499,7 +502,7 @@ out:
 	return ret;
 }
 
-static int config_usb_cfg_unlink(
+static void config_usb_cfg_unlink(
 	struct config_item *usb_cfg_ci,
 	struct config_item *usb_func_ci)
 {
@@ -532,13 +535,12 @@ static int config_usb_cfg_unlink(
 			list_del(&f->list);
 			usb_put_function(f);
 			mutex_unlock(&gi->lock);
-			return 0;
+			return;
 		}
 	}
 	mutex_unlock(&gi->lock);
 	printk("carplay %s %s %d\n", __FILE__, __func__, __LINE__);
 	WARN(1, "Unable to locate function to unbind\n");
-	return 0;
 }
 
 static struct configfs_item_operations gadget_config_item_ops = {
@@ -601,13 +603,13 @@ static struct configfs_attribute *gadget_config_attrs[] = {
 	NULL,
 };
 
-static struct config_item_type gadget_config_type = {
+static const struct config_item_type gadget_config_type = {
 	.ct_item_ops	= &gadget_config_item_ops,
 	.ct_attrs	= gadget_config_attrs,
 	.ct_owner	= THIS_MODULE,
 };
 
-static struct config_item_type gadget_root_type = {
+static const struct config_item_type gadget_root_type = {
 	.ct_item_ops	= &gadget_root_item_ops,
 	.ct_attrs	= gadget_root_attrs,
 	.ct_owner	= THIS_MODULE,
@@ -693,7 +695,7 @@ static struct configfs_group_operations functions_ops = {
 	.drop_item      = &function_drop,
 };
 
-static struct config_item_type functions_type = {
+static const struct config_item_type functions_type = {
 	.ct_group_ops   = &functions_ops,
 	.ct_owner       = THIS_MODULE,
 };
@@ -796,7 +798,7 @@ static struct configfs_group_operations config_desc_ops = {
 	.drop_item      = &config_desc_drop,
 };
 
-static struct config_item_type config_desc_type = {
+static const struct config_item_type config_desc_type = {
 	.ct_group_ops   = &config_desc_ops,
 	.ct_owner       = THIS_MODULE,
 };
@@ -840,7 +842,7 @@ static inline struct gadget_info *os_desc_item_to_gadget_info(
 
 static ssize_t os_desc_use_show(struct config_item *item, char *page)
 {
-	return sprintf(page, "%d",
+	return sprintf(page, "%d\n",
 			os_desc_item_to_gadget_info(item)->use_os_desc);
 }
 
@@ -866,7 +868,7 @@ static ssize_t os_desc_use_store(struct config_item *item, const char *page,
 
 static ssize_t os_desc_b_vendor_code_show(struct config_item *item, char *page)
 {
-	return sprintf(page, "%d",
+	return sprintf(page, "0x%02x\n",
 			os_desc_item_to_gadget_info(item)->b_vendor_code);
 }
 
@@ -893,9 +895,13 @@ static ssize_t os_desc_b_vendor_code_store(struct config_item *item,
 static ssize_t os_desc_qw_sign_show(struct config_item *item, char *page)
 {
 	struct gadget_info *gi = os_desc_item_to_gadget_info(item);
+	int res;
 
-	memcpy(page, gi->qw_sign, OS_STRING_QW_SIGN_LEN);
-	return OS_STRING_QW_SIGN_LEN;
+	res = utf16s_to_utf8s((wchar_t *) gi->qw_sign, OS_STRING_QW_SIGN_LEN,
+			      UTF16_LITTLE_ENDIAN, page, PAGE_SIZE - 1);
+	page[res++] = '\n';
+
+	return res;
 }
 
 static ssize_t os_desc_qw_sign_store(struct config_item *item, const char *page,
@@ -971,7 +977,7 @@ out:
 	return ret;
 }
 
-static int os_desc_unlink(struct config_item *os_desc_ci,
+static void os_desc_unlink(struct config_item *os_desc_ci,
 			  struct config_item *usb_cfg_ci)
 {
 	struct gadget_info *gi = container_of(to_config_group(os_desc_ci),
@@ -984,7 +990,6 @@ static int os_desc_unlink(struct config_item *os_desc_ci,
 	cdev->os_desc_config = NULL;
 	WARN_ON(gi->composite.gadget_driver.udc_name);
 	mutex_unlock(&gi->lock);
-	return 0;
 }
 
 static struct configfs_item_operations os_desc_ops = {
@@ -1007,7 +1012,7 @@ static inline struct usb_os_desc_ext_prop
 
 static ssize_t ext_prop_type_show(struct config_item *item, char *page)
 {
-	return sprintf(page, "%d", to_usb_os_desc_ext_prop(item)->type);
+	return sprintf(page, "%d\n", to_usb_os_desc_ext_prop(item)->type);
 }
 
 static ssize_t ext_prop_type_store(struct config_item *item,
@@ -1326,8 +1331,8 @@ static void purge_configs_funcs(struct gadget_info *gi)
 			if (f->unbind) {
 				printk("carplay %s %s %d unbind(%s)\n", __FILE__, __func__, __LINE__,f->name);
 				dev_dbg(&gi->cdev.gadget->dev,
-				         "unbind function '%s'/%p\n",
-				         f->name, f);
+					"unbind function '%s'/%p\n",
+					f->name, f);
 				f->unbind(c, f);
 			}
 		}
@@ -1723,7 +1728,7 @@ static int android_setup(struct usb_gadget *gadget,
 
 #ifdef CONFIG_USB_CONFIGFS_F_ACC
 	if (value < 0)
-		value = acc_ctrlrequest(cdev, c);
+		value = acc_ctrlrequest_composite(cdev, c);
 #endif
 
 	if (value < 0)
@@ -1788,7 +1793,6 @@ static const struct usb_gadget_driver configfs_driver_template = {
 	.reset          = configfs_composite_disconnect,
 	.disconnect     = configfs_composite_disconnect,
 #endif
-
 	.suspend	= configfs_composite_suspend,
 	.resume		= configfs_composite_resume,
 
@@ -2034,7 +2038,7 @@ static struct configfs_group_operations gadgets_ops = {
 	.drop_item      = &gadgets_drop,
 };
 
-static struct config_item_type gadgets_type = {
+static const struct config_item_type gadgets_type = {
 	.ct_group_ops   = &gadgets_ops,
 	.ct_owner       = THIS_MODULE,
 };

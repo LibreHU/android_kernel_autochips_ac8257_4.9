@@ -1,16 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2017 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * Copyright (c) 2019 MediaTek Inc.
  */
-
 #ifndef MT_SD_H
 #define MT_SD_H
 
@@ -21,26 +12,39 @@
 #else
 /* #define MTK_MSDC_BRINGUP_DEBUG */
 #endif
-#ifdef CONFIG_MSDC_ATC_MMC_DEBUG
-#define MSDC_ATC_MMC_DEBUG
-#endif
 
 #include <mt-plat/sync_write.h>
 #include <linux/bitops.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
+#include <linux/pm_qos.h>
 
 #include "msdc_cust.h"
 
 #include "autok.h"
 #include "autok_dvfs.h"
-#ifdef MSDC_ATC_MMC_DEBUG
-#include <../../../../misc/autochips/inc/metazone/metazone.h>
-#endif
+#include "sw-cqhci-crypto.h"
 
 #if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 #include <fde_aes.h>
 #include <fde_aes_dbg.h>
+#endif
+
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) && defined(CONFIG_MTK_EMMC_HW_CQ)
+#error "MTK_EMMC_CQ_SUPPORT & MTK_EMMC_HW_CQ cannot define at the same time."
+#endif
+
+
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
+#include <mach/power_loss_test.h>
+#else
+#define MVG_EMMC_CHECK_BUSY_AND_RESET(...)
+#define MVG_EMMC_SETUP(...)
+#define MVG_EMMC_RESET(...)
+#define MVG_EMMC_WRITE_MATCH(...)
+#define MVG_EMMC_ERASE_MATCH(...)
+#define MVG_EMMC_ERASE_RESET(...)
+#define MVG_EMMC_DECLARE_INT32(...)
 #endif
 
 /* #define MSDC_SWITCH_MODE_WHEN_ERROR */
@@ -56,13 +60,17 @@
 
 #ifdef CONFIG_MTK_MMC_DEBUG
 #define MSDC_DMA_ADDR_DEBUG
+/* #define MTK_MSDC_LOW_IO_DEBUG */
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+#undef MTK_MSDC_LOW_IO_DEBUG
+#endif
 #endif
 /* #define MTK_MMC_SDIO_DEBUG */
 
-
 #define MTK_MSDC_USE_CMD23
-#if !defined(CONFIG_PWR_LOSS_MTK_TEST) && defined(MTK_MSDC_USE_CMD23)
-#define MTK_MSDC_USE_CACHE
+#if !defined(CONFIG_PWR_LOSS_MTK_TEST) && defined(MTK_MSDC_USE_CMD23) \
+	|| defined(CONFIG_MTK_EMMC_HW_CQ)
+//#define MTK_MSDC_USE_CACHE
 #endif
 
 #ifdef MTK_MSDC_USE_CMD23
@@ -72,7 +80,7 @@
 /* ================================= */
 
 #define MAX_GPD_NUM                     (1 + 1) /* one null gpd */
-#define MAX_BD_NUM                      (1024)
+#define MAX_BD_NUM                      (128)
 #define MAX_BD_PER_GPD                  (MAX_BD_NUM)
 #define CLK_SRC_MAX_NUM                 (1)
 
@@ -96,11 +104,7 @@
 /*--------------------------------------------------------------------------*/
 #define MSDC_FIFO_SZ            (128)
 #define MSDC_FIFO_THD           (64)    /* (128) */
-#ifdef MSDC_ATC_MMC_DEBUG
-#define MSDC_NUM                (2)
-#else
 #define MSDC_NUM                (4)
-#endif
 
 /* No memory stick mode, 0 use to gate clock */
 #define MSDC_MS                 (0)
@@ -176,11 +180,6 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define MSDC_SD_NEED_POWER  (1 << 31)
 
 #define MSDC_BOOT_EN        (1)
-
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-#define MSDC_INIT_RETRY_TIMES		(8)
-#define MSDC_LOWER_CLK_TIMES		(3)
-#endif
 
 struct msdc_hw_driving {
 	unsigned char cmd_drv;  /* command pad driving */
@@ -327,7 +326,9 @@ struct msdc_host {
 	 * race condition with hot-plug enable
 	 */
 	spinlock_t              remove_bad_card;
-
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	spinlock_t              cmd_dump_lock;
+#endif
 	 /* avoid race condition at DAT1 interrupt case*/
 	spinlock_t              sdio_irq_lock;
 	int                     clk_gate_count;
@@ -400,7 +401,7 @@ struct msdc_host {
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
 	struct msdc_saved_para  saved_para;
-	struct wakeup_source    trans_lock;
+	struct wakeup_source    *trans_lock;
 	bool                    block_bad_card;
 	struct delayed_work     remove_card;    /* remove bad card */
 	u32                     data_timeout_ms;  /* timeout ms for worker */
@@ -409,12 +410,13 @@ struct msdc_host {
 	int                     sdio_error;     /* sdio error can't recovery */
 #endif
 	void    (*power_control)(struct msdc_host *host, u32 on);
-	void    (*power_switch)(struct msdc_host *host, u32 on);
+	int    (*power_switch)(struct msdc_host *host, u32 on);
 	u32                     power_io;
 	u32                     power_flash;
 
+	struct pm_qos_request   msdc_pm_qos_req; /* use for pm qos */
+
 	struct clk              *clk_ctl;
-	struct clk              *clk_sel;
 	struct clk              *aes_clk_ctl;
 	struct clk              *hclk_ctl;
 	struct delayed_work	work_init; /* for init mmc_host */
@@ -425,7 +427,7 @@ struct msdc_host {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	atomic_t                cq_error_need_stop;
 #endif
-#if (defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)) \
+#if defined(CONFIG_MTK_HW_FDE) \
 	&& !defined(CONFIG_MTK_HW_FDE_AES)
 	bool                    is_crypto_init;
 	u32                     key_idx;
@@ -435,9 +437,8 @@ struct msdc_host {
 	u64                     stop_dma_time;
 	/* flag to record if eMMC will enter hs400 mode */
 	bool                    hs400_mode;
-#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
-	int cd_last_status;
-	int init_retry_times;
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	struct cmdq_host *cq_host;
 #endif
 };
 
@@ -608,12 +609,15 @@ static inline unsigned int uffs(unsigned int x)
 #define is_card_sdio(h)         (((struct msdc_host *)(h))->hw->register_pm)
 
 #define CMD_TIMEOUT             (HZ/10 * 5)     /* 100ms x5 */
+#define CMD_CQ_TIMEOUT          (HZ    * 3)
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
 #define POLLING_BUSY            (HZ    * 3)
 #define POLLING_PINS            (HZ*20 / 1000)	/* 20ms */
 
 /* data timeout for worker */
 #define DATA_TIMEOUT_MS         (1000  * 30)    /* 30s */
+/* The max erase timeout for sdcard */
+#define SD_ERASE_TIMEOUT_MS	(60 * 1000) /* 60 s */
 extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
 extern u32 latest_int_status[];
@@ -682,13 +686,6 @@ void msdc_set_smpl_all(struct msdc_host *host, u32 clock_mode);
 void msdc_set_check_endbit(struct msdc_host *host, bool enable);
 int msdc_switch_part(struct msdc_host *host, char part_id);
 
-/* Function provided by msdc_tune.c */
-int sdcard_hw_reset(struct mmc_host *mmc);
-int sdcard_reset_tuning(struct mmc_host *mmc);
-int emmc_reinit_tuning(struct mmc_host *mmc);
-void msdc_restore_timing_setting(struct msdc_host *host);
-void msdc_save_timing_setting(struct msdc_host *host);
-
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 unsigned int msdc_do_cmdq_command(struct msdc_host *host,
 	struct mmc_command *cmd,
@@ -696,9 +693,6 @@ unsigned int msdc_do_cmdq_command(struct msdc_host *host,
 #endif
 
 /* Function provided by msdc_partition.c */
-#ifdef CONFIG_PWR_LOSS_MTK_TEST
-void msdc_proc_emmc_create(void);
-#endif
 int msdc_can_apply_cache(unsigned long long start_addr,
 	unsigned int size);
 int msdc_check_otp_ops(unsigned int opcode, unsigned long long start_addr,
@@ -708,15 +702,17 @@ u64 msdc_get_user_capacity(struct msdc_host *host);
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
 
 /* Function provided by msdc_tune.c */
+int sdcard_hw_reset(struct mmc_host *mmc);
+int sdcard_reset_tuning(struct mmc_host *mmc);
+int emmc_reinit_tuning(struct mmc_host *mmc);
 void msdc_init_tune_setting(struct msdc_host *host);
 void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios);
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing);
 void msdc_sdio_restore_after_resume(struct msdc_host *host);
+void msdc_restore_timing_setting(struct msdc_host *host);
+void msdc_save_timing_setting(struct msdc_host *host);
 void msdc_set_bad_card_and_remove(struct msdc_host *host);
 void msdc_remove_card(struct work_struct *work);
-#ifdef CONFIG_HIE
-struct hie_dev *msdc_hie_get_dev(void);
-#endif
 
 /* Function provided by mmc/core/sd.c */
 /* FIX ME: maybe removed in kernel 4.4 */
@@ -754,25 +750,25 @@ void mmc_remove_card(struct mmc_card *card);
 	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
 
 #define check_mmc_cmd4445(opcode) \
-	((opcode == MMC_SET_QUEUE_CONTEXT) || \
-	 (opcode == MMC_QUEUE_READ_ADDRESS))
+	((opcode == MMC_QUE_TASK_PARAMS) || \
+	 (opcode == MMC_QUE_TASK_ADDR))
 #define check_mmc_cmd46(opcode) \
-	(opcode == MMC_READ_REQUESTED_QUEUE)
+	(opcode == MMC_EXECUTE_READ_TASK)
 #define check_mmc_cmd47(opcode) \
-	(opcode == MMC_WRITE_REQUESTED_QUEUE)
+	(opcode == MMC_EXECUTE_WRITE_TASK)
 #define check_mmc_cmd4647(opcode) \
-	((opcode == MMC_READ_REQUESTED_QUEUE) || \
-	 (opcode == MMC_WRITE_REQUESTED_QUEUE))
+	((opcode == MMC_EXECUTE_READ_TASK) || \
+	 (opcode == MMC_EXECUTE_WRITE_TASK))
 #define check_mmc_cmd48(opcode) \
 	(opcode == MMC_CMDQ_TASK_MGMT)
 #define check_mmc_cmd44(x) \
 	((x) && \
-	 ((x)->opcode == MMC_SET_QUEUE_CONTEXT))
+	 ((x)->opcode == MMC_QUE_TASK_PARAMS))
 #define check_mmc_cmd13_sqs(x) \
 	(((x)->opcode == MMC_SEND_STATUS) && \
 	 ((x)->arg & (1 << 15)))
 #define check_mmc_cmd47(opcode) \
-		 (opcode == MMC_WRITE_REQUESTED_QUEUE)
+		 (opcode == MMC_EXECUTE_WRITE_TASK)
 #define check_mmc_cmd_r1b(opcode) \
 		((opcode == MMC_SWITCH) || \
 		 (opcode == MMC_CMDQ_TASK_MGMT))

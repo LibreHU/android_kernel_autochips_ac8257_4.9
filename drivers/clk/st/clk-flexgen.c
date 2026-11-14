@@ -200,7 +200,7 @@ static struct clk *clk_register_flexgen(const char *name,
 				unsigned long flexgen_flags, bool mode) {
 	struct flexgen *fgxbar;
 	struct clk *clk;
-	struct clk_init_data init;
+	struct clk_init_data init = {};
 	u32  xbar_shift;
 	void __iomem *xbar_reg, *fdiv_reg;
 
@@ -329,8 +329,10 @@ static void __init st_of_flexgen_setup(struct device_node *np)
 		return;
 
 	parents = flexgen_get_parents(np, &num_parents);
-	if (!parents)
+	if (!parents) {
+		iounmap(reg);
 		return;
+	}
 
 	match = of_match_node(flexgen_of_match, np);
 	if (match) {
@@ -395,6 +397,7 @@ static void __init st_of_flexgen_setup(struct device_node *np)
 	return;
 
 err:
+	iounmap(reg);
 	if (clk_data)
 		kfree(clk_data->clks);
 	kfree(clk_data);

@@ -44,6 +44,9 @@
 #include <linux/personality.h>
 #include <linux/ptrace.h>
 #include <linux/sched.h>
+#include <linux/sched/debug.h>
+#include <linux/sched/task.h>
+#include <linux/sched/task_stack.h>
 #include <linux/slab.h>
 #include <linux/stddef.h>
 #include <linux/unistd.h>
@@ -109,14 +112,6 @@ void machine_restart(char *cmd)
 
 }
 
-void machine_halt(void)
-{
-	/*
-	** The LED/ChassisCodes are updated by the led_halt()
-	** function, called by the reboot notifier chain.
-	*/
-}
-
 void (*chassis_power_off)(void);
 
 /*
@@ -135,21 +130,35 @@ void machine_power_off(void)
 	pdc_soft_power_button(0);
 	
 	pdc_chassis_send_status(PDC_CHASSIS_DIRECT_SHUTDOWN);
+
+	/* ipmi_poweroff may have been installed. */
+	if (pm_power_off)
+		pm_power_off();
 		
 	/* It seems we have no way to power the system off via
 	 * software. The user has to press the button himself. */
 
-	printk(KERN_EMERG "System shut down completed.\n"
-	       "Please power this system off now.");
+	printk("Power off or press RETURN to reboot.\n");
 
 	/* prevent soft lockup/stalled CPU messages for endless loop. */
 	rcu_sysrq_start();
-	lockup_detector_suspend();
-	for (;;);
+	lockup_detector_soft_poweroff();
+	while (1) {
+		/* reboot if user presses RETURN key */
+		if (pdc_iodc_getc() == 13) {
+			printk("Rebooting...\n");
+			machine_restart(NULL);
+		}
+	}
 }
 
-void (*pm_power_off)(void) = machine_power_off;
+void (*pm_power_off)(void);
 EXPORT_SYMBOL(pm_power_off);
+
+void machine_halt(void)
+{
+	machine_power_off();
+}
 
 void flush_thread(void)
 {
@@ -272,11 +281,6 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
 	return 0;
 }
 
-unsigned long thread_saved_pc(struct task_struct *t)
-{
-	return t->thread.regs.kpc;
-}
-
 unsigned long
 get_wchan(struct task_struct *p)
 {
@@ -298,7 +302,7 @@ get_wchan(struct task_struct *p)
 		ip = info.ip;
 		if (!in_sched_functions(ip))
 			return ip;
-	} while (count++ < 16);
+	} while (count++ < MAX_UNWIND_ENTRIES);
 	return 0;
 }
 
@@ -312,15 +316,20 @@ void *dereference_function_descriptor(void *ptr)
 		ptr = p;
 	return ptr;
 }
+
+void *dereference_kernel_function_descriptor(void *ptr)
+{
+	if (ptr < (void *)__start_opd ||
+			ptr >= (void *)__end_opd)
+		return ptr;
+
+	return dereference_function_descriptor(ptr);
+}
 #endif
 
 static inline unsigned long brk_rnd(void)
 {
-	/* 8MB for 32bit, 1GB for 64bit */
-	if (is_32bit_task())
-		return (get_random_int() & 0x7ffUL) << PAGE_SHIFT;
-	else
-		return (get_random_int() & 0x3ffffUL) << PAGE_SHIFT;
+	return (get_random_int() & BRK_RND_MASK) << PAGE_SHIFT;
 }
 
 unsigned long arch_randomize_brk(struct mm_struct *mm)

@@ -510,8 +510,9 @@ nfs4_legacy_state_init(struct net *net)
 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
 	int i;
 
-	nn->reclaim_str_hashtbl = kmalloc(sizeof(struct list_head) *
-					  CLIENT_HASH_SIZE, GFP_KERNEL);
+	nn->reclaim_str_hashtbl = kmalloc_array(CLIENT_HASH_SIZE,
+						sizeof(struct list_head),
+						GFP_KERNEL);
 	if (!nn->reclaim_str_hashtbl)
 		return -ENOMEM;
 
@@ -595,7 +596,8 @@ nfs4_reset_recoverydir(char *recdir)
 		return status;
 	status = -ENOTDIR;
 	if (d_is_dir(path.dentry)) {
-		strcpy(user_recovery_dirname, recdir);
+		strscpy(user_recovery_dirname, recdir,
+			sizeof(user_recovery_dirname));
 		status = 0;
 	}
 	path_put(&path);

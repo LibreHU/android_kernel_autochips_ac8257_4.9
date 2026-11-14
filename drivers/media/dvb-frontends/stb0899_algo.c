@@ -281,7 +281,7 @@ static enum stb0899_status stb0899_search_carrier(struct stb0899_state *state)
 
 	short int derot_freq = 0, last_derot_freq = 0, derot_limit, next_loop = 3;
 	int index = 0;
-	u8 cfr[2];
+	u8 cfr[2] = {0};
 	u8 reg;
 
 	internal->status = NOCARRIER;
@@ -925,8 +925,7 @@ static void stb0899_dvbs2_set_btr_loopbw(struct stb0899_state *state)
 		wn = (4 * zeta * zeta) + 1000000;
 		wn = (2 * (loopbw_percent * 1000) * 40 * zeta) /wn;  /*wn =wn 10^-8*/
 
-		k_indirect = (wn * wn) / K;
-		k_indirect = k_indirect;	  /*kindirect = kindirect 10^-6*/
+		k_indirect = (wn * wn) / K;	/*kindirect = kindirect 10^-6*/
 		k_direct   = (2 * wn * zeta) / K;	/*kDirect = kDirect 10^-2*/
 		k_direct  *= 100;
 

@@ -152,13 +152,11 @@ __releases(&tve->lock)
 
 static void tve_enable(struct imx_tve *tve)
 {
-	int ret;
-
 	if (!tve->enabled) {
 		tve->enabled = true;
 		clk_prepare_enable(tve->clk);
-		ret = regmap_update_bits(tve->regmap, TVE_COM_CONF_REG,
-					 TVE_EN, TVE_EN);
+		regmap_update_bits(tve->regmap, TVE_COM_CONF_REG,
+				   TVE_EN, TVE_EN);
 	}
 
 	/* clear interrupt status register */
@@ -176,12 +174,9 @@ static void tve_enable(struct imx_tve *tve)
 
 static void tve_disable(struct imx_tve *tve)
 {
-	int ret;
-
 	if (tve->enabled) {
 		tve->enabled = false;
-		ret = regmap_update_bits(tve->regmap, TVE_COM_CONF_REG,
-					 TVE_EN, 0);
+		regmap_update_bits(tve->regmap, TVE_COM_CONF_REG, TVE_EN, 0);
 		clk_disable_unprepare(tve->clk);
 	}
 }
@@ -229,12 +224,6 @@ static int tve_setup_vga(struct imx_tve *tve)
 				 TVE_TVDAC_TEST_MODE_MASK, 1);
 }
 
-static enum drm_connector_status imx_tve_connector_detect(
-				struct drm_connector *connector, bool force)
-{
-	return connector_status_connected;
-}
-
 static int imx_tve_connector_get_modes(struct drm_connector *connector)
 {
 	struct imx_tve *tve = con_to_tve(connector);
@@ -246,7 +235,7 @@ static int imx_tve_connector_get_modes(struct drm_connector *connector)
 
 	edid = drm_get_edid(connector, tve->ddc);
 	if (edid) {
-		drm_mode_connector_update_edid_property(connector, edid);
+		drm_connector_update_edid_property(connector, edid);
 		ret = drm_add_edid_modes(connector, edid);
 		kfree(edid);
 	}
@@ -353,9 +342,7 @@ static int imx_tve_atomic_check(struct drm_encoder *encoder,
 }
 
 static const struct drm_connector_funcs imx_tve_connector_funcs = {
-	.dpms = drm_atomic_helper_connector_dpms,
 	.fill_modes = drm_helper_probe_single_connector_modes,
-	.detect = imx_tve_connector_detect,
 	.destroy = imx_drm_connector_destroy,
 	.reset = drm_atomic_helper_connector_reset,
 	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
@@ -507,7 +494,7 @@ static int imx_tve_register(struct drm_device *drm, struct imx_tve *tve)
 	drm_connector_init(drm, &tve->connector, &imx_tve_connector_funcs,
 			   DRM_MODE_CONNECTOR_VGA);
 
-	drm_mode_connector_attach_encoder(&tve->connector, &tve->encoder);
+	drm_connector_attach_encoder(&tve->connector, &tve->encoder);
 
 	return 0;
 }

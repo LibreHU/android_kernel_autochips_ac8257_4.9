@@ -25,12 +25,9 @@
 #include <linux/of.h>
 
 #include "core.h"
+#include "card.h"
 #include "sdio_cis.h"
 #include "sdio_bus.h"
-
-#ifdef CONFIG_MMC_EMBEDDED_SDIO
-#include <linux/mmc/host.h>
-#endif
 
 #define to_sdio_driver(d)	container_of(d, struct sdio_driver, drv)
 
@@ -142,7 +139,7 @@ static int sdio_bus_probe(struct device *dev)
 		return -ENODEV;
 
 	ret = dev_pm_domain_attach(dev, false);
-	if (ret == -EPROBE_DEFER)
+	if (ret)
 		return ret;
 
 	/* Unbound SDIO functions are always suspended.
@@ -267,17 +264,14 @@ static void sdio_release_func(struct device *dev)
 {
 	struct sdio_func *func = dev_to_sdio_func(dev);
 
-#ifdef CONFIG_MMC_EMBEDDED_SDIO
-	/*
-	 * If this device is embedded then we never allocated
-	 * cis tables for this func
-	 */
-	if (!func->card->host->embedded_sdio_data.funcs &&
-	    !(func->card->quirks & MMC_QUIRK_NONSTD_SDIO))
-#else
 	if (!(func->card->quirks & MMC_QUIRK_NONSTD_SDIO))
-#endif
 		sdio_free_func_cis(func);
+
+	/*
+	 * We have now removed the link to the tuples in the
+	 * card structure, so remove the reference.
+	 */
+	put_device(&func->card->dev);
 
 	kfree(func->info);
 	kfree(func->tmpbuf);
@@ -308,6 +302,12 @@ struct sdio_func *sdio_alloc_func(struct mmc_card *card)
 	func->card = card;
 
 	device_initialize(&func->dev);
+
+	/*
+	 * We may link to tuples in the card structure,
+	 * we need make sure we have a reference to it.
+	 */
+	get_device(&func->card->dev);
 
 	func->dev.parent = &card->dev;
 	func->dev.bus = &sdio_bus_type;
@@ -362,10 +362,9 @@ int sdio_add_func(struct sdio_func *func)
  */
 void sdio_remove_func(struct sdio_func *func)
 {
-	if (!sdio_func_present(func))
-		return;
+	if (sdio_func_present(func))
+		device_del(&func->dev);
 
-	device_del(&func->dev);
 	of_node_put(func->dev.of_node);
 	put_device(&func->dev);
 }

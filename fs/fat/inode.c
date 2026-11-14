@@ -20,7 +20,7 @@
 #include <linux/blkdev.h>
 #include <linux/backing-dev.h>
 #include <asm/unaligned.h>
-#include <mt-plat/mtk_blocktag.h>
+#include <linux/iversion.h>
 #include "fat.h"
 
 #ifndef CONFIG_FAT_DEFAULT_IOCHARSET
@@ -158,8 +158,14 @@ static inline int __fat_get_block(struct inode *inode, sector_t iblock,
 	err = fat_bmap(inode, iblock, &phys, &mapped_blocks, create, false);
 	if (err)
 		return err;
+	if (!phys) {
+		fat_fs_error(sb,
+			     "invalid FAT chain (i_pos %lld, last_block %llu)",
+			     MSDOS_I(inode)->i_pos,
+			     (unsigned long long)last_block);
+		return -EIO;
+	}
 
-	BUG_ON(!phys);
 	BUG_ON(*max_blocks != mapped_blocks);
 	set_buffer_new(bh_result);
 	map_bh(bh_result, sb, phys);
@@ -223,7 +229,6 @@ static int fat_write_begin(struct file *file, struct address_space *mapping,
 	err = cont_write_begin(file, mapping, pos, len, flags,
 				pagep, fsdata, fat_get_block,
 				&MSDOS_I(mapping->host)->mmu_private);
-	mtk_btag_pidlog_set_pid(*pagep);
 	if (err < 0)
 		fat_write_failed(mapping, pos + len);
 	return err;
@@ -509,7 +514,7 @@ int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
 	MSDOS_I(inode)->i_pos = 0;
 	inode->i_uid = sbi->options.fs_uid;
 	inode->i_gid = sbi->options.fs_gid;
-	inode->i_version++;
+	inode_inc_iversion(inode);
 	inode->i_generation = get_seconds();
 
 	if ((de->attr & ATTR_DIR) && !IS_FREE(de->name)) {
@@ -592,7 +597,7 @@ struct inode *fat_build_inode(struct super_block *sb,
 		goto out;
 	}
 	inode->i_ino = iunique(sb, MSDOS_ROOT_INO);
-	inode->i_version = 1;
+	inode_set_iversion(inode, 1);
 	err = fat_fill_inode(inode, de);
 	if (err) {
 		iput(inode);
@@ -659,7 +664,7 @@ static void fat_set_state(struct super_block *sb,
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 
 	/* do not change any thing if mounted read only */
-	if ((sb->s_flags & MS_RDONLY) && !force)
+	if (sb_rdonly(sb) && !force)
 		return;
 
 	/* do not change state if fs was dirty */
@@ -796,15 +801,15 @@ static void __exit fat_destroy_inodecache(void)
 
 static int fat_remount(struct super_block *sb, int *flags, char *data)
 {
-	int new_rdonly;
+	bool new_rdonly;
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-	*flags |= MS_NODIRATIME | (sbi->options.isvfat ? 0 : MS_NOATIME);
+	*flags |= SB_NODIRATIME | (sbi->options.isvfat ? 0 : SB_NOATIME);
 
 	sync_filesystem(sb);
 
 	/* make sure we update state on remount. */
-	new_rdonly = *flags & MS_RDONLY;
-	if (new_rdonly != (sb->s_flags & MS_RDONLY)) {
+	new_rdonly = *flags & SB_RDONLY;
+	if (new_rdonly != sb_rdonly(sb)) {
 		if (new_rdonly)
 			fat_set_state(sb, 0, 0);
 		else
@@ -1368,7 +1373,7 @@ out:
 	if (opts->unicode_xlate)
 		opts->utf8 = 0;
 	if (opts->nfs == FAT_NFS_NOSTALE_RO) {
-		sb->s_flags |= MS_RDONLY;
+		sb->s_flags |= SB_RDONLY;
 		sb->s_export_op = &fat_export_ops_nostale;
 	}
 
@@ -1383,7 +1388,7 @@ static int fat_read_root(struct inode *inode)
 	MSDOS_I(inode)->i_pos = MSDOS_ROOT_INO;
 	inode->i_uid = sbi->options.fs_uid;
 	inode->i_gid = sbi->options.fs_gid;
-	inode->i_version++;
+	inode_inc_iversion(inode);
 	inode->i_generation = 0;
 	inode->i_mode = fat_make_mode(sbi, ATTR_DIR, S_IRWXUGO);
 	inode->i_op = sbi->dir_ops;
@@ -1620,7 +1625,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 		return -ENOMEM;
 	sb->s_fs_info = sbi;
 
-	sb->s_flags |= MS_NODIRATIME;
+	sb->s_flags |= SB_NODIRATIME;
 	sb->s_magic = MSDOS_SUPER_MAGIC;
 	sb->s_op = &fat_sops;
 	sb->s_export_op = &fat_export_ops;
@@ -1838,7 +1843,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 	if (!root_inode)
 		goto out_fail;
 	root_inode->i_ino = MSDOS_ROOT_INO;
-	root_inode->i_version = 1;
+	inode_set_iversion(root_inode, 1);
 	error = fat_read_root(root_inode);
 	if (error < 0) {
 		iput(root_inode);

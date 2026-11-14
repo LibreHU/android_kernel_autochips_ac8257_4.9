@@ -13,55 +13,47 @@
  * General Public License for more details.
  */
 
+#include <linux/bitops.h>
 #include <linux/kernel.h>
 #include <linux/kprobes.h>
 
+#include <asm/ptrace.h>
+
 #include "simulate-insn.h"
 
-#define sign_extend(x, signbit)		\
-	((x) | (0 - ((x) & (1 << (signbit)))))
-
 #define bbl_displacement(insn)		\
-	sign_extend(((insn) & 0x3ffffff) << 2, 27)
+	sign_extend32(((insn) & 0x3ffffff) << 2, 27)
 
 #define bcond_displacement(insn)	\
-	sign_extend(((insn >> 5) & 0x7ffff) << 2, 20)
+	sign_extend32(((insn >> 5) & 0x7ffff) << 2, 20)
 
 #define cbz_displacement(insn)	\
-	sign_extend(((insn >> 5) & 0x7ffff) << 2, 20)
+	sign_extend32(((insn >> 5) & 0x7ffff) << 2, 20)
 
 #define tbz_displacement(insn)	\
-	sign_extend(((insn >> 5) & 0x3fff) << 2, 15)
+	sign_extend32(((insn >> 5) & 0x3fff) << 2, 15)
 
 #define ldr_displacement(insn)	\
-	sign_extend(((insn >> 5) & 0x7ffff) << 2, 20)
+	sign_extend32(((insn >> 5) & 0x7ffff) << 2, 20)
 
 static inline void set_x_reg(struct pt_regs *regs, int reg, u64 val)
 {
-	if (reg < 31)
-		regs->regs[reg] = val;
+	pt_regs_write_reg(regs, reg, val);
 }
 
 static inline void set_w_reg(struct pt_regs *regs, int reg, u64 val)
 {
-	if (reg < 31)
-		regs->regs[reg] = lower_32_bits(val);
+	pt_regs_write_reg(regs, reg, lower_32_bits(val));
 }
 
 static inline u64 get_x_reg(struct pt_regs *regs, int reg)
 {
-	if (reg < 31)
-		return regs->regs[reg];
-	else
-		return 0;
+	return pt_regs_read_reg(regs, reg);
 }
 
 static inline u32 get_w_reg(struct pt_regs *regs, int reg)
 {
-	if (reg < 31)
-		return lower_32_bits(regs->regs[reg]);
-	else
-		return 0;
+	return lower_32_bits(pt_regs_read_reg(regs, reg));
 }
 
 static bool __kprobes check_cbz(u32 opcode, struct pt_regs *regs)
@@ -106,7 +98,7 @@ simulate_adr_adrp(u32 opcode, long addr, struct pt_regs *regs)
 
 	xn = opcode & 0x1f;
 	imm = ((opcode >> 3) & 0x1ffffc) | ((opcode >> 29) & 0x3);
-	imm = sign_extend(imm, 20);
+	imm = sign_extend64(imm, 20);
 	if (opcode & 0x80000000)
 		val = (imm<<12) + (addr & 0xfffffffffffff000);
 	else
@@ -186,17 +178,15 @@ simulate_tbz_tbnz(u32 opcode, long addr, struct pt_regs *regs)
 void __kprobes
 simulate_ldr_literal(u32 opcode, long addr, struct pt_regs *regs)
 {
-	u64 *load_addr;
+	unsigned long load_addr;
 	int xn = opcode & 0x1f;
-	int disp;
 
-	disp = ldr_displacement(opcode);
-	load_addr = (u64 *) (addr + disp);
+	load_addr = addr + ldr_displacement(opcode);
 
 	if (opcode & (1 << 30))	/* x0-x30 */
-		set_x_reg(regs, xn, *load_addr);
+		set_x_reg(regs, xn, READ_ONCE(*(u64 *)load_addr));
 	else			/* w0-w30 */
-		set_w_reg(regs, xn, *load_addr);
+		set_w_reg(regs, xn, READ_ONCE(*(u32 *)load_addr));
 
 	instruction_pointer_set(regs, instruction_pointer(regs) + 4);
 }
@@ -204,14 +194,12 @@ simulate_ldr_literal(u32 opcode, long addr, struct pt_regs *regs)
 void __kprobes
 simulate_ldrsw_literal(u32 opcode, long addr, struct pt_regs *regs)
 {
-	s32 *load_addr;
+	unsigned long load_addr;
 	int xn = opcode & 0x1f;
-	int disp;
 
-	disp = ldr_displacement(opcode);
-	load_addr = (s32 *) (addr + disp);
+	load_addr = addr + ldr_displacement(opcode);
 
-	set_x_reg(regs, xn, *load_addr);
+	set_x_reg(regs, xn, READ_ONCE(*(s32 *)load_addr));
 
 	instruction_pointer_set(regs, instruction_pointer(regs) + 4);
 }

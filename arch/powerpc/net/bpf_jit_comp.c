@@ -12,6 +12,7 @@
  */
 #include <linux/moduleloader.h>
 #include <asm/cacheflush.h>
+#include <asm/asm-compat.h>
 #include <linux/netdevice.h>
 #include <linux/filter.h>
 #include <linux/if_vlan.h>
@@ -566,7 +567,7 @@ void bpf_jit_compile(struct bpf_prog *fp)
 	if (!bpf_jit_enable)
 		return;
 
-	addrs = kzalloc((flen+1) * sizeof(*addrs), GFP_KERNEL);
+	addrs = kcalloc(flen + 1, sizeof(*addrs), GFP_KERNEL);
 	if (addrs == NULL)
 		return;
 
@@ -663,16 +664,17 @@ void bpf_jit_compile(struct bpf_prog *fp)
 		 */
 		bpf_jit_dump(flen, proglen, pass, code_base);
 
-	if (image) {
-		bpf_flush_icache(code_base, code_base + (proglen/4));
+	bpf_flush_icache(code_base, code_base + (proglen/4));
+
 #ifdef CONFIG_PPC64
-		/* Function descriptor nastiness: Address + TOC */
-		((u64 *)image)[0] = (u64)code_base;
-		((u64 *)image)[1] = local_paca->kernel_toc;
+	/* Function descriptor nastiness: Address + TOC */
+	((u64 *)image)[0] = (u64)code_base;
+	((u64 *)image)[1] = local_paca->kernel_toc;
 #endif
-		fp->bpf_func = (void *)image;
-		fp->jited = 1;
-	}
+
+	fp->bpf_func = (void *)image;
+	fp->jited = 1;
+
 out:
 	kfree(addrs);
 	return;

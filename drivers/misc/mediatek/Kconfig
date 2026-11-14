@@ -15,23 +15,23 @@ config ARCH_MTK_PROJECT
 
 config ENABLE_AB_UPDATE
 	string
-	option env="ENABLE_AB_UPDATE"
+	default "$(ENABLE_AB_UPDATE)"
 
 config ATC_MACRO_VTS
 	string
-	option env="ATC_MACRO_VTS"
+	default "$(ATC_MACRO_VTS)"
 
 config ATC_MULTI_DISP_SUPPORT_ENABLE
 	string
-	option env="ATC_MULTI_DISP_SUPPORT_ENABLE"
+	default "$(ATC_MULTI_DISP_SUPPORT_ENABLE)"
 
 config ANDROID_IPOD_CONFIG
 	string
-	option env="ANDROID_IPOD_CONFIG"
+	default "$(ANDROID_IPOD_CONFIG)"
 
 config ATC_DISABLE_BATTERY_CHARGER
 	string
-	option env="ATC_DISABLE_BATTERY_CHARGER"
+	default "$(ATC_DISABLE_BATTERY_CHARGER)"
 
 config ATC_DISABLE_BAT_CHAGE
 	bool "Disable Battery & Charger"

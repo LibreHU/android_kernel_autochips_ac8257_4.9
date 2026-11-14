@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * bus.c - bus driver management
  *
@@ -5,9 +6,6 @@
  * Copyright (c) 2002-3 Open Source Development Labs
  * Copyright (c) 2007 Greg Kroah-Hartman <gregkh@suse.de>
  * Copyright (c) 2007 Novell Inc.
- *
- * This file is released under the GPLv2
- *
  */
 
 #include <linux/async.h>
@@ -105,7 +103,8 @@ static ssize_t bus_attr_show(struct kobject *kobj, struct attribute *attr,
 {
 	struct bus_attribute *bus_attr = to_bus_attr(attr);
 	struct subsys_private *subsys_priv = to_subsys_private(kobj);
-	ssize_t ret = 0;
+	/* return -EIO for reading a bus attribute without show() */
+	ssize_t ret = -EIO;
 
 	if (bus_attr->show)
 		ret = bus_attr->show(subsys_priv->bus, buf);
@@ -117,7 +116,8 @@ static ssize_t bus_attr_store(struct kobject *kobj, struct attribute *attr,
 {
 	struct bus_attribute *bus_attr = to_bus_attr(attr);
 	struct subsys_private *subsys_priv = to_subsys_private(kobj);
-	ssize_t ret = 0;
+	/* return -EIO for writing a bus attribute without store() */
+	ssize_t ret = -EIO;
 
 	if (bus_attr->store)
 		ret = bus_attr->store(subsys_priv->bus, buf, count);
@@ -189,10 +189,10 @@ static ssize_t unbind_store(struct device_driver *drv, const char *buf,
 
 	dev = bus_find_device_by_name(bus, NULL, buf);
 	if (dev && dev->driver == drv) {
-		if (dev->parent)	/* Needed for USB */
+		if (dev->parent && dev->bus->need_parent_lock)
 			device_lock(dev->parent);
 		device_release_driver(dev);
-		if (dev->parent)
+		if (dev->parent && dev->bus->need_parent_lock)
 			device_unlock(dev->parent);
 		err = count;
 	}
@@ -216,12 +216,12 @@ static ssize_t bind_store(struct device_driver *drv, const char *buf,
 
 	dev = bus_find_device_by_name(bus, NULL, buf);
 	if (dev && dev->driver == NULL && driver_match_device(drv, dev)) {
-		if (dev->parent)	/* Needed for USB */
+		if (dev->parent && bus->need_parent_lock)
 			device_lock(dev->parent);
 		device_lock(dev);
 		err = driver_probe_device(drv, dev);
 		device_unlock(dev);
-		if (dev->parent)
+		if (dev->parent && bus->need_parent_lock)
 			device_unlock(dev->parent);
 
 		if (err > 0) {
@@ -312,7 +312,7 @@ int bus_for_each_dev(struct bus_type *bus, struct device *start,
 
 	klist_iter_init_node(&bus->p->klist_devices, &i,
 			     (start ? &start->p->knode_bus : NULL));
-	while ((dev = next_device(&i)) && !error)
+	while (!error && (dev = next_device(&i)))
 		error = fn(dev, data);
 	klist_iter_exit(&i);
 	return error;
@@ -469,35 +469,6 @@ int bus_for_each_drv(struct bus_type *bus, struct device_driver *start,
 }
 EXPORT_SYMBOL_GPL(bus_for_each_drv);
 
-static int device_add_attrs(struct bus_type *bus, struct device *dev)
-{
-	int error = 0;
-	int i;
-
-	if (!bus->dev_attrs)
-		return 0;
-
-	for (i = 0; bus->dev_attrs[i].attr.name; i++) {
-		error = device_create_file(dev, &bus->dev_attrs[i]);
-		if (error) {
-			while (--i >= 0)
-				device_remove_file(dev, &bus->dev_attrs[i]);
-			break;
-		}
-	}
-	return error;
-}
-
-static void device_remove_attrs(struct bus_type *bus, struct device *dev)
-{
-	int i;
-
-	if (bus->dev_attrs) {
-		for (i = 0; bus->dev_attrs[i].attr.name; i++)
-			device_remove_file(dev, &bus->dev_attrs[i]);
-	}
-}
-
 /**
  * bus_add_device - add device to bus
  * @dev: device being added
@@ -513,12 +484,9 @@ int bus_add_device(struct device *dev)
 
 	if (bus) {
 		pr_debug("bus: '%s': add device %s\n", bus->name, dev_name(dev));
-		error = device_add_attrs(bus, dev);
-		if (error)
-			goto out_put;
 		error = device_add_groups(dev, bus->dev_groups);
 		if (error)
-			goto out_id;
+			goto out_put;
 		error = sysfs_create_link(&bus->p->devices_kset->kobj,
 						&dev->kobj, dev_name(dev));
 		if (error)
@@ -535,8 +503,6 @@ out_subsys:
 	sysfs_remove_link(&bus->p->devices_kset->kobj, dev_name(dev));
 out_groups:
 	device_remove_groups(dev, bus->dev_groups);
-out_id:
-	device_remove_attrs(bus, dev);
 out_put:
 	bus_put(dev->bus);
 	return error;
@@ -593,7 +559,6 @@ void bus_remove_device(struct device *dev)
 	sysfs_remove_link(&dev->kobj, "subsystem");
 	sysfs_remove_link(&dev->bus->p->devices_kset->kobj,
 			  dev_name(dev));
-	device_remove_attrs(dev->bus, dev);
 	device_remove_groups(dev, dev->bus->dev_groups);
 	if (klist_node_attached(&dev->p->knode_bus))
 		klist_del(&dev->p->knode_bus);
@@ -651,11 +616,10 @@ static void remove_probe_files(struct bus_type *bus)
 static ssize_t uevent_store(struct device_driver *drv, const char *buf,
 			    size_t count)
 {
-	enum kobject_action action;
+	int rc;
 
-	if (kobject_action_type(buf, count, &action) == 0)
-		kobject_uevent(&drv->p->kobj, action);
-	return count;
+	rc = kobject_synth_uevent(&drv->p->kobj, buf, count);
+	return rc ? rc : count;
 }
 static DRIVER_ATTR_WO(uevent);
 
@@ -778,10 +742,10 @@ static int __must_check bus_rescan_devices_helper(struct device *dev,
 	int ret = 0;
 
 	if (!dev->driver) {
-		if (dev->parent)	/* Needed for USB */
+		if (dev->parent && dev->bus->need_parent_lock)
 			device_lock(dev->parent);
 		ret = device_attach(dev);
-		if (dev->parent)
+		if (dev->parent && dev->bus->need_parent_lock)
 			device_unlock(dev->parent);
 	}
 	return ret < 0 ? ret : 0;
@@ -813,10 +777,10 @@ EXPORT_SYMBOL_GPL(bus_rescan_devices);
 int device_reprobe(struct device *dev)
 {
 	if (dev->driver) {
-		if (dev->parent)        /* Needed for USB */
+		if (dev->parent && dev->bus->need_parent_lock)
 			device_lock(dev->parent);
 		device_release_driver(dev);
-		if (dev->parent)
+		if (dev->parent && dev->bus->need_parent_lock)
 			device_unlock(dev->parent);
 	}
 	return bus_rescan_devices_helper(dev, NULL);
@@ -871,11 +835,10 @@ static void klist_devices_put(struct klist_node *n)
 static ssize_t bus_uevent_store(struct bus_type *bus,
 				const char *buf, size_t count)
 {
-	enum kobject_action action;
+	int rc;
 
-	if (kobject_action_type(buf, count, &action) == 0)
-		kobject_uevent(&bus->p->subsys.kobj, action);
-	return count;
+	rc = kobject_synth_uevent(&bus->p->subsys.kobj, buf, count);
+	return rc ? rc : count;
 }
 static BUS_ATTR(uevent, S_IWUSR, NULL, bus_uevent_store);
 

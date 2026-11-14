@@ -26,8 +26,9 @@
 #include <linux/init.h>
 #include <linux/jiffies.h>
 #include <linux/perf_event.h>
+#include <linux/sched/task_stack.h>
 
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <asm/pgalloc.h>
 #include <asm/cacheflush.h>
 #include <asm/user32.h>
@@ -297,6 +298,7 @@ static int load_aout_binary(struct linux_binprm *bprm)
 	set_personality_ia32(false);
 
 	setup_new_exec(bprm);
+	install_exec_creds(bprm);
 
 	regs->cs = __USER32_CS;
 	regs->r8 = regs->r9 = regs->r10 = regs->r11 = regs->r12 =
@@ -312,8 +314,6 @@ static int load_aout_binary(struct linux_binprm *bprm)
 	retval = setup_arg_pages(bprm, IA32_STACK_TOP, EXSTACK_DEFAULT);
 	if (retval < 0)
 		return retval;
-
-	install_exec_creds(bprm);
 
 	if (N_MAGIC(ex) == OMAGIC) {
 		unsigned long text_addr, map_size;
@@ -408,10 +408,10 @@ static int load_aout_library(struct file *file)
 	unsigned long bss, start_addr, len, error;
 	int retval;
 	struct exec ex;
-
+	loff_t pos = 0;
 
 	retval = -ENOEXEC;
-	error = kernel_read(file, 0, (char *) &ex, sizeof(ex));
+	error = kernel_read(file, &ex, sizeof(ex), &pos);
 	if (error != sizeof(ex))
 		goto out;
 

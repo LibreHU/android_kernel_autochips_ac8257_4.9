@@ -108,7 +108,7 @@ MODULE_DEVICE_TABLE(bcma, brcms_coreid_table);
  * flags are specified by the BRCM_DL_* macros in
  * drivers/net/wireless/brcm80211/include/defs.h.
  */
-module_param_named(debug, brcm_msg_level, uint, S_IRUGO | S_IWUSR);
+module_param_named(debug, brcm_msg_level, uint, 0644);
 #endif
 
 static struct ieee80211_channel brcms_2ghz_chantable[] = {
@@ -1091,6 +1091,7 @@ static int ieee_hw_init(struct ieee80211_hw *hw)
 	ieee80211_hw_set(hw, AMPDU_AGGREGATION);
 	ieee80211_hw_set(hw, SIGNAL_DBM);
 	ieee80211_hw_set(hw, REPORTS_TX_ACK_STATUS);
+	ieee80211_hw_set(hw, MFP_CAPABLE);
 
 	hw->extra_tx_headroom = brcms_c_get_header_len();
 	hw->queues = N_TX_QUEUES;
@@ -1107,6 +1108,8 @@ static int ieee_hw_init(struct ieee80211_hw *hw)
 	 *
 	 * hw->wiphy->flags |= WIPHY_FLAG_AP_PROBE_RESP_OFFLOAD;
 	 */
+
+	wiphy_ext_feature_set(hw->wiphy, NL80211_EXT_FEATURE_CQM_RSSI_LIST);
 
 	hw->rate_control_algorithm = "minstrel_ht";
 
@@ -1593,7 +1596,7 @@ void brcms_free_timer(struct brcms_timer *t)
 }
 
 /*
- * precondition: perimeter lock has been acquired
+ * precondition: no locking required
  */
 int brcms_ucode_init_buf(struct brcms_info *wl, void **pbuf, u32 idx)
 {
@@ -1608,10 +1611,10 @@ int brcms_ucode_init_buf(struct brcms_info *wl, void **pbuf, u32 idx)
 			if (le32_to_cpu(hdr->idx) == idx) {
 				pdata = wl->fw.fw_bin[i]->data +
 					le32_to_cpu(hdr->offset);
-				*pbuf = kmemdup(pdata, len, GFP_ATOMIC);
+				*pbuf = kvmalloc(len, GFP_KERNEL);
 				if (*pbuf == NULL)
 					goto fail;
-
+				memcpy(*pbuf, pdata, len);
 				return 0;
 			}
 		}
@@ -1659,7 +1662,7 @@ int brcms_ucode_init_uint(struct brcms_info *wl, size_t *n_bytes, u32 idx)
  */
 void brcms_ucode_free_buf(void *p)
 {
-	kfree(p);
+	kvfree(p);
 }
 
 /*

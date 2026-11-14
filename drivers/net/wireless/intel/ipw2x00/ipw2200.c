@@ -1195,12 +1195,12 @@ static void ipw_led_shutdown(struct ipw_priv *priv)
  *
  * See the level definitions in ipw for details.
  */
-static ssize_t show_debug_level(struct device_driver *d, char *buf)
+static ssize_t debug_level_show(struct device_driver *d, char *buf)
 {
 	return sprintf(buf, "0x%08X\n", ipw_debug_level);
 }
 
-static ssize_t store_debug_level(struct device_driver *d, const char *buf,
+static ssize_t debug_level_store(struct device_driver *d, const char *buf,
 				 size_t count)
 {
 	char *p = (char *)buf;
@@ -1221,9 +1221,7 @@ static ssize_t store_debug_level(struct device_driver *d, const char *buf,
 
 	return strnlen(buf, count);
 }
-
-static DRIVER_ATTR(debug_level, S_IWUSR | S_IRUGO,
-		   show_debug_level, store_debug_level);
+static DRIVER_ATTR_RW(debug_level);
 
 static inline u32 ipw_get_event_log_len(struct ipw_priv *priv)
 {
@@ -1305,7 +1303,7 @@ static ssize_t show_event_log(struct device *d,
 	return len;
 }
 
-static DEVICE_ATTR(event_log, S_IRUGO, show_event_log, NULL);
+static DEVICE_ATTR(event_log, 0444, show_event_log, NULL);
 
 static ssize_t show_error(struct device *d,
 			  struct device_attribute *attr, char *buf)
@@ -1353,7 +1351,7 @@ static ssize_t clear_error(struct device *d,
 	return count;
 }
 
-static DEVICE_ATTR(error, S_IRUGO | S_IWUSR, show_error, clear_error);
+static DEVICE_ATTR(error, 0644, show_error, clear_error);
 
 static ssize_t show_cmd_log(struct device *d,
 			    struct device_attribute *attr, char *buf)
@@ -1380,7 +1378,7 @@ static ssize_t show_cmd_log(struct device *d,
 	return len;
 }
 
-static DEVICE_ATTR(cmd_log, S_IRUGO, show_cmd_log, NULL);
+static DEVICE_ATTR(cmd_log, 0444, show_cmd_log, NULL);
 
 #ifdef CONFIG_IPW2200_PROMISCUOUS
 static void ipw_prom_free(struct ipw_priv *priv);
@@ -1445,8 +1443,7 @@ static ssize_t show_rtap_iface(struct device *d,
 	}
 }
 
-static DEVICE_ATTR(rtap_iface, S_IWUSR | S_IRUSR, show_rtap_iface,
-		   store_rtap_iface);
+static DEVICE_ATTR(rtap_iface, 0600, show_rtap_iface, store_rtap_iface);
 
 static ssize_t store_rtap_filter(struct device *d,
 			 struct device_attribute *attr,
@@ -1477,8 +1474,7 @@ static ssize_t show_rtap_filter(struct device *d,
 		       priv->prom_priv ? priv->prom_priv->filter : 0);
 }
 
-static DEVICE_ATTR(rtap_filter, S_IWUSR | S_IRUSR, show_rtap_filter,
-		   store_rtap_filter);
+static DEVICE_ATTR(rtap_filter, 0600, show_rtap_filter, store_rtap_filter);
 #endif
 
 static ssize_t show_scan_age(struct device *d, struct device_attribute *attr,
@@ -1522,7 +1518,7 @@ static ssize_t store_scan_age(struct device *d, struct device_attribute *attr,
 	return len;
 }
 
-static DEVICE_ATTR(scan_age, S_IWUSR | S_IRUGO, show_scan_age, store_scan_age);
+static DEVICE_ATTR(scan_age, 0644, show_scan_age, store_scan_age);
 
 static ssize_t show_led(struct device *d, struct device_attribute *attr,
 			char *buf)
@@ -1555,7 +1551,7 @@ static ssize_t store_led(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(led, S_IWUSR | S_IRUGO, show_led, store_led);
+static DEVICE_ATTR(led, 0644, show_led, store_led);
 
 static ssize_t show_status(struct device *d,
 			   struct device_attribute *attr, char *buf)
@@ -1564,7 +1560,7 @@ static ssize_t show_status(struct device *d,
 	return sprintf(buf, "0x%08x\n", (int)p->status);
 }
 
-static DEVICE_ATTR(status, S_IRUGO, show_status, NULL);
+static DEVICE_ATTR(status, 0444, show_status, NULL);
 
 static ssize_t show_cfg(struct device *d, struct device_attribute *attr,
 			char *buf)
@@ -1573,7 +1569,7 @@ static ssize_t show_cfg(struct device *d, struct device_attribute *attr,
 	return sprintf(buf, "0x%08x\n", (int)p->config);
 }
 
-static DEVICE_ATTR(cfg, S_IRUGO, show_cfg, NULL);
+static DEVICE_ATTR(cfg, 0444, show_cfg, NULL);
 
 static ssize_t show_nic_type(struct device *d,
 			     struct device_attribute *attr, char *buf)
@@ -1582,7 +1578,7 @@ static ssize_t show_nic_type(struct device *d,
 	return sprintf(buf, "TYPE: %d\n", priv->nic_type);
 }
 
-static DEVICE_ATTR(nic_type, S_IRUGO, show_nic_type, NULL);
+static DEVICE_ATTR(nic_type, 0444, show_nic_type, NULL);
 
 static ssize_t show_ucode_version(struct device *d,
 				  struct device_attribute *attr, char *buf)
@@ -1596,7 +1592,7 @@ static ssize_t show_ucode_version(struct device *d,
 	return sprintf(buf, "0x%08x\n", tmp);
 }
 
-static DEVICE_ATTR(ucode_version, S_IWUSR | S_IRUGO, show_ucode_version, NULL);
+static DEVICE_ATTR(ucode_version, 0644, show_ucode_version, NULL);
 
 static ssize_t show_rtc(struct device *d, struct device_attribute *attr,
 			char *buf)
@@ -1610,7 +1606,7 @@ static ssize_t show_rtc(struct device *d, struct device_attribute *attr,
 	return sprintf(buf, "0x%08x\n", tmp);
 }
 
-static DEVICE_ATTR(rtc, S_IWUSR | S_IRUGO, show_rtc, NULL);
+static DEVICE_ATTR(rtc, 0644, show_rtc, NULL);
 
 /*
  * Add a device attribute to view/control the delay between eeprom
@@ -1632,8 +1628,7 @@ static ssize_t store_eeprom_delay(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(eeprom_delay, S_IWUSR | S_IRUGO,
-		   show_eeprom_delay, store_eeprom_delay);
+static DEVICE_ATTR(eeprom_delay, 0644, show_eeprom_delay, store_eeprom_delay);
 
 static ssize_t show_command_event_reg(struct device *d,
 				      struct device_attribute *attr, char *buf)
@@ -1656,7 +1651,7 @@ static ssize_t store_command_event_reg(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(command_event_reg, S_IWUSR | S_IRUGO,
+static DEVICE_ATTR(command_event_reg, 0644,
 		   show_command_event_reg, store_command_event_reg);
 
 static ssize_t show_mem_gpio_reg(struct device *d,
@@ -1680,8 +1675,7 @@ static ssize_t store_mem_gpio_reg(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(mem_gpio_reg, S_IWUSR | S_IRUGO,
-		   show_mem_gpio_reg, store_mem_gpio_reg);
+static DEVICE_ATTR(mem_gpio_reg, 0644, show_mem_gpio_reg, store_mem_gpio_reg);
 
 static ssize_t show_indirect_dword(struct device *d,
 				   struct device_attribute *attr, char *buf)
@@ -1707,7 +1701,7 @@ static ssize_t store_indirect_dword(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(indirect_dword, S_IWUSR | S_IRUGO,
+static DEVICE_ATTR(indirect_dword, 0644,
 		   show_indirect_dword, store_indirect_dword);
 
 static ssize_t show_indirect_byte(struct device *d,
@@ -1734,7 +1728,7 @@ static ssize_t store_indirect_byte(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(indirect_byte, S_IWUSR | S_IRUGO,
+static DEVICE_ATTR(indirect_byte, 0644,
 		   show_indirect_byte, store_indirect_byte);
 
 static ssize_t show_direct_dword(struct device *d,
@@ -1761,8 +1755,7 @@ static ssize_t store_direct_dword(struct device *d,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(direct_dword, S_IWUSR | S_IRUGO,
-		   show_direct_dword, store_direct_dword);
+static DEVICE_ATTR(direct_dword, 0644, show_direct_dword, store_direct_dword);
 
 static int rf_kill_active(struct ipw_priv *priv)
 {
@@ -1833,7 +1826,7 @@ static ssize_t store_rf_kill(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(rf_kill, S_IWUSR | S_IRUGO, show_rf_kill, store_rf_kill);
+static DEVICE_ATTR(rf_kill, 0644, show_rf_kill, store_rf_kill);
 
 static ssize_t show_speed_scan(struct device *d, struct device_attribute *attr,
 			       char *buf)
@@ -1886,8 +1879,7 @@ static ssize_t store_speed_scan(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(speed_scan, S_IWUSR | S_IRUGO, show_speed_scan,
-		   store_speed_scan);
+static DEVICE_ATTR(speed_scan, 0644, show_speed_scan, store_speed_scan);
 
 static ssize_t show_net_stats(struct device *d, struct device_attribute *attr,
 			      char *buf)
@@ -1908,8 +1900,7 @@ static ssize_t store_net_stats(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(net_stats, S_IWUSR | S_IRUGO,
-		   show_net_stats, store_net_stats);
+static DEVICE_ATTR(net_stats, 0644, show_net_stats, store_net_stats);
 
 static ssize_t show_channels(struct device *d,
 			     struct device_attribute *attr,
@@ -1955,7 +1946,7 @@ static ssize_t show_channels(struct device *d,
 	return len;
 }
 
-static DEVICE_ATTR(channels, S_IRUSR, show_channels, NULL);
+static DEVICE_ATTR(channels, 0400, show_channels, NULL);
 
 static void notify_wx_assoc_event(struct ipw_priv *priv)
 {
@@ -3212,26 +3203,27 @@ static int ipw_load_firmware(struct ipw_priv *priv, u8 * data, size_t len)
 	struct fw_chunk *chunk;
 	int total_nr = 0;
 	int i;
-	struct pci_pool *pool;
+	struct dma_pool *pool;
 	void **virts;
 	dma_addr_t *phys;
 
 	IPW_DEBUG_TRACE("<< :\n");
 
-	virts = kmalloc(sizeof(void *) * CB_NUMBER_OF_ELEMENTS_SMALL,
-			GFP_KERNEL);
+	virts = kmalloc_array(CB_NUMBER_OF_ELEMENTS_SMALL, sizeof(void *),
+			      GFP_KERNEL);
 	if (!virts)
 		return -ENOMEM;
 
-	phys = kmalloc(sizeof(dma_addr_t) * CB_NUMBER_OF_ELEMENTS_SMALL,
-			GFP_KERNEL);
+	phys = kmalloc_array(CB_NUMBER_OF_ELEMENTS_SMALL, sizeof(dma_addr_t),
+			     GFP_KERNEL);
 	if (!phys) {
 		kfree(virts);
 		return -ENOMEM;
 	}
-	pool = pci_pool_create("ipw2200", priv->pci_dev, CB_MAX_LENGTH, 0, 0);
+	pool = dma_pool_create("ipw2200", &priv->pci_dev->dev, CB_MAX_LENGTH, 0,
+			       0);
 	if (!pool) {
-		IPW_ERROR("pci_pool_create failed\n");
+		IPW_ERROR("dma_pool_create failed\n");
 		kfree(phys);
 		kfree(virts);
 		return -ENOMEM;
@@ -3256,7 +3248,7 @@ static int ipw_load_firmware(struct ipw_priv *priv, u8 * data, size_t len)
 
 		nr = (chunk_len + CB_MAX_LENGTH - 1) / CB_MAX_LENGTH;
 		for (i = 0; i < nr; i++) {
-			virts[total_nr] = pci_pool_alloc(pool, GFP_KERNEL,
+			virts[total_nr] = dma_pool_alloc(pool, GFP_KERNEL,
 							 &phys[total_nr]);
 			if (!virts[total_nr]) {
 				ret = -ENOMEM;
@@ -3300,9 +3292,9 @@ static int ipw_load_firmware(struct ipw_priv *priv, u8 * data, size_t len)
 	}
  out:
 	for (i = 0; i < total_nr; i++)
-		pci_pool_free(pool, virts[i], phys[i]);
+		dma_pool_free(pool, virts[i], phys[i]);
 
-	pci_pool_destroy(pool);
+	dma_pool_destroy(pool);
 	kfree(phys);
 	kfree(virts);
 
@@ -3464,9 +3456,10 @@ static void ipw_rx_queue_reset(struct ipw_priv *priv,
 		/* In the reset function, these buffers may have been allocated
 		 * to an SKB, so we need to unmap and free potential storage */
 		if (rxq->pool[i].skb != NULL) {
-			pci_unmap_single(priv->pci_dev, rxq->pool[i].dma_addr,
-					 IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
-			dev_kfree_skb(rxq->pool[i].skb);
+			dma_unmap_single(&priv->pci_dev->dev,
+					 rxq->pool[i].dma_addr,
+					 IPW_RX_BUF_SIZE, DMA_FROM_DEVICE);
+			dev_kfree_skb_irq(rxq->pool[i].skb);
 			rxq->pool[i].skb = NULL;
 		}
 		list_add_tail(&rxq->pool[i].list, &rxq->rx_used);
@@ -3539,9 +3532,6 @@ static int ipw_load(struct ipw_priv *priv)
 	ucode_img = &fw->data[le32_to_cpu(fw->boot_size)];
 	fw_img = &fw->data[le32_to_cpu(fw->boot_size) +
 			   le32_to_cpu(fw->ucode_size)];
-
-	if (rc < 0)
-		goto error;
 
 	if (!priv->rxq)
 		priv->rxq = ipw_rx_queue_alloc(priv);
@@ -3794,14 +3784,15 @@ static int ipw_queue_tx_init(struct ipw_priv *priv,
 {
 	struct pci_dev *dev = priv->pci_dev;
 
-	q->txb = kmalloc(sizeof(q->txb[0]) * count, GFP_KERNEL);
+	q->txb = kmalloc_array(count, sizeof(q->txb[0]), GFP_KERNEL);
 	if (!q->txb) {
 		IPW_ERROR("vmalloc for auxiliary BD structures failed\n");
 		return -ENOMEM;
 	}
 
 	q->bd =
-	    pci_alloc_consistent(dev, sizeof(q->bd[0]) * count, &q->q.dma_addr);
+	    dma_alloc_coherent(&dev->dev, sizeof(q->bd[0]) * count,
+			       &q->q.dma_addr, GFP_KERNEL);
 	if (!q->bd) {
 		IPW_ERROR("pci_alloc_consistent(%zd) failed\n",
 			  sizeof(q->bd[0]) * count);
@@ -3843,9 +3834,10 @@ static void ipw_queue_tx_free_tfd(struct ipw_priv *priv,
 
 	/* unmap chunks if any */
 	for (i = 0; i < le32_to_cpu(bd->u.data.num_chunks); i++) {
-		pci_unmap_single(dev, le32_to_cpu(bd->u.data.chunk_ptr[i]),
+		dma_unmap_single(&dev->dev,
+				 le32_to_cpu(bd->u.data.chunk_ptr[i]),
 				 le16_to_cpu(bd->u.data.chunk_len[i]),
-				 PCI_DMA_TODEVICE);
+				 DMA_TO_DEVICE);
 		if (txq->txb[txq->q.last_used]) {
 			libipw_txb_free(txq->txb[txq->q.last_used]);
 			txq->txb[txq->q.last_used] = NULL;
@@ -3877,8 +3869,8 @@ static void ipw_queue_tx_free(struct ipw_priv *priv, struct clx2_tx_queue *txq)
 	}
 
 	/* free buffers belonging to queue itself */
-	pci_free_consistent(dev, sizeof(txq->bd[0]) * q->n_bd, txq->bd,
-			    q->dma_addr);
+	dma_free_coherent(&dev->dev, sizeof(txq->bd[0]) * q->n_bd, txq->bd,
+			  q->dma_addr);
 	kfree(txq->txb);
 
 	/* 0 fill whole structure */
@@ -3975,7 +3967,7 @@ static void ipw_send_disassociate(struct ipw_priv *priv, int quiet)
 		return;
 	}
 
-	IPW_DEBUG_ASSOC("Disassocation attempt from %pM "
+	IPW_DEBUG_ASSOC("Disassociation attempt from %pM "
 			"on channel %d.\n",
 			priv->assoc_request.bssid,
 			priv->assoc_request.channel);
@@ -5197,7 +5189,7 @@ static void ipw_rx_queue_restock(struct ipw_priv *priv)
  * Move all used packet from rx_used to rx_free, allocating a new SKB for each.
  * Also restock the Rx queue via ipw_rx_queue_restock.
  *
- * This is called as a scheduled work item (except for during intialization)
+ * This is called as a scheduled work item (except for during initialization)
  */
 static void ipw_rx_queue_replenish(void *data)
 {
@@ -5223,8 +5215,8 @@ static void ipw_rx_queue_replenish(void *data)
 		list_del(element);
 
 		rxb->dma_addr =
-		    pci_map_single(priv->pci_dev, rxb->skb->data,
-				   IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
+		    dma_map_single(&priv->pci_dev->dev, rxb->skb->data,
+				   IPW_RX_BUF_SIZE, DMA_FROM_DEVICE);
 
 		list_add_tail(&rxb->list, &rxq->rx_free);
 		rxq->free_count++;
@@ -5257,8 +5249,9 @@ static void ipw_rx_queue_free(struct ipw_priv *priv, struct ipw_rx_queue *rxq)
 
 	for (i = 0; i < RX_QUEUE_SIZE + RX_FREE_BUFFERS; i++) {
 		if (rxq->pool[i].skb != NULL) {
-			pci_unmap_single(priv->pci_dev, rxq->pool[i].dma_addr,
-					 IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
+			dma_unmap_single(&priv->pci_dev->dev,
+					 rxq->pool[i].dma_addr,
+					 IPW_RX_BUF_SIZE, DMA_FROM_DEVICE);
 			dev_kfree_skb(rxq->pool[i].skb);
 		}
 	}
@@ -7124,7 +7117,7 @@ static u32 ipw_qos_get_burst_duration(struct ipw_priv *priv)
 {
 	u32 ret = 0;
 
-	if ((priv == NULL))
+	if (!priv)
 		return 0;
 
 	if (!(priv->ieee->modulation & LIBIPW_OFDM_MODULATION))
@@ -7569,8 +7562,7 @@ static int ipw_associate(void *data)
 	}
 
 	if (priv->status & STATUS_DISASSOCIATING) {
-		IPW_DEBUG_ASSOC("Not attempting association (in "
-				"disassociating)\n ");
+		IPW_DEBUG_ASSOC("Not attempting association (in disassociating)\n");
 		schedule_work(&priv->associate);
 		return 0;
 	}
@@ -8297,9 +8289,8 @@ static void ipw_rx(struct ipw_priv *priv)
 		}
 		priv->rxq->queue[i] = NULL;
 
-		pci_dma_sync_single_for_cpu(priv->pci_dev, rxb->dma_addr,
-					    IPW_RX_BUF_SIZE,
-					    PCI_DMA_FROMDEVICE);
+		dma_sync_single_for_cpu(&priv->pci_dev->dev, rxb->dma_addr,
+					IPW_RX_BUF_SIZE, DMA_FROM_DEVICE);
 
 		pkt = (struct ipw_rx_packet *)rxb->skb->data;
 		IPW_DEBUG_RX("Packet: type=%02X seq=%02X bits=%02X\n",
@@ -8451,8 +8442,8 @@ static void ipw_rx(struct ipw_priv *priv)
 			rxb->skb = NULL;
 		}
 
-		pci_unmap_single(priv->pci_dev, rxb->dma_addr,
-				 IPW_RX_BUF_SIZE, PCI_DMA_FROMDEVICE);
+		dma_unmap_single(&priv->pci_dev->dev, rxb->dma_addr,
+				 IPW_RX_BUF_SIZE, DMA_FROM_DEVICE);
 		list_add_tail(&rxb->list, &priv->rxq->rx_used);
 
 		i = (i + 1) % RX_QUEUE_SIZE;
@@ -10014,7 +10005,7 @@ static iw_handler ipw_priv_handler[] = {
 #endif
 };
 
-static struct iw_handler_def ipw_wx_handler_def = {
+static const struct iw_handler_def ipw_wx_handler_def = {
 	.standard = ipw_wx_handlers,
 	.num_standard = ARRAY_SIZE(ipw_wx_handlers),
 	.num_private = ARRAY_SIZE(ipw_priv_handler),
@@ -10251,11 +10242,10 @@ static int ipw_tx_skb(struct ipw_priv *priv, struct libipw_txb *txb,
 			   txb->fragments[i]->len - hdr_len);
 
 		tfd->u.data.chunk_ptr[i] =
-		    cpu_to_le32(pci_map_single
-				(priv->pci_dev,
-				 txb->fragments[i]->data + hdr_len,
-				 txb->fragments[i]->len - hdr_len,
-				 PCI_DMA_TODEVICE));
+		    cpu_to_le32(dma_map_single(&priv->pci_dev->dev,
+					       txb->fragments[i]->data + hdr_len,
+					       txb->fragments[i]->len - hdr_len,
+					       DMA_TO_DEVICE));
 		tfd->u.data.chunk_len[i] =
 		    cpu_to_le16(txb->fragments[i]->len - hdr_len);
 	}
@@ -10278,16 +10268,17 @@ static int ipw_tx_skb(struct ipw_priv *priv, struct libipw_txb *txb,
 
 				printk(KERN_INFO "Adding frag %d %d...\n",
 				       j, size);
-				memcpy(skb_put(skb, size),
-				       txb->fragments[j]->data + hdr_len, size);
+				skb_put_data(skb,
+					     txb->fragments[j]->data + hdr_len,
+					     size);
 			}
 			dev_kfree_skb_any(txb->fragments[i]);
 			txb->fragments[i] = skb;
 			tfd->u.data.chunk_ptr[i] =
-			    cpu_to_le32(pci_map_single
-					(priv->pci_dev, skb->data,
-					 remaining_bytes,
-					 PCI_DMA_TODEVICE));
+			    cpu_to_le32(dma_map_single(&priv->pci_dev->dev,
+						       skb->data,
+						       remaining_bytes,
+						       DMA_TO_DEVICE));
 
 			le32_add_cpu(&tfd->u.data.num_chunks, 1);
 		}
@@ -10374,7 +10365,7 @@ static void ipw_handle_promiscuous_tx(struct ipw_priv *priv,
 		if (!dst)
 			continue;
 
-		rt_hdr = (void *)skb_put(dst, sizeof(*rt_hdr));
+		rt_hdr = skb_put(dst, sizeof(*rt_hdr));
 
 		rt_hdr->it_version = PKTHDR_RADIOTAP_VERSION;
 		rt_hdr->it_pad = 0;
@@ -11440,9 +11431,14 @@ static int ipw_wdev_init(struct net_device *dev)
 	set_wiphy_dev(wdev->wiphy, &priv->pci_dev->dev);
 
 	/* With that information in place, we can now register the wiphy... */
-	if (wiphy_register(wdev->wiphy))
-		rc = -EIO;
+	rc = wiphy_register(wdev->wiphy);
+	if (rc)
+		goto out;
+
+	return 0;
 out:
+	kfree(priv->ieee->a_band.channels);
+	kfree(priv->ieee->bg_band.channels);
 	return rc;
 }
 
@@ -11505,7 +11501,7 @@ static struct attribute *ipw_sysfs_entries[] = {
 	NULL
 };
 
-static struct attribute_group ipw_attribute_group = {
+static const struct attribute_group ipw_attribute_group = {
 	.name = NULL,		/* put in device directory */
 	.attrs = ipw_sysfs_entries,
 };
@@ -11562,7 +11558,6 @@ static const struct net_device_ops ipw_prom_netdev_ops = {
 	.ndo_open 		= ipw_prom_open,
 	.ndo_stop		= ipw_prom_stop,
 	.ndo_start_xmit		= ipw_prom_hard_start_xmit,
-	.ndo_change_mtu		= libipw_change_mtu,
 	.ndo_set_mac_address 	= eth_mac_addr,
 	.ndo_validate_addr	= eth_validate_addr,
 };
@@ -11587,6 +11582,9 @@ static int ipw_prom_alloc(struct ipw_priv *priv)
 
 	priv->prom_net_dev->type = ARPHRD_IEEE80211_RADIOTAP;
 	priv->prom_net_dev->netdev_ops = &ipw_prom_netdev_ops;
+
+	priv->prom_net_dev->min_mtu = 68;
+	priv->prom_net_dev->max_mtu = LIBIPW_DATA_LEN;
 
 	priv->prom_priv->ieee->iw_mode = IW_MODE_MONITOR;
 	SET_NETDEV_DEV(priv->prom_net_dev, &priv->pci_dev->dev);
@@ -11620,7 +11618,6 @@ static const struct net_device_ops ipw_netdev_ops = {
 	.ndo_set_rx_mode	= ipw_net_set_multicast_list,
 	.ndo_set_mac_address	= ipw_net_set_mac_address,
 	.ndo_start_xmit		= libipw_xmit,
-	.ndo_change_mtu		= libipw_change_mtu,
 	.ndo_validate_addr	= eth_validate_addr,
 };
 
@@ -11659,9 +11656,9 @@ static int ipw_pci_probe(struct pci_dev *pdev,
 
 	pci_set_master(pdev);
 
-	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
 	if (!err)
-		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
 	if (err) {
 		printk(KERN_WARNING DRV_NAME ": No suitable DMA available.\n");
 		goto out_pci_disable_device;
@@ -11729,6 +11726,9 @@ static int ipw_pci_probe(struct pci_dev *pdev,
 	net_dev->wireless_data = &priv->wireless_data;
 	net_dev->wireless_handlers = &ipw_wx_handler_def;
 	net_dev->ethtool_ops = &ipw_ethtool_ops;
+
+	net_dev->min_mtu = 68;
+	net_dev->max_mtu = LIBIPW_DATA_LEN;
 
 	err = sysfs_create_group(&pdev->dev.kobj, &ipw_attribute_group);
 	if (err) {
@@ -11896,7 +11896,7 @@ static int ipw_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	pci_disable_device(pdev);
 	pci_set_power_state(pdev, pci_choose_state(pdev, state));
 
-	priv->suspend_at = get_seconds();
+	priv->suspend_at = ktime_get_boottime_seconds();
 
 	return 0;
 }
@@ -11933,7 +11933,7 @@ static int ipw_pci_resume(struct pci_dev *pdev)
 	 * the queue of needed */
 	netif_device_attach(dev);
 
-	priv->suspend_time = get_seconds() - priv->suspend_at;
+	priv->suspend_time = ktime_get_boottime_seconds() - priv->suspend_at;
 
 	/* Bring the device back up */
 	schedule_work(&priv->up);
@@ -12019,7 +12019,7 @@ MODULE_PARM_DESC(rtap_iface, "create the rtap interface (1 - create, default 0)"
 
 #ifdef CONFIG_IPW2200_QOS
 module_param(qos_enable, int, 0444);
-MODULE_PARM_DESC(qos_enable, "enable all QoS functionalitis");
+MODULE_PARM_DESC(qos_enable, "enable all QoS functionalities");
 
 module_param(qos_burst_enable, int, 0444);
 MODULE_PARM_DESC(qos_burst_enable, "enable QoS burst mode");

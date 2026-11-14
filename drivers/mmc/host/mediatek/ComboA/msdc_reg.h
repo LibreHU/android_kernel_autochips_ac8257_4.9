@@ -1,14 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * Copyright (c) 2019 MediaTek Inc.
  */
 
 #ifndef _MSDC_REG_H_
@@ -577,6 +569,7 @@
 #define MSDC_INT_ACMD53_DONE            (0x1  << 21)    /* W1C */
 #define MSDC_INT_ACMD53_FAIL            (0x1  << 22)    /* W1C */
 #define MSDC_INT_AXI_RESP_ERR           (0x1  << 23)    /* W1C */
+#define MSDC_INT_CMDQ                   (0x1  << 28)	/* W1C */
 
 /* MSDC_FIFOCS mask */
 #define MSDC_FIFOCS_RXCNT               (0xff << 0)     /* R  */
@@ -1044,8 +1037,11 @@
 #define EMMC51_CQCB_CURCMD_ID                   (0x3F << 0)
 #endif
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+#define MSDC_DEBUG_REGISTER_COUNT               0x63
+#else
 #define MSDC_DEBUG_REGISTER_COUNT               0x27
-
+#endif
 
 /*
  *MSDC TOP REG

@@ -16,10 +16,10 @@
 #include <linux/magic.h>
 
 #include <xen/xen.h>
+#include <xen/xenbus.h>
 
 #include "xenfs.h"
 #include "../privcmd.h"
-#include "../xenbus/xenbus_comms.h"
 
 #include <asm/xen/hypervisor.h>
 
@@ -87,7 +87,6 @@ static int __init xenfs_init(void)
 	if (xen_domain())
 		return register_filesystem(&xenfs_type);
 
-	pr_info("not registering filesystem on non-xen platform\n");
 	return 0;
 }
 

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef USB_F_MASS_STORAGE_H
 #define USB_F_MASS_STORAGE_H
 
@@ -113,10 +114,6 @@ fsg_opts_from_func_inst(const struct usb_function_instance *fi)
 {
 	return container_of(fi, struct fsg_opts, func_inst);
 }
-
-void fsg_common_get(struct fsg_common *common);
-
-void fsg_common_put(struct fsg_common *common);
 
 void fsg_common_set_sysfs(struct fsg_common *common, bool sysfs);
 

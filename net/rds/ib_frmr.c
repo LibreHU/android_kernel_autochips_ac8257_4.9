@@ -103,7 +103,6 @@ static void rds_ib_free_frmr(struct rds_ib_mr *ibmr, bool drop)
 static int rds_ib_post_reg_frmr(struct rds_ib_mr *ibmr)
 {
 	struct rds_ib_frmr *frmr = &ibmr->u.frmr;
-	struct ib_send_wr *failed_wr;
 	struct ib_reg_wr reg_wr;
 	int ret, off = 0;
 
@@ -136,9 +135,7 @@ static int rds_ib_post_reg_frmr(struct rds_ib_mr *ibmr)
 			IB_ACCESS_REMOTE_WRITE;
 	reg_wr.wr.send_flags = IB_SEND_SIGNALED;
 
-	failed_wr = &reg_wr.wr;
-	ret = ib_post_send(ibmr->ic->i_cm_id->qp, &reg_wr.wr, &failed_wr);
-	WARN_ON(failed_wr != &reg_wr.wr);
+	ret = ib_post_send(ibmr->ic->i_cm_id->qp, &reg_wr.wr, NULL);
 	if (unlikely(ret)) {
 		/* Failure here can be because of -ENOMEM as well */
 		frmr->fr_state = FRMR_IS_STALE;
@@ -231,7 +228,7 @@ out_unmap:
 
 static int rds_ib_post_inv(struct rds_ib_mr *ibmr)
 {
-	struct ib_send_wr *s_wr, *failed_wr;
+	struct ib_send_wr *s_wr;
 	struct rds_ib_frmr *frmr = &ibmr->u.frmr;
 	struct rdma_cm_id *i_cm_id = ibmr->ic->i_cm_id;
 	int ret = -EINVAL;
@@ -242,8 +239,8 @@ static int rds_ib_post_inv(struct rds_ib_mr *ibmr)
 	if (frmr->fr_state != FRMR_IS_INUSE)
 		goto out;
 
-	while (atomic_dec_return(&ibmr->ic->i_fastreg_wrs) <= 0) {
-		atomic_inc(&ibmr->ic->i_fastreg_wrs);
+	while (atomic_dec_return(&ibmr->ic->i_fastunreg_wrs) <= 0) {
+		atomic_inc(&ibmr->ic->i_fastunreg_wrs);
 		cpu_relax();
 	}
 
@@ -256,13 +253,11 @@ static int rds_ib_post_inv(struct rds_ib_mr *ibmr)
 	s_wr->ex.invalidate_rkey = frmr->mr->rkey;
 	s_wr->send_flags = IB_SEND_SIGNALED;
 
-	failed_wr = s_wr;
-	ret = ib_post_send(i_cm_id->qp, s_wr, &failed_wr);
-	WARN_ON(failed_wr != s_wr);
+	ret = ib_post_send(i_cm_id->qp, s_wr, NULL);
 	if (unlikely(ret)) {
 		frmr->fr_state = FRMR_IS_STALE;
 		frmr->fr_inv = false;
-		atomic_inc(&ibmr->ic->i_fastreg_wrs);
+		atomic_inc(&ibmr->ic->i_fastunreg_wrs);
 		pr_err("RDS/IB: %s returned error(%d)\n", __func__, ret);
 		goto out;
 	}
@@ -290,9 +285,10 @@ void rds_ib_mr_cqe_handler(struct rds_ib_connection *ic, struct ib_wc *wc)
 	if (frmr->fr_inv) {
 		frmr->fr_state = FRMR_IS_FREE;
 		frmr->fr_inv = false;
+		atomic_inc(&ic->i_fastreg_wrs);
+	} else {
+		atomic_inc(&ic->i_fastunreg_wrs);
 	}
-
-	atomic_inc(&ic->i_fastreg_wrs);
 }
 
 void rds_ib_unreg_frmr(struct list_head *list, unsigned int *nfreed,
@@ -343,6 +339,11 @@ struct rds_ib_mr *rds_ib_reg_frmr(struct rds_ib_device *rds_ibdev,
 	struct rds_ib_mr *ibmr = NULL;
 	struct rds_ib_frmr *frmr;
 	int ret;
+
+	if (!ic) {
+		/* TODO: Add FRWR support for RDS_GET_MR using proxy qp*/
+		return ERR_PTR(-EOPNOTSUPP);
+	}
 
 	do {
 		if (ibmr)

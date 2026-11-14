@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * linux/mm/mmzone.c
  *
@@ -60,7 +61,7 @@ struct zoneref *__next_zones_zonelist(struct zoneref *z,
 	 * Find the next suitable zone to use for the allocation.
 	 * Only filter based on nodemask if it's set
 	 */
-	if (likely(nodes == NULL))
+	if (unlikely(nodes == NULL))
 		while (zonelist_zone_idx(z) > highest_zoneidx)
 			z++;
 	else
@@ -70,6 +71,7 @@ struct zoneref *__next_zones_zonelist(struct zoneref *z,
 
 	return z;
 }
+EXPORT_SYMBOL_GPL(__next_zones_zonelist);
 
 #ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
 bool memmap_valid_within(unsigned long pfn,

@@ -40,7 +40,6 @@ config ION_HISI
 	help
 	  Choose this option if you wish to use ion on Hisilicon Platform.
 
-source "drivers/staging/android/ion/hisilicon/Kconfig"
 
 source "drivers/staging/android/ion/mtk/Kconfig"
 

@@ -9,6 +9,7 @@
 
 #include <linux/types.h>
 #include <linux/ctype.h>
+#include <linux/errno.h>
 #include <linux/kernel.h>
 #include <linux/export.h>
 #include <asm/unaligned.h>
@@ -45,7 +46,15 @@ EXPORT_SYMBOL(hex_asc_upper);
  *	uppercase and lowercase letters, so we use (ch & 0xdf), which converts
  *	lowercase to uppercase
  */
+/*
+ * perserve abi due to 15b78a8e38e8 ("hex2bin: make the function hex_to_bin
+ * constant-time"
+ */
+#ifdef __GENKSYMS__
+int hex_to_bin(char ch)
+#else
 int hex_to_bin(unsigned char ch)
+#endif
 {
 	unsigned char cu = ch & 0xdf;
 	return -1 +
@@ -60,7 +69,7 @@ EXPORT_SYMBOL(hex_to_bin);
  * @src: ascii hexadecimal string
  * @count: result length
  *
- * Return 0 on success, -1 in case of bad input.
+ * Return 0 on success, -EINVAL in case of bad input.
  */
 int hex2bin(u8 *dst, const char *src, size_t count)
 {
@@ -69,10 +78,10 @@ int hex2bin(u8 *dst, const char *src, size_t count)
 
 		hi = hex_to_bin(*src++);
 		if (unlikely(hi < 0))
-			return -1;
+			return -EINVAL;
 		lo = hex_to_bin(*src++);
 		if (unlikely(lo < 0))
-			return -1;
+			return -EINVAL;
 
 		*dst++ = (hi << 4) | lo;
 	}

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 #include <linux/debugfs.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
@@ -9,7 +10,6 @@
 #include <linux/migrate.h>
 #include <linux/stackdepot.h>
 #include <linux/seq_file.h>
-#include <linux/hashtable.h>
 
 #include "internal.h"
 
@@ -17,185 +17,12 @@
  * TODO: teach PAGE_OWNER_STACK_DEPTH (__dump_page_owner and save_stack)
  * to use off stack temporal storage
  */
-
-#define PAGE_OWNER_STACK_DEPTH (8)
-
-#ifdef CONFIG_PAGE_OWNER_SLIM
-
-#define HANDLE_ENTRIES (4 * 1024)
-
-static DEFINE_SPINLOCK(po_slim_spinlock);
-static DEFINE_HASHTABLE(handleTable, 12);
-
-static unsigned long bitmap[BITS_TO_LONGS(HANDLE_ENTRIES)];
-
-static struct HandleCount memory_base[HANDLE_ENTRIES];
-
-static struct HandleCount *alloc_entry(void)
-{
-	int index;
-
-	index = bitmap_find_free_region(bitmap, HANDLE_ENTRIES, 0);
-	if (index == -ENOMEM)
-		return NULL;
-
-	bitmap_set(bitmap, index, 1);
-	return &memory_base[index];
-}
-
-static void free_entry(struct HandleCount *entry)
-{
-	int index;
-
-	hash_del(&entry->node);
-
-	index = (int)(entry - &memory_base[0]);
-	bitmap_clear(bitmap, index, 1);
-}
-
-
-static struct HandleCount *find_entry(depot_stack_handle_t handle)
-{
-	struct HandleCount *entry;
-
-	hash_for_each_possible(handleTable, entry, node, handle) {
-		if (entry->handle == handle)
-			return entry;
-	}
-	return NULL;
-}
-
-void release_backtrace(depot_stack_handle_t handle, int nr_pages)
-{
-	unsigned long flags;
-	struct HandleCount *entry;
-
-	spin_lock_irqsave(&po_slim_spinlock, flags);
-
-	entry = find_entry(handle);
-	if (!entry) {
-		spin_unlock_irqrestore(&po_slim_spinlock, flags);
-		return;
-	}
-
-	entry->allocations -= nr_pages;
-
-	if (entry->allocations <= 0)
-		free_entry(entry);
-
-	spin_unlock_irqrestore(&po_slim_spinlock, flags);
-}
-
-struct HandleCount *record_backtrace(depot_stack_handle_t handle,
-		int nr_pages)
-{
-	unsigned long flags;
-	struct HandleCount *entry;
-
-	spin_lock_irqsave(&po_slim_spinlock, flags);
-	entry = find_entry(handle);
-
-	if (entry)
-		entry->allocations += nr_pages;
-	else {
-		entry = alloc_entry();
-
-		if (entry == NULL) {
-			pr_info("[ERROR]alloc fails\n");
-			pr_info("No backtrace memory available, disable page owner tracking.\n");
-			static_branch_disable(&page_owner_inited);
-			spin_unlock_irqrestore(&po_slim_spinlock, flags);
-			return NULL;
-		}
-
-		entry->allocations = nr_pages;
-		entry->handle = handle;
-
-		hash_add(handleTable, &entry->node, handle);
-
-	}
-	spin_unlock_irqrestore(&po_slim_spinlock, flags);
-
-	return entry;
-}
-
-static ssize_t
-read_page_owner_slim(struct file *file, char __user *buf, size_t count,
-		loff_t *ppos)
-{
-	int index, ret = 0;
-	unsigned long flags;
-	char *kbuf;
-	struct HandleCount *entry;
-	unsigned long entries[PAGE_OWNER_STACK_DEPTH];
-	struct stack_trace trace = {
-		.nr_entries = 0,
-		.entries = entries,
-		.max_entries = PAGE_OWNER_STACK_DEPTH,
-		.skip = 0
-	};
-
-
-	if (!static_branch_unlikely(&page_owner_inited)) {
-		pr_info("page_owner is disabled\n");
-		return 0;
-	}
-
-	index = *ppos;
-
-	if (index >= HANDLE_ENTRIES)
-		return 0;
-
-	kbuf = kmalloc(count, GFP_KERNEL);
-	if (!kbuf)
-		return -ENOMEM;
-
-	spin_lock_irqsave(&po_slim_spinlock, flags);
-	for (; index < HANDLE_ENTRIES; index++) {
-		entry = &memory_base[index];
-		if (entry->allocations > 0) {
-			depot_fetch_stack(entry->handle, &trace);
-				ret += snprintf(kbuf, count,
-						"%8zu %ps %p %p %p %p %p\n",
-						entry->allocations,
-						(void *) trace.entries[3],
-						(void *) trace.entries[3],
-						(void *) trace.entries[4],
-						(void *) trace.entries[5],
-						(void *) trace.entries[6],
-						(void *) trace.entries[7]);
-				break;
-		}
-	}
-	spin_unlock_irqrestore(&po_slim_spinlock, flags);
-
-	if (ret >= count) {
-		pr_info("Insufficiant buffer\n");
-		ret = -1;
-		goto error;
-	}
-
-	if (copy_to_user(buf, kbuf, ret)) {
-		ret = -EFAULT;
-		goto error;
-	}
-
-	*ppos = index + 1;
-error:
-	kfree(kbuf);
-	return ret;
-}
-
-static const struct file_operations proc_page_owner_slim_operations = {
-	.read		= read_page_owner_slim,
-};
-#endif
-
+#define PAGE_OWNER_STACK_DEPTH (16)
 
 struct page_owner {
-	unsigned int order;
+	unsigned short order;
+	short last_migrate_reason;
 	gfp_t gfp_mask;
-	int last_migrate_reason;
 	depot_stack_handle_t handle;
 };
 
@@ -204,10 +31,11 @@ DEFINE_STATIC_KEY_FALSE(page_owner_inited);
 
 static depot_stack_handle_t dummy_handle;
 static depot_stack_handle_t failure_handle;
+static depot_stack_handle_t early_handle;
 
 static void init_early_allocated_pages(void);
 
-static int early_page_owner_param(char *buf)
+static int __init early_page_owner_param(char *buf)
 {
 	if (!buf)
 		return -EINVAL;
@@ -227,32 +55,33 @@ static bool need_page_owner(void)
 	return true;
 }
 
-static noinline void register_dummy_stack(void)
+static __always_inline depot_stack_handle_t create_dummy_stack(void)
 {
-	unsigned long entries[PAGE_OWNER_STACK_DEPTH];
+	unsigned long entries[4];
 	struct stack_trace dummy;
 
 	dummy.nr_entries = 0;
 	dummy.max_entries = ARRAY_SIZE(entries);
 	dummy.entries = &entries[0];
-	dummy.skip = 1;
+	dummy.skip = 0;
 
 	save_stack_trace(&dummy);
-	dummy_handle = depot_save_stack(&dummy, GFP_KERNEL);
+	return depot_save_stack(&dummy, GFP_KERNEL);
+}
+
+static noinline void register_dummy_stack(void)
+{
+	dummy_handle = create_dummy_stack();
 }
 
 static noinline void register_failure_stack(void)
 {
-	unsigned long entries[PAGE_OWNER_STACK_DEPTH];
-	struct stack_trace failure;
+	failure_handle = create_dummy_stack();
+}
 
-	failure.nr_entries = 0;
-	failure.max_entries = ARRAY_SIZE(entries);
-	failure.entries = &entries[0];
-	failure.skip = 1;
-
-	save_stack_trace(&failure);
-	failure_handle = depot_save_stack(&failure, GFP_KERNEL);
+static noinline void register_early_stack(void)
+{
+	early_handle = create_dummy_stack();
 }
 
 static void init_page_owner(void)
@@ -262,6 +91,7 @@ static void init_page_owner(void)
 
 	register_dummy_stack();
 	register_failure_stack();
+	register_early_stack();
 	static_branch_enable(&page_owner_inited);
 	init_early_allocated_pages();
 }
@@ -282,18 +112,6 @@ void __reset_page_owner(struct page *page, unsigned int order)
 	int i;
 	struct page_ext *page_ext;
 
-#ifdef CONFIG_PAGE_OWNER_SLIM
-	struct page_owner *page_owner;
-	depot_stack_handle_t handle;
-
-	page_ext = lookup_page_ext(page);
-	if (page_ext) {
-		page_owner = get_page_owner(page_ext);
-		handle = page_owner->handle;
-		release_backtrace(handle, 1 << order);
-	}
-#endif
-
 	for (i = 0; i < (1 << order); i++) {
 		page_ext = lookup_page_ext(page + i);
 		if (unlikely(!page_ext))
@@ -305,13 +123,13 @@ void __reset_page_owner(struct page *page, unsigned int order)
 static inline bool check_recursive_alloc(struct stack_trace *trace,
 					unsigned long ip)
 {
-	int i, count;
+	int i;
 
 	if (!trace->nr_entries)
 		return false;
 
-	for (i = 0, count = 0; i < trace->nr_entries; i++) {
-		if (trace->entries[i] == ip && ++count == 2)
+	for (i = 0; i < trace->nr_entries; i++) {
+		if (trace->entries[i] == ip)
 			return true;
 	}
 
@@ -325,11 +143,7 @@ static noinline depot_stack_handle_t save_stack(gfp_t flags)
 		.nr_entries = 0,
 		.entries = entries,
 		.max_entries = PAGE_OWNER_STACK_DEPTH,
-#ifdef CONFIG_64BIT
-		.skip = 3
-#else
-		.skip = 1
-#endif
+		.skip = 2
 	};
 	depot_stack_handle_t handle;
 
@@ -355,26 +169,31 @@ static noinline depot_stack_handle_t save_stack(gfp_t flags)
 	return handle;
 }
 
-noinline void __set_page_owner(struct page *page, unsigned int order,
-					gfp_t gfp_mask)
+static inline void __set_page_owner_handle(struct page_ext *page_ext,
+	depot_stack_handle_t handle, unsigned int order, gfp_t gfp_mask)
 {
-	struct page_ext *page_ext = lookup_page_ext(page);
 	struct page_owner *page_owner;
 
-	if (unlikely(!page_ext))
-		return;
-
 	page_owner = get_page_owner(page_ext);
-	page_owner->handle = save_stack(gfp_mask);
+	page_owner->handle = handle;
 	page_owner->order = order;
 	page_owner->gfp_mask = gfp_mask;
 	page_owner->last_migrate_reason = -1;
 
-#ifdef CONFIG_PAGE_OWNER_SLIM
-	record_backtrace(page_owner->handle, 1 << order);
-#endif
-
 	__set_bit(PAGE_EXT_OWNER, &page_ext->flags);
+}
+
+noinline void __set_page_owner(struct page *page, unsigned int order,
+					gfp_t gfp_mask)
+{
+	struct page_ext *page_ext = lookup_page_ext(page);
+	depot_stack_handle_t handle;
+
+	if (unlikely(!page_ext))
+		return;
+
+	handle = save_stack(gfp_mask);
+	__set_page_owner_handle(page_ext, handle, order, gfp_mask);
 }
 
 void __set_page_owner_migrate_reason(struct page *page, int reason)
@@ -433,65 +252,6 @@ void __copy_page_owner(struct page *oldpage, struct page *newpage)
 	__set_bit(PAGE_EXT_OWNER, &new_ext->flags);
 }
 
-int __dump_pfn_backtrace(unsigned long pfn)
-{
-	struct page *page = pfn_to_page(pfn);
-	struct page_ext *page_ext = lookup_page_ext(page);
-	int pageblock_mt, page_mt;
-
-	/* Check for holes within a MAX_ORDER area */
-	if (!pfn_valid_within(pfn))
-		return -2;
-	if (page_ext) {
-		if (test_bit(PAGE_EXT_OWNER, &page_ext->flags)) {
-#ifdef CONFIG_PAGE_OWNER_SLIM
-			struct BtEntry *entry = page_ext->entry;
-			struct stack_trace trace = {
-				.nr_entries = entry->nr_entries,
-				.entries = &entry->backtrace[0],
-			};
-#else
-			struct stack_trace trace = {
-				.nr_entries = page_ext->nr_entries,
-				.entries = &page_ext->trace_entries[0],
-			};
-#endif
-
-			pr_info("Page allocated via order %u, mask 0x%x, (%d:%d)\n",
-					page_ext->order, page_ext->gfp_mask,
-					atomic_read(&page->_refcount),
-					atomic_read(&page->_mapcount));
-
-			pageblock_mt = get_pfnblock_migratetype(page, pfn);
-			page_mt  = gfpflags_to_migratetype(page_ext->gfp_mask);
-			pr_info("PFN %lu Block %lu type %d %s Flags",
-					pfn,
-					pfn >> pageblock_order,
-					pageblock_mt,
-					pageblock_mt != page_mt ? "Fallback" :
-								"        ");
-			pr_info("%s%s%s%s%s%s%s%s%s%s%s%s\n",
-					PageLocked(page)	? "K" : " ",
-					PageError(page)		? "E" : " ",
-					PageReferenced(page)	? "R" : " ",
-					PageUptodate(page)	? "U" : " ",
-					PageDirty(page)		? "D" : " ",
-					PageLRU(page)		? "L" : " ",
-					PageActive(page)	? "A" : " ",
-					PageSlab(page)		? "S" : " ",
-					PageWriteback(page)	? "W" : " ",
-					PageCompound(page)	? "C" : " ",
-					PageSwapCache(page)	? "B" : " ",
-					PageMappedToDisk(page)	? "M" : " ");
-
-			print_stack_trace(&trace, 0);
-
-			return 0;
-		}
-	}
-	return -1;
-}
-
 void pagetypeinfo_showmixedcount_print(struct seq_file *m,
 				       pg_data_t *pgdat, struct zone *zone)
 {
@@ -513,7 +273,8 @@ void pagetypeinfo_showmixedcount_print(struct seq_file *m,
 	 * not matter as the mixed block count will still be correct
 	 */
 	for (; pfn < end_pfn; ) {
-		if (!pfn_valid(pfn)) {
+		page = pfn_to_online_page(pfn);
+		if (!page) {
 			pfn = ALIGN(pfn + 1, MAX_ORDER_NR_PAGES);
 			continue;
 		}
@@ -521,20 +282,24 @@ void pagetypeinfo_showmixedcount_print(struct seq_file *m,
 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
 		block_end_pfn = min(block_end_pfn, end_pfn);
 
-		page = pfn_to_page(pfn);
 		pageblock_mt = get_pageblock_migratetype(page);
 
 		for (; pfn < block_end_pfn; pfn++) {
 			if (!pfn_valid_within(pfn))
 				continue;
 
+			/* The pageblock is online, no need to recheck. */
 			page = pfn_to_page(pfn);
 
 			if (page_zone(page) != zone)
 				continue;
 
 			if (PageBuddy(page)) {
-				pfn += (1UL << page_order(page)) - 1;
+				unsigned long freepage_order;
+
+				freepage_order = page_order_unsafe(page);
+				if (freepage_order < MAX_ORDER)
+					pfn += (1UL << freepage_order) - 1;
 				continue;
 			}
 
@@ -587,8 +352,6 @@ print_page_owner(char __user *buf, size_t count, unsigned long pfn,
 		.skip = 0
 	};
 
-
-	count = min_t(size_t, count, PAGE_SIZE);
 	kbuf = kmalloc(count, GFP_KERNEL);
 	if (!kbuf)
 		return -ENOMEM;
@@ -766,14 +529,9 @@ read_page_owner(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 
 static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
 {
-	struct page *page;
-	struct page_ext *page_ext;
-	unsigned long pfn = zone->zone_start_pfn, block_end_pfn;
-	unsigned long end_pfn = pfn + zone->spanned_pages;
+	unsigned long pfn = zone->zone_start_pfn;
+	unsigned long end_pfn = zone_end_pfn(zone);
 	unsigned long count = 0;
-
-	/* Scan block by block. First and last block may be incomplete */
-	pfn = zone->zone_start_pfn;
 
 	/*
 	 * Walk the zone in pageblock_nr_pages steps. If a page block spans
@@ -781,6 +539,8 @@ static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
 	 * not matter as the mixed block count will still be correct
 	 */
 	for (; pfn < end_pfn; ) {
+		unsigned long block_end_pfn;
+
 		if (!pfn_valid(pfn)) {
 			pfn = ALIGN(pfn + 1, MAX_ORDER_NR_PAGES);
 			continue;
@@ -789,9 +549,10 @@ static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
 		block_end_pfn = min(block_end_pfn, end_pfn);
 
-		page = pfn_to_page(pfn);
-
 		for (; pfn < block_end_pfn; pfn++) {
+			struct page *page;
+			struct page_ext *page_ext;
+
 			if (!pfn_valid_within(pfn))
 				continue;
 
@@ -801,11 +562,17 @@ static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
 				continue;
 
 			/*
-			 * We are safe to check buddy flag and order, because
-			 * this is init stage and only single thread runs.
+			 * To avoid having to grab zone->lock, be a little
+			 * careful when reading buddy page order. The only
+			 * danger is that we skip too much and potentially miss
+			 * some early allocated pages, which is better than
+			 * heavy lock contention.
 			 */
 			if (PageBuddy(page)) {
-				pfn += (1UL << page_order(page)) - 1;
+				unsigned long order = page_order_unsafe(page);
+
+				if (order > 0 && order < MAX_ORDER)
+					pfn += (1UL << order) - 1;
 				continue;
 			}
 
@@ -816,14 +583,15 @@ static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
 			if (unlikely(!page_ext))
 				continue;
 
-			/* Maybe overraping zone */
+			/* Maybe overlapping zone */
 			if (test_bit(PAGE_EXT_OWNER, &page_ext->flags))
 				continue;
 
 			/* Found early allocated page */
-			set_page_owner(page, 0, 0);
+			__set_page_owner_handle(page_ext, early_handle, 0, 0);
 			count++;
 		}
+		cond_resched();
 	}
 
 	pr_info("Node %d, zone %8s: page owner found early allocated %lu pages\n",
@@ -834,15 +602,12 @@ static void init_zones_in_node(pg_data_t *pgdat)
 {
 	struct zone *zone;
 	struct zone *node_zones = pgdat->node_zones;
-	unsigned long flags;
 
 	for (zone = node_zones; zone - node_zones < MAX_NR_ZONES; ++zone) {
 		if (!populated_zone(zone))
 			continue;
 
-		spin_lock_irqsave(&zone->lock, flags);
 		init_pages_in_zone(pgdat, zone);
-		spin_unlock_irqrestore(&zone->lock, flags);
 	}
 }
 
@@ -850,7 +615,6 @@ static void init_early_allocated_pages(void)
 {
 	pg_data_t *pgdat;
 
-	drain_all_pages(NULL);
 	for_each_online_pgdat(pgdat)
 		init_zones_in_node(pgdat);
 }
@@ -869,17 +633,8 @@ static int __init pageowner_init(void)
 	}
 
 	dentry = debugfs_create_file("page_owner", 0400, NULL,
-			NULL, &proc_page_owner_operations);
-	if (IS_ERR(dentry))
-		return PTR_ERR(dentry);
+				     NULL, &proc_page_owner_operations);
 
-#ifdef CONFIG_PAGE_OWNER_SLIM
-	dentry = debugfs_create_file("page_owner_slim", 0400, NULL,
-			NULL, &proc_page_owner_slim_operations);
-	if (IS_ERR(dentry))
-		return PTR_ERR(dentry);
-#endif
-
-	return 0;
+	return PTR_ERR_OR_ZERO(dentry);
 }
 late_initcall(pageowner_init)

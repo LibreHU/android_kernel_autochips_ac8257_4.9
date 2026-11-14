@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/affs/amigaffs.c
  *
@@ -9,6 +10,7 @@
  */
 
 #include <linux/math64.h>
+#include <linux/iversion.h>
 #include "affs.h"
 
 /*
@@ -59,7 +61,7 @@ affs_insert_hash(struct inode *dir, struct buffer_head *bh)
 	affs_brelse(dir_bh);
 
 	dir->i_mtime = dir->i_ctime = current_time(dir);
-	dir->i_version++;
+	inode_inc_iversion(dir);
 	mark_inode_dirty(dir);
 
 	return 0;
@@ -113,7 +115,7 @@ affs_remove_hash(struct inode *dir, struct buffer_head *rem_bh)
 	affs_brelse(bh);
 
 	dir->i_mtime = dir->i_ctime = current_time(dir);
-	dir->i_version++;
+	inode_inc_iversion(dir);
 	mark_inode_dirty(dir);
 
 	return retval;
@@ -367,7 +369,7 @@ affs_fix_checksum(struct super_block *sb, struct buffer_head *bh)
 }
 
 void
-secs_to_datestamp(time64_t secs, struct affs_date *ds)
+affs_secs_to_datestamp(time64_t secs, struct affs_date *ds)
 {
 	u32	 days;
 	u32	 minute;
@@ -386,7 +388,7 @@ secs_to_datestamp(time64_t secs, struct affs_date *ds)
 }
 
 umode_t
-prot_to_mode(u32 prot)
+affs_prot_to_mode(u32 prot)
 {
 	umode_t mode = 0;
 
@@ -413,7 +415,7 @@ prot_to_mode(u32 prot)
 }
 
 void
-mode_to_prot(struct inode *inode)
+affs_mode_to_prot(struct inode *inode)
 {
 	u32 prot = AFFS_I(inode)->i_protect;
 	umode_t mode = inode->i_mode;
@@ -477,9 +479,9 @@ affs_error(struct super_block *sb, const char *function, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 	pr_crit("error (device %s): %s(): %pV\n", sb->s_id, function, &vaf);
-	if (!(sb->s_flags & MS_RDONLY))
+	if (!sb_rdonly(sb))
 		pr_warn("Remounting filesystem read-only\n");
-	sb->s_flags |= MS_RDONLY;
+	sb->s_flags |= SB_RDONLY;
 	va_end(args);
 }
 
