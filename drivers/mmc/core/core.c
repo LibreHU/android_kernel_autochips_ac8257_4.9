@@ -29,6 +29,7 @@
 #include <linux/random.h>
 #include <linux/slab.h>
 #include <linux/of.h>
+#include <linux/reboot.h>
 #include <uapi/linux/sched/types.h>
 
 #include <linux/mmc/card.h>
@@ -52,13 +53,28 @@
 #include "sd_ops.h"
 #include "sdio_ops.h"
 #include "mtk_mmc_block.h"
-#include "../host/mtk-sd-dbg.h"
+/*
+ * LibreHU (AC8257): the command log of the MediaTek 4.19 core goes to the ComboA host driver of the AC8257
+ * (drivers/mmc/host/mediatek/ComboA/dbg.c), not to the mtk-sd one of this core's origin tree.
+ */
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
 #include "block.h"
 
 /* The max erase timeout, used when host->max_busy_timeout isn't specified */
 #define MMC_ERASE_TIMEOUT_MS	(60 * 1000) /* 60 s */
 
 static const unsigned freqs[] = { 400000, 300000, 200000, 100000 };
+
+/*
+ * AutoChips: once the system is powering off or restarting, no new card scan or SD card init is started (an SD card
+ * inserted or removed during the shutdown is left alone). Set by the reboot notifier registered in mmc_init().
+ */
+static bool b_is_enter_shutdown;
+
+int is_enter_shutdown(void)
+{
+	return READ_ONCE(b_is_enter_shutdown) ? 1 : 0;
+}
 
 /*
  * Enabling software CRCs on the data blocks can be a significant (30%)
@@ -154,6 +170,10 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 	    !host->retune_crc_disable &&
 	    (err == -EILSEQ || (mrq->sbc && mrq->sbc->error == -EILSEQ) ||
 	    (mrq->data && mrq->data->error == -EILSEQ) ||
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	    /* AutoChips: a data timeout also asks for a re-tuning */
+	    (mrq->data && mrq->data->error == -ETIMEDOUT) ||
+#endif
 	    (mrq->stop && mrq->stop->error == -EILSEQ)))
 		mmc_retune_needed(host);
 
@@ -3463,10 +3483,16 @@ void mmc_rescan(struct work_struct *work)
 {
 	struct mmc_host *host =
 		container_of(work, struct mmc_host, detect.work);
-	int i;
+	int i, j;
+	int init_ret = -EIO;
 
 	if (host->rescan_disable)
 		return;
+
+	if (is_enter_shutdown()) {
+		pr_info("%s: shutdown or restart in progress, no card scan\n", mmc_hostname(host));
+		return;
+	}
 
 	/* If there is a non-removable card registered, only scan once */
 	if (!mmc_card_is_removable(host) && host->rescan_entered)
@@ -3486,8 +3512,18 @@ void mmc_rescan(struct work_struct *work)
 	 * if there is a _removable_ card registered, check whether it is
 	 * still present
 	 */
-	if (host->bus_ops && !host->bus_dead && mmc_card_is_removable(host))
+	if (host->bus_ops && !host->bus_dead && mmc_card_is_removable(host)) {
+		/*
+		 * AutoChips: on the SD card slot (host 1) without polling, a scan that does not follow a resume
+		 * comes from the card detect interrupt: the card in the slot may have been swapped, so the old
+		 * one is dropped and the card is detected again.
+		 */
+		if (host->rescan_resume == 1)
+			host->rescan_resume = 0;
+		else if (host->index == 1 && !(host->caps & MMC_CAP_NEEDS_POLL) && host->card)
+			mmc_card_set_removed(host->card);
 		host->bus_ops->detect(host);
+	}
 
 	host->detect_change = 0;
 
@@ -3518,12 +3554,23 @@ void mmc_rescan(struct work_struct *work)
 		goto out;
 	}
 
+	/* AutoChips: up to 3 attempts at each frequency */
 	for (i = 0; i < ARRAY_SIZE(freqs); i++) {
-		if (!mmc_rescan_try_freq(host, max(freqs[i], host->f_min)))
+		for (j = 3; j > 0; j--) {
+			init_ret = mmc_rescan_try_freq(host, max(freqs[i], host->f_min));
+			if (!init_ret)
+				break;
+		}
+		if (!init_ret)
 			break;
 		if (freqs[i] <= host->f_min)
 			break;
 	}
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	if (host->ops->init_card_status)
+		host->ops->init_card_status(host, init_ret ? MMC_INIT_CARD_STATUS_FAILED :
+							     MMC_INIT_CARD_STATUS_SUCCESS);
+#endif
 	mmc_release_host(host);
 
  out:
@@ -3535,6 +3582,7 @@ void mmc_start_host(struct mmc_host *host)
 {
 	host->f_init = max(freqs[0], host->f_min);
 	host->rescan_disable = 0;
+	host->rescan_resume = 0;
 	host->ios.power_mode = MMC_POWER_UNDEFINED;
 
 	if (!(host->caps2 & MMC_CAP2_NO_PRESCAN_POWERUP)) {
@@ -3633,6 +3681,7 @@ static int mmc_pm_notify(struct notifier_block *notify_block,
 
 		spin_lock_irqsave(&host->lock, flags);
 		host->rescan_disable = 0;
+		host->rescan_resume = 1;
 		spin_unlock_irqrestore(&host->lock, flags);
 		_mmc_detect_change(host, 0, false);
 
@@ -3653,6 +3702,17 @@ void mmc_unregister_pm_notifier(struct mmc_host *host)
 }
 #endif
 
+static int mmc_shutdown_event(struct notifier_block *notifier, unsigned long event, void *unused)
+{
+	if (event == SYS_POWER_OFF || event == SYS_RESTART || event == SYS_HALT)
+		WRITE_ONCE(b_is_enter_shutdown, true);
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block mmc_shutdown_notifier_block = {
+	.notifier_call = mmc_shutdown_event,
+};
+
 static int __init mmc_init(void)
 {
 	int ret;
@@ -3669,6 +3729,7 @@ static int __init mmc_init(void)
 	if (ret)
 		goto unregister_host_class;
 
+	register_reboot_notifier(&mmc_shutdown_notifier_block);
 	return 0;
 
 unregister_host_class:
@@ -3680,6 +3741,7 @@ unregister_bus:
 
 static void __exit mmc_exit(void)
 {
+	unregister_reboot_notifier(&mmc_shutdown_notifier_block);
 	sdio_unregister_bus();
 	mmc_unregister_host_class();
 	mmc_unregister_bus();

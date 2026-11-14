@@ -74,6 +74,23 @@ config MTK_EMMC_HW_CQ
 	  Say Y if you turns on MTK_EMMC_HW_CQ and want to
 	  use MTK eMMC hardware Command Queuing scheme.
 	  If unsure, say N.
+
+config ATC_SD_RUNTIME_SUSPEND_SUPPORT
+	bool "AutoChips: runtime suspend of the MSDC hosts and the SD card"
+	depends on MMC_MTK_PRO
+	default n
+	help
+	  AutoChips keeps the MSDC hosts and the SD card powered between
+	  requests in their car units. Say Y for the MediaTek runtime suspend.
+
+config MSDC_ATC_MMC_DEBUG
+	bool "AutoChips: MSDC settings from the metazone"
+	depends on MMC_MTK_PRO
+	default n
+	help
+	  Reads clock source, maximum clock, bus width and pad driving of the
+	  MSDC hosts from the AutoChips metazone, when an entry is there.
+
 config MMC_ARMMMCI
 	tristate "ARM AMBA Multimedia Card Interface support"
 	depends on ARM_AMBA

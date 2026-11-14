@@ -44,7 +44,8 @@ msdc-y += $(MTK_PLATFORM)/autok_dvfs.o
 
 endif
 
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6765")
+# LibreHU: the AC8257 has the MT6765 PMIC (MT6357) and DVFSRC
+ifneq ($(filter "mt6765" "ac8257",$(CONFIG_MTK_PLATFORM)),)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
 ccflags-y += -I$(srctree)/drivers/devfreq
 endif
@@ -61,7 +62,6 @@ msdc-y += sd.o
 msdc-y += dbg.o
 msdc-y += msdc_tune.o
 msdc-y += autok.o
-msdc-y += mmc-sec-sysfs.o
 ifeq ($(CONFIG_MMC_CRYPTO),y)
 msdc-y += sw-cqhci-crypto.o
 endif

@@ -82,6 +82,12 @@ struct mmc_ios {
 
 struct mmc_host;
 
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+/* AutoChips: result of a card init attempt, given to mmc_host_ops.init_card_status() by mmc_rescan() */
+#define MMC_INIT_CARD_STATUS_FAILED		1
+#define MMC_INIT_CARD_STATUS_SUCCESS		0
+#endif
+
 struct mmc_host_ops {
 	/*
 	 * It is optional for the host to implement pre_req and post_req in
@@ -171,6 +177,10 @@ struct mmc_host_ops {
 	 */
 	int	(*multi_io_quirk)(struct mmc_card *card,
 				  unsigned int direction, int blk_size);
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	/* AutoChips: told whether mmc_rescan() could init the card (MMC_INIT_CARD_STATUS_*) */
+	void	(*init_card_status)(struct mmc_host *host, int status);
+#endif
 };
 
 struct mmc_cqe_ops {
@@ -489,6 +499,7 @@ struct mmc_host {
 
 	int			rescan_disable;	/* disable card detection */
 	int			rescan_entered;	/* used with nonremovable devices */
+	int			rescan_resume;	/* AutoChips: first rescan after a resume */
 
 	int			need_retune;	/* re-tuning is needed */
 	int			hold_retune;	/* hold off re-tuning */

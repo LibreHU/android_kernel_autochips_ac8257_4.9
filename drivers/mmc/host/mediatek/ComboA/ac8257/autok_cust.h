@@ -1,13 +1,6 @@
-/* Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2019 MediaTek Inc.
  */
 
 #ifndef _AUTOK_CUST_H_
@@ -161,6 +154,10 @@ struct AUTOK_PLAT_FUNC {
 	u8 new_path_hs;
 	u8 multi_sync;
 	u8 rx_enhance;
+	u8 r1b_check;
+	u8 ddr50_fix;
+	u8 fifo_1k;
+	u8 latch_enhance;
 	u8 msdc0_bypass_duty_modify;
 	u8 msdc1_bypass_duty_modify;
 	u8 msdc2_bypass_duty_modify;
@@ -293,8 +290,8 @@ struct AUTOK_PLAT_FUNC {
 #define PORT0_PB0_RD_DAT_SEL_VALID
 #define PORT1_PB0_RD_DAT_SEL_VALID
 #define PORT3_PB0_RD_DAT_SEL_VALID
-#define MMC_SET_QUEUE_CONTEXT_RD 441
-#define MMC_SET_QUEUE_CONTEXT_WR 440
+#define MMC_QUE_TASK_PARAMS_RD 441
+#define MMC_QUE_TASK_PARAMS_WR 440
 #define MMC_SWITCH_CQ_EN 601
 #define MMC_SWITCH_CQ_DIS 600
 

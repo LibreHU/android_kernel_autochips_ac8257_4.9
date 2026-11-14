@@ -33,6 +33,17 @@ config PWRSEQ_SIMPLE
 	  This driver can also be built as a module. If so, the module
 	  will be called pwrseq_simple.
 
+config ATC_EMMC_CACHE_SUPPORT
+	bool "AutoChips: turn the eMMC cache on"
+	depends on MTK_EMMC_SUPPORT
+	default n
+	help
+	  The eMMC cache brings little performance and some eMMCs have bugs
+	  (illegal command, for example with auto CMD23) while it is on, so
+	  AutoChips leaves it off. Say Y to turn it on as the upstream core does.
+
+	  If unsure, say N.
+
 config MMC_BLOCK
 	tristate "MMC block device driver"
 	depends on BLOCK

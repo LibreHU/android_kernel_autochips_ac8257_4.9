@@ -34,7 +34,7 @@
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
 #include <linux/arm-smccc.h>
-#include <linux/soc/mediatek/mtk_sip_svc.h>
+#include <mt-plat/mtk_secure_api.h>	/* LibreHU AC8257: SiP IDs of the AC8257 ATF (4.9 platform header) */
 
 #include "mtk_sd.h"
 #include <mmc/core/core.h>
@@ -42,7 +42,6 @@
 #include <mmc/core/host.h>
 #include <mmc/core/queue.h>
 #include <mmc/core/mmc_ops.h>
-#include "mmc-sec-sysfs.h"
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 //#include <mach/mt_pmic_wrap.h>
@@ -105,6 +104,23 @@ static struct workqueue_struct *wq_init;
 
 u8 g_emmc_id;
 unsigned int cd_gpio;
+
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+/* AutoChips: maximum clock of the SD card host, given back to it when a card is inserted */
+static unsigned int mmc_clk;
+#endif
+
+#ifdef MSDC_ATC_MMC_DEBUG
+/*
+ * AutoChips: settings of the two hosts (eMMC, SD card) read from the metazone at probe; used when config_en is set
+ * (msdc_update_dt_from_metazone(), msdc_set_driving_by_id() in msdc_cust.c).
+ */
+struct msdc_config atc_msdc_config[MSDC_NUM] = {
+	{false, 200000000, 8, 1, 3, 3, 3, 3, 3},
+	{false, 200000000, 4, 1, 3, 3, 3, 3, 3},
+};
+static unsigned int msdc_config_index = 0x10000;
+#endif
 
 int msdc_rsp[] = {
 	0,                      /* RESP_NONE */
@@ -1072,6 +1088,11 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 			if (host->power_control)
 				host->power_control(host, 0);
 
+#ifndef CONFIG_ATC_AOSP_ENHANCEMENT
+			/*
+			 * AutoChips: not done there, a card that keeps failing is blocked by
+			 * msdc_init_card_status() after MSDC_INIT_RETRY_TIMES init failures.
+			 */
 			if (host->hw->host_function == MSDC_SD) {
 				/* do not set same as mmc->ios.clock in
 				 * sdcard_reset_tuning() or else it will be
@@ -1084,6 +1105,7 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 						host->block_bad_card);
 				}
 			}
+#endif
 
 			msdc_pin_config(host, MSDC_PIN_PULL_DOWN);
 		}
@@ -1720,6 +1742,20 @@ skip_cmd_resp_polling:
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
 			pr_notice("[%s]: msdc%d CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>\n",
 				__func__, host->id, cmd->opcode, cmd->arg);
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+		/*
+		 * AutoChips: a CMD13 timeout on the SD card host while the card detect pin says "removed" is a pulled
+		 * out card, removed at once instead of going through the error recovery.
+		 */
+		if ((cmd->opcode == 13) && (host->id == 1) && host->mmc->card &&
+		    (host->hw->cd_level != __gpio_get_value(cd_gpio))) {
+			pr_info("msdc%d: CMD13 timeout, SD card removed\n", host->id);
+			mmc_card_set_removed(host->mmc->card);
+			host->card_inserted = 0;
+			host->mmc->detect_change = 1;
+			goto out;
+		}
+#endif
 		if ((cmd->opcode == 52) && (cmd->arg != 0x00000c00)
 			&& (cmd->arg != 0x80000c08)) {
 			msdc_dump_info(NULL, 0, NULL, host->id);
@@ -3393,7 +3429,7 @@ static int msdc_cq_cmd_wait_xfr_done(struct msdc_host *host)
 	return ret;
 }
 
-static void msdc_cq_need_stop(struct msdc_host *host)
+static void __maybe_unused msdc_cq_need_stop(struct msdc_host *host)
 {
 	if (atomic_read(&host->cq_error_need_stop)) {
 		(void)msdc_stop_and_wait_busy(host);
@@ -3407,6 +3443,9 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	struct msdc_host *host = mmc_priv(mmc);
 	unsigned long polling_status_tmo;
 	u32 err = 0, status = 0;
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	int lock;
+#endif
 
 	/* wait for transfer done */
 	pr_notice("msdc%d waiting data transfer done1\n", host->id);
@@ -3419,9 +3458,25 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	/* time for wait device to return to trans state
 	 * when needed to send CMD48
 	 */
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	polling_status_tmo = jiffies + 10 * HZ;
+#else
 	polling_status_tmo = jiffies + 30 * HZ;
+#endif
 
 	do {
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+		/*
+		 * AutoChips: the card is polled every 100 ms instead of in a busy loop; host->lock (held by
+		 * msdc_ops_request_legacy(), the caller) is released meanwhile.
+		 */
+		lock = spin_is_locked(&host->lock);
+		if (lock)
+			spin_unlock(&host->lock);
+		msleep(100);
+		if (lock)
+			spin_lock(&host->lock);
+#endif
 		err = msdc_get_card_status(mmc, host, &status);
 		if (err) {
 			ERR_MSG("get card status, err = %d", err);
@@ -3445,6 +3500,18 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 				return 1;
 		} else {
 			if (R1_CURRENT_STATE(status) != R1_STATE_TRAN) {
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+				/* AutoChips: CMD12 to get the card back to tran, give up after the timeout */
+				if (time_after(jiffies, polling_status_tmo)) {
+					ERR_MSG("wait xfer state timeout\n");
+					return 1;
+				}
+				ERR_MSG("state<%d> need cmd12 to stop",
+					R1_CURRENT_STATE(status));
+				msdc_send_stop(host);
+				err = 1;
+				continue;
+#else
 				if (time_after(jiffies, polling_status_tmo))
 					ERR_MSG("wait xfer state timeout\n");
 				else {
@@ -3452,6 +3519,7 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 					err = 1;
 					continue;
 				}
+#endif
 			}
 			ERR_MSG("status = %x, discard task, re-send command",
 				status);
@@ -3493,6 +3561,21 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 #endif
 
 	host->tuning_in_progress = true;
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	/* AutoChips: a write protection violation of the eMMC is no signal problem, no tuning for it */
+	if ((host->hw->host_function == MSDC_EMMC) && (host->device_status & R1_WP_VIOLATION)) {
+		pr_notice("[%s]: msdc%d resp<0x%.8x>, write protection violation\n",
+			__func__, host->id, host->device_status);
+		host->error &= ~REQ_DAT_ERR;
+		host->need_tune = TUNE_NONE;
+		host->reautok_times = 0;
+		host->tune_smpl_times = 0;
+		host->err_cmd = -1;
+		host->prev_cmd_cause_dump = 0;
+		host->data_timeout_cont = 0;
+		goto end;
+	}
+#endif
 
 	/* autok_err_type is used for switch edge tune and CMDQ tune */
 	if (host->need_tune & (TUNE_ASYNC_CMD | TUNE_LEGACY_CMD))
@@ -3627,7 +3710,12 @@ start_tune:
 	}
 
 	/* autok failed three times will try reinit tuning */
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	/* AutoChips: at the first failure (an SD card goes to a lower speed mode at once) */
+	if (host->reautok_times >= 1 || host->tune_smpl_times >= 1) {
+#else
 	if (host->reautok_times >= 4 || host->tune_smpl_times >= 4) {
+#endif
 recovery:
 		pr_notice("msdc%d autok error\n", host->id);
 		/* eMMC will change to HS200 and lower frequence */
@@ -4309,6 +4397,59 @@ static int msdc_ops_get_ro(struct mmc_host *mmc)
 }
 
 /* ops.get_cd */
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+/*
+ * AutoChips: on a card detect level change the SD host gets its full clock back and its error counters are reset;
+ * a card given up by msdc_init_card_status() (block_bad_card) reads as absent until it is removed.
+ */
+static int msdc_ops_get_cd(struct mmc_host *mmc)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	int level = 1;
+
+	/* for emmc, MSDC_REMOVABLE not set, always return 1 */
+	if (mmc->caps & MMC_CAP_NONREMOVABLE) {
+		host->card_inserted = 1;
+		return host->card_inserted;
+	}
+
+#ifdef CONFIG_GPIOLIB
+	level = __gpio_get_value(cd_gpio);
+#endif
+	host->card_inserted = (host->hw->cd_level == level) ? 1 : 0;
+
+	if (host->cd_last_status != level) {
+		host->cd_last_status = level;
+		mmc->f_max = mmc_clk;
+		host->init_retry_times = 0;
+		if (host->mmc->caps & MMC_CAP_NEEDS_POLL) {
+			host->power_cycle_cnt = 0;
+			host->block_bad_card = 0;
+#ifdef SDCARD_ESD_RECOVERY
+			host->cmd13_timeout_cont = 0;
+#endif
+			host->data_timeout_cont = 0;
+			msdc_reset_bad_sd_detecter(host);
+			host->is_autok_done = 0;
+			/* when detect card, timeout log is not needed */
+			sd_register_zone[host->id] = 0;
+		}
+		if (host->card_inserted)
+			pr_info("msdc%d: detect card inserted!\n", host->id);
+		else
+			pr_info("msdc%d: detect card pull out!\n", host->id);
+	}
+	if (host->card_inserted && host->block_bad_card) {
+		if (host->init_retry_times == MSDC_INIT_RETRY_TIMES) {
+			pr_info("msdc%d: bad card, please use another SD card\n", host->id);
+			host->init_retry_times++;
+		}
+		host->card_inserted = 0;
+	}
+
+	return host->card_inserted;
+}
+#else
 static int msdc_ops_get_cd(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -4344,6 +4485,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 
 	return host->card_inserted;
 }
+#endif
 
 static void msdc_ops_card_event(struct mmc_host *mmc)
 {
@@ -4589,6 +4731,31 @@ static void msdc_check_data_timeout(struct work_struct *work)
 	}
 }
 
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+/*
+ * AutoChips: told by mmc_rescan() whether the card could be initialized. After MSDC_LOWER_CLK_TIMES failures the
+ * maximum clock is halved at each new failure, after MSDC_INIT_RETRY_TIMES the card is given up until it is removed.
+ */
+static void msdc_init_card_status(struct mmc_host *mmc, int status)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+
+	if (status == MMC_INIT_CARD_STATUS_FAILED) {
+		pr_warn("msdc%d: card init failed, retry times <%d>\n", host->id, host->init_retry_times);
+		host->init_retry_times++;
+
+		if (host->init_retry_times >= MSDC_LOWER_CLK_TIMES)
+			mmc->f_max = mmc->f_max >> 1;
+
+		if (host->init_retry_times >= MSDC_INIT_RETRY_TIMES)
+			host->block_bad_card = 1;
+	} else {
+		/* enable msdc register dump */
+		sd_register_zone[host->id] = 1;
+	}
+}
+#endif
+
 static struct mmc_host_ops mt_msdc_ops = {
 	.post_req                      = msdc_post_req,
 	.pre_req                       = msdc_pre_req,
@@ -4603,6 +4770,9 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.hw_reset                      = msdc_card_reset,
 	.card_busy                     = msdc_card_busy,
 	.prepare_hs400_tuning          = msdc_prepare_hs400_tuning,
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	.init_card_status              = msdc_init_card_status,
+#endif
 };
 
 static void msdc_irq_cmd_complete(struct msdc_host *host)
@@ -4963,6 +5133,39 @@ static void msdc_dvfs_kickoff(struct work_struct *work)
 {
 }
 
+#ifdef MSDC_ATC_MMC_DEBUG
+/* AutoChips: clock source, maximum clock and bus width of the metazone entry of the host, when it is enabled */
+static void msdc_update_dt_from_metazone(struct msdc_host *host, struct mmc_host *mmc)
+{
+	u32 bus_width;
+	int id = host->id;
+
+	if (id < 0 || id >= MSDC_NUM || !atc_msdc_config[id].config_en)
+		return;
+
+	pr_info("msdc%d: clk_src/f_max/bus_width from the metazone\n", id);
+	host->hw->clk_src = atc_msdc_config[id].clk_src;
+	mmc->f_max = atc_msdc_config[id].clk_max;
+	bus_width = atc_msdc_config[id].bus_width;
+	switch (bus_width) {
+	case 8:
+		mmc->caps |= MMC_CAP_8_BIT_DATA;
+		mmc->caps |= MMC_CAP_4_BIT_DATA;
+		break;
+	case 4:
+		mmc->caps &= ~MMC_CAP_8_BIT_DATA;
+		mmc->caps |= MMC_CAP_4_BIT_DATA;
+		break;
+	case 1:
+		mmc->caps &= ~MMC_CAP_8_BIT_DATA;
+		mmc->caps &= ~MMC_CAP_4_BIT_DATA;
+		break;
+	default:
+		pr_warn("msdc%d: invalid bus width %u in the metazone, device tree one kept\n", id, bus_width);
+	}
+}
+#endif
+
 static int msdc_drv_probe(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = NULL;
@@ -4970,6 +5173,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	struct msdc_hw *hw = NULL;
 	void __iomem *base = NULL;
 	int ret = 0;
+#ifdef MSDC_ATC_MMC_DEBUG
+	int i = 0;
+#endif
 
 	/* Allocate MMC host for this device */
 	mmc = mmc_alloc_host(sizeof(struct msdc_host), &pdev->dev);
@@ -4992,14 +5198,29 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	base = host->base;
 	hw = host->hw;
 
-	/* Set host parameters to mmc */
-	mmc->ops        = &mt_msdc_ops;
-	mmc->ocr_avail  = MSDC_OCR_AVAIL;
 	/* set clock when dts is not defined */
 	if (!mmc->f_min)
 		mmc->f_min = HOST_MIN_MCLK;
 	if (!mmc->f_max)
 		mmc->f_max = HOST_MAX_MCLK;
+
+#ifdef MSDC_ATC_MMC_DEBUG
+	if (!MetaZone_ReadBinary(msdc_config_index, (char *)atc_msdc_config, sizeof(atc_msdc_config))) {
+		for (i = 0; i < MSDC_NUM; i++) {
+			pr_info("msdc[%d] config_en[%d] clk_max[%u] bus_width[%u] clk_src[%d] cmd_drv[%d] dat_drv[%d] clk_drv[%d] rst_drv[%d] ds_drv[%d]\n",
+				i, atc_msdc_config[i].config_en, atc_msdc_config[i].clk_max,
+				atc_msdc_config[i].bus_width, atc_msdc_config[i].clk_src,
+				atc_msdc_config[i].cmd_drv, atc_msdc_config[i].dat_drv,
+				atc_msdc_config[i].clk_drv, atc_msdc_config[i].rst_drv,
+				atc_msdc_config[i].ds_drv);
+		}
+	}
+	msdc_update_dt_from_metazone(host, mmc);
+#endif
+
+	/* Set host parameters to mmc */
+	mmc->ops        = &mt_msdc_ops;
+	mmc->ocr_avail  = MSDC_OCR_AVAIL;
 
 	if ((hw->flags & MSDC_SDIO_IRQ) || (hw->flags & MSDC_EXT_SDIO_IRQ))
 		mmc->caps |= MMC_CAP_SDIO_IRQ;  /* yes for sdio */
@@ -5007,8 +5228,11 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_EMMC)
 		mmc->caps |= MMC_CAP_CMD23;
 #endif
+#ifdef CONFIG_ATC_SD_RUNTIME_SUSPEND_SUPPORT
+	/* AutoChips: no runtime suspend of the SD card unless asked (always on in a car) */
 	if (host->hw->host_function == MSDC_SD)
 		mmc->caps |= MMC_CAP_AGGRESSIVE_PM;
+#endif
 
 	mmc->caps |= MMC_CAP_ERASE;
 
@@ -5054,6 +5278,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #else
 		pr_notice("[MSDC]msdc_get_ccf_clk_pointer fail.\n");
 #endif
+	/* AutoChips: the clock mux of the host on the clock source host->hclk was computed for */
+	msdc_select_clksrc(host, host->hw->clk_src);
 #endif
 
 	msdc_set_host_power_control(host);
@@ -5073,6 +5299,12 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #endif
 	} else if (host->hw->host_function == MSDC_SD) {
 		host->autocmd |= MSDC_AUTOCMD12;
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+		host->cd_last_status = 1;
+		host->init_retry_times = 0;
+		host->block_bad_card = 0;
+		mmc_clk = mmc->f_max;
+#endif
 	} else {
 		host->autocmd &= ~MSDC_AUTOCMD12;
 	}
@@ -5191,7 +5423,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_EMMC)
 		msdc_debug_proc_init_bootdevice();
 
-	mmc_sec_init_sysfs(mmc);
 
 	return 0;
 
@@ -5305,6 +5536,8 @@ static int msdc_suspend(struct device *dev)
 	ret = msdc_runtime_suspend(dev);
 
 out:
+	/* AutoChips: the clock mux of the host (enabled by msdc_select_clksrc()) is off during the suspend */
+	clk_disable(host->clk_sel);
 #if defined(CONFIG_MTK_HW_FDE) \
 	&& !defined(CONFIG_MTK_HW_FDE_AES)
 	host->is_crypto_init = false;
@@ -5317,6 +5550,7 @@ static int msdc_resume(struct device *dev)
 	struct msdc_host *host = dev_get_drvdata(dev);
 	int ret = 0;
 
+	clk_enable(host->clk_sel);
 	if (pm_runtime_suspended(dev)) {
 		pr_debug("%s: %s: runtime suspended, defer system resume\n",
 				mmc_hostname(host->mmc), __func__);
@@ -5329,10 +5563,17 @@ out:
 	return ret;
 }
 
+/*
+ * AutoChips: no runtime PM callbacks unless CONFIG_ATC_SD_RUNTIME_SUSPEND_SUPPORT, so the hosts stay powered and
+ * clocked between requests, as in their 4.9 kernel (a runtime suspend without callback fails and leaves the device
+ * active). The system suspend still goes through msdc_runtime_suspend() / msdc_runtime_resume().
+ */
 static const struct dev_pm_ops msdc_pmops = {
 	SET_SYSTEM_SLEEP_PM_OPS(msdc_suspend, msdc_resume)
+#ifdef CONFIG_ATC_SD_RUNTIME_SUSPEND_SUPPORT
 	SET_RUNTIME_PM_OPS(msdc_runtime_suspend, msdc_runtime_resume,
 				NULL)
+#endif
 };
 #endif
 

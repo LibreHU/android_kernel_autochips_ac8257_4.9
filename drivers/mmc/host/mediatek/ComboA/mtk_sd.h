@@ -12,6 +12,9 @@
 #else
 /* #define MTK_MSDC_BRINGUP_DEBUG */
 #endif
+#ifdef CONFIG_MSDC_ATC_MMC_DEBUG
+#define MSDC_ATC_MMC_DEBUG
+#endif
 
 #include <mt-plat/sync_write.h>
 #include <linux/bitops.h>
@@ -24,6 +27,9 @@
 #include "autok.h"
 #include "autok_dvfs.h"
 #include "sw-cqhci-crypto.h"
+#ifdef MSDC_ATC_MMC_DEBUG
+#include "../../../../misc/autochips/inc/metazone/metazone.h"
+#endif
 
 #if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 #include <fde_aes.h>
@@ -104,7 +110,12 @@
 /*--------------------------------------------------------------------------*/
 #define MSDC_FIFO_SZ            (128)
 #define MSDC_FIFO_THD           (64)    /* (128) */
+/* AutoChips: with the metazone settings, one entry per host of the AC8257 (eMMC, SD) in atc_msdc_config[] */
+#ifdef MSDC_ATC_MMC_DEBUG
+#define MSDC_NUM                (2)
+#else
 #define MSDC_NUM                (4)
+#endif
 
 /* No memory stick mode, 0 use to gate clock */
 #define MSDC_MS                 (0)
@@ -180,6 +191,12 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define MSDC_SD_NEED_POWER  (1 << 31)
 
 #define MSDC_BOOT_EN        (1)
+
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+/* AutoChips: SD card init failures before the clock is halved / the card is given up */
+#define MSDC_INIT_RETRY_TIMES		(8)
+#define MSDC_LOWER_CLK_TIMES		(3)
+#endif
 
 struct msdc_hw_driving {
 	unsigned char cmd_drv;  /* command pad driving */
@@ -417,6 +434,7 @@ struct msdc_host {
 	struct pm_qos_request   msdc_pm_qos_req; /* use for pm qos */
 
 	struct clk              *clk_ctl;
+	struct clk              *clk_sel;	/* AutoChips: clock mux of the host */
 	struct clk              *aes_clk_ctl;
 	struct clk              *hclk_ctl;
 	struct delayed_work	work_init; /* for init mmc_host */
@@ -437,6 +455,10 @@ struct msdc_host {
 	u64                     stop_dma_time;
 	/* flag to record if eMMC will enter hs400 mode */
 	bool                    hs400_mode;
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	int cd_last_status;	/* AutoChips: last card detect level */
+	int init_retry_times;	/* AutoChips: SD card init failures since the last insertion */
+#endif
 #ifdef CONFIG_MTK_EMMC_HW_CQ
 	struct cmdq_host *cq_host;
 #endif

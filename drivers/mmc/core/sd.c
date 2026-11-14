@@ -844,18 +844,29 @@ int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 	bool reinit)
 {
 	int err;
+	int sd_version_check_retry = 3;
 
 	if (!reinit) {
 		/*
 		 * Fetch SCR from card.
 		 */
-		err = mmc_app_send_scr(card);
-		if (err)
-			return err;
+		do {
+			err = mmc_app_send_scr(card);
+			if (err)
+				return err;
 
-		err = mmc_decode_scr(card);
-		if (err)
-			return err;
+			err = mmc_decode_scr(card);
+			if (err)
+				return err;
+
+			/*
+			 * AutoChips: some faulty cards report SD 1.0 (obsolete) in a first SCR read, so it is read
+			 * again up to 3 times.
+			 */
+			if (card->scr.sda_vsn != SCR_SPEC_VER_0)
+				break;
+			pr_err("%s: SD 1.0 card? reading the SCR again\n", mmc_hostname(host));
+		} while (sd_version_check_retry--);
 
 		/*
 		 * Fetch and process SD Status register.
@@ -944,6 +955,12 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 	u32 cid[4];
 	u32 rocr = 0;
 	bool v18_fixup_failed = false;
+
+	/* AutoChips: no card init once the system is powering off or restarting */
+	if (is_enter_shutdown()) {
+		pr_info("%s: shutdown or restart in progress, no SD card init\n", mmc_hostname(host));
+		return -EIO;
+	}
 
 	WARN_ON(!host->claimed);
 retry:

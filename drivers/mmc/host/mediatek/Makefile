@@ -47,6 +47,13 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6765
 obj-$(CONFIG_MMC_MTK_PRO) += ComboA/
 endif
 
+# LibreHU 4.19: the AutoChips AC8257 (MT6765 family) uses the ComboA host with its own platform folder
+ifeq ($(CONFIG_MTK_PLATFORM), "ac8257")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/ac8257
+obj-$(CONFIG_MMC_MTK_PRO) += ComboA/
+endif
+
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6761")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6765
@@ -59,3 +66,6 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6739
 obj-$(CONFIG_MMC_MTK_PRO) += ComboA/
 endif
 
+
+# LibreHU 4.19: headers and APIs the 4.9 vendor drivers got implicitly (include/linux/librehu_compat_4_9.h)
+subdir-ccflags-y += -include $(srctree)/include/linux/librehu_compat_4_9.h -Wno-macro-redefined

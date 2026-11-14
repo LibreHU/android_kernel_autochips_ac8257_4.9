@@ -28,6 +28,9 @@
 #include "quirks.h"
 #include "sd_ops.h"
 #include "pwrseq.h"
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#include <mt-plat/mtk_boot_common.h>
+#endif
 
 #define DEFAULT_CMD6_TIMEOUT_MS	500
 #define MIN_CACHE_EN_TIMEOUT_MS 1600
@@ -1835,6 +1838,13 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	}
 
 	/*
+	 * AutoChips: the eMMC cache brings little performance here and some eMMCs
+	 * have bugs (illegal command, for example with auto CMD23) while it is on,
+	 * so it stays off unless CONFIG_ATC_EMMC_CACHE_SUPPORT is set (not set in
+	 * the AC8257 kernels, 4.9 included).
+	 */
+#ifdef CONFIG_ATC_EMMC_CACHE_SUPPORT
+	/*
 	 * If cache size is higher than 0, this indicates the existence of cache
 	 * and it can be turned on. Note that some eMMCs from Micron has been
 	 * reported to need ~800 ms timeout, while enabling the cache after
@@ -1862,6 +1872,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			card->ext_csd.cache_ctrl = 1;
 		}
 	}
+#endif
 
 	/*
 	 * Enable Command Queue if supported. Note that Packed Commands cannot
@@ -1894,7 +1905,15 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (card->ext_csd.cmdq_support && host->caps2 & MMC_CAP2_SWCQ) {
+	/*
+	 * As in the MediaTek / AutoChips 4.9 kernel: no command queue in recovery
+	 * (OTA, flashing), where an eMMC with a command queue bug would corrupt data.
+	 */
+	if (card->ext_csd.cmdq_support && host->caps2 & MMC_CAP2_SWCQ &&
+	    get_boot_mode() == RECOVERY_BOOT) {
+		pr_notice("%s: recovery boot, command queue not used\n",
+			  mmc_hostname(host));
+	} else if (card->ext_csd.cmdq_support && host->caps2 & MMC_CAP2_SWCQ) {
 		err = mmc_cmdq_enable(card);
 		if (err && err != -EBADMSG)
 			goto free_card;
@@ -2241,6 +2260,11 @@ static int _mmc_hw_reset(struct mmc_host *host)
 		mmc_power_cycle(host, card->ocr);
 		mmc_pwrseq_reset(host);
 	}
+#ifdef CONFIG_ATC_AOSP_ENHANCEMENT
+	/* AutoChips: the card is also powered off and on after a reset by RST_n */
+	mmc_power_off(host);
+	mmc_power_up(host, card->ocr);
+#endif
 	return mmc_init_card(host, card->ocr, card);
 }
 

@@ -1,19 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2017 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * Copyright (c) 2019 MediaTek Inc.
  */
 
-#include <linux/hie.h>
-#include "mtk_secure_api.h"
-
+//#include <linux/hie.h>
+#include <linux/arm-smccc.h>
+#include <linux/soc/mediatek/mtk_sip_svc.h>
 /* map from AES Spec */
 enum {
 	MSDC_CRYPTO_XTS_AES         = 4,
@@ -31,6 +23,14 @@ enum {
 	BIT_256 = 2,
 	BIT_0 = 4,
 };
+
+#ifndef CONFIG_HIE
+u64 hie_get_iv(struct request *req)
+{
+	return 0;
+}
+#endif
+
 
 static void msdc_crypto_switch_config(struct msdc_host *host,
 	struct request *req,
@@ -121,7 +121,7 @@ static void msdc_crypto_switch_config(struct msdc_host *host,
 				WARN_ON(1);
 			}
 		}
-	} else{
+	} else {
 		MSDC_SET_BIT32(EMMC52_AES_SWST, EMMC52_AES_SWITCH_START_DEC);
 		polling_tmo = jiffies + POLLING_BUSY;
 		while (MSDC_READ32(EMMC52_AES_SWST)
@@ -145,14 +145,14 @@ static void msdc_pre_crypto(struct mmc_host *mmc, struct mmc_request *mrq)
 	u32 is_fde = 0, is_fbe = 0;
 #if defined(CONFIG_MTK_HW_FDE)
 	unsigned int key_idx;
+	struct arm_smccc_res res;
 #endif
 #ifdef CONFIG_HIE
 	int err;
 #endif
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	struct mmc_queue_req *mq_rq = NULL;
-#endif
 	struct request *req = NULL;
+	struct mmc_queue_req *mq_rq = NULL;
+	struct mmc_blk_request *brq;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	struct mmc_async_req *areq;
 #endif
@@ -167,9 +167,9 @@ static void msdc_pre_crypto(struct mmc_host *mmc, struct mmc_request *mrq)
 	/* CMDQ Command */
 	if (check_mmc_cmd4647(cmd->opcode)) {
 		areq = mmc->areq_que[(cmd->arg >> 16) & 0x1f];
-		mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
+		mq_rq = container_of(areq, struct mmc_queue_req, areq);
 		blk_addr = mq_rq->brq.que.arg;
-		req = mq_rq->req;
+		req = mmc_queue_req_to_req(mq_rq);
 		goto check_hw_crypto;
 	}
 #endif
@@ -178,9 +178,10 @@ static void msdc_pre_crypto(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (mrq->is_mmc_req &&
 		(check_mmc_cmd1718(cmd->opcode) ||
 		check_mmc_cmd2425(cmd->opcode))) {
+		brq = container_of(mrq, struct mmc_blk_request, mrq);
+		mq_rq = container_of(brq, struct mmc_queue_req, brq);
 		blk_addr = cmd->arg;
-		/* patch from ALPS03339398 */
-		req = mrq->req;
+		req = mmc_queue_req_to_req(mq_rq);
 		goto check_hw_crypto;
 	}
 
@@ -207,8 +208,8 @@ check_hw_crypto:
 			(!host->is_crypto_init ||
 			(host->key_idx != key_idx))) {
 			/* fde init */
-			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
-				(1 << 3), 4, 1, 0);
+			arm_smccc_smc(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
+				(1 << 3), 4, 1, 0, 0, 0, 0, &res);
 			host->is_crypto_init = true;
 			host->key_idx = key_idx;
 		}
@@ -217,8 +218,8 @@ check_hw_crypto:
 		if (is_fbe) {
 			if (!host->is_crypto_init) {
 				/* fbe init */
-				mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
-					(1 << 0), 4, 1, 0);
+				arm_smccc_smc(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
+					(1 << 0), 4, 1, 0, 0, 0, 0, &res);
 				host->is_crypto_init = true;
 			}
 			if (dir == DMA_TO_DEVICE)

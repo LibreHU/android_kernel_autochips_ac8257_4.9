@@ -83,6 +83,7 @@ void mmc_stop_host(struct mmc_host *host);
 
 int _mmc_detect_card_removed(struct mmc_host *host);
 int mmc_detect_card_removed(struct mmc_host *host);
+int is_enter_shutdown(void);
 
 int mmc_attach_mmc(struct mmc_host *host);
 int mmc_attach_sd(struct mmc_host *host);
