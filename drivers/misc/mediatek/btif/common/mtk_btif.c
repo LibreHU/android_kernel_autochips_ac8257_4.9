@@ -3362,6 +3362,18 @@ static int BTIF_init(void)
 		BTIF_ERR_FUNC("BTIF pdriver_create_file failed, ret(%d)\n",
 				i_ret);
 
+	/*
+	 * LibreHU: hal_btif_info_get() below reads the registers, interrupt and clocks of the
+	 * device the probe recorded. If the probe did not run here (deferred, or no "mediatek,btif"
+	 * node), give up instead of using a NULL device (oops at boot, 15/11/2026).
+	 */
+	if (g_btif[0].private_data == NULL) {
+		BTIF_ERR_FUNC("BTIF device not probed, BTIF disabled\n");
+		driver_remove_file(&mtk_btif_dev_drv.driver, &driver_attr_flag);
+		platform_driver_unregister(&mtk_btif_dev_drv);
+		return -ENODEV;
+	}
+
 /*SW init*/
 	for (index = 0; index < BTIF_PORT_NR; index++) {
 		p_btif_buffer = kmalloc(BTIF_RX_BUFFER_SIZE, GFP_ATOMIC);

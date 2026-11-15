@@ -1357,7 +1357,16 @@ static int of_link_to_suppliers(struct device *dev,
 	return ret;
 }
 
-static bool of_devlink = true;
+/*
+ * LibreHU (AC8257): off by default, as on the 4.9 kernel, which has no such links. The MediaTek
+ * clock providers that most nodes link to (infracfg_ao, topckgen, apmixed: CLK_OF_DECLARE_DRIVER
+ * in drivers/clk/mediatek/clk-ac8257.c) get a platform device but no driver ever binds it, so
+ * their consumers stay deferred for good. Vendor drivers expect their probe to run inside
+ * platform_driver_register(): BTIF_init() then used the device of a probe that never ran
+ * (oops in hal_btif_info_get at 0.22 s and reboot, first boot of the recovery test on the unit,
+ * 15/11/2026, 117 "Linked as a consumer" lines before it). "of_devlink=1" turns them back on.
+ */
+static bool of_devlink;
 core_param(of_devlink, of_devlink, bool, 0);
 
 static int of_fwnode_add_links(const struct fwnode_handle *fwnode,
