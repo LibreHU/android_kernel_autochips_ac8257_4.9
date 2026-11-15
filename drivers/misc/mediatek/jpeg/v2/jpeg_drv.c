@@ -1518,12 +1518,15 @@ static int jpeg_probe(struct platform_device *pdev)
 	#endif
 	init_waitqueue_head(&enc_wait_queue);
 
+	/*
+	 * LibreHU 4.19: no enable_irq() before request_irq(), which enables the line itself. On an
+	 * interrupt never requested, enable_irq() starts it without a handler (4.19: "WARNING at
+	 * irq_startup", the interrupt not activated yet; unit try of 15/11/2026).
+	 */
 	JPEG_MSG("request JPEG Encoder IRQ\n");
-	enable_irq(gJpegqDev.encIrqId);
 	if (request_irq(gJpegqDev.encIrqId, jpeg_drv_enc_isr, IRQF_TRIGGER_LOW, "jpeg_enc_driver", NULL))
 		JPEG_ERR("JPEG ENC Driver request irq failed\n");
 	#ifdef JPEG_DEC_DRIVER
-		enable_irq(gJpegqDev.decIrqId);
 		JPEG_MSG("request JPEG Decoder IRQ\n");
 		if (request_irq(gJpegqDev.decIrqId, jpeg_drv_dec_isr, IRQF_TRIGGER_FALLING, "jpeg_dec_driver", NULL))
 			JPEG_ERR("JPEG DEC Driver request irq failed\n");
