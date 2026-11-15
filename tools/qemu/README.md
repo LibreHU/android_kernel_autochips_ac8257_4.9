@@ -17,9 +17,12 @@ sur l'unite** : eMMC, ecran, tactile, audio, Wi-Fi / BT, USB et CAN ne peuvent e
 - Variante du noyau : `ac8257_ujc201_defconfig` + `qemu.config` (console PL011 et disque virtio de QEMU).
 - GICv2 : l'init GICv3 de ce noyau appelle l'extension GIC de MediaTek (`mt_gic_ext_init()`), qui a besoin des
   registres `mediatek,mcucfg` absents de QEMU.
-- `initcall_blacklist.txt` : 20 initcalls MediaTek / AutoChips sautes, ils ecrivent des registres du SoC (horloges,
+- `initcall_blacklist.txt` : 19 initcalls MediaTek / AutoChips sautes, ils ecrivent des registres du SoC (horloges,
   PMIC, watchdog, thermique, SSPM...) absents de QEMU ou appellent le moniteur securise (SMC, TRNG). Comment la
-  liste a ete trouvee : `logs/blacklist-search.txt`.
+  liste a ete trouvee : `logs/blacklist-search.txt`. `BTIF_init` n'y est plus depuis le 15/11/2026 : sans sa sonde
+  (pas de noeud `mediatek,btif` ici) il s'arrete maintenant avec `-ENODEV` au lieu de l'oops que le premier essai
+  sur l'unite a aussi montre (docs/K419.md, « Premier essai sur l'unite ») ; `logs/initcall-debug.log` :
+  « initcall BTIF_init+0x0/0x4c0 returned -19 ».
 - L'extinction finit par une oops dans les pilotes MediaTek (pas de RGU ni de PMIC dans QEMU) : `run.sh` arrete QEMU
   des que le resultat est connu.
 

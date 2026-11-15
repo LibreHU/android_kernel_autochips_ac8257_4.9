@@ -4,7 +4,6 @@
 hotplug_cb_init          # mp_enter_suspend(): APMIXEDSYS, base set by the MediaTek clock driver
 dram_test_init
 mt_freqhopping_drv_init
-BTIF_init
 scp_init
 atc_gpio_config_init
 mtktspmic_init           # PMIC IIO channel
