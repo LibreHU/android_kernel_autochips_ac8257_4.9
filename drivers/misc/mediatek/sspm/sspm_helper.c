@@ -188,7 +188,9 @@ static int sspm_device_probe(struct platform_device *pdev)
 
 	if (IS_ERR((void const *) sspmreg.cfg)) {
 		pr_err("[SSPM] Unable to ioremap registers\n");
-		return -1;
+		/* LibreHU 4.19: a failed probe may be retried (sspm_dev_inited back to 0) */
+		atomic_dec(&sspm_dev_inited);
+		return PTR_ERR((void const *) sspmreg.cfg);
 	}
 
 	sspmreg.cfgregsize = (unsigned int) resource_size(res);
@@ -196,7 +198,9 @@ static int sspm_device_probe(struct platform_device *pdev)
 	sspmreg.irq = platform_get_irq_byname(pdev, "ipc");
 	if (sspmreg.irq < 0) {
 		pr_err("[SSPM] Unable to get IRQ\n");
-		return -1;
+		/* LibreHU 4.19: -EPROBE_DEFER kept, and the probe may be retried */
+		atomic_dec(&sspm_dev_inited);
+		return sspmreg.irq;
 	}
 
 	pr_debug("[SSPM] sspm irq=%d, cfgreg=0x%p\n", sspmreg.irq, sspmreg.cfg);

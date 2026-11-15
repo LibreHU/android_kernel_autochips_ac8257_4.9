@@ -3833,6 +3833,8 @@ CONFIG_MTK_CMDQ_MBOX=y
 CONFIG_IOMMU_API=y
 CONFIG_IOMMU_SUPPORT=y
 CONFIG_ARM64_DMA_USE_IOMMU=y
+# LibreHU 4.19: 512 GPIO numbers as on 4.9 (ACK 4.19 defaults to 256: every global GPIO number was 256 lower)
+CONFIG_ARCH_NR_GPIO=512
 
 #
 # Generic IOMMU Pagetable Support

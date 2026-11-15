@@ -571,7 +571,8 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retslot)
 		}
 		atomic_set(&lock_ack[mid], 0);
 
-		if (retries == 0)
+		/* LibreHU: while (retries-- > 0) ends at -1; 0 is a success on the last try */
+		if (retries < 0)
 			ret = IPI_TIMEOUT_ACK;
 	}
 
@@ -733,7 +734,8 @@ int sspm_ipi_send_sync(int mid, int opts, void *buffer, int slot,
 		}
 		atomic_set(&lock_ack[mid], 0);
 
-		if (retries == 0) /* polling mode timeout */
+		/* LibreHU: while (retries-- > 0) ends at -1; 0 is a success on the last try */
+		if (retries < 0) /* polling mode timeout */
 			ret = IPI_TIMEOUT_ACK;
 
 		ipi_check_ack(mid, opts, ret);

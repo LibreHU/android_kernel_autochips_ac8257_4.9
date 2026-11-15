@@ -5026,8 +5026,13 @@ static int __init regulator_init_complete(void)
 	 * we'd only do this on systems that need it, and a kernel
 	 * command line option might be useful.
 	 */
+	/*
+	 * LibreHU (AC8257): right after late_initcall_sync, as the 4.9 kernel did, not 30 s later
+	 * when Android runs: vendor drivers that switch PMIC LDOs on with raw register writes, outside
+	 * the regulator API, would have them switched off under them.
+	 */
 	schedule_delayed_work(&regulator_init_complete_work,
-			      msecs_to_jiffies(30000));
+			      msecs_to_jiffies(IS_ENABLED(CONFIG_MACH_AC8257) ? 0 : 30000));
 
 	class_for_each_device(&regulator_class, NULL, NULL,
 			      regulator_register_fill_coupling_array);

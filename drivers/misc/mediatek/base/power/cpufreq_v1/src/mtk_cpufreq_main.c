@@ -2157,7 +2157,10 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	return 0;
 #endif
 
-	mt_cpufreq_dts_map();
+	/* LibreHU 4.19: without these mappings apmixed_base kept a physical address used as a pointer */
+	ret = mt_cpufreq_dts_map();
+	if (ret)
+		return ret;
 
 #ifdef SINGLE_CLUSTER
 	cluster_num = (unsigned int)cpufreq_get_nr_clusters();
@@ -2178,6 +2181,11 @@ static int __init _mt_cpufreq_pdrv_init(void)
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before platform_driver_register */
 	ret = cpuhvfs_module_init();
+	/* LibreHU 4.19: no SSPM DVFS (see cpuhvfs_pre_module_init()): no cpufreq driver either */
+	if (ret) {
+		tag_pr_notice("no SSPM DVFS (%d): cpufreq not registered\n", ret);
+		return ret;
+	}
 #endif
 
 #ifndef CPU_DVFS_DT_REG

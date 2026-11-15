@@ -906,6 +906,12 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	else
 		gic_dist_wait_for_rwp();
 
+	/*
+	 * LibreHU 4.19: GENERIC_IRQ_EFFECTIVE_AFF_MASK wants the effective affinity ("irq_chip
+	 * MT_SYSIRQ did not update eff. affinity mask"); "any CPU" routing ignores the mask itself.
+	 */
+	irq_data_update_effective_affinity(d, cpumask_weight(mask_val) > 1 ?
+					   cpu_online_mask : cpumask_of(cpu));
 	return IRQ_SET_MASK_OK;
 #endif
 }

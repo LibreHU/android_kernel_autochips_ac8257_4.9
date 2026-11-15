@@ -166,12 +166,16 @@ int Ripi_cpu_dvfs_thread(void *data)
 
 		bk_log_offs = pwdata[0];
 		num_log = 0;
-#ifdef REPORT_IDLE_FREQ
+		/*
+		 * LibreHU 4.19: offsets from the SSPM checked and the copy bounded by log_box_parsed[]
+		 * (1 + MAX_LOG_FETCH entries; the ring holds DVFS_LOG_NUM): an offset outside the ring
+		 * never ended the loop, and more than MAX_LOG_FETCH entries overran the array.
+		 */
+		if (pwdata[0] < OFFS_LOG_S || pwdata[0] >= OFFS_LOG_E || (pwdata[0] & 3) ||
+		    pwdata[1] < OFFS_LOG_S || pwdata[1] >= OFFS_LOG_E || (pwdata[1] & 3))
+			continue;
 		while ((bk_log_offs != pwdata[1]) &&
 			(num_log < MAX_LOG_FETCH)) {
-#else
-		while (bk_log_offs != pwdata[1]) {
-#endif
 			buf[0] = csram_read(bk_log_offs);
 			bk_log_offs += 4;
 			if (bk_log_offs >= OFFS_LOG_E)
@@ -195,6 +199,9 @@ int Ripi_cpu_dvfs_thread(void *data)
 			parse_log_content(buf, num_log);
 			num_log++;
 		}
+		/* LibreHU 4.19: nothing new, nothing to report (the code below reads entry num_log - 1) */
+		if (num_log == 0)
+			continue;
 
 		cpufreq_lock(flags);
 		for_each_cpu_dvfs_only(i, p) {
@@ -638,9 +645,8 @@ int __init cpuhvfs_set_init_ptbl(void)
 
 	/* seg code */
 	cdvfs_d.u.set_fv.arg[0] = 0;
-	dvfs_to_spm2_command(IPI_DVFS_INIT_PTBL, &cdvfs_d);
-
-	return 0;
+	/* LibreHU 4.19: the result counts, see cpuhvfs_pre_module_init() */
+	return dvfs_to_spm2_command(IPI_DVFS_INIT_PTBL, &cdvfs_d);
 }
 
 int cpuhvfs_set_turbo_scale(unsigned int turbo_f, unsigned int turbo_v)
@@ -1291,7 +1297,18 @@ static int __init cpuhvfs_pre_module_init(void)
 
 	init_cpuhvfs_debug_repo();
 	cpuhvfs_pvt_tbl_create();
-	cpuhvfs_set_init_ptbl();
+	/*
+	 * LibreHU 4.19: an SSPM that did not take the OPP table must not run the CPU DVFS: without it,
+	 * cpuhvfs_module_init() refuses (log_repo NULL) and the CPUs stay at their boot frequency
+	 * instead of the SSPM driving the rails from a table it never got (unit try 4, 15/11/2026: IPIs
+	 * failed with -101 and the boot stopped in _mt_cpufreq_pdrv_init).
+	 */
+	r = cpuhvfs_set_init_ptbl();
+	if (r) {
+		tag_pr_notice("FAILED TO SEND OPP TABLE TO SSPM (%d)\n", r);
+		log_repo = NULL;
+		return r;
+	}
 
 	return 0;
 }
