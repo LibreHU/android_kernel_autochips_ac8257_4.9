@@ -7,8 +7,9 @@
  * into the movable zone of ordinary RAM: "Memory: 5864028K/6209656K available" under 4.9. This 4.19
  * kernel does not build ZMC (no TEE, no secure video memory user), and the generic reserved-memory
  * code kept the whole region reserved: "1670328K/6209656K available ... 4539328K reserved" (unit
- * tries of 15/11/2026). Given back to memblock as ordinary memory here, as the "Abort reserve memory"
- * path of zmc_memory_init() does.
+ * tries of 15/11/2026). Given back to memblock here, as the "Abort reserve memory" path of
+ * zmc_memory_init() does, and, as ZMC does on 4.9, made ZONE_MOVABLE (arch/arm64/mm/init.c,
+ * zone_sizes_init()): user and page cache pages only, kernel allocations stay below its base.
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the
  * GNU General Public License version 2 as published by the Free Software Foundation.
@@ -19,11 +20,15 @@
 #include <linux/memblock.h>
 #include <linux/of_reserved_mem.h>
 
+extern phys_addr_t librehu_zmc_movable_base;
+
 static int __init ac8257_zmc_release(struct reserved_mem *rmem)
 {
 	memblock_free(rmem->base, rmem->size);
 	memblock_add(rmem->base, rmem->size);
-	pr_info("ac8257: %s %pa+%pa given back as ordinary memory (no ZONE_MOVABLE_CMA)\n",
+	if (!librehu_zmc_movable_base || rmem->base < librehu_zmc_movable_base)
+		librehu_zmc_movable_base = rmem->base;
+	pr_info("ac8257: %s %pa+%pa given back as movable memory (no ZONE_MOVABLE_CMA)\n",
 		rmem->name, &rmem->base, &rmem->size);
 	/* not a reserved region any more */
 	return -ENODEV;
