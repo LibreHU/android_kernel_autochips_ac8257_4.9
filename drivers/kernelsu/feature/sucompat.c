@@ -252,7 +252,12 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 	const char su[] = SU_PATH;
 	static const char ksud_path[] = KSUD_PATH;
 	struct ksu_sulog_pending_event *pending_root = NULL;
-	const char *const *sucompat_argv = (const char *const *)__never_use_argv;
+	/*
+	 * LibreHU: fs/exec.c passes &argv, a struct user_arg_ptr *, not a kernel argv[]: reading it
+	 * as one oopsed with the su log on (strnlen() on is_compat / a user pointer). No arguments
+	 * in the log.
+	 */
+	const char *const *sucompat_argv = NULL;
 
 	if (unlikely(!filename_ptr))
 		return 0;

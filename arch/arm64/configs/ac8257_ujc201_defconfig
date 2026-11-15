@@ -274,6 +274,9 @@ CONFIG_OLD_SIGSUSPEND3=y
 CONFIG_COMPAT_OLD_SIGACTION=y
 # CONFIG_CPU_NO_EFFICIENT_FFS is not set
 # CONFIG_HAVE_ARCH_VMAP_STACK is not set
+# LibreHU 4.19: kernel stacks in the linear map as on 4.9 during the bring-up (vendor code that hands a
+# stack buffer to DMA / virt_to_phys would get a wrong address with vmalloc'd stacks)
+# CONFIG_VMAP_STACK is not set
 
 #
 # GCOV-based kernel profiling

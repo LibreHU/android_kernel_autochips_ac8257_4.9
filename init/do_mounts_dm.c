@@ -434,8 +434,8 @@ static void __init dm_setup_drives(void)
 		}
 
 		/* Export the dm device via the ioctl interface */
-		if (!strcmp(DM_NO_UUID, dev->uuid))
-			uuid = NULL;
+		/* LibreHU: uuid was left uninitialised for any value other than "none" */
+		uuid = strcmp(DM_NO_UUID, dev->uuid) ? dev->uuid : NULL;
 		if (dm_ioctl_export(md, dev->name, uuid)) {
 			DMDEBUG("failed to export device with given"
 				" name and uuid");

@@ -1951,7 +1951,12 @@ static int __init wmt_tm_init(void)
 	wmt_stats_info.pre_tx_bytes = 0;
 
 	init_timer_deferrable(&wmt_stats_timer);
-	wmt_stats_timer.function = (void *)&wmt_cal_stats;
+	/*
+	 * LibreHU 4.19: through the legacy trampoline, which passes .data: ->function is called
+	 * with the timer itself, and wmt_cal_stats() then wrote into the timer's list entry and
+	 * hit BUG_ON(timer_pending()) in add_timer() once Wi-Fi sent data (panic, PANIC_ON_OOPS).
+	 */
+	wmt_stats_timer.legacy_function = (void *)&wmt_cal_stats;
 	wmt_stats_timer.data = (unsigned long)&wmt_stats_info;
 	wmt_stats_timer.expires = jiffies + 1 * HZ;
 	add_timer(&wmt_stats_timer);

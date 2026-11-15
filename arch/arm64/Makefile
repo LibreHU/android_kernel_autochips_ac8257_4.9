@@ -22,6 +22,11 @@ LDFLAGS_vmlinux		+= -shared -Bsymbolic -z notext \
 			$(call ld-option, --no-apply-dynamic-relocs)
 endif
 
+# LibreHU (AC8257): Cortex-A53 r0p4 (MIDR 0x410fd034) is hit by erratum 835769 (multiply-accumulate). The
+# workaround is a compiler option, on by default in clang only for Android triples; this build uses
+# aarch64-linux-gnu, so neither the kernel nor the connectivity modules had it.
+KBUILD_CFLAGS	+= $(call cc-option,-mfix-cortex-a53-835769)
+
 ifeq ($(CONFIG_ARM64_ERRATUM_843419),y)
   ifeq ($(call ld-option, --fix-cortex-a53-843419),)
 $(warning ld does not support --fix-cortex-a53-843419; kernel may be susceptible to erratum)

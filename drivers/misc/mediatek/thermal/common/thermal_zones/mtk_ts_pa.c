@@ -805,7 +805,8 @@ static int __init mtktspa_init(void)
 	pa_stats_info.pre_tx_bytes = 0;
 
 	init_timer_deferrable(&pa_stats_timer);
-	pa_stats_timer.function = (void *)&pa_cal_stats;
+	/* LibreHU 4.19: legacy trampoline, as mtk_ts_wmt.c (->function would get the timer) */
+	pa_stats_timer.legacy_function = (void *)&pa_cal_stats;
 	pa_stats_timer.data = (unsigned long) &pa_stats_info;
 	pa_stats_timer.expires = jiffies + 1 * HZ;
 	add_timer(&pa_stats_timer);
