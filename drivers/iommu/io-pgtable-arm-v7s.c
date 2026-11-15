@@ -500,8 +500,11 @@ static int arm_v7s_map(struct io_pgtable_ops *ops, unsigned long iova,
 	/* If no access, then nothing to do */
 	if (!(prot & (IOMMU_READ | IOMMU_WRITE)))
 		return 0;
-
-	if (WARN_ON(upper_32_bits(iova) || upper_32_bits(paddr)))
+	
+	if (WARN_ON(upper_32_bits(iova) ||
+		    (upper_32_bits(paddr) &&
+		     (!(iop->cfg.quirks & IO_PGTABLE_QUIRK_ARM_MTK_4GB) ||
+		      upper_32_bits(paddr) > 3))))
 		return -ERANGE;
 
 	ret = __arm_v7s_map(data, iova, paddr, size, prot, 1, data->pgd);
