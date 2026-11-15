@@ -150,4 +150,7 @@ extern void __of_sysfs_remove_bin_file(struct device_node *np,
 #define for_each_transaction_entry_reverse(_oft, _te) \
 	list_for_each_entry_reverse(_te, &(_oft)->te_list, node)
 
+/* LibreHU (AC8257): drivers/of/property.c */
+bool of_devlink_enabled(void);
+
 #endif /* _LINUX_OF_PRIVATE_H */

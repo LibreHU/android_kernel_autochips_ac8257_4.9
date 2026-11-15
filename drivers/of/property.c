@@ -1369,6 +1369,12 @@ static int of_link_to_suppliers(struct device *dev,
 static bool of_devlink;
 core_param(of_devlink, of_devlink, bool, 0);
 
+/* LibreHU (AC8257): of_platform_default_populate_init() pauses fw_devlink only when of_devlink is on. */
+bool of_devlink_enabled(void)
+{
+	return of_devlink;
+}
+
 static int of_fwnode_add_links(const struct fwnode_handle *fwnode,
 			       struct device *dev)
 {

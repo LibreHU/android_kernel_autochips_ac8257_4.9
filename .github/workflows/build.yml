@@ -71,7 +71,7 @@ jobs:
 
       - name: Pack images
         env:
-          CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init log_buf_len=8M' }}
+          CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init log_buf_len=8M initcall_debug ignore_loglevel' }}
         run: |
           mkdir -p dist
           K=out/arch/arm64/boot/Image.gz-dtb

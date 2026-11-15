@@ -23,6 +23,8 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/platform_device.h>
 
+#include "of_private.h"
+
 const struct of_device_id of_default_bus_match_table[] = {
 	{ .compatible = "simple-bus", },
 	{ .compatible = "simple-mfd", },
@@ -545,10 +547,21 @@ static int __init of_platform_default_populate_init(void)
 		of_node_put(node);
 	}
 
-	/* Populate everything else. */
-	fw_devlink_pause();
+	/*
+	 * Populate everything else. LibreHU (AC8257): no fw_devlink pause without of_devlink. While
+	 * paused, fw_devlink_link_device() puts every new device on the wait-for-suppliers list, so the
+	 * devices whose driver is already registered (pinctrl, toprgu, sspm, gce_mbox, emi, dramc,
+	 * devapc) failed their first probe with -EPROBE_DEFER and were probed again only at late_initcall
+	 * (deferred_probe_initcall, 0.37 s): too late for the vendor initcalls that use them ("SSPM:
+	 * logger IPI fail ret=-101", "pmic_ipi_to_sspm ap_ret_w = -101", cpufreq then stuck; unit tries
+	 * of 15/11/2026). The 4.9 kernel probes them during this populate. Without of_devlink no link is
+	 * ever made: nothing to pause for.
+	 */
+	if (of_devlink_enabled())
+		fw_devlink_pause();
 	of_platform_default_populate(NULL, NULL, NULL);
-	fw_devlink_resume();
+	if (of_devlink_enabled())
+		fw_devlink_resume();
 
 	return 0;
 }
