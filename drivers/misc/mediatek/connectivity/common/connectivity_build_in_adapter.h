@@ -175,6 +175,10 @@ void connectivity_arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
  * event_trace_printk()
  *********************************************/
 
+#ifdef LIBREHU_NO_TRACE_PRINTK
+/* LibreHU: see trace_printk() in include/linux/kernel.h */
+#define KERNEL_event_trace_printk(ip, fmt, args...)	no_printk(fmt, ##args)
+#else
 #define KERNEL_event_trace_printk(ip, fmt, args...)               \
 do {                                                              \
 	__trace_printk_check_format(fmt, ##args);                 \
@@ -187,6 +191,7 @@ do {                                                              \
 	} else                                                    \
 		__trace_printk(ip, fmt, ##args);                  \
 } while (0)
+#endif
 
 /******************************************************************************
  * GPIO dump information

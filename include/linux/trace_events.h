@@ -542,6 +542,10 @@ int trace_set_clr_event(const char *system, const char *event, int set);
  * if we try to allocate the static variable to fmt if it is not a
  * constant. Even with the outer if statement optimizing out.
  */
+#ifdef LIBREHU_NO_TRACE_PRINTK
+/* LibreHU: see trace_printk() in include/linux/kernel.h */
+#define event_trace_printk(ip, fmt, args...)	no_printk(fmt, ##args)
+#else
 #define event_trace_printk(ip, fmt, args...)				\
 do {									\
 	__trace_printk_check_format(fmt, ##args);			\
@@ -555,6 +559,7 @@ do {									\
 	} else								\
 		__trace_printk(ip, fmt, ##args);			\
 } while (0)
+#endif
 
 #ifdef CONFIG_PERF_EVENTS
 struct perf_event;

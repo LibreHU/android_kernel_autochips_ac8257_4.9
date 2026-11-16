@@ -691,6 +691,16 @@ do {									\
  * let gcc optimize the rest.
  */
 
+#ifdef LIBREHU_NO_TRACE_PRINTK
+/*
+ * LibreHU: defined for the vendor drivers (drivers/misc/mediatek/Makefile), which left trace_printk(),
+ * trace_puts() and event_trace_printk() calls in production code. A single constant format in __trace_printk_fmt
+ * is enough for tracer_alloc_buffers() to allocate the per-CPU trace buffers at full size (about 5.5 MiB on 4
+ * CPUs) and record task names on every context switch from the first second of the boot. Compiled out there;
+ * the arguments are still type-checked, never evaluated.
+ */
+#define trace_printk(fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
+#else
 #define trace_printk(fmt, ...)				\
 do {							\
 	char _______STR[] = __stringify((__VA_ARGS__));	\
@@ -699,6 +709,7 @@ do {							\
 	else						\
 		trace_puts(fmt);			\
 } while (0)
+#endif
 
 #define do_trace_printk(fmt, args...)					\
 do {									\
@@ -745,6 +756,9 @@ int __trace_printk(unsigned long ip, const char *fmt, ...);
  *  (1 when __trace_bputs is used, strlen(str) when __trace_puts is used)
  */
 
+#ifdef LIBREHU_NO_TRACE_PRINTK
+#define trace_puts(str) ({ 0; })
+#else
 #define trace_puts(str) ({						\
 	static const char *trace_printk_fmt __used			\
 		__attribute__((section("__trace_printk_fmt"))) =	\
@@ -755,6 +769,7 @@ int __trace_printk(unsigned long ip, const char *fmt, ...);
 	else								\
 		__trace_puts(_THIS_IP_, str, strlen(str));		\
 })
+#endif
 extern int __trace_bputs(unsigned long ip, const char *str);
 extern int __trace_puts(unsigned long ip, const char *str, int size);
 

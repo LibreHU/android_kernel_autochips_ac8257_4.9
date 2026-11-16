@@ -20,6 +20,9 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
+# LibreHU: compile out the trace_printk() calls of the vendor drivers (include/linux/kernel.h), which made the
+# kernel allocate the trace buffers and record task names on every context switch at each boot
+subdir-ccflags-y += -DLIBREHU_NO_TRACE_PRINTK
 
 obj-$(CONFIG_MTK_EMI) += emi/
 obj-$(CONFIG_MTK_EMI_MPU) += emi_mpu/
