@@ -502,6 +502,20 @@ int cgroup_bpf_prog_query(const union bpf_attr *attr,
 	return ret;
 }
 
+/*
+ * LibreHU (AC8257): the verifier accepts any scalar return value from cgroup skb programs (Android 9 netd,
+ * see check_return_code()). Count a program as "pass" only when it returns exactly 1, as the 4.9 kernel did:
+ * BPF_PROG_RUN_ARRAY() ANDs the raw values, so 3 would otherwise pass.
+ */
+static __always_inline u32 cgroup_skb_run_prog(const struct bpf_prog *prog, struct sk_buff *skb)
+{
+	u32 ret = bpf_prog_run_save_cb(prog, skb);
+
+	if (IS_ENABLED(CONFIG_MACH_AC8257))
+		return ret == 1;
+	return ret;
+}
+
 /**
  * __cgroup_bpf_run_filter_skb() - Run a program for packet filtering
  * @sk: The socket sending or receiving traffic
@@ -537,7 +551,7 @@ int __cgroup_bpf_run_filter_skb(struct sock *sk,
 	skb->sk = sk;
 	__skb_push(skb, offset);
 	ret = BPF_PROG_RUN_ARRAY(cgrp->bpf.effective[type], skb,
-				 bpf_prog_run_save_cb);
+				 cgroup_skb_run_prog);
 	__skb_pull(skb, offset);
 	skb->sk = save_sk;
 	return ret == 1 ? 0 : -EPERM;

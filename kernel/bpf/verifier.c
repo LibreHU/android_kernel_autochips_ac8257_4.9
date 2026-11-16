@@ -4554,6 +4554,16 @@ static int check_return_code(struct bpf_verifier_env *env)
 		return -EINVAL;
 	}
 
+	/*
+	 * LibreHU (AC8257): the 4.9 kernel had no return value check, and the netd cgroup_ingress_prog of
+	 * Android 9 returns a byte loaded from a map (0..0xff for the verifier), so 4.19 refused it ("should
+	 * have been in (0x0; 0x1)") and traffic control was off. Accept any scalar for cgroup skb programs:
+	 * __cgroup_bpf_run_filter_skb() still lets a packet through only when the result is 1 (Android 10 and
+	 * later programs return 0 or 1 and pass the check anyway).
+	 */
+	if (IS_ENABLED(CONFIG_MACH_AC8257) && env->prog->type == BPF_PROG_TYPE_CGROUP_SKB)
+		return 0;
+
 	if (!tnum_in(range, reg->var_off)) {
 		char tn_buf[48];
 
