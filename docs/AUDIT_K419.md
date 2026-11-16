@@ -14,6 +14,45 @@ L'audit lui-même n'a rien modifié dans le code.
 - **L'audit est incomplet** : les agents ont été arrêtés par la limite d'usage. Les zones non couvertes sont listées
   à la fin (section « Reste à auditer »).
 
+## État d'application (16/11/2026, à la demande de l'utilisateur : « Applique tout les patchs »)
+
+Appliqué dans la branche `experimental-4.19.325`, un commit par point (messages en anglais). Vérifié par un build
+complet local de la variante a9 (clang 14) : compilation sans erreur, `Image.gz-dtb` 9 643 864 octets (9 951 937
+avant : -308 Ko malgré le JIT et les jump labels), image boot de 10 Mio qui tient, plus aucun format `trace_printk`
+(`__start___trace_bprintk_fmt` = `__stop`), aucun `.ko` avec `__trace_printk_fmt`. La variante a10 est construite
+par la CI. À tester sur l'unité (recovery_test d'abord). Ce qui n'est pas appliqué est expliqué.
+
+| Point | État | Commit |
+|---|---|---|
+| B1 TLB M4U | appliqué : sync après chaque page démappée (comportement 4.9) dans `arm_v7s_unmap()` | `86d2ead` |
+| B2, B3 xt_qtaguid | appliqué : les 2 hunks ACK `android-4.9-p` | `ce91282` |
+| B4 ION < 4 Gio | appliqué : `ion_gfp_below_4g()` (GFP_DMA32, sans MOVABLE/HIGHMEM), pools et tas contig | `910fb3f` |
+| B5 dualarm | appliqué : `spin_lock_irqsave` + attente bornée à 50 ms | `cb473a6` |
+| C1 cap_capable | appliqué : une ligne par capacité et par démarrage | `1756712` |
+| C2 configs | appliqué : `XT_TARGET_CT` (les deux) ; a10 : L2TP, PPPOL2TP, PPTP, NET_IPGRE_DEMUX, NET_CLS_BPF, XFRM_INTERFACE, XFRM_STATISTICS ; a9 : pppolac/pppopns portés (voir plus bas) | `7bf7d4d` |
+| P5 taille | appliqué : DYNAMIC_DEBUG, CGROUP_DEBUG, LOGO, IOSCHED_CFQ à n | `e128f26` |
+| P2 BPF JIT | appliqué : `BPF_JIT` + `BPF_JIT_ALWAYS_ON` | `f0c9c88` |
+| P3 jump labels | appliqué | `e73645a` |
+| P6 Goodix | appliqué : `TOUCHSCREEN_GOODIX=n` | `d4e531c` |
+| P1 console UART | appliqué : `mt_disable_uart()` à `late_initcall_sync` (`printk.keep_uart=1` pour la garder) | `02dcb72` |
+| P4 KPTI | appliqué : `kpti=0` ajouté par la CI à toutes les images | `93dbc9f` |
+| P8 trace_printk | appliqué : `LIBREHU_NO_TRACE_PRINTK` pour `drivers/misc/mediatek` | `04d9d7c` |
+| B6 backcar | appliqué : file statique + `wait_event_interruptible()` sur `MSG_ARM2_RESPONSE` | `b5e5e02` |
+| B7, B8 mémoire réservée | appliqué : démappage M4U avant `free_memblock_runtime()` (ARM2/MDP/ISP et queue du FB), tas ION FB limité à la partie gardée. Correction de l'audit : le 4.9 avait aussi `MEMBLK_RELEASE_POLICY=y` (`mm/memblock.c`), ce n'est pas une régression ; la politique reste active | `0662a97` |
+| B9 LCM | appliqué en partie : pas d'I2C sans client, détection DS90UB947 mise en cache, plus de double `i2c_unregister_device()`. L'indice `lcm_id` n'est PAS remappé (risque : envoyer les tables du pont primaire au composant 0x2d) | `159bb6e` |
+| B10 MAC Wi-Fi | appliqué : MAC stable dérivée (jhash) de `androidboot.serialno`, `02:08:22:xx:xx:xx` | `a0a111e` |
+| B12 Wi-Fi | appliqué : `MAC2STR` + garde `KERNEL_VERSION(5, 9, 0) >` | `a0a111e` |
+| B11 PSCI | appliqué : index borné, power_state 0 au-delà (même comportement qu'avant, sans lecture hors tableau) | `bba1fed` |
+| B13 perf_event_paranoid | appliqué : patch du 4.9 (`SECURITY_PERF_EVENTS_RESTRICT`) | `aed4b4a` |
+| pppolac / pppopns (a9) | appliqué : pilotes Android du 4.9 portés, `CONFIG_PPPOLAC` / `CONFIG_PPPOPNS` en a9 | `f3e4450` |
+| P7 toprgu | NON appliqué : le DT stock 4.9, le DT de l'UJC201 et la référence MediaTek MT6765 déclarent tous `IRQ_TYPE_NONE` ; changer la polarité sans la connaître peut déclencher l'IRQ du watchdog en boucle. Le WARN reste (sans effet) | - |
+| P9 IPI 0xf | analysé : aucun émetteur du SGI 15 dans le noyau (recherche de `smp_cross_call`, `gic_send_sgi`, SGI dans `drivers/misc/mediatek`, `autochips`, `irqchip`) : il vient du monde sécurisé (ATF) ; le noyau l'acquitte. Pas de correctif | - |
+| H1 VINTF LOS 16 | NON appliqué : demande une modification des sources de la ROM (matrice du framework) et un build ROM à valider avec l'utilisateur | - |
+| H2 sepolicy `map` | NON appliqué : `camhal3lite` et `vtservice_hidl` sont dans la politique vendor stock (pas dans l'arbre) ; `librehu_ksunext` est déjà un domaine permissif, ses règles viendront avec le passage en Enforcing | - |
+| H3 Wi-Fi 5 GHz | test côté utilisateur (pas un correctif) | - |
+| H4 heure MCU | NON appliqué : le dépôt `LibreHU-service` n'a pas pu être attaché à la session | - |
+| H5 uartconsole | rendu inutile par P1 (le noyau coupe la console UART lui-même) | - |
+
 ## Règles pour l'instance qui applique
 
 1. Travailler sur `experimental-4.19.325` uniquement. Ne pas toucher `stable-4.9.337` ni les autres branches.
