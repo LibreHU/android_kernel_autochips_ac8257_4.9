@@ -159,6 +159,12 @@ static void GPIO_Init(void)
 		//return;
 	}
 
+	/*
+	 * LibreHU: the UJC201 device tree has no backcar_mcu_notify_gpio (-ENOENT): gpio_request(-2) only gave an
+	 * "invalid GPIO -2" warning with a backtrace at each ioctl (4.9 as well).
+	 */
+	if (!gpio_is_valid(backcar_mcu_gpio_num))
+		return;
 	ret = gpio_request(backcar_mcu_gpio_num, "BackCar_MCU_GPIO");
 	if (ret < 0) {
 		BACKCAR_LOG(BACKCAR_ERR, "request backcar mcu gpio bc_failed\n");

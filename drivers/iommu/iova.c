@@ -219,7 +219,15 @@ static int __alloc_and_insert_iova_range(struct iova_domain *iovad,
 
 	/* Walk the tree backwards */
 	spin_lock_irqsave(&iovad->iova_rbtree_lock, flags);
-	curr = __get_cached_rbnode(iovad, limit_pfn);
+	/*
+	 * LibreHU (MediaTek pseudo_m4u, as the MediaTek 4.19 kernels do): a range that is not size-aligned is one at a
+	 * fixed address (limit_pfn = its last page, pseudo_alloc_fixed_iova()): search it from the top of the tree.
+	 * From the cached node, the last allocation, it lands below that allocation instead of at the address asked:
+	 * on the first 4.19 boot, the ISP and ARM2 back camera UI reserved regions were mapped at 0x5f400000 and
+	 * 0x61306000 instead of 1:1 at 0x76000000 and 0x77400000.
+	 */
+	curr = size_aligned ? __get_cached_rbnode(iovad, limit_pfn) :
+			      &iovad->anchor.node;
 	curr_iova = rb_entry(curr, struct iova, node);
 	do {
 		limit_pfn = min(limit_pfn, curr_iova->pfn_lo);
@@ -240,7 +248,9 @@ static int __alloc_and_insert_iova_range(struct iova_domain *iovad,
 
 	/* If we have 'prev', it's a valid place to start the insertion. */
 	iova_insert_rbtree(&iovad->rbroot, new, prev);
-	__cached_rbnode_insert_update(iovad, new);
+	/* LibreHU: a fixed-address range leaves the cached nodes where the other allocations are */
+	if (size_aligned)
+		__cached_rbnode_insert_update(iovad, new);
 
 	spin_unlock_irqrestore(&iovad->iova_rbtree_lock, flags);
 

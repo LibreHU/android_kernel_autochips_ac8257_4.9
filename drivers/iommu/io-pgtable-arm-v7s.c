@@ -398,8 +398,12 @@ static int arm_v7s_init_pte(struct arm_v7s_io_pgtable *data,
 						    sz, lvl, tblp) != sz))
 				return -EINVAL;
 		} else if (ptep[i]) {
-			/* We require an unmap first */
-			WARN_ON(!selftest_running);
+			/*
+			 * We require an unmap first. LibreHU: once only: each backtrace on the 921600 baud console
+			 * stalled the caller (1067 of them on the first 4.19 boot); the MediaTek pseudo_m4u driver logs
+			 * each failed mapping itself, rate limited.
+			 */
+			WARN_ON_ONCE(!selftest_running);
 			return -EEXIST;
 		}
 
@@ -481,8 +485,8 @@ static int __arm_v7s_map(struct arm_v7s_io_pgtable *data, unsigned long iova,
 	if (ARM_V7S_PTE_IS_TABLE(pte, lvl)) {
 		cptep = iopte_deref(pte, lvl);
 	} else if (pte) {
-		/* We require an unmap first */
-		WARN_ON(!selftest_running);
+		/* We require an unmap first (LibreHU: once only, see arm_v7s_init_pte()) */
+		WARN_ON_ONCE(!selftest_running);
 		return -EEXIST;
 	}
 

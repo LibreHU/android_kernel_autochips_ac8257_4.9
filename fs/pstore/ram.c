@@ -751,7 +751,7 @@ static int ramoops_probe(struct platform_device *pdev)
 	struct ramoops_platform_data *pdata = dev->platform_data;
 	struct ramoops_platform_data pdata_local;
 	struct ramoops_context *cxt = &oops_cxt;
-	size_t dump_mem_sz;
+	size_t dump_mem_sz, mtk_bconsole_sz;
 	phys_addr_t paddr;
 	int err = -EINVAL;
 
@@ -813,8 +813,18 @@ static int ramoops_probe(struct platform_device *pdev)
 
 	paddr = cxt->phys_addr;
 
-	dump_mem_sz = cxt->size - cxt->console_size - cxt->ftrace_size
-			- cxt->pmsg_size;
+	/*
+	 * LibreHU (AC8257): the zones where the 4.9 MediaTek kernel puts them. Its fs/pstore/ram.c has a second
+	 * console zone ("bprz", the MediaTek ram_console log) right after the console one: without it, the 4.19
+	 * console zone was the 4.9 "bprz" one, and the 4.9 console zone (where ac8257_early_pstore_console also
+	 * writes, 0x47cdf000 with the stock parameters) fell inside the 4.19 dump zone, cleared at each boot
+	 * ("persistent_ram: found existing invalid buffer"): no console-ramoops after a 4.19 boot, nor after a 4.9
+	 * one. Now 4.9, 4.19 and the early console share one console zone; the second one is left as it is.
+	 */
+	mtk_bconsole_sz = IS_ENABLED(CONFIG_MACH_AC8257) ? cxt->console_size : 0;
+
+	dump_mem_sz = cxt->size - cxt->console_size - mtk_bconsole_sz
+			- cxt->ftrace_size - cxt->pmsg_size;
 	err = ramoops_init_przs("dump", dev, cxt, &cxt->dprzs, &paddr,
 				dump_mem_sz, cxt->record_size,
 				&cxt->max_dump_cnt, 0, 0);
@@ -825,6 +835,8 @@ static int ramoops_probe(struct platform_device *pdev)
 			       cxt->console_size, 0);
 	if (err)
 		goto fail_init_cprz;
+
+	paddr += mtk_bconsole_sz;
 
 	cxt->max_ftrace_cnt = (cxt->flags & RAMOOPS_FLAG_FTRACE_PER_CPU)
 				? nr_cpu_ids

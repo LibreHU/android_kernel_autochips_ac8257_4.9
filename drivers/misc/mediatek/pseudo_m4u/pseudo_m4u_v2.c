@@ -611,6 +611,89 @@ static void pseudo_free_iova(int port, dma_addr_t dma_addr)
 		(unsigned long)dma_addr, size);
 }
 
+#ifdef CONFIG_ARM64
+/*
+ * LibreHU 4.19: the IOVA of the buffers of this driver is taken from and given back to the rbtree of the DMA domain,
+ * as the 4.9 iommu_dma_map_sg() / iommu_dma_unmap_sg() did (alloc_iova() size-aligned, __free_iova()), never through
+ * the per-CPU IOVA caches of 4.11+ (alloc_iova_fast() / free_iova_fast()). Those caches expect ranges allocated by
+ * iommu_dma_alloc_iova(), rounded up to a power of two, and freed with the same size; the fixed-address buffers of
+ * this driver (pseudo_alloc_fixed_iova(): alloc_iova() of any size) went into them through iommu_dma_unmap_sg() and
+ * could come out again as bigger ranges over live mappings. First Android boot on 4.19 (15/11/2026): 1067
+ * "__arm_v7s_map" warnings (-EEXIST), display layers without MVA ("no valid mva"), then the composer aborting on
+ * a failed MDP blit, which restarted SurfaceFlinger and zygote. A failed mapping is now also seen as one: with the
+ * 4.19 iommu_dma_map_sg() it left sg_dma_address() at 0, not DMA_ERROR_CODE, and the buffer got MVA 0.
+ */
+static dma_addr_t pseudo_alloc_iova(struct device *dev,
+				    struct iommu_domain *domain, size_t size)
+{
+	struct iova_domain *iovad = iommu_dma_get_iovad(domain);
+	dma_addr_t limit = dma_get_mask(dev);
+	unsigned long shift, limit_pfn;
+	struct iova *iova;
+
+	if (!iovad || !size)
+		return DMA_ERROR_CODE;
+	if (domain->geometry.force_aperture)
+		limit = min_t(dma_addr_t, limit, domain->geometry.aperture_end);
+	shift = iova_shift(iovad);
+	limit_pfn = limit >> shift;
+	if (iovad->end_pfn && iovad->end_pfn < limit_pfn)
+		limit_pfn = iovad->end_pfn;
+	iova = alloc_iova(iovad, iova_align(iovad, size) >> shift, limit_pfn,
+			  true);
+	if (!iova)
+		return DMA_ERROR_CODE;
+	return iova_dma_addr(iovad, iova);
+}
+
+/* Unmap the whole IOVA range of a buffer, then give the range back to the rbtree (see pseudo_alloc_iova()). */
+static void pseudo_unmap_free_iova(struct iommu_domain *domain,
+				   dma_addr_t dma_addr)
+{
+	struct iova_domain *iovad = iommu_dma_get_iovad(domain);
+	struct iova *iova;
+	size_t size, unmapped;
+	dma_addr_t start;
+
+	if (!iovad)
+		return;
+	iova = find_iova(iovad, iova_pfn(iovad, dma_addr));
+	if (WARN_ON(!iova))
+		return;
+	start = iova_dma_addr(iovad, iova);
+	size = iova_size(iova) << iova_shift(iovad);
+	unmapped = iommu_unmap(domain, start, size);
+	if (unmapped != size)
+		M4U_ERR("unmap iova 0x%lx: 0x%zx of 0x%zx bytes were mapped\n",
+			(unsigned long)start, unmapped, size);
+	__free_iova(iovad, iova);
+}
+
+/*
+ * A mapping failed and iommu_map_sg() undid it: say where, and what the page table already held in the range, so
+ * that the owner of a leftover mapping shows in the log.
+ */
+static void pseudo_report_map_failure(struct iommu_domain *domain, int port,
+				      dma_addr_t dma_addr, size_t size,
+				      size_t mapped, unsigned int flags)
+{
+	static DEFINE_RATELIMIT_STATE(rs, 5 * HZ, 4);
+	dma_addr_t a;
+	phys_addr_t pa = 0;
+
+	if (!__ratelimit(&rs))
+		return;
+	for (a = dma_addr; a < dma_addr + size; a += PAGE_SIZE) {
+		pa = iommu_iova_to_phys(domain, a);
+		if (pa)
+			break;
+	}
+	M4U_ERR("map failed: port %s, flags 0x%x, iova 0x%lx+0x%zx, mapped 0x%zx; first page already mapped: iova 0x%lx pa %pa\n",
+		m4u_get_port_name(port), flags, (unsigned long)dma_addr, size,
+		mapped, pa ? (unsigned long)a : 0UL, &pa);
+}
+#endif
+
 
 
 static int m4u_put_unlock_page(struct page *page)
@@ -1758,28 +1841,48 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 		}
 	}
 
-	if ((flags & (M4U_FLAGS_FIX_MVA | M4U_FLAGS_START_FROM)) != 0) {
-		dma_addr = pseudo_alloc_fixed_iova(port, *retmva, size);
 #ifdef CONFIG_ARM64
-		if (iommu_map_sg(domain, dma_addr, table->sgl, sg_table ?
-				 table->nents : table->orig_nents,
-				 IOMMU_READ | IOMMU_WRITE) < size) {
+	{
+		/* LibreHU 4.19: IOVA from the rbtree only, see pseudo_alloc_iova() */
+		int i, nents = sg_table ? table->nents : table->orig_nents;
+		struct scatterlist *s;
+		size_t total = 0, mapped;
+
+		/* the IOVA range covers everything iommu_map_sg() maps */
+		for_each_sg(table->sgl, s, nents, i)
+			total += s->length;
+		total = max_t(size_t, total, size);
+
+		if ((flags & (M4U_FLAGS_FIX_MVA | M4U_FLAGS_START_FROM)) != 0)
+			dma_addr = pseudo_alloc_fixed_iova(port, *retmva, total);
+		else
+			dma_addr = pseudo_alloc_iova(dev, domain, total);
+		if (dma_addr == DMA_ERROR_CODE) {
+			M4U_ERR("alloc mva failed, port is %s, s:0x%zx, flags 0x%x\n",
+				m4u_get_port_name(port), total, flags);
+			M4U_ERR("SUSPECT that iova have been all exhaust 0x%x, %d-%d\n",
+				flags, table->nents, table->orig_nents);
+			goto ERR2_EXIT;
+		}
+		mapped = iommu_map_sg(domain, dma_addr, table->sgl, nents,
+				      IOMMU_READ | IOMMU_WRITE);
+		if (mapped < total) {
+			pseudo_report_map_failure(domain, port, dma_addr,
+						  total, mapped, flags);
 			goto ERR1_EXIT;
 		}
+		sg_dma_address(table->sgl) = dma_addr;
+		sg_dma_len(table->sgl) = total;
+	}
 #else
+	if ((flags & (M4U_FLAGS_FIX_MVA | M4U_FLAGS_START_FROM)) != 0) {
+		dma_addr = pseudo_alloc_fixed_iova(port, *retmva, size);
 		__arm_coherent_iommu_map_sg(dev, table->sgl,
 					    table->nents, 1, 0);
-#endif
 		sg_dma_address(table->sgl) = dma_addr;
 	} else {
-#ifdef CONFIG_ARM64
-		iommu_dma_map_sg(dev, table->sgl,
-				 sg_table ? table->nents : table->orig_nents,
-				 IOMMU_READ | IOMMU_WRITE);
-#else
 		__arm_coherent_iommu_map_sg(dev,
 					    table->sgl, table->nents, 1, 0);
-#endif
 		dma_addr = sg_dma_address(table->sgl);
 	}
 
@@ -1791,6 +1894,7 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 			flags, table->nents, table->orig_nents);
 		goto ERR1_EXIT;
 	}
+#endif
 
 	*retmva = dma_addr;
 
@@ -1824,7 +1928,8 @@ ERR1_EXIT:
 		pseudo_free_iova(port, dma_addr);
 
 ERR2_EXIT:
-	if (table) {
+	/* LibreHU: never the caller's table (M4U_FLAGS_SG_READY), only the copy made above */
+	if (table && table != sg_table) {
 		sg_free_table(table);
 		kfree(table);
 	}
@@ -2130,7 +2235,8 @@ int __pseudo_dealloc_mva(int port,
 
 	if (table) {
 #ifdef CONFIG_ARM64
-		iommu_dma_unmap_sg(dev, table->sgl, table->orig_nents, 0, 0);
+		/* LibreHU 4.19: the whole range, back to the rbtree (pseudo_alloc_iova()) */
+		pseudo_unmap_free_iova(domain, addr_align);
 #else
 		__arm_coherent_iommu_unmap_sg(dev, table->sgl,
 					      table->nents, 0, 0);
