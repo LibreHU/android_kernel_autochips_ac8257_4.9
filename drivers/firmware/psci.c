@@ -419,26 +419,44 @@ int psci_cpu_init_idle(unsigned int cpu)
 	return ret;
 }
 
-static int psci_suspend_finisher(unsigned long state_id)
+/*
+ * LibreHU (AC8257): take an idle state INDEX, as the 4.9 kernel and the MediaTek 4.19 reference do, and look
+ * up its PSCI power_state in the "arm,psci-suspend-param" table of the device tree. The ACK android-4.19
+ * version took the power_state itself, but every caller here passes an index: arm_cpuidle_suspend(index)
+ * from the MediaTek cpuidle (mtk_enter_idle_state(MTK_MCDI_CPU_MODE = 2), MCDI cluster, SODI, deep idle,
+ * suspend) and from the ACPI LPI code. With the raw index, MCDI asked the ATF for power_state 0x2 (a
+ * standby state: no context saved, entry point 0) instead of 0x10001 (CPU power down), and the first MCDI
+ * entry, about 10 s after a boot-partition boot (when the LK has loaded the SPM firmware), ended in a full
+ * PMIC reset (expdb: "Cold Reset", "kedump: last is full pmic reset", exp_type 0). Recovery-partition boots
+ * never enter MCDI, so they ran.
+ */
+static int psci_suspend_finisher(unsigned long index)
 {
-	return psci_ops.cpu_suspend(state_id,
+	u32 *state = __this_cpu_read(psci_power_state);
+
+	return psci_ops.cpu_suspend(state[index - 1],
 				    __pa_symbol(cpu_resume));
 }
-int psci_cpu_suspend_enter(unsigned long state_id)
+
+int psci_cpu_suspend_enter(unsigned long index)
 {
 	int ret;
+	u32 *state = __this_cpu_read(psci_power_state);
 
 	/*
 	 * idle state index 0 corresponds to wfi, should never be called
 	 * from the cpu_suspend operations
 	 */
-	if (WARN_ON_ONCE(!state_id))
+	if (WARN_ON_ONCE(!index))
+		return -EINVAL;
+	/* No "cpu-idle-states" parsed for this CPU (psci_cpu_init_idle failed or not run) */
+	if (WARN_ON_ONCE(!state))
 		return -EINVAL;
 
-	if (!psci_power_state_loses_context(state_id))
-		ret = psci_ops.cpu_suspend(state_id, 0);
+	if (!psci_power_state_loses_context(state[index - 1]))
+		ret = psci_ops.cpu_suspend(state[index - 1], 0);
 	else
-		ret = cpu_suspend(state_id, psci_suspend_finisher);
+		ret = cpu_suspend(index, psci_suspend_finisher);
 
 	return ret;
 }
