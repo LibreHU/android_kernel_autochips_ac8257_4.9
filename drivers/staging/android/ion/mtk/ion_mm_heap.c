@@ -1191,6 +1191,7 @@ struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
 		struct ion_page_pool *pool;
 		gfp_t gfp_flags = order_gfp_flags[i];
 
+		/* LibreHU: __GFP_HIGHMEM | __GFP_MOVABLE dropped by ion_gfp_below_4g() (pages stay below 4 GiB) */
 		if (unused->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)
 			gfp_flags |= __GFP_HIGHMEM | __GFP_MOVABLE;
 

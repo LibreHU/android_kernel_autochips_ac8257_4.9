@@ -443,6 +443,24 @@ struct ion_page_pool {
 	struct plist_node list;
 };
 
+/*
+ * LibreHU: keep ION pages below 4 GiB physical (6 GiB units). The 4.9 code added GFP_DMA under CONFIG_ZONE_DMA,
+ * which arm64 4.19 no longer has (only ZONE_DMA32), so the limit was dead code and the camera heap took its
+ * pages from ZONE_MOVABLE, up to 0x1c0000000, while dma-buf importers (GPU, display) get the raw physical
+ * address and keep 32 bits of it. ION pages cannot migrate: no __GFP_MOVABLE; __GFP_HIGHMEM cannot go with
+ * __GFP_DMA32.
+ */
+static inline gfp_t ion_gfp_below_4g(gfp_t gfp_mask)
+{
+#if defined(CONFIG_ATC_AOSP_ENHANCEMENT) && defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA32)
+	return (gfp_mask | GFP_DMA32) & ~(__GFP_MOVABLE | __GFP_HIGHMEM);
+#elif defined(CONFIG_ATC_AOSP_ENHANCEMENT) && defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA)
+	return gfp_mask | GFP_DMA;
+#else
+	return gfp_mask;
+#endif
+}
+
 struct ion_page_pool *ion_page_pool_create(gfp_t gfp_mask, unsigned int order,
 					   bool cached);
 void ion_page_pool_destroy(struct ion_page_pool *);

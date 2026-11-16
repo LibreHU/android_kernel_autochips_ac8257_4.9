@@ -30,13 +30,6 @@ static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 	unsigned long long start, end;
 	struct page *page;
 
-#if defined(CONFIG_ATC_AOSP_ENHANCEMENT)
-#if defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA)
-	/* 6G DDR support: limit ion alloc pages in 4G DMA ZONE */
-	pool->gfp_mask = pool->gfp_mask | GFP_DMA;
-#endif
-#endif
-
 	start = sched_clock();
 	page = alloc_pages(pool->gfp_mask, pool->order);
 	end = sched_clock();
@@ -186,7 +179,8 @@ struct ion_page_pool *ion_page_pool_create(gfp_t gfp_mask, unsigned int order,
 	pool->low_count = 0;
 	INIT_LIST_HEAD(&pool->low_items);
 	INIT_LIST_HEAD(&pool->high_items);
-	pool->gfp_mask = gfp_mask | __GFP_COMP;
+	/* 6G DDR support: limit ion alloc pages to the 4G DMA zone */
+	pool->gfp_mask = ion_gfp_below_4g(gfp_mask | __GFP_COMP);
 	pool->order = order;
 	mutex_init(&pool->mutex);
 	plist_node_init(&pool->list, order);
