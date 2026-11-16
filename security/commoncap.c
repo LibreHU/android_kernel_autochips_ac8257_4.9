@@ -121,15 +121,15 @@ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
 
 #ifdef CONFIG_ANDROID_PARANOID_NETWORK
 	if (ret != 0 && cap == CAP_NET_RAW && in_egroup_p(AID_NET_RAW)) {
-		printk("Process %s granted CAP_NET_RAW from Android group net_raw.\n", current->comm);
-		printk("  Please update the .rc file to explictly set 'capabilities NET_RAW'\n");
-		printk("  Implicit grants are deprecated and will be removed in the future.\n");
+		/* LibreHU: once per boot (netd runs iptables 200+ times, three lines each on the UART console) */
+		pr_info_once("Process %s granted CAP_NET_RAW from Android group net_raw (implicit grant, deprecated: set 'capabilities NET_RAW' in the .rc file)\n",
+			     current->comm);
 		return 0;
 	}
 	if (ret != 0 && cap == CAP_NET_ADMIN && in_egroup_p(AID_NET_ADMIN)) {
-		printk("Process %s granted CAP_NET_ADMIN from Android group net_admin.\n", current->comm);
-		printk("  Please update the .rc file to explictly set 'capabilities NET_ADMIN'\n");
-		printk("  Implicit grants are deprecated and will be removed in the future.\n");
+		/* LibreHU: once per boot (netd runs iptables 200+ times, three lines each on the UART console) */
+		pr_info_once("Process %s granted CAP_NET_ADMIN from Android group net_admin (implicit grant, deprecated: set 'capabilities NET_ADMIN' in the .rc file)\n",
+			     current->comm);
 		return 0;
 	}
 #endif
