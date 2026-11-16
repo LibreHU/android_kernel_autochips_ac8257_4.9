@@ -291,6 +291,8 @@ static int __init psci_features(u32 psci_func_id)
 
 #ifdef CONFIG_CPU_IDLE
 static DEFINE_PER_CPU_READ_MOSTLY(u32 *, psci_power_state);
+/* LibreHU: number of entries of psci_power_state (see psci_index_to_state()) */
+static DEFINE_PER_CPU_READ_MOSTLY(unsigned long, psci_power_state_count);
 
 static int psci_dt_cpu_init_idle(struct device_node *cpu_node, int cpu)
 {
@@ -337,6 +339,7 @@ static int psci_dt_cpu_init_idle(struct device_node *cpu_node, int cpu)
 		psci_states[i] = state;
 	}
 	/* Idle states parsed correctly, initialize per-cpu pointer */
+	per_cpu(psci_power_state_count, cpu) = count;
 	per_cpu(psci_power_state, cpu) = psci_states;
 	return 0;
 
@@ -383,6 +386,7 @@ static int __maybe_unused psci_acpi_cpu_init_idle(unsigned int cpu)
 		psci_states[i] = state;
 	}
 	/* Idle states parsed correctly, initialize per-cpu pointer */
+	per_cpu(psci_power_state_count, cpu) = count;
 	per_cpu(psci_power_state, cpu) = psci_states;
 	return 0;
 }
@@ -430,11 +434,24 @@ int psci_cpu_init_idle(unsigned int cpu)
  * PMIC reset (expdb: "Cold Reset", "kedump: last is full pmic reset", exp_type 0). Recovery-partition boots
  * never enter MCDI, so they ran.
  */
+/*
+ * LibreHU: the MediaTek idle code also passes SODI (4), SODI3 (5), deep idle (6) and suspend (7), while the DT gives
+ * each CPU 3 cpu-idle-states: state[index - 1] read past the kcalloc()ed table and got 0 from the zeroed
+ * kmalloc-128 object, a standby request without context loss, as on 4.9 and the MediaTek 4.19 reference (same DT,
+ * same code). Keep that power_state explicitly instead of reading out of bounds.
+ */
+static u32 psci_index_to_state(const u32 *state, unsigned long index)
+{
+	if (index > __this_cpu_read(psci_power_state_count))
+		return 0;
+	return state[index - 1];
+}
+
 static int psci_suspend_finisher(unsigned long index)
 {
 	u32 *state = __this_cpu_read(psci_power_state);
 
-	return psci_ops.cpu_suspend(state[index - 1],
+	return psci_ops.cpu_suspend(psci_index_to_state(state, index),
 				    __pa_symbol(cpu_resume));
 }
 
@@ -453,8 +470,8 @@ int psci_cpu_suspend_enter(unsigned long index)
 	if (WARN_ON_ONCE(!state))
 		return -EINVAL;
 
-	if (!psci_power_state_loses_context(state[index - 1]))
-		ret = psci_ops.cpu_suspend(state[index - 1], 0);
+	if (!psci_power_state_loses_context(psci_index_to_state(state, index)))
+		ret = psci_ops.cpu_suspend(psci_index_to_state(state, index), 0);
 	else
 		ret = cpu_suspend(index, psci_suspend_finisher);
 
