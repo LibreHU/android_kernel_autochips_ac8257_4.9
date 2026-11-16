@@ -112,6 +112,7 @@ struct disp_session_input_config session_input;
 /*dynamic reserve memroy cutdown */
 /*-----------------------------*/
 extern int free_memblock_runtime(phys_addr_t phy_addr,phys_addr_t size);
+extern size_t pseudo_unmap_direct_range(phys_addr_t pa, size_t len);
 #endif
 
 /* macro definiton */
@@ -3192,6 +3193,9 @@ int lcm_get_gpio_info(struct platform_device *pdev)
 }
 #endif
 #ifdef ATC_DYNAMIC_FREE_FB_MEM_ENABLE
+/* LibreHU: size given back to the page allocator, left out of the ION FB heap */
+static unsigned int mtkfb_fb_freed_size;
+
 static void mtkfb_fb_reserve_mem_free(void)
 {
 	unsigned int ram_size = DISP_GetFBRamSize();
@@ -3203,8 +3207,15 @@ static void mtkfb_fb_reserve_mem_free(void)
 	{
 		if (free_mem_size > 0 && (unsigned int)free_mem_size <= vramsize)//android P: 28M
 		{
+			/*
+			 * LibreHU: the whole reserve is mapped IOVA = PA in the M4U (IOMMU_RESV_DIRECT region of
+			 * mtk_iommu_v2): unmap the part that goes back to the page allocator first.
+			 */
+			pseudo_unmap_direct_range((phys_addr_t)(fb_base + (phys_addr_t)(vramsize - free_mem_size)),
+				(size_t)free_mem_size);
 			free_memblock_runtime((phys_addr_t)(fb_base + (phys_addr_t)(vramsize - free_mem_size)),
 				(phys_addr_t)free_mem_size);
+			mtkfb_fb_freed_size = free_mem_size;
 			DISPINFO("fb_base_pa:%x vramsize:%x ,fb free size:%x\n",fb_base, vramsize, free_mem_size);
 		}
 		else
@@ -3467,8 +3478,20 @@ static int mtkfb_probe(struct platform_device *pdev)
 	/* this function will get fb_heap base address to ion
 	 * for management frame buffer
 	 */
+#ifdef ATC_DYNAMIC_FREE_FB_MEM_ENABLE
+	/*
+	 * dynamic reserve memory cutdown
+	 * LibreHU: before the ION FB heap is created, which then covers only the part of the reserve that is kept
+	 * (it covered the freed tail too: an FB heap allocation could hand out pages the kernel had reused)
+	 */
+	mtkfb_fb_reserve_mem_free();
+#endif
 #ifdef MTK_FB_ION_SUPPORT
+#ifdef ATC_DYNAMIC_FREE_FB_MEM_ENABLE
+	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size() - mtkfb_fb_freed_size);
+#else
 	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
+#endif
 #endif
 	fbdev->state = MTKFB_ACTIVE;
 
@@ -3479,10 +3502,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 		register_ccci_sys_call_back(MD_SYS1,
 			MD_DISPLAY_DYNAMIC_MIPI, mipi_clk_change);
 	}
-#endif
-#ifdef ATC_DYNAMIC_FREE_FB_MEM_ENABLE
-	/*dynamic reserve memory cutdown*/
-	mtkfb_fb_reserve_mem_free();
 #endif
 
 	MSG_FUNC_LEAVE();

@@ -669,6 +669,27 @@ static void pseudo_unmap_free_iova(struct iommu_domain *domain,
 	__free_iova(iovad, iova);
 }
 
+#ifdef CONFIG_ARM64
+/*
+ * LibreHU: unmap part of a direct (IOVA = PA) mapping of the IOMMU reserved regions (framebuffer), before the
+ * memory behind it goes back to the page allocator (mtkfb_fb_reserve_mem_free()). The IOVA range stays reserved.
+ * iommu_group_create_direct_mappings() maps those regions page by page, so any page aligned part can be unmapped.
+ */
+size_t pseudo_unmap_direct_range(phys_addr_t pa, size_t len)
+{
+	struct device *dev = pseudo_get_larbdev(0);
+	struct iommu_domain *domain = dev ? iommu_get_domain_for_dev(dev) : NULL;
+	size_t unmapped;
+
+	if (!domain || !IS_ALIGNED(pa | len, SZ_4K))
+		return 0;
+	unmapped = iommu_unmap(domain, pa, len);
+	M4U_MSG("unmapped direct range 0x%pa + 0x%zx: 0x%zx bytes\n", &pa, len, unmapped);
+	return unmapped;
+}
+EXPORT_SYMBOL(pseudo_unmap_direct_range);
+#endif
+
 /*
  * A mapping failed and iommu_map_sg() undid it: say where, and what the page table already held in the range, so
  * that the owner of a leftover mapping shows in the log.
@@ -2982,6 +3003,34 @@ static void pseudo_disp_reserve_mva(void)
 		M4U_MSG("Table 0x%p\n", rm->table);
 	}
 }
+
+/*
+ * LibreHU: the ARM2 reserved regions (MDP, ARM2 UI, ISP) are mapped here with fixed MVA = PA and given back to the
+ * page allocator by backcar (free_memblock_runtime()) once the ARM2 has stopped. Unmap them first, or every
+ * master of the M4U could still read and write those pages after the kernel reused them. Returns -ENOENT when no
+ * reserved region starts at pa.
+ */
+int pseudo_release_reserved_mva(phys_addr_t pa)
+{
+	int i, ret;
+
+	for (i = 0; i < RESERVE_CNT; i++) {
+		struct reserve_mva *rm = &reserve_mva[i];
+
+		if (!rm->table || rm->pa != pa)
+			continue;
+		ret = m4u_dealloc_mva_sg(rm->id, rm->table, (unsigned int)rm->len, (unsigned int)rm->pa);
+		if (ret) {
+			M4U_ERR("release of reserved PA 0x%pa failed: %d\n", &rm->pa, ret);
+			return ret;
+		}
+		rm->table = NULL; /* freed by __pseudo_dealloc_mva() */
+		M4U_MSG("Released reserved PA 0x%pa, Len 0x%pa\n", &rm->pa, &rm->len);
+		return 0;
+	}
+	return -ENOENT;
+}
+EXPORT_SYMBOL(pseudo_release_reserved_mva);
 
 #include <linux/of_reserved_mem.h>
 static int reserve_mva_mdp_get(struct reserved_mem *rmem)

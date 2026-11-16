@@ -290,6 +290,21 @@ extern void isp_larb_clock_off(void);
 
 #ifdef CONFIG_MEMBLK_RELEASE_POLICY
 extern int free_memblock_runtime(phys_addr_t phy_addr,phys_addr_t size);
+extern int pseudo_release_reserved_mva(phys_addr_t pa);
+
+/*
+ * LibreHU: pseudo_m4u maps the ARM2 reserved regions in the M4U with MVA = PA; unmap them (and wait for the TLB)
+ * before their pages go back to the page allocator, so that no multimedia master can reach them afterwards.
+ */
+static void backcar_free_arm2_region(phys_addr_t pa, phys_addr_t size)
+{
+	int ret = pseudo_release_reserved_mva(pa);
+
+	if (ret && ret != -ENOENT)
+		BACKCAR_LOG(BACKCAR_ERR, "M4U release of 0x%llx failed (%d), region kept\n", (unsigned long long)pa, ret);
+	else
+		free_memblock_runtime(pa, size);
+}
 #endif
 
 #ifdef CONFIG_ATC_ARM2_ENABLE
@@ -379,9 +394,9 @@ static long backcar_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 #endif
 #ifdef CONFIG_MEMBLK_RELEASE_POLICY
 			if(!is_free_reserved_memory){
-				free_memblock_runtime((phys_addr_t)backcar_ui_base_pa,(phys_addr_t)vramsize);
-				free_memblock_runtime((phys_addr_t)backcar_mdp_base_pa,(phys_addr_t)backcar_mdp_size);
-				free_memblock_runtime((phys_addr_t)backcar_isp_base_pa,(phys_addr_t)backcar_isp_mem_size);
+				backcar_free_arm2_region((phys_addr_t)backcar_ui_base_pa,(phys_addr_t)vramsize);
+				backcar_free_arm2_region((phys_addr_t)backcar_mdp_base_pa,(phys_addr_t)backcar_mdp_size);
+				backcar_free_arm2_region((phys_addr_t)backcar_isp_base_pa,(phys_addr_t)backcar_isp_mem_size);
 				is_free_reserved_memory = true;
 				BACKCAR_LOG(BACKCAR_INFO, "free arm2 reserved memory done\n");
 			}else{

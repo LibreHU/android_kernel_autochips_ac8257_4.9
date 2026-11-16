@@ -224,6 +224,10 @@ struct COMPAT_M4U_MOUDLE_STRUCT {
 #define COMPAT_MTK_M4U_T_CACHE_SYNC   _IOW(MTK_M4U_MAGICNO, 10, int)
 #endif
 
+/* LibreHU: unmap reserved / direct IOMMU ranges before free_memblock_runtime() gives their pages back */
+int pseudo_release_reserved_mva(phys_addr_t pa);
+size_t pseudo_unmap_direct_range(phys_addr_t pa, size_t len);
+
 #ifdef M4U_TEE_SERVICE_ENABLE
 extern bool m4u_tee_en;
 int smi_reg_restore_sec(void);
