@@ -89,15 +89,19 @@ jobs:
           CMDLINE_APPEND: ${{ github.event.inputs.cmdline_append || 'init=/init log_buf_len=8M initcall_debug ignore_loglevel' }}
         run: |
           mkdir -p dist
+          # All images: no kernel page table isolation. KPTI was only forced on by KASLR ("forced ON by KASLR"):
+          # the Cortex-A53 is not affected by Meltdown (kpti_safe_list) and KPTI costs every system call, interrupt
+          # and page fault from userspace. The LK passes no kpti= of its own.
+          KERNEL_APPEND="kpti=0"
           K=out/arch/arm64/boot/Image.gz-dtb
           T=tools/ac8257/stock/boot_template_250718.img
           python3 tools/ac8257/repack_boot.py "$T" "$K" dist/recovery_test_ac8257_${V}.img \
             --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
-            --cmdline-append "$CMDLINE_APPEND"
+            --cmdline-append "$CMDLINE_APPEND $KERNEL_APPEND"
           # Boot partition images: Android in SELinux permissive, as the stock ROM and the LineageOS 16.0 boot images
           # (tools/fetch_kernel.sh of the device tree): the stock vendor policy never ran enforcing, and the LK adds
           # androidboot.selinux=permissive only in a recovery-partition boot (MCU ttyS1, battery, FM, MFi, GPU denied)
-          BOOT_APPEND="androidboot.selinux=permissive"
+          BOOT_APPEND="androidboot.selinux=permissive $KERNEL_APPEND"
           python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257_${V}.img --size 10485760 --cmdline-append "$BOOT_APPEND"
           python3 tools/ac8257/bootmenu_image.py out/arch/arm64/boot/Image out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb \
             "$T" dist/boot_ac8257_bootmenu_${V}.img --cmdline-append "$BOOT_APPEND"
@@ -117,7 +121,8 @@ jobs:
             echo "variant ${V}"
             echo "kernel $(make -s O=out $KMAKE kernelrelease 2>/dev/null)"
             echo "compiler $(clang-14 --version | head -1)"
-            echo "recovery cmdline append: $CMDLINE_APPEND"
+            echo "recovery cmdline append: $CMDLINE_APPEND $KERNEL_APPEND"
+            echo "boot cmdline append: $BOOT_APPEND"
           } > dist/BUILD_INFO_${V}.txt
           sha256sum dist/* | tee -a dist/BUILD_INFO_${V}.txt
 
