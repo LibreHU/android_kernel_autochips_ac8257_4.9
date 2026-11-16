@@ -87,6 +87,9 @@ jobs:
           if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then
             # binutils of the GNU toolchain here (the script defaults to the Android GCC 4.9 one of the 4.9 CI)
             STRIP=aarch64-linux-gnu-strip sh tools/stable/conn_ksu_module.sh out dist/librehu_connectivity_ksu.zip "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
+            # The same modules as TWRP zips (kernel + modules, modules only), as the kernel-stable / conn-modules-stable
+            # zips of LibreHU-flashablesZips (tools/twrp)
+            python3 tools/twrp/make_twrp_zips.py dist "${GITHUB_REF_NAME}" "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
           fi
           {
             echo "commit ${GITHUB_SHA}"
@@ -120,7 +123,9 @@ jobs:
             echo
             echo "- \`recovery_test_ac8257.img\` : essai sans risque depuis la partition recovery (fastboot flash recovery, puis fastboot oem reboot-recovery)"
             echo "- \`boot_ac8257.img\` / \`boot_ac8257_bootmenu.img\` : partition boot (seulement apres un essai recovery reussi)"
-            echo "- \`librehu_connectivity_ksu.zip\` : modules Wi-Fi / BT / GPS / FM de CE noyau (module KernelSU)"
+            echo "- \`librehu_connectivity_ksu.zip\` : modules Wi-Fi / BT / GPS / FM de CE noyau (module KernelSU ; ouvrir une fois l'appli KernelSU Next avant, elle installe ksud)"
+            echo "- \`librehu_kernel_twrp.zip\` : zip TWRP, ce noyau (menu de demarrage) dans boot + ses modules dans /vendor/lib/modules (seulement apres un essai recovery reussi ; sauvegardes dans /sdcard/LibreHU/backup)"
+            echo "- \`librehu_conn_modules_twrp.zip\` : zip TWRP, modules seuls, quand boot contient deja ce noyau (retour aux modules d'origine : zip conn-modules-stable-restore de LibreHU-flashablesZips)"
             echo
             echo "Retour arriere : TWRP garde son propre noyau ; reflasher le boot de \`stable-4.9.337\` (release latest-stable-4.9.337)."
             echo "vbmeta n'est jamais touche."
@@ -135,6 +140,7 @@ jobs:
           gh release upload "$TAG" dist/boot_ac8257.img dist/boot_ac8257_bootmenu.img dist/recovery_test_ac8257.img \
             dist/Image.gz-dtb dist/config dist/BUILD_INFO.txt dist/release.txt --clobber
           [ -f dist/librehu_connectivity_ksu.zip ] && gh release upload "$TAG" dist/librehu_connectivity_ksu.zip --clobber || true
+          [ -f dist/librehu_kernel_twrp.zip ] && gh release upload "$TAG" dist/librehu_kernel_twrp.zip dist/librehu_conn_modules_twrp.zip --clobber || true
 
       - uses: actions/upload-artifact@v4
         if: failure()
