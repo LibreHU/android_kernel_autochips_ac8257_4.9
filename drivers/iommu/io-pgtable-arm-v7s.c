@@ -690,11 +690,31 @@ static size_t arm_v7s_unmap(struct io_pgtable_ops *ops, unsigned long iova,
 			    size_t size)
 {
 	struct arm_v7s_io_pgtable *data = io_pgtable_ops_to_data(ops);
+	unsigned long pgsizes = data->iop.cfg.pgsize_bitmap;
+	size_t unmapped = 0, pgsize, ret;
 
 	if (WARN_ON(upper_32_bits(iova)))
 		return 0;
 
-	return __arm_v7s_unmap(data, iova, size, 1, data->pgd);
+	/*
+	 * LibreHU: the ACK 4.19 __iommu_unmap() hands the whole remaining size to the driver (an Android change
+	 * for drivers that unmap any size), but __arm_v7s_unmap() takes one page size of the bitmap at a time,
+	 * as upstream __iommu_unmap() passes it. With more it copied more than ARM_V7S_CONT_PAGES entries into
+	 * its pte[] array on the stack (stack-protector panic on the unit, 16/11/2026), or cleared only the
+	 * whole blocks of the level and still returned the full size: the rest stayed mapped while its IOVA was
+	 * freed, hence the -EEXIST of the later mappings there (1067 warnings on the first Android boot, display
+	 * layers without MVA). Unmap page size by page size, as iommu_map() maps.
+	 */
+	if (WARN_ON(!IS_ALIGNED(iova | size, 1UL << __ffs(pgsizes))))
+		return 0;
+	while (unmapped < size) {
+		pgsize = iommu_pgsize(pgsizes, iova + unmapped, size - unmapped);
+		ret = __arm_v7s_unmap(data, iova + unmapped, pgsize, 1, data->pgd);
+		if (!ret)
+			break;
+		unmapped += ret;
+	}
+	return unmapped;
 }
 
 static phys_addr_t arm_v7s_iova_to_phys(struct io_pgtable_ops *ops,
