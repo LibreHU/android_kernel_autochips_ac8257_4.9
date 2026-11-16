@@ -37,8 +37,8 @@ Du plus simple et plus sûr au plus complexe.
 | Lot | Points | Pourquoi |
 |---|---|---|
 | 1 | B1, B2, B3, B4, B5, C1, C2 | Bugs prouvés, correctifs courts et locaux |
-| 2 | P5, P1, P2, P3, P4, P6, P7 | Performance ; P5 d'abord (libère la place) |
-| 3 | B6, B7, B8, B9, B10, B11, B12, B13 | Demandent un test ciblé sur l'unité ou un choix |
+| 2 | P5, P1, P2, P3, P4, P6, P7, P8 | Performance ; P5 d'abord (libère la place) ; P8 à vérifier d'abord sur l'unité |
+| 3 | B6, B7, B8, B9, B10, B11, B12, B13, P9 | Demandent un test ciblé sur l'unité, une analyse ou un choix |
 | Hors noyau | H1 à H5 | ROM, service LibreHU, réglage du routeur |
 
 ---
@@ -414,6 +414,72 @@ spin_unlock_bh(&sock_tag_list_lock);
 - RTC MT6357 : lecture/écriture correctes ; « read al time = 2010/01/01 » est le registre d'alarme, identique en 4.9.
 - Priorité temps réel des threads Wi-Fi : jamais appliquée, ni en 4.9 ni en 4.19 (pas de `wifi.cfg`). L'idée « priorité
   RT en 4.9, pas en 4.19 » est fausse.
+
+## Traces non rédigées de l'agent performance
+
+L'agent « configuration / performance » a été coupé en pleine analyse. Ses commandes et leurs résultats ont été
+relus après coup. Voici ce qu'il avait trouvé sans l'écrire. Ce sont des pistes : elles ne sont pas encore au
+niveau de preuve des fiches ci-dessus.
+
+### P8 [PERF, à vérifier] `trace_printk()` dans des pilotes intégrés : tampons de trace alloués à chaque démarrage
+
+- Preuve : dmesg r175, à 0 s : `** trace_printk() being used. Allocating extra memory.  **`. Objets intégrés qui
+  contiennent une section `__trace_printk_fmt` : `fiq_cache/mtk-fiq-cache.o` (`mt_fiq_cache_flush_all()`),
+  `cmdq/v3/{cmdq_driver,cmdq_helper_ext,cmdq_mdp_common,cmdq_record}.o`, `gpu/ged/src/ged_log.o`,
+  `video/ac8257/videox/mtkfb_fence.o`, `video/ac8257/dispsys/display_recorder.o`, `mmp/src/mmprofile.o`,
+  `performance/base/utility.o`, `performance/cpu_loading/cpu_loading.o`, `smi/met/met_smi.o` ; et dans les modules
+  de connectivité (`osal.o` : `osal_ftrace_print()`, actif seulement si `ftrace_flag`, `bt_drv.o`, `stp_chrdev_bt.o`).
+- Mécanisme (`kernel/trace/trace.c`, `trace_printk_init_buffers()`) : la présence d'un seul format suffit pour
+  allouer les tampons de trace par CPU à leur taille complète (`TRACE_BUF_SIZE_DEFAULT` = 1 441 792 octets par CPU,
+  soit ~5,5 Mio pour 4 CPU, à confirmer sur l'unité), puis lancer l'enregistrement des noms de tâches
+  (`tracing_start_cmdline_record()`) : sondes permanentes sur `sched_switch` et `sched_wakeup`.
+- Effet probable : quelques Mio de RAM et un petit coût à chaque changement de contexte. Les appels fréquents
+  (CMDQ par trame ?) écrivent aussi dans le tampon. Probablement pareil en 4.9 (même code vendor) : non vérifié.
+- Vérification sur l'unité : `cat /sys/kernel/debug/tracing/buffer_total_size_kb` et `cat /sys/kernel/debug/tracing/trace | head`.
+- Correctif proposé : remplacer ces `trace_printk()` par `pr_debug()` ou des événements de trace, ou les compiler hors
+  production. Le plus large : un en-tête commun aux dossiers vendor qui redéfinit `trace_printk` en no-op hors `DEBUG`.
+
+### P9 [À ANALYSER] `CPUn: Unknown IPI message 0xf` : 83 messages pr_crit (console UART)
+
+- Preuve : dmesg r175 complet, 83 lignes `Unknown IPI message 0xf`, dès 0,008 s sur chaque CPU, puis en rafales
+  (24 vers 153 s, 25 vers 172 s, 11 vers 188 s). Message de `arch/arm64/kernel/smp.c:927` (`handle_IPI`).
+- Contexte : 0xf = SGI 15, inconnu des deux noyaux (4.19 : 7 IPI, 0 à 6 ; 4.9 : 6 IPI). Les autres journaux 4.19 et 4.9
+  disponibles sont des captures vides (2 lignes) : impossible de dire si le 4.9 l'avait aussi. À noter : 4.19 a inséré
+  `IPI_CPU_CRASH_STOP` en position 3, ce qui décale `IPI_TIMER`, `IPI_IRQ_WORK` et `IPI_WAKEUP` d'un cran par rapport
+  au 4.9. Vérifier qu'aucun code vendor ou firmware (ATF, MCDI, SPM) n'envoie de SGI avec les numéros du 4.9.
+- Effet : au minimum, du bruit sur la console UART (voir P1) ; au pire, un réveil ou un IPI attendu par le firmware
+  qui n'est pas traité.
+- Pistes : chercher qui envoie le SGI 15 (`grep -rn "SGI\|ipi" drivers/misc/mediatek/base/power/{mcdi,spm}`, ATF
+  MediaTek MT6765) ; corréler les rafales avec l'écran éteint ou les états SODI ; comparer avec un dmesg 4.9 complet.
+
+### Vérifié par l'agent, sans problème
+
+- `slub_debug=OFZPU` et `page_owner=on` passés par le LK : sans effet, car `CONFIG_SLUB_DEBUG` et `CONFIG_PAGE_OWNER`
+  ne sont pas activés (pareil en 4.9). Aucun coût.
+- zram : le swap de 1 Gio est actif (bugreport : `1,048,572K total swap`). Le message
+  `zram: Cannot change disksize for initialized device` puis `swapon failed for /dev/block/zram0` à 60 s semble venir
+  d'un second `swapon` (fstab et .rc ?) : sans effet, à confirmer côté ROM.
+- eMMC : file blk-mq avec `mq-deadline` ; `CONFIG_MTK_EMMC_CQ_SUPPORT=y` comme en 4.9.
+
+### Pistes laissées en cours
+
+- cpufreq MediaTek (`drivers/misc/mediatek/base/power/cpufreq_v1/src/mtk_cpufreq_main.c:1919`) : `.target` sans
+  `fast_switch`, donc schedutil passe par son kthread pour chaque changement de fréquence. Coût et intérêt d'un
+  `fast_switch` à évaluer.
+- Options du 4.9 absentes en 4.19 côté stockage : `CONFIG_MTK_BLOCK_TAG`, `CONFIG_MMC_BLOCK_BOUNCE`, `CONFIG_HIE`,
+  `CONFIG_MMC_BLOCK_IO_LOG`. Dire pour chacune si elle a un équivalent 4.19 ou si elle compte pour les performances.
+- `CONFIG_SCHED_DEBUG=y` et `CONFIG_SCHEDSTATS=y` (comme en 4.9) : coût faible tant que schedstats est désactivé à
+  l'exécution, mais chaque test coûte une lecture mémoire tant que `JUMP_LABEL=n` (P3).
+- Volume du journal noyau (r175) : I2C en NACK (~865 lignes entre 210 et 240 s, bus i2c-0 à i2c-5), `[wlan` 1 128
+  lignes, `[MTZ` (metazone) 499, KernelSU 396, refus SELinux 441 lignes (107 Ko). Tout passe par la console UART
+  (P1). Réduire la verbosité de ces pilotes (niveau de log Wi-Fi, metazone, KernelSU) et limiter les erreurs I2C.
+- Côté ROM, pas noyau :
+  - cpusets `critical` et `camera-daemon` absents (`couldn't write ... /dev/cpuset/critical/tasks`, pour composer,
+    backcar, car_event_monitor, fastdisplay, avmhal, cameraserver) : un .rc vendor attend des dossiers qu'aucun
+    script ne crée ;
+  - libPowerHal : `error : 2, No such file or directory` (×8) et `cpu_ctrl set freq: 2601000` alors que le maximum
+    est 1 917 000 kHz : configuration PowerHAL faite pour un autre SoC ;
+  - `com.android.phone` attend `android.hardware.radio@1.0::IRadio/slot1` chaque seconde (pas de modem).
 
 ## Reste à auditer (agents arrêtés avant la fin)
 
