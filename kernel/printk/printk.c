@@ -1785,6 +1785,29 @@ void mt_enable_uart(void)
 {
 	printk_disable_uart = 0;
 }
+
+/*
+ * LibreHU: the LK passes console=ttyS0,921600n1 printk.disable_uart=0, which means "UART console during the boot
+ * only": on 4.9, bootup_finish() of the MTK boot profiler (CONFIG_MTPROF) called mt_disable_uart() at the end of the
+ * boot. The 4.19 build has no MTPROF and the vendor fallback (init.ac8257.rc writes
+ * ${persist.vendor.uartconsole.enable} to /proc/mtprintk) fails because the property does not exist, so every
+ * printk went out byte by byte at 921600 baud with the port lock held and interrupts off, all the time (about
+ * 9 s of CPU over the first 4 minutes of a boot). Switch the UART console off when the kernel hands over to
+ * userspace: the kernel log, dmesg and the pstore console (console-ramoops) keep everything. printk.keep_uart=1
+ * keeps it on (debugging with a UART cable), /proc/mtprintk 1 turns it back on.
+ */
+static bool printk_keep_uart;
+module_param_named(keep_uart, printk_keep_uart, bool, 0644);
+
+static int __init mt_uart_console_boot_done(void)
+{
+	if (IS_ENABLED(CONFIG_MTPROF) || printk_keep_uart)
+		return 0;
+	pr_info("printk: UART console off from now on (printk.keep_uart=1 keeps it, /proc/mtprintk 1 turns it on)\n");
+	mt_disable_uart();
+	return 0;
+}
+late_initcall_sync(mt_uart_console_boot_done);
 #endif
 
 static void call_console_drivers(const char *ext_text, size_t ext_len,
