@@ -712,6 +712,15 @@ static size_t arm_v7s_unmap(struct io_pgtable_ops *ops, unsigned long iova,
 		ret = __arm_v7s_unmap(data, iova + unmapped, pgsize, 1, data->pgd);
 		if (!ret)
 			break;
+		/*
+		 * LibreHU: wait for the TLB invalidation of this page before going on, as 4.9 did (sync at the end of
+		 * arm_v7s_unmap(), called once per page). Since 4.14 the sync is left to the IOMMU driver's
+		 * .iotlb_sync, which mtk_iommu_v2 does not have: without this the M4U went on translating freed
+		 * IOVAs to their old pages (DMA into memory given back to ION / the buddy allocator) and its
+		 * CPE_DONE status stayed set, so the next sync returned before its own invalidation. The M4U wants
+		 * each range invalidation followed by its sync (pgtlock of mtk_iommu_unmap() is held here).
+		 */
+		io_pgtable_tlb_sync(&data->iop);
 		unmapped += ret;
 	}
 	return unmapped;
