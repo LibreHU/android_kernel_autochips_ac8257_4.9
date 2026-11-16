@@ -2343,7 +2343,13 @@ enum ENUM_CMD_TX_RESULT halWpdmaWriteCmd(IN struct GLUE_INFO *prGlueInfo,
 
 	ASSERT(prGlueInfo);
 
-	prChipInfo = prGlueInfo->prAdapter->chip_info;
+	/*
+	 * LibreHU: prAdapter was read uninitialized by the NIC_DUMP_* macros below (same code on 4.9, built with the
+	 * older AOSP clang). Clang 14 folds the undefined pointer to NULL: the first command (Wi-Fi on) faulted on
+	 * a load from 0xef1c0 (offset of rWifiVar.fgDumpTxDmad).
+	 */
+	prAdapter = prGlueInfo->prAdapter;
+	prChipInfo = prAdapter->chip_info;
 	prBusInfo = prChipInfo->bus_info;
 	prHifInfo = &prGlueInfo->rHifInfo;
 	prMemOps = &prHifInfo->rMemOps;
