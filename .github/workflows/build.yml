@@ -4,10 +4,11 @@ name: Build AC8257 kernel 4.19 (experimental)
 # tree and the LibreHU changes (docs/K419.md). Builds Image.gz-dtb and the connectivity modules with Ubuntu clang 14
 # and binutils (the AOSP clang 6.0.2 of the 4.9 branches is too old for the 4.19 core), then packs them into the
 # stock UJC201 boot image layout as the 4.9 CI does:
-#  - boot_ac8257.img: 10 MiB, boot vbmeta (normal boot partition)
-#  - boot_ac8257_bootmenu.img: the same kernel behind the boot menu (TWRP / Android / Fastboot)
-#  - recovery_test_ac8257.img: 32 MiB, recovery vbmeta, for the recovery test method (fastboot flash recovery +
+#  - boot_ac8257_<v>.img: 10 MiB, boot vbmeta (normal boot partition)
+#  - boot_ac8257_bootmenu_<v>.img: the same kernel behind the boot menu (TWRP / Android / Fastboot)
+#  - recovery_test_ac8257_<v>.img: 32 MiB, recovery vbmeta, for the recovery test method (fastboot flash recovery +
 #    fastboot oem reboot-recovery): a crash ends in a normal boot of the installed kernel, not a boot loop
+# for two variants <v>: a9 (Android 9) and a10 (Android 10 and later), see the build job.
 # Published as a prerelease latest-<branch> marked experimental. LibreHU-flashablesZips only takes the branches it
 # declares (stable-4.9.337): nothing from here reaches LibreHU Apps.
 
@@ -39,9 +40,20 @@ permissions:
 jobs:
   build:
     if: startsWith(github.ref_name, 'experimental-4.19')
+    # Two builds of the same tree (arch/arm64/configs/ac8257_<variant>.config over the defconfig):
+    #  - a9: Android 9 (LineageOS 16.0, stock ROM): xt_qtaguid (Android 9 enables bandwidth control only with
+    #    /proc/net/xt_qtaguid/ctrl, else NetworkPolicy waits 30 s at boot), uname -r 4.19.325-a9
+    #  - a10: Android 10 and later (LineageOS 17.1...): no xt_qtaguid, as the Android common kernels, 4.19.325-a10
+    # Each variant has its own images and modules (the modules match only the kernel of the same build).
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [a9, a10]
     # ubuntu-22.04: clang-14 and a python2 package (the AutoChips DTS generator tools/dct/DrvGen.py is Python 2)
     runs-on: ubuntu-22.04
     timeout-minutes: 150
+    env:
+      V: ${{ matrix.variant }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,8 +69,11 @@ jobs:
           clang-14 --version | head -1
           aarch64-linux-gnu-ld --version | head -1
 
-      - name: Configure
-        run: make O=out $KMAKE $ATC_MAKE "$DEFCONFIG"
+      - name: Configure (${{ matrix.variant }})
+        run: |
+          make O=out $KMAKE $ATC_MAKE "$DEFCONFIG"
+          make O=out $KMAKE $ATC_MAKE "ac8257_${V}.config"
+          grep -E '^CONFIG_LOCALVERSION=|XT_MATCH_OWNER|XT_MATCH_QTAGUID' out/.config
 
       - name: Build Image.gz-dtb and modules
         run: |
@@ -76,60 +91,89 @@ jobs:
           mkdir -p dist
           K=out/arch/arm64/boot/Image.gz-dtb
           T=tools/ac8257/stock/boot_template_250718.img
-          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/recovery_test_ac8257.img \
+          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/recovery_test_ac8257_${V}.img \
             --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
             --cmdline-append "$CMDLINE_APPEND"
           # Boot partition images: Android in SELinux permissive, as the stock ROM and the LineageOS 16.0 boot images
           # (tools/fetch_kernel.sh of the device tree): the stock vendor policy never ran enforcing, and the LK adds
           # androidboot.selinux=permissive only in a recovery-partition boot (MCU ttyS1, battery, FM, MFi, GPU denied)
           BOOT_APPEND="androidboot.selinux=permissive"
-          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257.img --size 10485760 --cmdline-append "$BOOT_APPEND"
+          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257_${V}.img --size 10485760 --cmdline-append "$BOOT_APPEND"
           python3 tools/ac8257/bootmenu_image.py out/arch/arm64/boot/Image out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb \
-            "$T" dist/boot_ac8257_bootmenu.img --cmdline-append "$BOOT_APPEND"
-          cp "$K" dist/
-          cp out/.config dist/config
+            "$T" dist/boot_ac8257_bootmenu_${V}.img --cmdline-append "$BOOT_APPEND"
+          cp "$K" dist/Image.gz-dtb_${V}
+          cp out/.config dist/config_${V}
           if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then
             # binutils of the GNU toolchain here (the script defaults to the Android GCC 4.9 one of the 4.9 CI)
-            STRIP=aarch64-linux-gnu-strip sh tools/stable/conn_ksu_module.sh out dist/librehu_connectivity_ksu.zip "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
+            STRIP=aarch64-linux-gnu-strip sh tools/stable/conn_ksu_module.sh out dist/librehu_connectivity_ksu_${V}.zip \
+              "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9} ${V}"
             # The same modules as TWRP zips (kernel + modules, modules only), as the kernel-stable / conn-modules-stable
-            # zips of LibreHU-flashablesZips (tools/twrp)
-            python3 tools/twrp/make_twrp_zips.py dist "${GITHUB_REF_NAME}" "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
+            # zips of LibreHU-flashablesZips (tools/twrp); they check the Android version of /system against ${V}
+            python3 tools/twrp/make_twrp_zips.py dist "${GITHUB_REF_NAME}" "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9} ${V}" "${V}"
           fi
           {
             echo "commit ${GITHUB_SHA}"
             echo "branch ${GITHUB_REF_NAME}"
-            echo "kernel $(make -s O=out $KMAKE kernelversion 2>/dev/null)"
+            echo "variant ${V}"
+            echo "kernel $(make -s O=out $KMAKE kernelrelease 2>/dev/null)"
             echo "compiler $(clang-14 --version | head -1)"
             echo "recovery cmdline append: $CMDLINE_APPEND"
-          } > dist/BUILD_INFO.txt
-          sha256sum dist/* | tee -a dist/BUILD_INFO.txt
+          } > dist/BUILD_INFO_${V}.txt
+          sha256sum dist/* | tee -a dist/BUILD_INFO_${V}.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ac8257-kernel-4.19-${{ github.sha }}
+          name: ac8257-kernel-4.19-${{ matrix.variant }}-${{ github.sha }}
           path: dist/
           retention-days: 30
 
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log-${{ matrix.variant }}-${{ github.sha }}
+          path: build.log
+          retention-days: 7
+
+  release:
+    # One job publishes both variants (two jobs editing the same release at once would race)
+    needs: build
+    if: github.event_name == 'push' || github.event.inputs.cmdline_append == 'init=/init log_buf_len=8M'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ac8257-kernel-4.19-*-${{ github.sha }}
+          path: dist
+          merge-multiple: true
+
       - name: Prerelease of the branch (latest-<branch>, experimental)
-        if: github.event_name == 'push' || github.event.inputs.cmdline_append == 'init=/init log_buf_len=8M'
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}
         run: |
+          ls -l dist
           TAG="latest-$BRANCH"
           NAME="r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
-          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
+          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a10\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
             "$GITHUB_RUN_NUMBER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.txt
           {
             echo "**EXPERIMENTAL** : noyau Linux 4.19.325 pour l'UJC201, branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9})."
-            echo "Pas encore valide sur l'unite. Lire docs/K419.md avant tout essai (methode recovery conseillee : le noyau"
-            echo "installe dans boot ne change pas et un echec redemarre normalement)."
+            echo "Lire docs/K419.md avant tout essai."
             echo
-            echo "- \`recovery_test_ac8257.img\` : essai sans risque depuis la partition recovery (fastboot flash recovery, puis fastboot oem reboot-recovery)"
-            echo "- \`boot_ac8257.img\` / \`boot_ac8257_bootmenu.img\` : partition boot (seulement apres un essai recovery reussi)"
-            echo "- \`librehu_connectivity_ksu.zip\` : modules Wi-Fi / BT / GPS / FM de CE noyau (module KernelSU ; ouvrir une fois l'appli KernelSU Next avant, elle installe ksud)"
-            echo "- \`librehu_kernel_twrp.zip\` : zip TWRP, ce noyau (menu de demarrage) dans boot + ses modules dans /vendor/lib/modules (seulement apres un essai recovery reussi ; sauvegardes dans /sdcard/LibreHU/backup)"
-            echo "- \`librehu_conn_modules_twrp.zip\` : zip TWRP, modules seuls, quand boot contient deja ce noyau (retour aux modules d'origine : zip conn-modules-stable-restore de LibreHU-flashablesZips)"
+            echo "**Deux variantes, a prendre selon la version d'Android** (les modules ne marchent qu'avec le noyau de la meme variante) :"
+            echo "- \`_a9\` : Android 9 (LineageOS 16.0, ROM stock) ; noyau 4.19.325-a9 (xt_qtaguid, sans lui Android 9 attend 30 s au demarrage)"
+            echo "- \`_a10\` : Android 10 et plus (LineageOS 17.1...) ; noyau 4.19.325-a10"
+            echo
+            echo "Fichiers (remplacer \`<v>\` par a9 ou a10) :"
+            echo "- \`recovery_test_ac8257_<v>.img\` : essai sans risque depuis la partition recovery (fastboot flash recovery, puis fastboot oem reboot-recovery)"
+            echo "- \`boot_ac8257_<v>.img\` / \`boot_ac8257_bootmenu_<v>.img\` : partition boot (SELinux permissif, comme le stock)"
+            echo "- \`librehu_kernel_twrp_<v>.zip\` : zip TWRP, ce noyau (menu de demarrage) dans boot + ses modules dans /vendor/lib/modules ; refuse si la version d'Android ne correspond pas (sauvegardes dans /sdcard/LibreHU/backup)"
+            echo "- \`librehu_conn_modules_twrp_<v>.zip\` : zip TWRP, modules seuls, quand boot contient deja ce noyau"
+            echo "- \`librehu_connectivity_ksu_<v>.zip\` : les memes modules en module KernelSU"
             echo
             echo "Retour arriere : TWRP garde son propre noyau ; reflasher le boot de \`stable-4.9.337\` (release latest-stable-4.9.337)."
             echo "vbmeta n'est jamais touche."
@@ -138,17 +182,12 @@ jobs:
           git push -f origin "refs/tags/$TAG"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --title "Noyau 4.19 EXPERIMENTAL $NAME" --notes-file notes.md --prerelease=true
+            # Files of the single-variant builds (before a9 / a10): removed so that nobody takes a stale kernel
+            for old in boot_ac8257.img boot_ac8257_bootmenu.img recovery_test_ac8257.img Image.gz-dtb config BUILD_INFO.txt \
+                       librehu_connectivity_ksu.zip librehu_kernel_twrp.zip librehu_conn_modules_twrp.zip; do
+              gh release delete-asset "$TAG" "$old" -y 2>/dev/null || true
+            done
           else
             gh release create "$TAG" --title "Noyau 4.19 EXPERIMENTAL $NAME" --notes-file notes.md --prerelease=true --verify-tag
           fi
-          gh release upload "$TAG" dist/boot_ac8257.img dist/boot_ac8257_bootmenu.img dist/recovery_test_ac8257.img \
-            dist/Image.gz-dtb dist/config dist/BUILD_INFO.txt dist/release.txt --clobber
-          [ -f dist/librehu_connectivity_ksu.zip ] && gh release upload "$TAG" dist/librehu_connectivity_ksu.zip --clobber || true
-          [ -f dist/librehu_kernel_twrp.zip ] && gh release upload "$TAG" dist/librehu_kernel_twrp.zip dist/librehu_conn_modules_twrp.zip --clobber || true
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: build-log-${{ github.sha }}
-          path: build.log
-          retention-days: 7
+          gh release upload "$TAG" dist/* --clobber

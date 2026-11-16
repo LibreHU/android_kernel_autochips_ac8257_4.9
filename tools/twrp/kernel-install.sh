@@ -10,11 +10,12 @@ conn_extract
 case "$(cat $F/branch)" in
 experimental-*)
 	ui_print "Noyau EXPERIMENTAL : a n'installer qu'apres un essai reussi"
-	ui_print "avec recovery_test_ac8257.img (docs/K419.md du depot du noyau).";;
+	ui_print "avec recovery_test_ac8257_$(cat $F/android).img (docs/K419.md du depot du noyau).";;
 esac
 [ "$(sha256sum $F/boot.img | cut -d' ' -f1)" = "$(cut -d' ' -f1 $F/boot.img.sha256)" ] || abort "image de boot abimee (empreinte)"
 grep -q "^$(kernel_sum $F/boot.img) " $F/kernels.sha256 || abort "le noyau de l'image n'est pas celui des modules"
 mount_rw
+android_check
 require_no_verity vendor
 [ -d $SDCARD ] || abort "memoire interne non montee : sauvegardes impossibles, rien n'a ete modifie"
 

@@ -46,8 +46,9 @@ conn_check_boot() {
 		ui_print " "
 		ui_print "Le noyau de la partition boot n'est pas celui de ces modules :"
 		ui_print "  $(cut -c1-60 $F/kernel_version)"
-		ui_print "Flasher d'abord librehu_kernel_twrp.zip (noyau + modules) de la release,"
-		ui_print "ou boot_ac8257.img / boot_ac8257_bootmenu.img de la release latest-$(cat $F/branch)."
+		_v=$(cat $F/android 2>/dev/null)
+		ui_print "Flasher d'abord librehu_kernel_twrp${_v:+_$_v}.zip (noyau + modules) de la release,"
+		ui_print "ou boot_ac8257${_v:+_$_v}.img / boot_ac8257_bootmenu${_v:+_$_v}.img de la release latest-$(cat $F/branch)."
 		abort "noyau different, rien n'a ete modifie"
 	fi
 	ui_print "noyau de boot : $(grep "^$_ks " $F/kernels.sha256 | cut -d' ' -f3), conforme"

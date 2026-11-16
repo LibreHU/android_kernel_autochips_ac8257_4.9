@@ -9,6 +9,7 @@ ui_print "-----------------------------------------------------------"
 conn_extract
 conn_check_boot
 mount_rw
+android_check
 require_no_verity vendor
 conn_install
 
