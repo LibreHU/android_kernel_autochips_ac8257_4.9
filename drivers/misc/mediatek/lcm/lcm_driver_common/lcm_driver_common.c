@@ -681,19 +681,30 @@ static int lcm_bridge_ic_detect_ds90ub941(unsigned char i2c_id)
 #ifdef LVDS_BRIGE_IC_DS90UB947_ENABLE
 int lcm_bridge_ic_detect_ds90ub947(unsigned char i2c_id)
 {
-	int detect_flag = 0;
+	/*
+	 * LibreHU: this detection runs on every brightness change (modules_lcm_backlight_ctrl()), so it was one
+	 * I2C transfer (a NACK on the UJC201, no DS90UB947 there) and two log lines each time. A success is kept;
+	 * a failure is retried at most every 5 s (the serializer may come up later); nothing without a client.
+	 */
+	static int detect_flag[LCM_ID_MAX];
+	static unsigned long failed_at[LCM_ID_MAX];
 	unsigned char val = 0;
 
-	interface_read_byte(i2c_id, LVDS_REGFLAG_DS90UB947_ADDR, 0x00, &val);
-	LCM_DRIVER_INFO("TI947:I2C DEVICE ID(7BIT):%02x\n", val);
-	if (LVDS_REGFLAG_DS90UB947_ADDR == ((val >> 1) & 0x7F)) {
-		detect_flag = BRIDGE_IC_DETECT_SUCCESS;
-	} else {
-		detect_flag = BRIDGE_IC_DETECT_FAILED;
-	}
+	if (i2c_id >= LCM_ID_MAX || !interface_client_ready(i2c_id))
+		return BRIDGE_IC_DETECT_FAILED;
+	if (detect_flag[i2c_id] == BRIDGE_IC_DETECT_SUCCESS ||
+	    (detect_flag[i2c_id] == BRIDGE_IC_DETECT_FAILED && time_before(jiffies, failed_at[i2c_id] + 5 * HZ)))
+		return detect_flag[i2c_id];
 
-	LCM_DRIVER_INFO("detect_flag = %d\n", detect_flag);
-	return detect_flag;
+	interface_read_byte(i2c_id, LVDS_REGFLAG_DS90UB947_ADDR, 0x00, &val);
+	if (LVDS_REGFLAG_DS90UB947_ADDR == ((val >> 1) & 0x7F)) {
+		detect_flag[i2c_id] = BRIDGE_IC_DETECT_SUCCESS;
+	} else {
+		detect_flag[i2c_id] = BRIDGE_IC_DETECT_FAILED;
+		failed_at[i2c_id] = jiffies;
+	}
+	LCM_DRIVER_INFO("TI947:I2C DEVICE ID(7BIT):%02x, detect_flag = %d\n", val, detect_flag[i2c_id]);
+	return detect_flag[i2c_id];
 }
 #endif/*LVDS_BRIGE_IC_DS90UB947_ENABLE*/
 

@@ -27,11 +27,17 @@ enum lcm_id_e {
 	LCM_ID_MAX
 };
 
+bool interface_client_ready(int lcm_id);
 int interface_read_byte(int lcm_id, unsigned char addr, unsigned char cmd, unsigned char *out);
 int interface_write_byte(int lcm_id, unsigned char addr, unsigned char cmd, unsigned char in);
 int interface_write_buffer(int lcm_id, unsigned char addr, unsigned char *buffer, int len);
 int interface_read_buffer(int lcm_id, unsigned char addr, unsigned char cmd, unsigned char *out, int len);
 #else
+static inline bool interface_client_ready(int lcm_id)
+{
+	return false;
+}
+
 static inline int interface_read_byte(unsigned char addr, unsigned char cmd, unsigned char *out)
 {
 	LCM_INTERFACE_ERROR("CONFIG_LCM_TRANSFER_IC_SUPPORT is not.\n");

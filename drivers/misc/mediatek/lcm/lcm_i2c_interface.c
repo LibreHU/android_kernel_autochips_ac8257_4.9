@@ -69,6 +69,17 @@ static struct i2c_driver interface_driver = {
   *   [I2C Function For Read/Write interface for Transfer Ic]
   *
   *********************************************************/
+/*
+ * LibreHU: whether an I2C client was probed for this index. The UJC201 overlay declares its bridge (0x2d) with
+ * lcm_id = <0>, LCM_ID_SECONDARY: the bridge detection of the backlight path probed LCM_ID_PRIMARY too and
+ * logged "interface_client NULL!" on every brightness change. Callers check first.
+ */
+bool interface_client_ready(int lcm_id)
+{
+	return (lcm_id == LCM_ID_PRIMARY || lcm_id == LCM_ID_SECONDARY) && interface_client_list[lcm_id];
+}
+EXPORT_SYMBOL(interface_client_ready);
+
 int interface_read_byte(int lcm_id, unsigned char addr, unsigned char cmd, unsigned char *out)
 {
 	char cmd_buf = 0x00;
@@ -305,8 +316,10 @@ static int interface_driver_remove(struct i2c_client *client)
 		LCM_INTERFACE_INFO("LCM_ID_SECONDARY = %d\n", LCM_ID_SECONDARY);
 	}
 
-	i2c_unregister_device(client);
-
+	/*
+	 * LibreHU: no i2c_unregister_device() here, the I2C core is already unbinding this client (the extra
+	 * unregister dropped a reference it does not own)
+	 */
 	return 0;
 }
 
