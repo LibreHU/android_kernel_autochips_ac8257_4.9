@@ -96,7 +96,17 @@ struct memory_info {
 
 /************    [internal variables]    ***********************/
 #ifdef CONFIG_ATC_ARM2_ENABLE
-static wait_queue_head_t *g_ioctlwaitq = NULL;
+/*
+ * LibreHU: IOCTL_FSC_NOTIFY_APP_READY waits for MSG_ARM2_RESPONSE, the answer of the ARM2 to
+ * MSG_ANDROID_APP_READY, and then treats the ARM2 as stopped (ISP / CMDQ clocks off, reserved memory released).
+ * It used a wait queue on the ioctl stack, published through a pointer read by the interrupt handler without a
+ * lock, and a single schedule() without a condition: any ARM2 message of the backcar module (not only the
+ * response) or any other wake-up ended the wait, and an interrupt between remove_wait_queue() and the pointer
+ * reset on the signal path woke a stack frame already gone. Static wait queue, explicit condition set only by
+ * MSG_ARM2_RESPONSE.
+ */
+static DECLARE_WAIT_QUEUE_HEAD(arm2_resp_wq);
+static bool arm2_resp_received;
 static unsigned g_arm2backcarstatus = ARM2_STATUS_UNKNOWN;
 #endif
 
@@ -215,10 +225,11 @@ static irqreturn_t backcar_isr_handler(int irq, void *dev_id)
 		}
 	}
 
-	if (NULL != g_ioctlwaitq) {
-		wake_up(g_ioctlwaitq);
-	}else{
-		BACKCAR_LOG(BACKCAR_WARNING, "g_ioctlwaitq has been waked. but not by arm2 msg\n");
+	if (u4MessageID == MSG_ARM2_RESPONSE) {
+		WRITE_ONCE(arm2_resp_received, true);
+		wake_up(&arm2_resp_wq);
+	} else {
+		BACKCAR_LOG(BACKCAR_INFO, "ARM2 message %u is not the response to APP_READY\n", u4MessageID);
 	}
 
 	BACKCAR_LOG(BACKCAR_INFO, "leave and arm2 backcar status is %d\n",g_arm2backcarstatus);
@@ -297,10 +308,6 @@ static long backcar_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	u_long size = 0;
 	int ret = 0;
 	unsigned gpio_value = 0;
-#ifdef CONFIG_ATC_ARM2_ENABLE
-	wait_queue_head_t wait_queue_head;
-	DECLARE_WAITQUEUE(cur_wait_queue, current);
-#endif
 
 	if (cmd != IOCTL_BC_DETECTGPIO) {
 		//BACKCAR_LOG(BACKCAR_INFO, "cmd = 0x%x\n", cmd);
@@ -333,10 +340,7 @@ static long backcar_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 				break;
 			}
 #ifdef CONFIG_ATC_ARM2_ENABLE
-			init_waitqueue_head(&wait_queue_head);
-			add_wait_queue(&wait_queue_head, &cur_wait_queue);
-			g_ioctlwaitq = &wait_queue_head;
-			set_current_state(TASK_INTERRUPTIBLE);
+			WRITE_ONCE(arm2_resp_received, false);
 
 			BACKCAR_LOG(BACKCAR_INFO, "Inform Arm2, Arm1 Backcar apk is ready\n");
 			#ifdef CONFIG_PM_WAKELOCKS
@@ -346,14 +350,8 @@ static long backcar_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 			#endif
 			backcar_send_message(MSG_COMBINE(MODULE_BCAR, MSG_ANDROID_APP_READY),0,0,0);
 			BACKCAR_LOG(BACKCAR_INFO, "wait arm2 interrupt before schedule\n");
-			schedule();
-			BACKCAR_LOG(BACKCAR_INFO, "wait arm2 interrupt after schedule\n");
-
-			if (signal_pending(current)) {
+			if (wait_event_interruptible(arm2_resp_wq, READ_ONCE(arm2_resp_received))) {
 				BACKCAR_LOG(BACKCAR_WARNING, "interrupted by system signal\n");
-				remove_wait_queue(&wait_queue_head, &cur_wait_queue);
-				set_current_state(TASK_RUNNING);
-				g_ioctlwaitq = NULL;
 				ret = -ERESTARTSYS;
 				#ifdef CONFIG_PM_WAKELOCKS
 				__pm_relax(&bc_wake_lock);
@@ -391,13 +389,10 @@ static long backcar_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 			}
 #endif
 #ifdef CONFIG_ATC_ARM2_ENABLE
-			remove_wait_queue(&wait_queue_head, &cur_wait_queue);
-			set_current_state(TASK_RUNNING);
 			ret = copy_to_user(argp, &g_arm2backcarstatus, sizeof(unsigned));
 			if (ret != 0) {
 				BACKCAR_LOG(BACKCAR_ERR, "copy arm2 backcar status to userspace bc_failed\n");
 			}
-			g_ioctlwaitq = NULL;
 #endif
 
 			mutex_unlock(&g_ioctl_mutex);
