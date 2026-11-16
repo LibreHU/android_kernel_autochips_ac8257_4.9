@@ -675,7 +675,13 @@ static int ramoops_init_prz(const char *name,
 		return err;
 	}
 
-	persistent_ram_zap(*prz);
+	/*
+	 * LibreHU (AC8257): the console zone is not emptied, this boot's log goes on after the previous one (ring of
+	 * console_size). After a crash, the next boot is the boot menu on the same kernel: emptied here, its log
+	 * replaced the one of the crash before TWRP could read it.
+	 */
+	if (!IS_ENABLED(CONFIG_MACH_AC8257) || strcmp(name, "console"))
+		persistent_ram_zap(*prz);
 
 	*paddr += sz;
 
