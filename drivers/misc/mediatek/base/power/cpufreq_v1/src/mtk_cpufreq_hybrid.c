@@ -32,6 +32,9 @@
 #include <linux/ktime.h>
 #include <linux/time.h>
 #include <linux/jiffies.h>
+#ifdef CONFIG_MACH_AC8257
+extern void ppm_cpufreq_postchange(void);
+#endif
 #include <linux/bitops.h>
 #include <linux/uaccess.h>
 #include <linux/seq_file.h>
@@ -334,6 +337,10 @@ int Ripi_cpu_dvfs_thread(void *data)
 					p->mt_policy, &freqs);
 					cpufreq_freq_transition_end(
 					p->mt_policy, &freqs, 0);
+#ifdef CONFIG_MACH_AC8257
+					/* LibreHU: the PPM DLPT / PBM update, called directly (see mtk_ppm_platform.c) */
+					ppm_cpufreq_postchange();
+#endif
 				}
 			}
 		}

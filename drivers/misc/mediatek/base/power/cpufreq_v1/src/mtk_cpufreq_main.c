@@ -1744,6 +1744,36 @@ static int _mt_cpufreq_verify(struct cpufreq_policy *policy)
 	return ret;
 }
 
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CONFIG_MACH_AC8257)
+/*
+ * LibreHU: schedutil fast path. With the hybrid (SSPM) DVFS a frequency request is one write of the OPP index into
+ * the SSPM SRAM (cpuhvfs_set_dvfs(), the same write as _cpufreq_set_locked_secure()); the SSPM applies its bounds
+ * (PPM, thermal, boosts, scaling_min/max_freq through ac8257_apply_soft_max()) and its receive thread reports the
+ * frequency reached. The slow path wraps that write in cpufreq_mutex, so schedutil had to wake its kthread for every
+ * change; this path does the write from the scheduler hook, with no lock (a single 32-bit write).
+ */
+static unsigned int _mt_cpufreq_fast_switch(struct cpufreq_policy *policy, unsigned int target_freq)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
+	int idx;
+	unsigned int khz;
+
+	if (!p || p->armpll_is_available != 1 || dvfs_disable_flag || p->dvfs_disable_by_suspend ||
+	    p->dvfs_disable_by_procfs || do_dvfs_stress_test)
+		return 0;
+	idx = cpufreq_frequency_table_target(policy, target_freq, CPUFREQ_RELATION_L);
+	if (idx < 0 || idx >= p->nr_opp_tbl)
+		return 0;
+	khz = cpu_dvfs_get_freq_by_idx(p, idx);
+#ifdef SINGLE_CLUSTER
+	cpuhvfs_set_dvfs(cpufreq_get_cluster_id(p->cpu_id), khz);
+#else
+	cpuhvfs_set_dvfs(arch_get_cluster_id(p->cpu_id), khz);
+#endif
+	return khz;
+}
+#endif
+
 static int _mt_cpufreq_target(struct cpufreq_policy *policy,
 	unsigned int target_freq, unsigned int relation)
 {
@@ -1784,6 +1814,10 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 	cpumask_setall(policy->cpus);
 
 	policy->cpuinfo.transition_latency = 1000;
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CONFIG_MACH_AC8257)
+	/* LibreHU: see _mt_cpufreq_fast_switch() (no CPUFREQ_TRANSITION_NOTIFIER on the AC8257: see the PPM) */
+	policy->fast_switch_possible = true;
+#endif
 
 	{
 		enum mt_cpu_dvfs_id id = _get_cpu_dvfs_id(policy->cpu);
@@ -1917,6 +1951,9 @@ static struct cpufreq_driver _mt_cpufreq_driver = {
 #endif
 	.verify = _mt_cpufreq_verify,
 	.target = _mt_cpufreq_target,
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CONFIG_MACH_AC8257)
+	.fast_switch = _mt_cpufreq_fast_switch,
+#endif
 	.init = _mt_cpufreq_init,
 	.exit = _mt_cpufreq_exit,
 	.get = _mt_cpufreq_get,

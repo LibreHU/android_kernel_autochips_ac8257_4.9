@@ -95,9 +95,23 @@ static int ppm_cpu_freq_callback(struct notifier_block *nb,
 	return NOTIFY_OK;
 }
 
-static struct notifier_block ppm_cpu_freq_notifier = {
+static struct notifier_block __maybe_unused ppm_cpu_freq_notifier = {
 	.notifier_call = ppm_cpu_freq_callback,
 };
+
+/*
+ * LibreHU: any CPUFREQ_TRANSITION_NOTIFIER disables the fast frequency switching of the cpufreq core
+ * (cpufreq_fast_switch_count) for every policy, which the AC8257 cpufreq driver now offers to schedutil. The
+ * hybrid DVFS receive thread (mtk_cpufreq_hybrid.c), which reports every frequency change, calls this instead:
+ * the same DLPT / PBM update as ppm_cpu_freq_callback() on POSTCHANGE of the cluster root CPU.
+ */
+void ppm_cpufreq_postchange(void)
+{
+	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
+
+	ppm_get_cluster_status(cl_status);
+	mt_ppm_dlpt_kick_PBM(cl_status, ppm_main_info.cluster_num);
+}
 #endif
 
 static int ppm_cpu_hotplug_callback(struct notifier_block *nfb,
@@ -183,7 +197,7 @@ int ppm_platform_init(void)
 		return -1;
 	}
 #endif
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MACH_AC8257)
 	cpufreq_register_notifier(&ppm_cpu_freq_notifier,
 		CPUFREQ_TRANSITION_NOTIFIER);
 #endif
