@@ -74,6 +74,7 @@
 #if (CFG_SUPPORT_IGMP_OFLD == 1)
 #include <linux/igmp.h>
 #endif
+#include <uapi/linux/sched/types.h>
 
 #include "gl_os.h"
 #include "debug.h"
@@ -5085,7 +5086,11 @@ static int32_t wlanOnPreNetRegister(struct GLUE_INFO *prGlueInfo,
 	 * the scheduling method
 	 */
 	if (prGlueInfo->prAdapter->rWifiVar.ucThreadPriority > 0) {
-#if KERNEL_VERSION(4, 19, 0) >= LINUX_VERSION_CODE
+		/*
+		 * LibreHU: was "KERNEL_VERSION(4, 19, 0) >= LINUX_VERSION_CODE", false on 4.19.325 (LINUX_VERSION_CODE
+		 * is 4.19.255); sched_setscheduler() is exported to modules until 5.9
+		 */
+#if KERNEL_VERSION(5, 9, 0) > LINUX_VERSION_CODE
 		struct sched_param param = {
 			.sched_priority = prGlueInfo->prAdapter
 			->rWifiVar.ucThreadPriority

@@ -1391,6 +1391,8 @@ void kalUpdateRxCSUMOffloadParam(IN void *pvPacket,
 u_int8_t kalRetrieveNetworkAddress(IN struct GLUE_INFO *prGlueInfo,
 				IN OUT uint8_t *prMacAddr);
 
+u_int8_t kalGetStableMacSuffix(OUT uint8_t *pucSuffix);
+
 void
 kalReadyOnChannel(IN struct GLUE_INFO *prGlueInfo,
 		  IN uint64_t u8Cookie,
