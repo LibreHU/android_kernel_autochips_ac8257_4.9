@@ -79,9 +79,13 @@ jobs:
           python3 tools/ac8257/repack_boot.py "$T" "$K" dist/recovery_test_ac8257.img \
             --vbmeta tools/ac8257/stock/recovery_stock_vbmeta_250718.bin --size 33554432 \
             --cmdline-append "$CMDLINE_APPEND"
-          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257.img --size 10485760
+          # Boot partition images: Android in SELinux permissive, as the stock ROM and the LineageOS 16.0 boot images
+          # (tools/fetch_kernel.sh of the device tree): the stock vendor policy never ran enforcing, and the LK adds
+          # androidboot.selinux=permissive only in a recovery-partition boot (MCU ttyS1, battery, FM, MFi, GPU denied)
+          BOOT_APPEND="androidboot.selinux=permissive"
+          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257.img --size 10485760 --cmdline-append "$BOOT_APPEND"
           python3 tools/ac8257/bootmenu_image.py out/arch/arm64/boot/Image out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb \
-            "$T" dist/boot_ac8257_bootmenu.img
+            "$T" dist/boot_ac8257_bootmenu.img --cmdline-append "$BOOT_APPEND"
           cp "$K" dist/
           cp out/.config dist/config
           if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then

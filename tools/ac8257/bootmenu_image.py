@@ -5,6 +5,7 @@ Android after 3 s) in front of this kernel, as tools/bootmenu/mkboot.py of the d
 
     tools/ac8257/bootmenu_image.py <out/arch/arm64/boot/Image> <dtb> <stock boot template> <boot_bootmenu.img>
                                    [--init tools/ac8257/bootmenu/bootmenu] [--size 10485760] [--zopfli]
+                                   [--cmdline-append <args>]
 
 1. kernel: "skip_initramfs" -> "want_initramfs" (for a normal boot the LK passes skip_initramfs, which makes the
    kernel ignore the boot ramdisk), compressed again (gzip -9, or zopfli with pigz -11 for --zopfli), DTB appended;
@@ -43,6 +44,7 @@ def main():
     ap.add_argument("--init", default=os.path.join(HERE, "bootmenu", "bootmenu"))
     ap.add_argument("--size", type=int, default=10485760)
     ap.add_argument("--zopfli", action="store_true", help="compress the kernel with pigz -11 (zopfli)")
+    ap.add_argument("--cmdline-append", default="", help="appended to the header command line (repack_boot.py)")
     a = ap.parse_args()
 
     raw = open(a.image, "rb").read()
@@ -80,7 +82,8 @@ def main():
         open(k, "wb").write(kernel)
         open(r, "wb").write(ramdisk)
         subprocess.run(
-            [sys.executable, os.path.join(HERE, "repack_boot.py"), a.template, k, a.out, "--size", str(a.size), "--ramdisk", r],
+            [sys.executable, os.path.join(HERE, "repack_boot.py"), a.template, k, a.out, "--size", str(a.size), "--ramdisk", r]
+            + (["--cmdline-append", a.cmdline_append] if a.cmdline_append else []),
             check=True,
         )
 
