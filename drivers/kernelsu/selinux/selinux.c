@@ -54,7 +54,11 @@ static int transive_to_domain(const char *domain, struct cred *cred, bool clear_
     return error;
 }
 
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(4, 19, 0)
+/*
+ * LibreHU: every 4.19.y, not only 4.19.0 (LINUX_VERSION_CODE of 4.19.325 is above KERNEL_VERSION(4, 19, 0)).
+ * Used by check_nnp_nosuid() in security/selinux/hooks.c.
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 20, 0)
 bool __maybe_unused
 is_ksu_transition(const struct task_security_struct *old_tsec,
 		  const struct task_security_struct *new_tsec)
