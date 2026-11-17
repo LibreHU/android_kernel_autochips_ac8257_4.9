@@ -279,7 +279,22 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 
 	pending_root = ksu_sulog_capture_root_execve_kern(filename->name, sucompat_argv, GFP_KERNEL);
 
-	memcpy((void *)filename->name, ksud_path, sizeof(ksud_path));
+	/*
+	 * LibreHU: until the manager has installed /data/adb/ksud (every new /data: Format Data, clean ROM
+	 * install, before KernelSU Next is opened once), sending su to ksud made it fail for every allowed
+	 * app ("Cannot run program "su": error=13" in LibreHU-service, 17/11/2026: no touch buttons, no ARM2
+	 * handover). sh until then, as ksu_handle_execve_sucompat_common() already does; this manual hook of
+	 * do_execveat_common() (CONFIG_KSU_MANUAL_HOOK) is the one these kernels use. All three paths have
+	 * the same length as "/system/bin/su".
+	 */
+	if (READ_ONCE(ksu_ksud_present)) {
+		memcpy((void *)filename->name, ksud_path, sizeof(ksud_path));
+	} else {
+		static const char sh_path[] = "/system/bin/sh";
+
+		memcpy((void *)filename->name, sh_path, sizeof(sh_path));
+		ksu_recheck_ksud();
+	}
 
 	escape_with_root_profile();
 	ksu_sulog_emit_pending(pending_root, 0, GFP_KERNEL);
