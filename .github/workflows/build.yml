@@ -70,8 +70,9 @@ jobs:
     env:
       V: ${{ matrix.variant }}
       A: ${{ matrix.android }}
-      # ThinLTO needs ld.lld (LD_IS_LLD at configuration time), llvm-ar and llvm-nm for the LTO objects
-      LTO_MAKE: ${{ matrix.lto32 && 'LD=ld.lld-14 AR=llvm-ar-14 NM=llvm-nm-14' || '' }}
+      # ThinLTO needs ld.lld (LD_IS_LLD at configuration time), llvm-ar and llvm-nm for the LTO objects; the top
+      # Makefile also calls LLVM_AR / LLVM_NM, "llvm-ar" / "llvm-nm" without version, absent from the runner (r182)
+      LTO_MAKE: ${{ matrix.lto32 && 'LD=ld.lld-14 AR=llvm-ar-14 NM=llvm-nm-14 LLVM_AR=llvm-ar-14 LLVM_NM=llvm-nm-14' || '' }}
       BOOT_SIZE: ${{ matrix.lto32 && '33554432' || '10485760' }}
     steps:
       - uses: actions/checkout@v4
