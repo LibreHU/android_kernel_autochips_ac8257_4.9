@@ -1789,6 +1789,11 @@ static long monitor_mtp_ioctl(struct file *fp,
 
 	return r;
 }
+/*
+ * LibreHU: the IN / OUT (and TIME) counters went to the log every second (pr_notice through MTP_DBG, also on the
+ * ttyS0 console) as long as MTP was up: about 800 lines in a few minutes of dmesg. pr_debug: compiled out without
+ * DEBUG / CONFIG_DYNAMIC_DEBUG, back with dynamic debug ('func do_monitor_work +p').
+ */
 static void do_monitor_work(struct work_struct *work)
 {
 	int i, r;
@@ -1797,12 +1802,12 @@ static void do_monitor_work(struct work_struct *work)
 	r = sprintf(string_container, "IN <");
 	for (i = 0; i < MTP_MAX_MONITOR_TYPE; i++)
 		r += sprintf(string_container + r, "%d ", monitor_in_cnt[i]);
-	MTP_DBG("%s>\n", string_container);
+	pr_debug("MTP, <%s()> %s>\n", __func__, string_container);
 
 	r = sprintf(string_container, "OUT <");
 	for (i = 0; i < MTP_MAX_MONITOR_TYPE; i++)
 		r += sprintf(string_container + r, "%d ", monitor_out_cnt[i]);
-	MTP_DBG("%s>\n", string_container);
+	pr_debug("MTP, <%s()> %s>\n", __func__, string_container);
 
 	if (likely(!monitor_time))
 		goto monitor_work_exit;
@@ -1811,7 +1816,7 @@ static void do_monitor_work(struct work_struct *work)
 	r = sprintf(string_container, "TIME <");
 	for (i = 0; i < MTP_MAX_MONITOR_TYPE; i++)
 		r += sprintf(string_container + r, "%lld ", ktime_ns[i]);
-	MTP_DBG("%s>\n", string_container);
+	pr_debug("MTP, <%s()> %s>\n", __func__, string_container);
 
 monitor_work_exit:
 	schedule_delayed_work(&monitor_work,
