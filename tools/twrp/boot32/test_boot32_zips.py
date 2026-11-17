@@ -183,30 +183,30 @@ def main():
     with tempfile.TemporaryDirectory() as d:
         s = Sim(d, dist, gpt32)
         s.setup()
-        expect(s.run(I, vbmeta="vbmeta_stock"), 1, "VERIFICATION_DISABLED requis")
+        expect(s.run(I, vbmeta="vbmeta_stock"), 1, "VERIFICATION_DISABLED required")
         assert s.digest() == s.h0, "refusal wrote to the disk"
-        expect(s.run(R), 0, "rien a faire")
+        expect(s.run(R), 0, "nothing to do")
         # stop during the backups (r184 under mksh stopped there on « memoire pleine ? »): nothing on the disk, the
         # return zip has nothing to put back, the next migration throws the incomplete copies away
-        expect(s.run(I, cut="in_backups"), 3, "coupure simulee : in_backups")
+        expect(s.run(I, cut="in_backups"), 3, "simulated power cut: in_backups")
         assert s.digest() == s.h0, "stop during the backups wrote to the disk"
-        expect(s.run(R), 0, "rien a remettre")
+        expect(s.run(R), 0, "nothing to put back")
         assert not os.path.exists(os.path.join(s.sd, "LibreHU", "boot32")), "incomplete copies left by the return zip"
         assert s.digest() == s.h0, "return after a stop during the backups wrote to the disk"
-        expect(s.run(I, cut="in_backups"), 3, "coupure simulee : in_backups")
+        expect(s.run(I, cut="in_backups"), 3, "simulated power cut: in_backups")
         print("stop during the backups: OK")
         for cut in ("before_vendor", "before_gpt"):
             r = s.run(I, cut=cut)
-            expect(r, 3, "coupure simulee : " + cut)
+            expect(r, 3, "simulated power cut: " + cut)
             if cut == "before_vendor":
-                assert "copies incompletes supprimees, nouvel essai" in r[1], r[1]
+                assert "incomplete copies deleted, starting again" in r[1], r[1]
             assert s.state().startswith("state=orig")
-            expect(s.run(I), 1, "sauvegardes existantes")
+            expect(s.run(I), 1, "existing backups")
             # the unit rewrites byte 432 of the MBR (boot code area) between boots: the repair must still run
             s.put(0, b"")
             with open(s.disk, "r+b") as f:
                 f.seek(432); old = f.read(1); f.seek(432); f.write(bytes([old[0] ^ 0x73]))
-            expect(s.run(R), 0, "Vendor d'origine remis")
+            expect(s.run(R), 0, "Original vendor put back")
             with open(s.disk, "r+b") as f:
                 f.seek(432); f.write(old)
             assert s.digest() == s.h0, "repair after a cut %s: disk differs" % cut
@@ -214,19 +214,19 @@ def main():
         print("migration cut + repair: OK")
         expect(s.run(I, cut="between_gpt"), 3, "between_gpt")
         assert s.state().startswith("state=new backup=bad")
-        expect(s.run(I), 0, "fin de la migration", "GPT de secours recalculee")
+        expect(s.run(I), 0, "finishing the migration", "backup GPT recomputed")
         s.check_new(s.boot)
-        expect(s.run(I), 0, "deja 32 Mio")
+        expect(s.run(I), 0, "already 32 MiB")
         print("migration cut between the GPT writes + end: OK")
         # kernel over 10 MiB in place: refused; then a 10 MiB kernel flashed by a 4.19 TWRP zip
         big = bytearray(32 * MIB); big[:11 * MIB] = os.urandom(11 * MIB)
         big[-64:] = b"AVBf" + struct.pack(">IIQQQ", 1, 0, 11 * MIB, 11 * MIB, 1024) + bytes(28)
         s.put(498, bytes(big))
-        expect(s.run(R), 1, "ne tient pas dans 10 Mio")
+        expect(s.run(R), 1, "does not fit in 10 MiB")
         k10 = boot_image(8 * MIB)
         s.flash10(k10)
         expect(s.run(R, cut="before_vendor"), 3, "before_vendor")
-        expect(s.run(R), 0, "Reprise : copies verifiees", "(orig)")
+        expect(s.run(R), 0, "Resuming: verified copies", "(orig)")
         s.check_orig(k10)
         print("return cut before vendor + resume: OK")
         shutil.rmtree(s.sd)
@@ -234,7 +234,7 @@ def main():
         s.check_new(k10)
         expect(s.run(R, cut="between_gpt"), 3, "between_gpt")
         assert s.state().startswith("state=orig backup=bad")
-        expect(s.run(R), 0, "fin du retour")
+        expect(s.run(R), 0, "finishing the return")
         s.check_orig(k10)
         assert not os.path.exists(os.path.join(s.sd, "LibreHU", "boot32")), "boot32 folder left"
         print("return cut between the GPT writes + end: OK")

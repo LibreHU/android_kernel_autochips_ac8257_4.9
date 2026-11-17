@@ -1,7 +1,7 @@
 # Copie de common/twrp-common.sh de LibreHU-flashablesZips (memes fonctions que ses zips TWRP).
 # Fonctions communes aux zips TWRP audio (incluses dans update-binary par build.sh)
 ui_print() { if [ -n "$OUTFD" ] && [ -e /proc/self/fd/$OUTFD ] && [ -z "$UJC_TEST" ]; then echo "ui_print $1" > /proc/self/fd/$OUTFD; echo "ui_print" > /proc/self/fd/$OUTFD; else echo "$1"; fi; }
-abort() { ui_print "ERREUR : $1"; cleanup; exit 1; }
+abort() { ui_print "ERROR: $1"; cleanup; exit 1; }
 
 BYNAME=/dev/block/platform/bootdevice/by-name
 SYSMNT=${UJC_SYSMNT:-/system_root}
@@ -26,7 +26,7 @@ mount_rw() {
 		[ $part = system ] && umount /system 2>/dev/null
 		mkdir -p $mnt
 		blockdev --setrw $BYNAME/$part 2>/dev/null
-		mount -t ext4 -o rw $BYNAME/$part $mnt || abort "montage de $part en ecriture impossible"
+		mount -t ext4 -o rw $BYNAME/$part $mnt || abort "cannot mount $part read-write"
 		[ $part = system ] && MOUNTED_SYS=1 || MOUNTED_VEN=1
 	done
 }
@@ -74,20 +74,20 @@ require_no_verity() {
 	_all=""
 	for _p in "$@"; do
 		_fl=$(fsmgr_flags $_p | tr '\n' ' ')
-		ui_print "fs_mgr /$_p : ${_fl:-(introuvable)}"
+		ui_print "fs_mgr /$_p: ${_fl:-(not found)}"
 		_all="$_all $_fl"
 	done
 	if ! echo "$_all" | grep -qE 'avb|verify'; then
-		ui_print "partitions non verifiees (pas de avb / verify) : OK"
+		ui_print "partitions not verified (no avb / verify): OK"
 	elif vbmeta_ok && hashtree_disabled; then
-		ui_print "dm-verity deja desactive dans vbmeta : OK"
+		ui_print "dm-verity already disabled in vbmeta: OK"
 	else
 		ui_print " "
-		ui_print "dm-verity est actif : modifier la partition empecherait Android de demarrer."
-		ui_print "Rien n'a ete modifie. Pour le desactiver vous-meme : sauvegarder VBMeta dans TWRP,"
-		ui_print "puis depuis un PC en fastboot : fastboot --disable-verity flash vbmeta vbmeta.img"
-		ui_print "(avec la sauvegarde renommee), demarrer Android une fois, puis reflasher ce zip."
-		abort "dm-verity actif"
+		ui_print "dm-verity is active: changing the partition would stop Android from booting."
+		ui_print "Nothing was changed. To disable it yourself: back up VBMeta in TWRP,"
+		ui_print "then from a PC in fastboot: fastboot --disable-verity flash vbmeta vbmeta.img"
+		ui_print "(with the backup renamed), boot Android once, then flash this zip again."
+		abort "dm-verity active"
 	fi
 }
 
@@ -102,38 +102,38 @@ flash_image() {
 	[ -n "$_part" ] || for _p in /dev/block/by-name/$_pn /dev/block/platform/*/by-name/$_pn /dev/block/platform/*/*/by-name/$_pn; do
 		[ -e "$_p" ] && { _part=$_p; break; }
 	done
-	[ -n "$_part" ] || abort "partition $_pn introuvable"
+	[ -n "$_part" ] || abort "partition $_pn not found"
 	_t=${UJC_TMP:-/tmp}/librehu_img_$_pn; rm -rf $_t; mkdir -p $_t
-	unzip -o -q "$ZIPFILE" "files/$_img" "files/$_img.sha256" -d $_t || abort "extraction du zip impossible"
+	unzip -o -q "$ZIPFILE" "files/$_img" "files/$_img.sha256" -d $_t || abort "cannot extract the zip"
 	_e=$(cut -d' ' -f1 $_t/files/$_img.sha256)
-	[ "$(sha256sum $_t/files/$_img | cut -d' ' -f1)" = "$_e" ] || abort "image abimee (empreinte)"
+	[ "$(sha256sum $_t/files/$_img | cut -d' ' -f1)" = "$_e" ] || abort "damaged image (checksum)"
 	_isz=$(stat -c %s $_t/files/$_img)
 	_psz=$(blockdev --getsize64 "$_part" 2>/dev/null)
 	[ -z "$_psz" ] && [ -f "$_part" ] && _psz=$(stat -c %s "$_part")
-	[ -n "$_psz" ] && [ "$_isz" -le "$_psz" ] || abort "image ($_isz octets) plus grande que la partition ($_psz)"
+	[ -n "$_psz" ] && [ "$_isz" -le "$_psz" ] || abort "image ($_isz bytes) larger than the partition ($_psz)"
 	if [ -d $SDCARD ]; then
 		mkdir -p $SDCARD/LibreHU/backup
 		_b=$SDCARD/LibreHU/backup/$_pn-$(date +%Y%m%d-%H%M%S).img
-		dd if="$_part" of="$_b" bs=1048576 2>/dev/null || abort "sauvegarde de $_pn impossible (memoire pleine ?)"
-		ui_print "Sauvegarde : $_b"
+		dd if="$_part" of="$_b" bs=1048576 2>/dev/null || abort "cannot back up $_pn (storage full?)"
+		ui_print "Backup: $_b"
 	else
-		ui_print "Memoire interne non montee : pas de sauvegarde de $_pn"
+		ui_print "Internal storage not mounted: no backup of $_pn"
 	fi
 	blockdev --setrw "$_part" 2>/dev/null
-	dd if=$_t/files/$_img of="$_part" bs=1048576 2>/dev/null || abort "ecriture de $_part impossible"
+	dd if=$_t/files/$_img of="$_part" bs=1048576 2>/dev/null || abort "cannot write $_part"
 	sync
-	[ "$(head -c $_isz "$_part" | sha256sum | cut -d' ' -f1)" = "$_e" ] || abort "verification apres ecriture echouee : reflasher la sauvegarde"
+	[ "$(head -c $_isz "$_part" | sha256sum | cut -d' ' -f1)" = "$_e" ] || abort "check after writing failed: flash the backup again"
 	# Pied AVB (64 derniers octets de l'image, « AVBf ») : libavb le lit a la fin de la PARTITION. Partition plus
 	# grande que l'image (boot passe a 32 Mio par ujc201_boot32.sh, image de 10 Mio) : sans cette copie, le LK lirait
 	# le pied de l'image precedente (taille et vbmeta faux). Partition de la meme taille que l'image : rien a faire.
 	if [ "$_psz" -gt "$_isz" ] && [ "$(tail -c 64 $_t/files/$_img | head -c 4)" = AVBf ] && [ $((_psz % 64)) -eq 0 ]; then
 		tail -c 64 $_t/files/$_img > $_t/avb_footer
-		dd if=$_t/avb_footer of="$_part" bs=64 seek=$((_psz / 64 - 1)) conv=notrunc 2>/dev/null || abort "ecriture du pied AVB impossible : reflasher la sauvegarde"
+		dd if=$_t/avb_footer of="$_part" bs=64 seek=$((_psz / 64 - 1)) conv=notrunc 2>/dev/null || abort "cannot write the AVB footer: flash the backup again"
 		sync
 		[ "$(dd if="$_part" bs=64 skip=$((_psz / 64 - 1)) count=1 2>/dev/null | sha256sum | cut -d' ' -f1)" = \
-			"$(sha256sum $_t/avb_footer | cut -d' ' -f1)" ] || abort "pied AVB relu different : reflasher la sauvegarde"
-		ui_print "Pied AVB recopie en fin de partition ($_psz octets)"
+			"$(sha256sum $_t/avb_footer | cut -d' ' -f1)" ] || abort "AVB footer read back different: flash the backup again"
+		ui_print "AVB footer copied to the end of the partition ($_psz bytes)"
 	fi
 	rm -rf $_t
-	ui_print "$_img ecrit dans $_part"
+	ui_print "$_img written to $_part"
 }

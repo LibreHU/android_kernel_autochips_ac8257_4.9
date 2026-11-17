@@ -12,9 +12,9 @@ vintf_accept_419() {
 	_out=$VENMNT$VINTF_DIR
 	_rc=$VENMNT/etc/init/librehu_vintf.rc
 	rm -rf $_out
-	mkdir -p $_out $VENMNT/etc/init || abort "dossier $_out impossible"
-	{ echo "# LibreHU $VERSION : matrices VINTF d'Android 9 qui acceptent le noyau 4.19 (zip librehu_kernel_twrp_a9)."
-	  echo "# Retour aux matrices d'origine : supprimer ce fichier et /vendor$VINTF_DIR."
+	mkdir -p $_out $VENMNT/etc/init || abort "cannot create folder $_out"
+	{ echo "# LibreHU $VERSION: Android 9 VINTF matrices that accept the 4.19 kernel (zip librehu_kernel_twrp_a9)."
+	  echo "# Back to the original matrices: delete this file and /vendor$VINTF_DIR."
 	  echo "on post-fs"; } > $_rc.librehu.new
 	_n=0
 	for _m in $_sd/etc/vintf/compatibility_matrix.*.xml $_sd/compatibility_matrix.xml; do
@@ -24,9 +24,9 @@ vintf_accept_419() {
 		_b=$(basename $_m)
 		[ "$_m" = "$_sd/compatibility_matrix.xml" ] && _b=legacy_$_b
 		awk 'BEGIN { d = 0 } !d && /<kernel version=/ { print "    <kernel version=\"4.19.0\">"; print "    </kernel>"; d = 1 } { print }' \
-			"$_m" > $_out/$_b || abort "copie de $_b impossible"
-		grep -q '<kernel version="4.19.0">' $_out/$_b || abort "$_b : entree 4.19 non ajoutee"
-		[ $(( $(wc -l < $_out/$_b) - $(wc -l < "$_m") )) = 2 ] || abort "$_b : copie incomplete"
+			"$_m" > $_out/$_b || abort "cannot copy $_b"
+		grep -q '<kernel version="4.19.0">' $_out/$_b || abort "$_b: 4.19 entry not added"
+		[ $(( $(wc -l < $_out/$_b) - $(wc -l < "$_m") )) = 2 ] || abort "$_b: incomplete copy"
 		chmod 0644 $_out/$_b
 		[ -z "$UJC_TEST" ] && chcon u:object_r:system_file:s0 $_out/$_b
 		echo "    mount none /vendor$VINTF_DIR/$_b /system${_m#$_sd} bind" >> $_rc.librehu.new
@@ -34,11 +34,11 @@ vintf_accept_419() {
 	done
 	if [ $_n = 0 ]; then
 		rm -rf $_rc.librehu.new $_rc $_out
-		ui_print "matrices VINTF : noyau 4.19 deja accepte par Android, rien a faire"
+		ui_print "VINTF matrices: 4.19 kernel already accepted by Android, nothing to do"
 		return
 	fi
 	chmod 0644 $_rc.librehu.new
 	[ -z "$UJC_TEST" ] && chcon u:object_r:vendor_configs_file:s0 $_rc.librehu.new
-	mv -f $_rc.librehu.new $_rc || abort "ecriture de $_rc impossible"
-	ui_print "matrices VINTF : noyau 4.19 accepte ($_n fichier(s), /vendor$VINTF_DIR)"
+	mv -f $_rc.librehu.new $_rc || abort "cannot write $_rc"
+	ui_print "VINTF matrices: 4.19 kernel accepted ($_n file(s), /vendor$VINTF_DIR)"
 }

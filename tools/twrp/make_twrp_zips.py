@@ -32,7 +32,7 @@ DATE = (2020, 1, 1, 0, 0, 0)
 def kernel_sum(data, name):
     """Empreinte de la section noyau d'une image de boot Android v0/v1 (apres l'en-tete, kernel_size octets)."""
     if data[:8] != b"ANDROID!":
-        sys.exit(f"{name} : pas une image de boot Android")
+        sys.exit(f"{name}: not an Android boot image")
     ksize, page = struct.unpack_from("<I", data, 8)[0], struct.unpack_from("<I", data, 36)[0]
     return hashlib.sha256(data[page:page + ksize]).hexdigest()
 
@@ -42,15 +42,15 @@ ANDROID_CHECK = r'''
 android_check() {
 	_want=$(cat $F/android)
 	_prop=$(sysdir)/build.prop
-	[ -f "$_prop" ] || abort "build.prop de /system introuvable : version d'Android inconnue, rien n'a ete modifie"
+	[ -f "$_prop" ] || abort "build.prop of /system not found: unknown Android version, nothing was changed"
 	_rel=$(grep -m1 '^ro.build.version.release=' "$_prop" | cut -d= -f2)
 	_maj=${_rel%%.*}
 	case "$_want" in
-	a9) [ "$_maj" = 9 ] || abort "noyau Android 9 (a9) mais /system = Android $_rel : prendre la variante a10";;
-	a10) [ -n "$_maj" ] && [ "$_maj" -ge 10 ] 2>/dev/null || abort "noyau Android 10+ (a10) mais /system = Android $_rel : prendre la variante a9";;
-	*) abort "variante inconnue : $_want";;
+	a9) [ "$_maj" = 9 ] || abort "Android 9 kernel (a9) but /system = Android $_rel: take the a10 variant";;
+	a10) [ -n "$_maj" ] && [ "$_maj" -ge 10 ] 2>/dev/null || abort "Android 10+ kernel (a10) but /system = Android $_rel: take the a9 variant";;
+	*) abort "unknown variant: $_want";;
 	esac
-	ui_print "Android $_rel : variante $_want, OK"
+	ui_print "Android $_rel: variant $_want, OK"
 }
 '''
 
@@ -59,7 +59,7 @@ def update_binary(zid, version, body, extra=()):
     common = "\n".join(open(os.path.join(HERE, f)).read() for f in ("twrp-common.sh", "conn-modules.sh", "vintf-419.sh")
                        + tuple(extra)) + ANDROID_CHECK
     check = ('DEV=$(getprop ro.product.device)\n'
-             f'case " {DEVICES} " in *" $DEV "*) ;; *) abort "appareil \\"$DEV\\" non pris en charge ({DEVICES})";; esac\n')
+             f'case " {DEVICES} " in *" $DEV "*) ;; *) abort "device \\"$DEV\\" not supported ({DEVICES})";; esac\n')
     head = f'#!/sbin/sh\nOUTFD=$2; ZIPFILE=$3; ZIP_ID={zid}; VERSION="{version}"\n'
     return head + common + "\n" + check + open(os.path.join(HERE, body)).read()
 
@@ -79,7 +79,7 @@ def write_zip(path, zid, version, body, files, extra=(), modes=None):
 def boot32(dist, version, tool):
     gpt32 = open(tool, "rb").read()
     if gpt32[:4] != b"\x7fELF" or gpt32[18:20] != b"\xb7\x00":
-        sys.exit(f"{tool} : pas un executable arm64")
+        sys.exit(f"{tool}: not an arm64 executable")
     files = {"gpt32": gpt32}
     for zid, body in (("librehu_boot32", "boot32-install.sh"), ("librehu_boot32_restore", "boot32-restore.sh")):
         write_zip(os.path.join(dist, f"{zid}_twrp.zip"), zid, version, os.path.join("boot32", body), files,
@@ -91,7 +91,7 @@ def kernel32(dist, branch, version, variant):
     boot = open(os.path.join(dist, f"boot_ac8257_bootmenu_{variant}.img"), "rb").read()
     kernel_sum(boot, variant)
     if len(boot) != 32 * 1024 * 1024:
-        sys.exit(f"boot_ac8257_bootmenu_{variant}.img : {len(boot)} octets, 32 Mio attendus")
+        sys.exit(f"boot_ac8257_bootmenu_{variant}.img: {len(boot)} bytes, 32 MiB expected")
     files = {"boot.img": boot, "boot.img.sha256": f"{hashlib.sha256(boot).hexdigest()}  boot.img\n",
              "branch": branch + "\n", "android": base + "\n"}
     write_zip(os.path.join(dist, f"librehu_kernel32_twrp_{base}.zip"), "librehu_kernel32", version, "kernel32-install.sh",
@@ -113,13 +113,13 @@ def main():
     for m in MODULES:
         data = ksu.read(f"modules/{m}.ko")
         if data[:4] != b"\x7fELF":
-            sys.exit(f"{m}.ko : pas un module ELF")
+            sys.exit(f"{m}.ko: not an ELF module")
         files[f"modules/{m}.ko"] = data
         sums.append(f"{hashlib.sha256(data).hexdigest()}  {m}.ko")
     files["modules/SHA256SUMS"] = "\n".join(sums) + "\n"
     kv = ksu.read("kernel_version").decode().strip()
     if not kv.startswith("Linux version "):
-        sys.exit("kernel_version absent du module KernelSU")
+        sys.exit("kernel_version missing from the KernelSU module")
     files["kernel_version"] = kv + "\n"
     files["kernels.sha256"] = "".join(f"{kernel_sum(d, n)}  {n}\n" for n, d in images.items())
     files["branch"] = branch + "\n"
