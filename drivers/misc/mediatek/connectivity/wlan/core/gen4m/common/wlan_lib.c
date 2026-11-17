@@ -3885,7 +3885,16 @@ uint32_t wlanUpdateNetworkAddress(IN struct ADAPTER
 		rMacAddr[1] = 0x08;
 		rMacAddr[2] = 0x22;
 
-		kalMemCopy(&rMacAddr[3], &u4SysTime, 3);
+		/*
+		 * LibreHU: stable for the unit (hash of its serial number), locally administered (02:08:22) since it
+		 * is not a factory address; the tick based one only when there is no serial number
+		 */
+		if (kalGetStableMacSuffix(&rMacAddr[3])) {
+			rMacAddr[0] = 0x02;
+			DBGLOG(INIT, INFO, "Using a MAC address derived from the serial number");
+		} else {
+			kalMemCopy(&rMacAddr[3], &u4SysTime, 3);
+		}
 
 	} else {
 #if CFG_SHOW_MACADDR_SOURCE

@@ -104,6 +104,8 @@
 /* for uevent */
 #include <linux/miscdevice.h>   /* for misc_register, and SYNTH_MINOR */
 #include <linux/kobject.h>
+#include <linux/jhash.h>
+#include <linux/of.h>
 
 /* for wifi standalone log */
 #if CFG_SUPPORT_SA_LOG
@@ -792,7 +794,7 @@ void kalUpdateMACAddress(IN struct GLUE_INFO *prGlueInfo,
 
 	DBGLOG(INIT, INFO,
 			MACSTR ", " MACSTR ".\n",
-			prGlueInfo->prDevHandler->dev_addr,
+			MAC2STR(prGlueInfo->prDevHandler->dev_addr),
 			MAC2STR(pucMacAddr));
 
 	if (UNEQUAL_MAC_ADDR(prGlueInfo->prDevHandler->dev_addr,
@@ -4963,6 +4965,42 @@ u_int8_t kalIsCardRemoved(IN struct GLUE_INFO *prGlueInfo)
 
 	return FALSE;
 	/* Linux MMC doesn't have removal notification yet */
+}
+
+/*
+ * LibreHU: the UJC201 NVRAM pushed by userspace has a zero Wi-Fi MAC and /efs/wifi/.mac.info does not exist, so
+ * wlanUpdateNetworkAddress() built 00:08:22 + 3 bytes of the system tick: a new MAC on every Wi-Fi start (new
+ * device for the router, DHCP leases, MAC filters, wireless projection pairings). Derive the last 3 bytes from a
+ * hash of androidboot.serialno (LK, /chosen bootargs) instead: stable for a given unit, the serial number itself
+ * cannot be read back from it. FALSE when there is no serial number.
+ */
+u_int8_t kalGetStableMacSuffix(OUT uint8_t *pucSuffix)
+{
+	static const char key[] = "androidboot.serialno=";
+	struct device_node *np = of_find_node_by_path("/chosen");
+	const char *bootargs, *p, *e;
+	u32 h;
+
+	if (!np)
+		return FALSE;
+	bootargs = of_get_property(np, "bootargs", NULL);
+	p = bootargs ? strstr(bootargs, key) : NULL;
+	if (!p) {
+		of_node_put(np);
+		return FALSE;
+	}
+	p += sizeof(key) - 1;
+	e = strchrnul(p, ' ');
+	if (e == p) {
+		of_node_put(np);
+		return FALSE;
+	}
+	h = jhash(p, e - p, 0x4c485557 /* "LHUW" */);
+	of_node_put(np);
+	pucSuffix[0] = (uint8_t)(h >> 16);
+	pucSuffix[1] = (uint8_t)(h >> 8);
+	pucSuffix[2] = (uint8_t)h;
+	return TRUE;
 }
 
 /*----------------------------------------------------------------------------*/
