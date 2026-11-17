@@ -8,7 +8,10 @@ name: Build AC8257 kernel 4.19 (experimental)
 #  - boot_ac8257_bootmenu_<v>.img: the same kernel behind the boot menu (TWRP / Android / Fastboot)
 #  - recovery_test_ac8257_<v>.img: 32 MiB, recovery vbmeta, for the recovery test method (fastboot flash recovery +
 #    fastboot oem reboot-recovery): a crash ends in a normal boot of the installed kernel, not a boot loop
-# for two variants <v>: a9 (Android 9) and a10 (Android 10 and later), see the build job.
+# for two variants <v>: a9 (Android 9) and a10 (Android 10 and later), see the build job. Two more builds, a9-lto32
+# and a10-lto32 (arch/arm64/configs/ac8257_lto32.config): ThinLTO, everything built in (connectivity included, no
+# module), 32 MiB images for a boot partition grown by librehu_boot32_twrp.zip (job boot32: that zip, its return zip
+# librehu_boot32_restore_twrp.zip and their tests).
 # Published as a prerelease latest-<branch> marked experimental. LibreHU-flashablesZips only takes the branches it
 # declares (stable-4.9.337): nothing from here reaches LibreHU Apps.
 
@@ -45,15 +48,31 @@ jobs:
     #    /proc/net/xt_qtaguid/ctrl, else NetworkPolicy waits 30 s at boot), uname -r 4.19.325-a9
     #  - a10: Android 10 and later (LineageOS 17.1...): no xt_qtaguid, as the Android common kernels, 4.19.325-a10
     # Each variant has its own images and modules (the modules match only the kernel of the same build).
+    # a9-lto32 / a10-lto32: the same tree with ac8257_lto32.config on top (ThinLTO with ld.lld, everything built in),
+    # images of 32 MiB for the boot partition of librehu_boot32_twrp.zip, uname -r 4.19.325-a9-lto32 / -a10-lto32
     strategy:
       fail-fast: false
       matrix:
-        variant: [a9, a10]
+        include:
+          - variant: a9
+            android: a9
+          - variant: a10
+            android: a10
+          - variant: a9-lto32
+            android: a9
+            lto32: true
+          - variant: a10-lto32
+            android: a10
+            lto32: true
     # ubuntu-22.04: clang-14 and a python2 package (the AutoChips DTS generator tools/dct/DrvGen.py is Python 2)
     runs-on: ubuntu-22.04
     timeout-minutes: 150
     env:
       V: ${{ matrix.variant }}
+      A: ${{ matrix.android }}
+      # ThinLTO needs ld.lld (LD_IS_LLD at configuration time), llvm-ar and llvm-nm for the LTO objects
+      LTO_MAKE: ${{ matrix.lto32 && 'LD=ld.lld-14 AR=llvm-ar-14 NM=llvm-nm-14' || '' }}
+      BOOT_SIZE: ${{ matrix.lto32 && '33554432' || '10485760' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,9 +90,17 @@ jobs:
 
       - name: Configure (${{ matrix.variant }})
         run: |
-          make O=out $KMAKE $ATC_MAKE "$DEFCONFIG"
-          make O=out $KMAKE $ATC_MAKE "ac8257_${V}.config"
-          grep -E '^CONFIG_LOCALVERSION=|XT_MATCH_OWNER|XT_MATCH_QTAGUID' out/.config
+          make O=out $KMAKE $LTO_MAKE $ATC_MAKE "$DEFCONFIG"
+          make O=out $KMAKE $LTO_MAKE $ATC_MAKE "ac8257_${A}.config"
+          if [ -n "$LTO_MAKE" ]; then
+            make O=out $KMAKE $LTO_MAKE $ATC_MAKE ac8257_lto32.config
+            ./scripts/config --file out/.config --set-str LOCALVERSION "-${V}"
+            make O=out $KMAKE $LTO_MAKE $ATC_MAKE olddefconfig
+            grep -q '^CONFIG_LTO_CLANG=y' out/.config && grep -q '^CONFIG_MTK_COMBO_DRV_BUILD_IN=y' out/.config \
+              || { echo "::error::ThinLTO or built-in connectivity missing from the lto32 configuration"; exit 1; }
+            ! grep -q '=m$' out/.config || { echo "::error::modules left in the lto32 configuration"; grep '=m$' out/.config; exit 1; }
+          fi
+          grep -E '^CONFIG_LOCALVERSION=|XT_MATCH_OWNER|XT_MATCH_QTAGUID|^CONFIG_LTO_CLANG|^CONFIG_MTK_COMBO_DRV_BUILD_IN' out/.config
 
       - name: Build Image.gz-dtb and modules
         run: |
@@ -82,7 +109,7 @@ jobs:
           # banner of this vmlinux: a second make would relink vmlinux with another build number)
           TARGETS=Image.gz-dtb
           grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config && TARGETS="$TARGETS modules"
-          make O=out $KMAKE $ATC_MAKE -j"$(nproc)" $TARGETS 2>&1 | tee build.log
+          make O=out $KMAKE $LTO_MAKE $ATC_MAKE -j"$(nproc)" $TARGETS 2>&1 | tee build.log
 
       - name: Pack images
         env:
@@ -102,9 +129,10 @@ jobs:
           # (tools/fetch_kernel.sh of the device tree): the stock vendor policy never ran enforcing, and the LK adds
           # androidboot.selinux=permissive only in a recovery-partition boot (MCU ttyS1, battery, FM, MFi, GPU denied)
           BOOT_APPEND="androidboot.selinux=permissive $KERNEL_APPEND"
-          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257_${V}.img --size 10485760 --cmdline-append "$BOOT_APPEND"
+          # 10 MiB (stock boot partition), or 32 MiB for the lto32 builds (boot grown by librehu_boot32_twrp.zip)
+          python3 tools/ac8257/repack_boot.py "$T" "$K" dist/boot_ac8257_${V}.img --size $BOOT_SIZE --cmdline-append "$BOOT_APPEND"
           python3 tools/ac8257/bootmenu_image.py out/arch/arm64/boot/Image out/arch/arm64/boot/dts/mediatek/ac8257_ujc201.dtb \
-            "$T" dist/boot_ac8257_bootmenu_${V}.img --cmdline-append "$BOOT_APPEND"
+            "$T" dist/boot_ac8257_bootmenu_${V}.img --size $BOOT_SIZE --cmdline-append "$BOOT_APPEND"
           cp "$K" dist/Image.gz-dtb_${V}
           cp out/.config dist/config_${V}
           if grep -q '^CONFIG_LIBREHU_CONN_MODULES=y' out/.config; then
@@ -113,6 +141,9 @@ jobs:
               "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9} ${V}"
             # The same modules as TWRP zips (kernel + modules, modules only), as the kernel-stable / conn-modules-stable
             # zips of LibreHU-flashablesZips (tools/twrp); they check the Android version of /system against ${V}
+            python3 tools/twrp/make_twrp_zips.py dist "${GITHUB_REF_NAME}" "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9} ${V}" "${V}"
+          elif [ -n "$LTO_MAKE" ]; then
+            # Kernel only (nothing to install in /vendor), refused by the zip on a 10 MiB boot partition
             python3 tools/twrp/make_twrp_zips.py dist "${GITHUB_REF_NAME}" "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9} ${V}" "${V}"
           fi
           {
@@ -139,9 +170,48 @@ jobs:
           path: build.log
           retention-days: 7
 
+  boot32:
+    # TWRP zips librehu_boot32_twrp.zip (boot partition 10 -> 32 MiB) and librehu_boot32_restore_twrp.zip (return),
+    # with tools/twrp/boot32/gpt32.c built for arm64 (static, no libc). Tests: gpt32 on a synthetic GPT, built for
+    # the runner and for arm64 under qemu-user; the two zips on a synthetic eMMC image with power cuts.
+    if: startsWith(github.ref_name, 'experimental-4.19')
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Host packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-14 lld-14 qemu-user-static e2fsprogs zip unzip
+
+      - name: Build and test gpt32
+        run: |
+          mkdir -p out dist
+          gcc -DHOSTED -O2 -Wall -Wextra -Werror -o out/gpt32-host tools/twrp/boot32/gpt32.c
+          clang-14 --target=aarch64-linux-gnu -Os -Wall -Werror -ffreestanding -fno-builtin -fno-stack-protector \
+            -nostdlib -static -fuse-ld=lld -Wl,--gc-sections -Wl,--build-id=none -o out/gpt32 tools/twrp/boot32/gpt32.c
+          file out/gpt32
+          python3 tools/twrp/boot32/test_gpt32.py out/gpt32-host
+          python3 tools/twrp/boot32/test_gpt32.py out/gpt32 qemu-aarch64-static
+
+      - name: Zips and their test
+        run: |
+          python3 tools/twrp/make_twrp_zips.py boot32 dist "${GITHUB_REF_NAME} r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}" out/gpt32
+          python3 tools/twrp/boot32/test_boot32_zips.py dist out/gpt32-host
+          sha256sum dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ac8257-kernel-4.19-boot32-${{ github.sha }}
+          path: dist/
+          retention-days: 30
+
   release:
-    # One job publishes both variants (two jobs editing the same release at once would race)
-    needs: build
+    # One job publishes all the variants (two jobs editing the same release at once would race)
+    needs: [build, boot32]
     if: github.event_name == 'push' || github.event.inputs.cmdline_append == 'init=/init log_buf_len=8M'
     runs-on: ubuntu-22.04
     steps:
@@ -163,7 +233,7 @@ jobs:
           ls -l dist
           TAG="latest-$BRANCH"
           NAME="r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
-          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a10\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
+          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a10 a9-lto32 a10-lto32\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
             "$GITHUB_RUN_NUMBER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.txt
           {
             echo "**EXPERIMENTAL** : noyau Linux 4.19.325 pour l'UJC201, branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9})."
@@ -179,6 +249,14 @@ jobs:
             echo "- \`librehu_kernel_twrp_<v>.zip\` : zip TWRP, ce noyau (menu de demarrage) dans boot + ses modules dans /vendor/lib/modules ; refuse si la version d'Android ne correspond pas (sauvegardes dans /sdcard/LibreHU/backup)"
             echo "- \`librehu_conn_modules_twrp_<v>.zip\` : zip TWRP, modules seuls, quand boot contient deja ce noyau"
             echo "- \`librehu_connectivity_ksu_<v>.zip\` : les memes modules en module KernelSU"
+            echo
+            echo "**Noyau ThinLTO, tout integre (variantes \`a9-lto32\` / \`a10-lto32\`), pour une partition boot de 32 Mio** :"
+            echo "- \`recovery_test_ac8257_<v>-lto32.img\` : essai sans risque depuis la partition recovery (32 Mio, aucune migration necessaire)"
+            echo "- \`librehu_boot32_twrp.zip\` : agrandit boot de 10 a 32 Mio (dtbo 1 Mio, tee1 / tee2 deplaces, vendor 2033 Mio) ; exige vbmeta en VERIFICATION_DISABLED, 4,4 Go libres, une sauvegarde SP Flash Tool complete ; sauvegardes dans /sdcard/LibreHU/boot32"
+            echo "- \`librehu_boot32_restore_twrp.zip\` : retour a la table d'origine (boot 10 Mio) ; flasher d'abord un noyau 10 Mio"
+            echo "- \`librehu_kernel32_twrp_<v>.zip\` : ce noyau (menu de demarrage) dans la partition boot de 32 Mio ; Wi-Fi / BT / GPS / FM integres, aucun module a installer ; refuse sur une partition de 10 Mio"
+            echo "- \`boot_ac8257_<v>-lto32.img\` / \`boot_ac8257_bootmenu_<v>-lto32.img\` : images de 32 Mio"
+            echo "Apres la migration, n'ecrire une image boot de 10 Mio que par les zips TWRP de cette release (pied AVB recopie en fin de partition)."
             echo
             echo "Retour arriere : TWRP garde son propre noyau ; reflasher le boot de \`stable-4.9.337\` (release latest-stable-4.9.337)."
             echo "vbmeta n'est jamais touche."
