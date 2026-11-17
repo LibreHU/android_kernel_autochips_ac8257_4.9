@@ -331,9 +331,8 @@ static __u32 ksu_sulog_flatten_argv_kern(const char *const *argv, char *dst, __u
         if (fatal_signal_pending(current))
             break;
 
-        arg_len = strnlen(argv[i], sizeof(arg));
-        if (arg_len == sizeof(arg))
-            arg[sizeof(arg) - 1] = '\0';
+        /* LibreHU: the argument was never copied into arg[] (stack bytes went into the log) */
+        strscpy(arg, argv[i], sizeof(arg));
 
         arg_len = strnlen(arg, sizeof(arg));
         if (!arg_len)
