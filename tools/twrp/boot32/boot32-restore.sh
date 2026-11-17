@@ -19,7 +19,10 @@ if [ "$B32_STATE" = orig ]; then
 		ui_print "Migration interrompue : remise de vendor depuis $B32_DIR/vendor_orig.img"
 		[ -f $B32_DIR/vendor_orig.img ] && [ -f $B32_DIR/SHA256SUMS ] || abort "vendor_orig.img absent : restaurer avec SP Flash Tool"
 		( cd $B32_DIR && sha256sum -c SHA256SUMS >/dev/null 2>&1 ) || abort "sauvegardes abimees : restaurer avec SP Flash Tool"
-		[ "$(dd if=$B32_DISK bs=512 count=34 2>/dev/null | sha256sum | cut -d' ' -f1)" = "$(b32_sha $B32_DIR/pgpt_orig.bin)" ] \
+		# en-tete + entrees seulement : l'octet 432 du MBR (code d'amorcage, inutilise par la GPT) change sur l'UJC201
+		# (0x40 dans une sauvegarde SP Flash Tool, 0x33 plus tard sur la meme unite)
+		[ "$(dd if=$B32_DISK bs=512 skip=1 count=33 2>/dev/null | sha256sum | cut -d' ' -f1)" = \
+			"$(tail -c +513 $B32_DIR/pgpt_orig.bin | sha256sum | cut -d' ' -f1)" ] \
 			|| abort "la GPT n'est pas celle de la sauvegarde : rien n'a ete modifie"
 		b32_unmount
 		b32_put $B32_DIR/vendor_orig.img $OLD_VEND

@@ -184,7 +184,13 @@ def main():
             expect(s.run(I, cut=cut), 3, "coupure simulee : " + cut)
             assert s.state().startswith("state=orig")
             expect(s.run(I), 1, "sauvegardes existantes")
+            # the unit rewrites byte 432 of the MBR (boot code area) between boots: the repair must still run
+            s.put(0, b"")
+            with open(s.disk, "r+b") as f:
+                f.seek(432); old = f.read(1); f.seek(432); f.write(bytes([old[0] ^ 0x73]))
             expect(s.run(R), 0, "Vendor d'origine remis")
+            with open(s.disk, "r+b") as f:
+                f.seek(432); f.write(old)
             assert s.digest() == s.h0, "repair after a cut %s: disk differs" % cut
             shutil.rmtree(s.sd)
         print("migration cut + repair: OK")
