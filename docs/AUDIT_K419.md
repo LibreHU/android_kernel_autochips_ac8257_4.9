@@ -47,7 +47,7 @@ par la CI. À tester sur l'unité (recovery_test d'abord). Ce qui n'est pas appl
 | pppolac / pppopns (a9) | appliqué : pilotes Android du 4.9 portés, `CONFIG_PPPOLAC` / `CONFIG_PPPOPNS` en a9 | `f3e4450` |
 | P7 toprgu | NON appliqué : le DT stock 4.9, le DT de l'UJC201 et la référence MediaTek MT6765 déclarent tous `IRQ_TYPE_NONE` ; changer la polarité sans la connaître peut déclencher l'IRQ du watchdog en boucle. Le WARN reste (sans effet) | - |
 | P9 IPI 0xf | analysé : aucun émetteur du SGI 15 dans le noyau (recherche de `smp_cross_call`, `gic_send_sgi`, SGI dans `drivers/misc/mediatek`, `autochips`, `irqchip`) : il vient du monde sécurisé (ATF) ; le noyau l'acquitte. Pas de correctif | - |
-| H1 VINTF LOS 16 | NON appliqué : demande une modification des sources de la ROM (matrice du framework) et un build ROM à valider avec l'utilisateur | - |
+| H1 VINTF Android 9 | appliqué le 17/11 autrement : le zip TWRP a9 monte depuis /vendor des copies des matrices avec une entrée noyau 4.19 (bind mount, /system jamais modifié) ; marche aussi pour la ROM stock | voir docs/K419.md |
 | H2 sepolicy `map` | NON appliqué : `camhal3lite` et `vtservice_hidl` sont dans la politique vendor stock (pas dans l'arbre) ; `librehu_ksunext` est déjà un domaine permissif, ses règles viendront avec le passage en Enforcing | - |
 | H3 Wi-Fi 5 GHz | test côté utilisateur (pas un correctif) | - |
 | H4 heure MCU | NON appliqué : le dépôt `LibreHU-service` n'a pas pu être attaché à la session | - |
