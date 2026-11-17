@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# LibreHU: APFS from github.com/linux-apfs/linux-apfs-rw (4986b63, 10/11/2026), "intended to work with all kernel
+# versions since 4.12". Mounted read-only unless the "readwrite" mount option is given (experimental write
+# support, risk of data corruption): vold mounts it read-only.
+
+config APFS_FS
+	tristate "Apple file system (APFS) support"
+	select ZLIB_INFLATE
+	select NLS
+	select LIBCRC32C
+	help
+	  Read support (and experimental write support with the readwrite
+	  mount option) for the Apple File System, the default on macOS
+	  10.13 and later. Encrypted volumes are not supported.
+
+	  To compile this as a module, choose M here: the module will be
+	  called apfs.
