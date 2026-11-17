@@ -24,7 +24,7 @@ par la CI. À tester sur l'unité (recovery_test d'abord). Ce qui n'est pas appl
 
 | Point | État | Commit |
 |---|---|---|
-| B1 TLB M4U | appliqué : sync après chaque page démappée (comportement 4.9) dans `arm_v7s_unmap()` | `86d2ead` |
+| B1 TLB M4U | appliqué : sync après chaque page démappée (comportement 4.9) dans `arm_v7s_unmap()` ; **régression** (UI saccadée, 17/11 : sync en double après la libération d'une table de niveau 2 → 100 ms d'attente par Mio démappé) → remplacé : chaque invalidation attend sa fin dans `mtk_iommu_tlb_add_flush_nosync()`, `.tlb_sync` vide (comme le mainline, Yong Wu 2019) | `86d2ead`, remplacé 17/11 |
 | B2, B3 xt_qtaguid | appliqué : les 2 hunks ACK `android-4.9-p` | `ce91282` |
 | B4 ION < 4 Gio | appliqué : `ion_gfp_below_4g()` (GFP_DMA32, sans MOVABLE/HIGHMEM), pools et tas contig | `910fb3f` |
 | B5 dualarm | appliqué : `spin_lock_irqsave` + attente bornée à 50 ms | `cb473a6` |

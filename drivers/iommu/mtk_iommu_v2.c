@@ -200,13 +200,27 @@ static void mtk_iommu_tlb_flush_all(void *cookie)
 	}
 }
 
+/*
+ * LibreHU: each range invalidation waits for its own completion here, under one lock, and .tlb_sync does
+ * nothing, as upstream did in "iommu/mediatek: Move the tlb_sync into tlb_flush" (Yong Wu, 2019): the M4U
+ * expects one flush then its sync at a time. Before, .tlb_sync polled REG_MMU_CPE_DONE for up to 100 ms
+ * whether or not an invalidation was pending: io-pgtable-arm-v7s syncs itself when it frees a level-2 table,
+ * so a second sync found CPE_DONE at 0 and spun 100 ms before a full flush ("Partial TLB flush timed out",
+ * 150 times in one session on the unit, frames of 0.8 to 1.1 s in SystemUI, display VSYNC timeouts).
+ */
+static DEFINE_SPINLOCK(mtk_iommu_tlb_lock);
+
 static void mtk_iommu_tlb_add_flush_nosync(unsigned long iova,
 					   size_t size,
 					   size_t granule, bool leaf,
 					   void *cookie)
 {
 	struct mtk_iommu_data *data, *temp;
+	unsigned long flags;
+	int ret;
+	u32 tmp;
 
+	spin_lock_irqsave(&mtk_iommu_tlb_lock, flags);
 	list_for_each_entry_safe(data, temp, &m4ulist, list) {
 
 		writel_relaxed(F_INVLD_EN1 | F_INVLD_EN0,
@@ -217,25 +231,23 @@ static void mtk_iommu_tlb_add_flush_nosync(unsigned long iova,
 			       data->base + REG_MMU_INVLD_END_A);
 		writel_relaxed(F_MMU_INV_RANGE,
 			       data->base + REG_MMU_INVALIDATE);
-	}
-}
 
-static void mtk_iommu_tlb_sync(void *cookie)
-{
-	struct mtk_iommu_data *data, *temp;
-	int ret;
-	u32 tmp;
-
-	list_for_each_entry_safe(data, temp, &m4ulist, list) {
+		/* tlb sync */
 		ret = readl_poll_timeout_atomic(data->base + REG_MMU_CPE_DONE,
 						tmp, tmp != 0, 10, 100000);
 		if (ret) {
 			dev_warn(data->dev, "Partial TLB flush timed out, falling back to full flush\n");
-		mtk_iommu_tlb_flush_all(cookie);
-	}
+			mtk_iommu_tlb_flush_all(cookie);
+		}
 		/* Clear the CPE status */
 		writel_relaxed(0, data->base + REG_MMU_CPE_DONE);
 	}
+	spin_unlock_irqrestore(&mtk_iommu_tlb_lock, flags);
+}
+
+static void mtk_iommu_tlb_sync(void *cookie)
+{
+	/* LibreHU: done by mtk_iommu_tlb_add_flush_nosync() for each invalidation (comment above) */
 }
 
 static const struct iommu_gather_ops mtk_iommu_gather_ops = {
