@@ -2313,6 +2313,11 @@ static u32 ptrace_parent_sid(struct task_struct *task)
 	return sid;
 }
 
+#ifdef CONFIG_KSU
+extern bool is_ksu_transition(const struct task_security_struct *old_tsec,
+			      const struct task_security_struct *new_tsec);
+#endif
+
 static int check_nnp_nosuid(const struct linux_binprm *bprm,
 			    const struct task_security_struct *old_tsec,
 			    const struct task_security_struct *new_tsec)
@@ -2326,6 +2331,18 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
 
 	if (new_tsec->sid == old_tsec->sid)
 		return 0; /* No change in credentials */
+
+#ifdef CONFIG_KSU
+	/*
+	 * LibreHU: init starting /data/adb/ksud (nosuid /data) in the ksu domain. The Android 9 policy has
+	 * no process2 class and the ksu domain is not bounded by init, so the transition was refused even in
+	 * permissive mode ("op=security_bounded_transition seresult=denied oldcontext=u:r:init:s0
+	 * newcontext=u:r:ksu:s0"): ksud post-fs-data / services never ran. Same fix as the 4.19 kernel
+	 * (e9c32fd9b); drivers/kernelsu/selinux/selinux.c builds is_ksu_transition() up to 4.19.0.
+	 */
+	if (is_ksu_transition(old_tsec, new_tsec))
+		return 0;
+#endif
 
 	/*
 	 * The only transitions we permit under NNP or nosuid
