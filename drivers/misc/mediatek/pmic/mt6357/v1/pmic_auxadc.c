@@ -244,6 +244,12 @@ static unsigned int mdrt_adc;
 static struct wakeup_source mdrt_wakelock;
 static struct mutex mdrt_mutex;
 static struct task_struct *mdrt_thread_handle;
+/*
+ * LibreHU: the thread is started at creation and waits for its first wake_up_mdrt_thread() in TASK_INTERRUPTIBLE,
+ * instead of kthread()'s uninterruptible pre-start wait (a D task in loadavg for the whole uptime: no modem asks
+ * for MDRT on the UJC201). The flag is set before wake_up_process(): no wakeup can be lost.
+ */
+static bool mdrt_thread_kicked;
 
 /* wake up the thread to polling MDRT data in ms period */
 void wake_up_mdrt_thread(void)
@@ -251,6 +257,7 @@ void wake_up_mdrt_thread(void)
 	HKLOG("[%s]\n", __func__);
 	if (mdrt_thread_handle != NULL) {
 		__pm_stay_awake(&mdrt_wakelock);
+		WRITE_ONCE(mdrt_thread_kicked, true);
 		wake_up_process(mdrt_thread_handle);
 	} else
 		pr_notice(PMICTAG "[%s] mdrt_thread_handle not ready\n",
@@ -359,6 +366,15 @@ static int mdrt_kthread(void *x)
 	unsigned int rdy_time;
 	unsigned int temp_mdrt_adc;
 
+	/* LibreHU: sleep (S state) until the first wake_up_mdrt_thread() */
+	for (;;) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		if (READ_ONCE(mdrt_thread_kicked))
+			break;
+		schedule();
+	}
+	__set_current_state(TASK_RUNNING);
+
 	/* Run on a process content */
 	while (1) {
 		mutex_lock(&mdrt_mutex);
@@ -410,8 +426,10 @@ static void mdrt_monitor_init(void)
 	if (IS_ERR(mdrt_thread_handle)) {
 		mdrt_thread_handle = NULL;
 		pr_notice(PMICTAG "[%s] creation fails\n", __func__);
-	} else
+	} else {
 		HKLOG("[%s] creation Done\n", __func__);
+		wake_up_process(mdrt_thread_handle);	/* LibreHU: waits for its first kick in S state */
+	}
 }
 
 /*********************************

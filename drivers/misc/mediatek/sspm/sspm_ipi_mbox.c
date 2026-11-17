@@ -297,7 +297,12 @@ int sspm_ipi_recv_wait(int mid)
 		return IPI_SERVICE_NOT_AVAILABLE;
 
 	pin = &(recv_pintable[mid]);
-	wait_for_completion(&sema_ipi_task[mid]);
+	/*
+	 * LibreHU: the three callers are kthreads (sspm_recv, ipi_cpu_dvfs_rtask, qos_recv), which get no signals:
+	 * an interruptible wait behaves like wait_for_completion() but is S state, not D (counted in loadavg).
+	 */
+	while (wait_for_completion_interruptible(&sema_ipi_task[mid]))
+		;
 
 	/* if the pin is waiting async data, eliminate multiple completions */
 	if (pin->act->lock)

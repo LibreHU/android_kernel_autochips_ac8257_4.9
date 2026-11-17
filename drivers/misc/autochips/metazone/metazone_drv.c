@@ -798,7 +798,9 @@ static int mtz_flush_thread_func(void *pvArg)
 {
 	pr_info("[MTZ]metazone flush thread start\n");
 	while (true) {
-		down(&_rSema);
+		/* LibreHU: kthread, no signals: interruptible = same wait, S state instead of D (loadavg) */
+		while (down_interruptible(&_rSema))
+			;
 		MTZ_WriteWritableZone();
 		//if (_hEvtFlushFinished)
 		//	x_event_set(_hEvtFlushFinished);

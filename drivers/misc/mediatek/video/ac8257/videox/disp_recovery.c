@@ -707,7 +707,8 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	while (1) {
-		msleep(2000); /* 2s */
+		/* LibreHU: TASK_IDLE, same 2 s wait but not counted in loadavg (msleep = D state) */
+		schedule_timeout_idle(msecs_to_jiffies(2000)); /* 2s */
 		ret = wait_event_interruptible(_check_task_wq,
 			atomic_read(&_check_task_wakeup));
 		if (ret < 0) {

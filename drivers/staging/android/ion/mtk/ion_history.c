@@ -16,6 +16,7 @@
 #include <linux/err.h>
 #include <linux/highmem.h>
 #include <linux/mm.h>
+#include <linux/sched.h>
 #include <linux/scatterlist.h>
 #include <linux/seq_file.h>
 #include <linux/slab.h>
@@ -597,7 +598,7 @@ static int ion_history_record(void *data)
 
 		wait_event_interruptible(ion_history_wq,
 					 atomic_read(&ion_history_event));
-		msleep(500);
+		schedule_timeout_idle(msecs_to_jiffies(500)); /* LibreHU: TASK_IDLE instead of msleep's D state */
 		atomic_set(&ion_history_event, 0);
 
 		if (fatal_signal_pending(current)) {

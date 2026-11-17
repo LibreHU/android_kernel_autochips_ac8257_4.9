@@ -41,7 +41,7 @@
 
 extern int get_arm2_backcar_status(void);
 /* IRQ log print kthread */
-static struct task_struct *disp_irq_log_task;
+static struct task_struct *disp_irq_log_task __maybe_unused; /* LibreHU: thread no longer created */
 static wait_queue_head_t disp_irq_log_wq;
 static int disp_irq_log_module;
 static int disp_irq_rdma_underflow;
@@ -555,7 +555,7 @@ static void disp_irq_rdma_underflow_aee_trigger(void)
 
 }
 
-static int disp_irq_log_kthread_func(void *data)
+static int __maybe_unused disp_irq_log_kthread_func(void *data)
 {
 	unsigned int i = 0;
 
@@ -587,11 +587,18 @@ int disp_init_irq(void)
 
 	/* create irq log thread */
 	init_waitqueue_head(&disp_irq_log_wq);
+	/*
+	 * LibreHU: the thread was created but never woken (wake_up_process commented out by the vendor), so it never
+	 * ran and sat in kthread()'s uninterruptible pre-start wait: one D task in loadavg. Not created any more; the
+	 * wake_up_interruptible() of the IRQ path finds no waiter, as before.
+	 */
+#if 0
 	disp_irq_log_task = kthread_create(disp_irq_log_kthread_func,
 		NULL, "ddp_irq_log_kthread");
 	if (IS_ERR(disp_irq_log_task))
 		DDPERR(" can not create disp_irq_log_task kthread\n");
 
 	/* wake_up_process(disp_irq_log_task); */
+#endif
 	return 0;
 }

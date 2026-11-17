@@ -120,9 +120,12 @@ static struct disp_idlemgr_context *_get_idlemgr_context(void)
 	g_idlemgr_context.enterulps = 0;
 	g_idlemgr_context.idlemgr_last_kick_time = ~(0ULL);
 	g_idlemgr_context.cur_lp_cust_mode = 0;
-	g_idlemgr_context.primary_display_idlemgr_task
-		= kthread_create(_primary_path_idlemgr_monitor_thread, NULL,
-		"disp_idlemgr");
+	/*
+	 * LibreHU: created by primary_display_idlemgr_init(), only when the idle manager is enabled. Created here and
+	 * never woken (DISP_OPT_IDLE_MGR off on the UJC201), it stayed in kthread()'s uninterruptible pre-start wait:
+	 * one D task in loadavg for nothing.
+	 */
+	g_idlemgr_context.primary_display_idlemgr_task = NULL;
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	init_waitqueue_head(&(g_idlemgr_context.ext_idlemgr_wait_queue));
@@ -139,6 +142,16 @@ static struct disp_idlemgr_context *_get_idlemgr_context(void)
 
 int primary_display_idlemgr_init(void)
 {
+	if (!idlemgr_pgc->primary_display_idlemgr_task) {
+		struct task_struct *t = kthread_create(_primary_path_idlemgr_monitor_thread, NULL,
+						       "disp_idlemgr");
+
+		if (IS_ERR(t)) {
+			DISPERR("%s: cannot create disp_idlemgr\n", __func__);
+			return PTR_ERR(t);
+		}
+		idlemgr_pgc->primary_display_idlemgr_task = t;
+	}
 	wake_up_process(idlemgr_pgc->primary_display_idlemgr_task);
 	return 0;
 }
@@ -1008,7 +1021,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 	unsigned long long interval = 0;
 	unsigned long long time_diff;
 
-	msleep(16000);
+	schedule_timeout_idle(msecs_to_jiffies(16000)); /* LibreHU: TASK_IDLE instead of msleep's D state */
 	while (1) {
 		ret = wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue,
 			atomic_read(&idlemgr_task_wakeup));

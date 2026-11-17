@@ -5871,7 +5871,8 @@ static int decouple_trigger_worker_thread(void *data)
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	while (1) {
-		wait_event(decouple_trigger_wq,
+		/* LibreHU: wait_event_idle, not counted in loadavg (wait_event = D state between frames) */
+		wait_event_idle(decouple_trigger_wq,
 			atomic_read(&decouple_trigger_event));
 		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 

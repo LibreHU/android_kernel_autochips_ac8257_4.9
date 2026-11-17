@@ -465,6 +465,12 @@ static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
  * PMIC Interrupt service
  */
 struct task_struct *pmic_thread_handle;
+/*
+ * LibreHU: the thread is started at creation and waits for its first wake_up_pmic() in TASK_INTERRUPTIBLE, instead
+ * of kthread()'s uninterruptible pre-start wait (a D task in loadavg until the first PMIC interrupt, often for the
+ * whole uptime). The flag is set before wake_up_process(): no wakeup can be lost.
+ */
+static bool pmic_thread_kicked;
 
 struct wakeup_source pmicThread_lock;
 
@@ -473,6 +479,7 @@ void wake_up_pmic(void)
 	IRQLOG("[%s]\n", __func__);
 	if (pmic_thread_handle != NULL) {
 		pmic_wake_lock(&pmicThread_lock);
+		WRITE_ONCE(pmic_thread_kicked, true);
 		wake_up_process(pmic_thread_handle);
 	} else {
 		pr_notice(PMICTAG "[%s] pmic_thread_handle not ready\n"
@@ -786,6 +793,15 @@ int pmic_thread_kthread(void *x)
 
 	IRQLOG("[PMIC_INT] enter\n");
 
+	/* LibreHU: sleep (S state) until the first wake_up_pmic() */
+	for (;;) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		if (READ_ONCE(pmic_thread_kicked))
+			break;
+		schedule();
+	}
+	__set_current_state(TASK_RUNNING);
+
 	/* Run on a process content */
 	while (1) {
 #ifdef IPIMB
@@ -834,6 +850,7 @@ static void irq_thread_init(void)
 		pr_notice(PMICTAG "[pmic_thread_kthread] creation fails\n");
 	} else {
 		IRQLOG("[pmic_thread_kthread] kthread_create Done\n");
+		wake_up_process(pmic_thread_handle);	/* LibreHU: waits for its first kick in S state */
 	}
 }
 
