@@ -123,6 +123,17 @@ flash_image() {
 	dd if=$_t/files/$_img of="$_part" bs=1048576 2>/dev/null || abort "ecriture de $_part impossible"
 	sync
 	[ "$(head -c $_isz "$_part" | sha256sum | cut -d' ' -f1)" = "$_e" ] || abort "verification apres ecriture echouee : reflasher la sauvegarde"
+	# Pied AVB (64 derniers octets de l'image, « AVBf ») : libavb le lit a la fin de la PARTITION. Partition plus
+	# grande que l'image (boot passe a 32 Mio par ujc201_boot32.sh, image de 10 Mio) : sans cette copie, le LK lirait
+	# le pied de l'image precedente (taille et vbmeta faux). Partition de la meme taille que l'image : rien a faire.
+	if [ "$_psz" -gt "$_isz" ] && [ "$(tail -c 64 $_t/files/$_img | head -c 4)" = AVBf ] && [ $((_psz % 64)) -eq 0 ]; then
+		tail -c 64 $_t/files/$_img > $_t/avb_footer
+		dd if=$_t/avb_footer of="$_part" bs=64 seek=$((_psz / 64 - 1)) conv=notrunc 2>/dev/null || abort "ecriture du pied AVB impossible : reflasher la sauvegarde"
+		sync
+		[ "$(dd if="$_part" bs=64 skip=$((_psz / 64 - 1)) count=1 2>/dev/null | sha256sum | cut -d' ' -f1)" = \
+			"$(sha256sum $_t/avb_footer | cut -d' ' -f1)" ] || abort "pied AVB relu different : reflasher la sauvegarde"
+		ui_print "Pied AVB recopie en fin de partition ($_psz octets)"
+	fi
 	rm -rf $_t
 	ui_print "$_img ecrit dans $_part"
 }
