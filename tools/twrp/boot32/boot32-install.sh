@@ -25,6 +25,14 @@ orig) ui_print "Table d'origine reconnue (secours : $B32_BACKUP)";;
 *) abort "table de partitions inconnue (pas celle de l'UJC201 d'origine) : rien n'a ete modifie";;
 esac
 [ -d $SDCARD ] || abort "memoire interne non montee : sauvegardes impossibles, rien n'a ete modifie"
+# Essai arrete pendant les sauvegardes (etape 1) : SHA256SUMS ne s'ecrit qu'a la fin de l'etape 1, avant toute
+# ecriture sur le disque (etape 3, qui commence par le nouveau dtbo a 530 Mio) : rien a remettre, copies jetees.
+if [ -e $B32_DIR/IN_PROGRESS ] && [ ! -e $B32_DIR/SHA256SUMS ] && \
+	[ "$(b32_rd $(( NEW_DTBO * MiB )) 4 | b32_hex)" != d7b7ab1e ]; then
+	ui_print "Essai precedent arrete pendant les sauvegardes : rien n'avait ete ecrit sur le disque."
+	rm -f $B32_DIR/*.img $B32_DIR/*.bin $B32_DIR/IN_PROGRESS
+	ui_print "  copies incompletes supprimees, nouvel essai"
+fi
 if [ -e $B32_DIR/IN_PROGRESS ] || [ -e $B32_DIR/SHA256SUMS ]; then
 	ui_print "Sauvegardes d'une migration precedente dans $B32_DIR."
 	ui_print "Migration interrompue : flasher librehu_boot32_restore_twrp.zip (il remet vendor)."
@@ -50,10 +58,10 @@ e2fsck -n -f $B32_VEND >/dev/null 2>&1 || abort "e2fsck -n vendor signale des er
 tune2fs -l $B32_VEND 2>/dev/null | grep -q '^Filesystem features:.*shared_blocks' && abort "vendor en shared_blocks : reduction impossible"
 bs=$(b32_fsval $B32_VEND "Block size"); bc=$(b32_fsval $B32_VEND "Block count"); fr=$(b32_fsval $B32_VEND "Free blocks")
 [ -n "$bs" ] && [ -n "$bc" ] && [ -n "$fr" ] || abort "tune2fs : vendor illisible"
-max=$(( NEW_VEND_MIB * MiB / bs )); used=$(( bc - fr ))
+max=$(b32_calc "int($NEW_VEND_BYTES / $bs)"); used=$(( bc - fr ))
 ui_print "  vendor : $bc blocs de $bs octets, $used utilises, maximum apres reduction $max"
 [ $(( used + used / 10 + 8192 )) -lt $max ] || abort "vendor trop plein pour 2033 Mio"
-[ $(( bc * bs )) -le $(( OLD_VEND_MIB * MiB )) ] || abort "vendor : systeme de fichiers plus grand que la partition"
+b32_test "$(b32_calc "$bc * $bs")" "<=" "$OLD_VEND_BYTES" || abort "vendor : systeme de fichiers plus grand que la partition"
 mkdir -p $B32_DIR || abort "dossier $B32_DIR impossible"
 free=$(b32_free_kb $B32_DIR)
 [ -n "$free" ] && [ "$free" -gt 4400000 ] || abort "il faut 4,4 Go libres dans la memoire interne ($free Ko)"
@@ -68,10 +76,11 @@ dd if=$B32_DISK of=$B32_DIR/dtbo_orig.img bs=$MiB skip=$OLD_DTBO count=8 2>/dev/
 dd if=$B32_DISK of=$B32_DIR/tee1_orig.img bs=$MiB skip=$OLD_TEE1 count=5 2>/dev/null || abort "sauvegarde tee1"
 dd if=$B32_DISK of=$B32_DIR/tee2_orig.img bs=$MiB skip=$OLD_TEE2 count=7 2>/dev/null || abort "sauvegarde tee2"
 dd if=$B32_DISK of=$B32_DIR/vendor_orig.img bs=$MiB skip=$OLD_VEND count=$OLD_VEND_MIB 2>/dev/null || abort "sauvegarde vendor"
-[ "$(wc -c < $B32_DIR/vendor_orig.img)" = $(( OLD_VEND_MIB * MiB )) ] || abort "sauvegarde vendor incomplete (memoire pleine ?)"
+b32_cut in_backups
+b32_test "$(b32_size $B32_DIR/vendor_orig.img)" "==" "$OLD_VEND_BYTES" || abort "sauvegarde vendor incomplete (memoire pleine ?)"
 ( cd $B32_DIR && sha256sum pgpt_orig.bin sgpt_orig.bin boot_orig.img dtbo_orig.img tee1_orig.img tee2_orig.img \
 	vendor_orig.img > SHA256SUMS ) || abort "empreintes des sauvegardes"
-[ "$(b32_regsha $OLD_VEND $(( OLD_VEND_MIB * MiB )))" = "$(b32_sha $B32_DIR/vendor_orig.img)" ] || abort "sauvegarde vendor differente de la partition"
+[ "$(b32_regsha $OLD_VEND $OLD_VEND_BYTES)" = "$(b32_sha $B32_DIR/vendor_orig.img)" ] || abort "sauvegarde vendor differente de la partition"
 ui_print "  sauvegardes faites et relues (SHA256SUMS)"
 
 ui_print "2/4 Preparation"
@@ -85,8 +94,9 @@ if [ "$bc" -gt "$max" ]; then
 	e2fsck -f -y $B32_DIR/vendor_new.img >/dev/null 2>&1; [ $? -le 1 ] || abort "e2fsck vendor apres reduction"
 fi
 nbc=$(b32_fsval $B32_DIR/vendor_new.img "Block count")
-[ -n "$nbc" ] && [ $(( nbc * bs )) -le $(( NEW_VEND_MIB * MiB )) ] || abort "vendor reduit trop grand pour 2033 Mio"
-head -c $(( nbc * bs )) $B32_DIR/vendor_new.img > $B32_DIR/vendor_new.fs && mv $B32_DIR/vendor_new.fs $B32_DIR/vendor_new.img \
+nfs=$(b32_calc "${nbc:-0} * $bs")
+[ -n "$nbc" ] && b32_test "$nfs" "<=" "$NEW_VEND_BYTES" || abort "vendor reduit trop grand pour 2033 Mio"
+head -c $nfs $B32_DIR/vendor_new.img > $B32_DIR/vendor_new.fs && mv $B32_DIR/vendor_new.fs $B32_DIR/vendor_new.img \
 	|| abort "vendor reduit"
 e2fsck -n -f $B32_DIR/vendor_new.img >/dev/null 2>&1 || abort "vendor reduit : e2fsck -n signale des erreurs"
 ui_print "  vendor reduit a $nbc blocs, controle"

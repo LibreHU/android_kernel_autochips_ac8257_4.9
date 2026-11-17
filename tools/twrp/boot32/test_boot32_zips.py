@@ -7,7 +7,9 @@ test_gpt32.py, fake boot / dtbo / tee / vendor ext4 contents, no data of any uni
     tools/twrp/boot32/test_boot32_zips.py <dist with the two zips> <gpt32 built for this machine>
 
 Needs e2fsprogs (mkfs.ext4, e2fsck, resize2fs, tune2fs, debugfs) and about 8 GB of free space (sparse files).
-Scenarios: refusal without VERIFICATION_DISABLED; cut before vendor / before the GPT / between the two GPT writes
+Runs the zips under mksh when installed (TWRP's /sbin/sh, 32-bit arithmetic), else under TEST_SH or sh.
+Scenarios: refusal without VERIFICATION_DISABLED; stop during the backups (nothing written, return zip has nothing
+to do, next migration starts again); cut before vendor / before the GPT / between the two GPT writes
 during the migration, then repair or end; refusal of a kernel over 10 MiB; cut before vendor and between the GPT
 writes during the return; final state = original GPT byte for byte, contents equal, vendor clean with its file.
 """
@@ -23,6 +25,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import test_gpt32 as G  # noqa: E402
 
 MIB = 1 << 20
+# TWRP runs the zips with /sbin/sh = mksh, whose arithmetic is 32-bit signed: $((2048 * 1048576)) is -2147483648
+# there (2147483648 in bash or dash). The scenarios run under mksh when it is installed (CI: apt-get install mksh),
+# or under the shell named by TEST_SH.
+SH = os.environ.get("TEST_SH") or shutil.which("mksh") or "sh"
 TWRP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 
@@ -109,7 +115,7 @@ class Sim:
                    UJC_VBMETA=os.path.join(self.d, vbmeta), UJC_SDCARD=self.sd, UJC_TMP=os.path.join(self.d, "tmp"),
                    UJC_GPT32=self.gpt32, UJC_FAIL_AT=cut or "")
         os.makedirs(self.sd, exist_ok=True)
-        r = subprocess.run(["sh", self.ub[zipname], "3", "", os.path.join(self.dist, zipname)], env=env,
+        r = subprocess.run([SH, self.ub[zipname], "3", "", os.path.join(self.dist, zipname)], env=env,
                            capture_output=True, text=True)
         os.remove(env["UJC_VENDOR"])
         return r.returncode, r.stdout + r.stderr
@@ -158,7 +164,7 @@ class Sim:
         open(script, "w").write('. "$1"\nflash_image boot.img boot\n')
         env = dict(os.environ, UJC_TEST="1", ZIPFILE=z, UJC_PART_boot=part, UJC_TMP=os.path.join(self.d, "tmp"),
                    UJC_SDCARD=os.path.join(self.d, "nosd"))
-        sh("sh", script, os.path.join(TWRP, "twrp-common.sh"), env=env)
+        sh(SH, script, os.path.join(TWRP, "twrp-common.sh"), env=env)
         self.put(498, open(part, "rb").read())
 
 
@@ -180,8 +186,20 @@ def main():
         expect(s.run(I, vbmeta="vbmeta_stock"), 1, "VERIFICATION_DISABLED requis")
         assert s.digest() == s.h0, "refusal wrote to the disk"
         expect(s.run(R), 0, "rien a faire")
+        # stop during the backups (r184 under mksh stopped there on « memoire pleine ? »): nothing on the disk, the
+        # return zip has nothing to put back, the next migration throws the incomplete copies away
+        expect(s.run(I, cut="in_backups"), 3, "coupure simulee : in_backups")
+        assert s.digest() == s.h0, "stop during the backups wrote to the disk"
+        expect(s.run(R), 0, "rien a remettre")
+        assert not os.path.exists(os.path.join(s.sd, "LibreHU", "boot32")), "incomplete copies left by the return zip"
+        assert s.digest() == s.h0, "return after a stop during the backups wrote to the disk"
+        expect(s.run(I, cut="in_backups"), 3, "coupure simulee : in_backups")
+        print("stop during the backups: OK")
         for cut in ("before_vendor", "before_gpt"):
-            expect(s.run(I, cut=cut), 3, "coupure simulee : " + cut)
+            r = s.run(I, cut=cut)
+            expect(r, 3, "coupure simulee : " + cut)
+            if cut == "before_vendor":
+                assert "copies incompletes supprimees, nouvel essai" in r[1], r[1]
             assert s.state().startswith("state=orig")
             expect(s.run(I), 1, "sauvegardes existantes")
             # the unit rewrites byte 432 of the MBR (boot code area) between boots: the repair must still run
@@ -220,7 +238,7 @@ def main():
         s.check_orig(k10)
         assert not os.path.exists(os.path.join(s.sd, "LibreHU", "boot32")), "boot32 folder left"
         print("return cut between the GPT writes + end: OK")
-    print("boot32 zips: all scenarios OK")
+    print("boot32 zips: all scenarios OK (shell: %s)" % SH)
 
 
 if __name__ == "__main__":

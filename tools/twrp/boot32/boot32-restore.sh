@@ -16,8 +16,17 @@ R=$B32_DIR/restore
 
 if [ "$B32_STATE" = orig ]; then
 	if [ -e $B32_DIR/IN_PROGRESS ]; then
+		# Arret pendant les sauvegardes (etape 1 de la migration) : SHA256SUMS ne s'ecrit qu'a la fin de l'etape 1,
+		# avant toute ecriture sur le disque (le nouveau dtbo a 530 Mio en premier) : rien a remettre.
+		if [ ! -e $B32_DIR/SHA256SUMS ] && [ "$(b32_rd $(( NEW_DTBO * MiB )) 4 | b32_hex)" != d7b7ab1e ]; then
+			ui_print "Essai precedent arrete pendant les sauvegardes : rien n'avait ete ecrit sur le disque."
+			rm -f $B32_DIR/*.img $B32_DIR/*.bin $B32_DIR/IN_PROGRESS
+			rmdir $B32_DIR 2>/dev/null
+			ui_print "Copies incompletes supprimees : rien a remettre."
+			rm -rf $B32_TMP; cleanup; exit 0
+		fi
 		ui_print "Migration interrompue : remise de vendor depuis $B32_DIR/vendor_orig.img"
-		[ -f $B32_DIR/vendor_orig.img ] && [ -f $B32_DIR/SHA256SUMS ] || abort "vendor_orig.img absent : restaurer avec SP Flash Tool"
+		[ -f $B32_DIR/vendor_orig.img ] && [ -f $B32_DIR/SHA256SUMS ] || abort "sauvegardes incompletes et disque deja modifie : restaurer avec SP Flash Tool"
 		( cd $B32_DIR && sha256sum -c SHA256SUMS >/dev/null 2>&1 ) || abort "sauvegardes abimees : restaurer avec SP Flash Tool"
 		# en-tete + entrees seulement : l'octet 432 du MBR (code d'amorcage, inutilise par la GPT) change sur l'UJC201
 		# (0x40 dans une sauvegarde SP Flash Tool, 0x33 plus tard sur la meme unite)
@@ -79,14 +88,14 @@ else
 	dd if=$B32_DISK of=$R/tee2.img bs=$MiB skip=$NEW_TEE2 count=7 2>/dev/null || abort "copie de tee2"
 	cp $B32_TMP/foot.bin $R/boot_footer.bin
 	dd if=$B32_DISK of=$R/vendor.img bs=$MiB skip=$NEW_VEND count=$NEW_VEND_MIB 2>/dev/null || abort "copie de vendor"
-	[ "$(wc -c < $R/vendor.img)" = $(( NEW_VEND_MIB * MiB )) ] || abort "copie de vendor incomplete (memoire pleine ?)"
-	[ "$(wc -c < $R/dtbo.img)" = $(( 8 * MiB )) ] || abort "copie de dtbo incomplete"
+	b32_test "$(b32_size $R/vendor.img)" "==" "$NEW_VEND_BYTES" || abort "copie de vendor incomplete (memoire pleine ?)"
+	[ "$(b32_size $R/dtbo.img)" = $(( 8 * MiB )) ] || abort "copie de dtbo incomplete"
 	e2fsck -f -y $R/vendor.img >/dev/null 2>&1; [ $? -le 1 ] || abort "e2fsck de la copie de vendor"
 	bs=$(b32_fsval $R/vendor.img "Block size")
 	[ -n "$bs" ] || abort "copie de vendor illisible"
-	resize2fs $R/vendor.img $(( OLD_VEND_MIB * MiB / bs )) >/dev/null 2>&1 || abort "resize2fs vendor (2048 Mio)"
+	resize2fs $R/vendor.img $(b32_calc "int($OLD_VEND_BYTES / $bs)") >/dev/null 2>&1 || abort "resize2fs vendor (2048 Mio)"
 	e2fsck -f -y $R/vendor.img >/dev/null 2>&1; [ $? -le 1 ] || abort "e2fsck vendor apres agrandissement"
-	[ "$(wc -c < $R/vendor.img)" = $(( OLD_VEND_MIB * MiB )) ] || abort "vendor agrandi : taille inattendue"
+	b32_test "$(b32_size $R/vendor.img)" "==" "$OLD_VEND_BYTES" || abort "vendor agrandi : taille inattendue"
 	e2fsck -n -f $R/vendor.img >/dev/null 2>&1 || abort "vendor agrandi : e2fsck -n signale des erreurs"
 	( cd $R && sha256sum dtbo.img tee1.img tee2.img boot_footer.bin vendor.img > SHA256SUMS ) || abort "empreintes des copies"
 	ui_print "  copies faites et controlees (SHA256SUMS)"

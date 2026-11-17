@@ -18,13 +18,20 @@ MiB=1048576
 OLD_BOOT=498; OLD_DTBO=508; OLD_TEE1=516; OLD_TEE2=521; OLD_VEND=528; OLD_VEND_MIB=2048; BOOT_OLD_MIB=10
 NEW_DTBO=530; NEW_TEE1=531; NEW_TEE2=536; NEW_VEND=543; NEW_VEND_MIB=2033; BOOT_NEW_MIB=32
 
+# Grands nombres : le shell de TWRP (/sbin/sh = mksh) calcule sur 32 bits signes, $(( )) et [ -le ] debordent a
+# 2 Gio ($((2048 * 1048576)) = -2147483648 : r184 refusait sa propre sauvegarde complete de vendor, « memoire
+# pleine ? »). Tout ce qui peut atteindre 2 Gio passe par awk (flottants, exacts jusqu'a 2^53).
+b32_calc() { awk "BEGIN { printf \"%.0f\\n\", $1 }"; }
+b32_test() { awk -v a="$1" -v b="$3" "BEGIN { exit !(a $2 b) }"; }
+b32_size() { wc -c < "$1" | tr -d ' '; }
+OLD_VEND_BYTES=$(b32_calc "$OLD_VEND_MIB * $MiB"); NEW_VEND_BYTES=$(b32_calc "$NEW_VEND_MIB * $MiB")
 b32_sha() { sha256sum "$1" | cut -d' ' -f1; }
 # Essais hors autoradio seulement (UJC_TEST) : arret net a une etape, comme une coupure de courant
 b32_cut() { [ -n "$UJC_TEST" ] && [ "$UJC_FAIL_AT" = "$1" ] && { echo "(essai) coupure simulee : $1"; exit 3; }; return 0; }
 # zone du disque (debut en octets, longueur en octets) -> sortie standard
 b32_rd() { dd if=$B32_DISK bs=512 skip=$(( $1 / 512 )) count=$(( ($1 % 512 + $2 + 511) / 512 )) 2>/dev/null \
 	| tail -c +$(( $1 % 512 + 1 )) | head -c $2; }
-b32_regsha() { dd if=$B32_DISK bs=$MiB skip=$1 count=$(( ($2 + MiB - 1) / MiB )) 2>/dev/null | head -c $2 | sha256sum | cut -d' ' -f1; }
+b32_regsha() { dd if=$B32_DISK bs=$MiB skip=$1 count=$(b32_calc "int(($2 + $MiB - 1) / $MiB)") 2>/dev/null | head -c $2 | sha256sum | cut -d' ' -f1; }
 b32_hex() { od -A n -t x1 | tr -d ' \n'; }
 b32_be() { od -A n -t u1 | tr -s ' \n' '  ' | awk '{ v = 0; for (i = 1; i <= NF; i++) v = v * 256 + $i; printf "%.0f\n", v }'; }
 b32_fsval() { tune2fs -l "$1" 2>/dev/null | awk -F: -v k="$2" '$1==k{gsub(/ /,"",$2);print $2}'; }
