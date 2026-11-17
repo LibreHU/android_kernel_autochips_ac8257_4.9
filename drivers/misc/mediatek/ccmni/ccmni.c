@@ -368,7 +368,7 @@ static inline int ccmni_forward_rx(struct ccmni_instance *ccmni,
 
 /********************netdev register function********************/
 static u16 ccmni_select_queue(struct net_device *dev, struct sk_buff *skb,
-	void *accel_priv, select_queue_fallback_t fallback)
+	struct net_device *sb_dev, select_queue_fallback_t fallback) /* LibreHU: 4.19 ndo_select_queue */
 {
 	struct ccmni_instance *ccmni =
 		(struct ccmni_instance *)netdev_priv(dev);
@@ -1003,7 +1003,7 @@ static inline void ccmni_dev_init(int md_id, struct net_device *dev)
 #endif
 	}
 	dev->addr_len = ETH_ALEN; /* ethernet header size */
-	dev->destructor = free_netdev;
+	dev->needs_free_netdev = true; /* LibreHU: 4.12+, was dev->destructor = free_netdev */
 	dev->netdev_ops = &ccmni_netdev_ops;
 	random_ether_addr((u8 *) dev->dev_addr);
 }
