@@ -1237,6 +1237,22 @@ static void jac_push_table(struct jac_mipi_setting_table *table, unsigned int co
 	unsigned int i;
 
 	LCM_DRIVER_INFO("[LCM] :%d\n", count);
+	/*
+	 * LibreHU: under the 4.19 kernel (ThinLTO build, 18/11/2026) lcm_util.dsi_set_cmdq_V22 was NULL at the first
+	 * screen on after a screen off: "Unable to handle kernel execution of user memory at virtual address 0",
+	 * lr lcm_init+0x53c, kernel panic, the unit rebooted (a standby). Same table, same code on 4.9, which goes
+	 * through. dsi_set_cmdq_V2 is the same DSI command without a CMDQ handle (this table passes NULL anyway);
+	 * without either, the panel commands are skipped with an error instead of a panic (lcm_set_util_funcs()
+	 * logs what the display path gave).
+	 */
+	if (!lcm_util.dsi_set_cmdq_V22 && !lcm_util.dsi_set_cmdq_V2) {
+		LCM_DRIVER_FATAL("no DSI command helper (dsi_set_cmdq_V22 and dsi_set_cmdq_V2 NULL): %u panel commands skipped\n",
+				 count);
+		return;
+	}
+	if (!lcm_util.dsi_set_cmdq_V22)
+		LCM_DRIVER_ERROR("dsi_set_cmdq_V22 NULL, panel commands through dsi_set_cmdq_V2 (%ps)\n",
+				 lcm_util.dsi_set_cmdq_V2);
 	for (i = 0; i < count; i++) {
 		switch (table[i].cmd) {
 		case MIPI_REGFLAG_MDELAY:
@@ -1248,7 +1264,10 @@ static void jac_push_table(struct jac_mipi_setting_table *table, unsigned int co
 		case MIPI_REGFLAG_END_OF_TABLE:
 			break;
 		default:
-			dsi_set_cmdq_V22(NULL, table[i].cmd, table[i].count, table[i].para_list, force_update);
+			if (lcm_util.dsi_set_cmdq_V22)
+				dsi_set_cmdq_V22(NULL, table[i].cmd, table[i].count, table[i].para_list, force_update);
+			else
+				dsi_set_cmdq_V2(table[i].cmd, table[i].count, table[i].para_list, force_update);
 		}
 	}
 }
@@ -2336,6 +2355,10 @@ static void lcm_set_backlight(struct LCM_PARAMS *params)
 static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 {
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
+	/* LibreHU: which DSI helpers the display path gave, and from where (see jac_push_table()) */
+	LCM_DRIVER_INFO("from %ps: dsi_set_cmdq_V22 %ps, dsi_set_cmdq_V2 %ps, set_reset_pin %ps\n",
+			__builtin_return_address(0), util->dsi_set_cmdq_V22, util->dsi_set_cmdq_V2,
+			util->set_reset_pin);
 }
 
 static void lcm_get_matezone(void)
