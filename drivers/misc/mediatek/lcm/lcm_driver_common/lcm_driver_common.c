@@ -39,6 +39,7 @@
 #include <linux/of_irq.h>
 #include <linux/delay.h>
 #include <linux/workqueue.h>
+#include <linux/suspend.h>
 #include "metazone.h"
 #include "metazone_ioctl.h"
 
@@ -1301,8 +1302,31 @@ static void jac_push_table(struct jac_mipi_setting_table *table, unsigned int co
  * work rather than a thread, so that a resume within these 80 ms (quick screen off / on) cancels it
  * instead of having the panel powered off in the middle of jac_lcm_init().
  */
+/*
+ * LibreHU: the Goodix touch controller of the UJC201 is powered by the panel supply (JAC_LCD_POWER_PIN, power_en):
+ * cut with the screen, it no longer answers (I2C 0x5d: ACK error, no touch IRQ) and the front panel's power key, a
+ * zone of the touch panel read by LibreHU-service, cannot wake the locked screen (18/11/2026: with the supply back
+ * and the controller reset by hand, the key woke it). While mtk_tpd keeps the touch awake on blank
+ * (mtk_tpd.sleep_on_blank=0), the supply stays on with the screen off; it is cut before a system suspend
+ * (jac_lcd_pm_notify(): car standby, the supply must not drain the battery) and the screen-on path resets the touch
+ * controller as before. Default without mtk_tpd: the stock power off.
+ */
+bool __weak tpd_keeps_awake_on_blank(void)
+{
+	return false;
+}
+
+/* Panel supply left on at the last screen off, for the touch controller */
+static bool jac_lcd_power_kept;
+
 static void jac_lcd_power_off_work_func(struct work_struct *work)
 {
+	if (tpd_keeps_awake_on_blank()) {
+		lcm_gpio_output(JAC_BRIDGE_POWER_PIN, 0);
+		jac_lcd_power_kept = true;
+		LCM_DRIVER_INFO("panel supply kept for the touch controller\n");
+		return;
+	}
 	lcm_gpio_output(JAC_LCD_POWER_PIN, 0);
 	lcm_gpio_output(JAC_BRIDGE_POWER_PIN, 0);
 	LCM_DRIVER_INFO("leave\n");
@@ -1310,11 +1334,36 @@ static void jac_lcd_power_off_work_func(struct work_struct *work)
 
 static DECLARE_DELAYED_WORK(jac_lcd_power_off_work, jac_lcd_power_off_work_func);
 
+static int jac_lcd_pm_notify(struct notifier_block *nb, unsigned long action, void *data)
+{
+	if (action != PM_SUSPEND_PREPARE)
+		return NOTIFY_DONE;
+	/* a screen off just before the suspend: its power off first */
+	flush_delayed_work(&jac_lcd_power_off_work);
+	if (jac_lcd_power_kept) {
+		lcm_gpio_output(JAC_LCD_POWER_PIN, 0);
+		jac_lcd_power_kept = false;
+		LCM_DRIVER_INFO("panel supply cut for the suspend\n");
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block jac_lcd_pm_nb = {
+	.notifier_call = jac_lcd_pm_notify,
+};
+
+static int __init jac_lcd_pm_init(void)
+{
+	return register_pm_notifier(&jac_lcd_pm_nb);
+}
+late_initcall(jac_lcd_pm_init);
+
 /* power on, reset and init sequence of the stock lcm_init */
 static void jac_lcm_init(void)
 {
 	/* a power off still pending from the last suspend would cut the panel during this init */
 	cancel_delayed_work_sync(&jac_lcd_power_off_work);
+	jac_lcd_power_kept = false;
 
 	if (jac_lcd_power_delay > JAC_LCD_POWER_DELAY_MAX) {
 		jac_lcd_power_delay = JAC_LCD_POWER_DELAY_MAX;

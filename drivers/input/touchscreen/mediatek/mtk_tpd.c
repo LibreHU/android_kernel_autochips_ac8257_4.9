@@ -386,6 +386,15 @@ static bool sleep_on_blank = !IS_ENABLED(CONFIG_JANCAR_SOLUTION);
 static int tpd_kept_awake;
 module_param(sleep_on_blank, bool, 0644);
 MODULE_PARM_DESC(sleep_on_blank, "put the touch controller to sleep while the screen is off");
+
+/*
+ * LibreHU: the UJC201's touch controller is powered by the panel supply, which the LCM driver cuts with the screen;
+ * it keeps it while the controller stays awake on blank (lcm_driver_common.c, jac_lcd_power_off_work_func()).
+ */
+bool tpd_keeps_awake_on_blank(void)
+{
+	return !sleep_on_blank;
+}
 /* global variable definitions */
 struct tpd_device *tpd;
 static struct tpd_driver_t tpd_driver_list[TP_DRV_MAX_COUNT];	/* = {0}; */
