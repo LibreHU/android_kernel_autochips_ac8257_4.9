@@ -183,9 +183,17 @@ static int def_dsi_hbp;
 static int dsi_currect_mode;
 static int dsi_force_config;
 static int dsi0_te_enable = 1;
-static const struct LCM_UTIL_FUNCS lcm_utils_dsi0;
-static const struct LCM_UTIL_FUNCS lcm_utils_dsi1;
-static const struct LCM_UTIL_FUNCS lcm_utils_dsidual;
+/*
+ * LibreHU: filled at run time by ddp_dsi_set_lcm_utils(), so not const. They were "static const" and written
+ * through a cast that dropped the const: undefined behaviour. clang 14 (4.19 kernel, 18/11/2026) dropped the stores
+ * to these zero-initialised const objects, the LCM driver got NULL DSI helpers ("lcm_set_util_funcs from
+ * ddp_dsi_set_lcm_utils: dsi_set_cmdq_V22 (null), dsi_set_cmdq_V2 (null), set_reset_pin (null)") and the first
+ * screen on after a screen off called a NULL function: kernel panic. The older AOSP clang 6 of the 4.9 kernel kept
+ * the stores, by chance.
+ */
+static struct LCM_UTIL_FUNCS lcm_utils_dsi0;
+static struct LCM_UTIL_FUNCS lcm_utils_dsi1;
+static struct LCM_UTIL_FUNCS lcm_utils_dsidual;
 static cmdqBackupSlotHandle _h_intstat;
 unsigned int impendance0[2] = { 0 }; /* MIPITX_DSI_IMPENDANCE0 */
 unsigned int impendance1[2] = { 0 }; /* MIPITX_DSI_IMPENDANCE1 */
@@ -3588,11 +3596,11 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 	}
 
 	if (module == DISP_MODULE_DSI0) {
-		utils = (struct LCM_UTIL_FUNCS *)&lcm_utils_dsi0;
+		utils = &lcm_utils_dsi0;
 	} else if (module == DISP_MODULE_DSI1) {
-		utils = (struct LCM_UTIL_FUNCS *)&lcm_utils_dsi1;
+		utils = &lcm_utils_dsi1;
 	} else if (module == DISP_MODULE_DSIDUAL) {
-		utils = (struct LCM_UTIL_FUNCS *)&lcm_utils_dsidual;
+		utils = &lcm_utils_dsidual;
 	} else {
 		DISPWARN("wrong module: %d\n", module);
 		return -1;
