@@ -169,14 +169,53 @@
 	lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 #define read_reg(cmd)							\
 	lcm_util.dsi_dcs_read_lcm_reg(cmd)
-#define SET_RESET_PIN(v)						\
-	(lcm_util.set_reset_pin((v)))
+/* LibreHU: NULL-safe, see lcm_set_reset_pin() */
+#define SET_RESET_PIN(v)	lcm_set_reset_pin(v)
 #define MDELAY(n)	msleep(n)
 #define UDELAY(n)	udelay(n)
 
 static unsigned char lvds_bridge_ic_addr = LVDS_REGFLAG_TI941_ADDR;
 
 static  struct LCM_UTIL_FUNCS lcm_util;
+
+/*
+ * LibreHU: the DSI helpers of lcm_util come from the display path (ddp_dsi_set_lcm_utils()). Under the 4.19 kernel
+ * (ThinLTO build, 18/11/2026) lcm_util.dsi_set_cmdq_V22 was NULL at the first screen on after a screen off: "Unable
+ * to handle kernel execution of user memory at virtual address 0", lr lcm_init+0x53c, kernel panic, the unit
+ * rebooted (a standby). Same tables, same code on 4.9, which go through. A table goes through dsi_set_cmdq_V22, or
+ * dsi_set_cmdq_V2 without it (the same DSI command without a CMDQ handle; the tables pass NULL anyway); without
+ * either it is skipped with an error instead of a panic, and so is a reset pin change without set_reset_pin
+ * (lcm_set_util_funcs() logs what the display path gave).
+ */
+static bool lcm_dsi_ready(const char *table, unsigned int count)
+{
+	if (lcm_util.dsi_set_cmdq_V22)
+		return true;
+	if (lcm_util.dsi_set_cmdq_V2) {
+		LCM_DRIVER_ERROR("%s: dsi_set_cmdq_V22 NULL, %u commands through dsi_set_cmdq_V2 (%ps)\n", table, count,
+				 lcm_util.dsi_set_cmdq_V2);
+		return true;
+	}
+	LCM_DRIVER_FATAL("%s: no DSI command helper (dsi_set_cmdq_V22 and dsi_set_cmdq_V2 NULL): %u commands skipped\n",
+			 table, count);
+	return false;
+}
+
+static void lcm_dsi_cmd(unsigned int cmd, unsigned char count, unsigned char *para_list, unsigned char force_update)
+{
+	if (lcm_util.dsi_set_cmdq_V22)
+		dsi_set_cmdq_V22(NULL, cmd, count, para_list, force_update);
+	else
+		dsi_set_cmdq_V2(cmd, count, para_list, force_update);
+}
+
+static void lcm_set_reset_pin(unsigned int value)
+{
+	if (lcm_util.set_reset_pin)
+		lcm_util.set_reset_pin(value);
+	else
+		LCM_DRIVER_ERROR("set_reset_pin NULL: reset pin not set to %u\n", value);
+}
 
 static unsigned char  g_secondary_panel_enable;
 
@@ -1093,6 +1132,8 @@ static void push_table(struct mipi_setting_info *setting_info)
 	}
 
 	LCM_DRIVER_DEBUG("setting_info.cnt:%d\n", setting_info->cnt);
+	if (!lcm_dsi_ready(__func__, setting_info->cnt))
+		return;
 	for (tmp_list = setting_info->head_list.next; NULL != tmp_list; tmp_list = tmp_list->next) {
 		cmd = tmp_list->setting_table.cmd;
 		cnt = tmp_list->setting_table.cnt;
@@ -1108,7 +1149,7 @@ static void push_table(struct mipi_setting_info *setting_info)
 		case MIPI_REGFLAG_END_OF_TABLE:
 			break;
 		default:
-			dsi_set_cmdq_V22(NULL, cmd, cnt, para_list, 1);
+			lcm_dsi_cmd(cmd, cnt, para_list, 1);
 		}
 
 	}
@@ -1237,22 +1278,8 @@ static void jac_push_table(struct jac_mipi_setting_table *table, unsigned int co
 	unsigned int i;
 
 	LCM_DRIVER_INFO("[LCM] :%d\n", count);
-	/*
-	 * LibreHU: under the 4.19 kernel (ThinLTO build, 18/11/2026) lcm_util.dsi_set_cmdq_V22 was NULL at the first
-	 * screen on after a screen off: "Unable to handle kernel execution of user memory at virtual address 0",
-	 * lr lcm_init+0x53c, kernel panic, the unit rebooted (a standby). Same table, same code on 4.9, which goes
-	 * through. dsi_set_cmdq_V2 is the same DSI command without a CMDQ handle (this table passes NULL anyway);
-	 * without either, the panel commands are skipped with an error instead of a panic (lcm_set_util_funcs()
-	 * logs what the display path gave).
-	 */
-	if (!lcm_util.dsi_set_cmdq_V22 && !lcm_util.dsi_set_cmdq_V2) {
-		LCM_DRIVER_FATAL("no DSI command helper (dsi_set_cmdq_V22 and dsi_set_cmdq_V2 NULL): %u panel commands skipped\n",
-				 count);
+	if (!lcm_dsi_ready(__func__, count))
 		return;
-	}
-	if (!lcm_util.dsi_set_cmdq_V22)
-		LCM_DRIVER_ERROR("dsi_set_cmdq_V22 NULL, panel commands through dsi_set_cmdq_V2 (%ps)\n",
-				 lcm_util.dsi_set_cmdq_V2);
 	for (i = 0; i < count; i++) {
 		switch (table[i].cmd) {
 		case MIPI_REGFLAG_MDELAY:
@@ -1264,10 +1291,7 @@ static void jac_push_table(struct jac_mipi_setting_table *table, unsigned int co
 		case MIPI_REGFLAG_END_OF_TABLE:
 			break;
 		default:
-			if (lcm_util.dsi_set_cmdq_V22)
-				dsi_set_cmdq_V22(NULL, table[i].cmd, table[i].count, table[i].para_list, force_update);
-			else
-				dsi_set_cmdq_V2(table[i].cmd, table[i].count, table[i].para_list, force_update);
+			lcm_dsi_cmd(table[i].cmd, table[i].count, table[i].para_list, force_update);
 		}
 	}
 }
