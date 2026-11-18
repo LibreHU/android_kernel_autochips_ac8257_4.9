@@ -213,14 +213,17 @@ static ssize_t dvfsrc_opp_table_show(struct device *dev,
 	if (!dvfsrc)
 		return sprintf(buf, "Failed to access dvfsrc\n");
 
-	mutex_lock(&dvfsrc->devfreq->lock);
+	/* LibreHU: no devfreq device on 4.19 (see helio_dvfsrc_probe()) */
+	if (dvfsrc->devfreq)
+		mutex_lock(&dvfsrc->devfreq->lock);
 	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++) {
 		p += snprintf(p, buff_end - p, "[OPP%-2d]: %-8u uv %-8u khz\n",
 				i, get_vcore_uv(i), get_ddr_khz(i));
 	}
 
 	p += snprintf(p, buff_end - p, "\n");
-	mutex_unlock(&dvfsrc->devfreq->lock);
+	if (dvfsrc->devfreq)
+		mutex_unlock(&dvfsrc->devfreq->lock);
 
 	return p - buf;
 }

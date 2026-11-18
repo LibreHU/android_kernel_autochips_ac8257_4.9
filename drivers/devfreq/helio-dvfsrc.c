@@ -717,6 +717,18 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 						 &helio_devfreq_profile,
 						 "helio_dvfsrc",
 						 NULL);
+	/*
+	 * LibreHU: devfreq of 4.19 refuses a device without an OPP table (set_freq_table() and
+	 * find_available_max_freq() give -EINVAL); the 4.9 one registered it anyway. The dvfsrc has no OPP
+	 * table and its helio_dvfsrc governor does nothing, so run without the devfreq device: the
+	 * ERR_PTR(-EINVAL) kept here made helio_dvfsrc_suspend() panic at every suspend (mutex_lock at
+	 * 0x1a), which reset the SoC instead of entering standby (UJC201, 18/11/2026).
+	 */
+	if (IS_ERR(dvfsrc->devfreq)) {
+		dev_warn(&pdev->dev, "no devfreq device (%ld), suspend and resume without it\n",
+			 PTR_ERR(dvfsrc->devfreq));
+		dvfsrc->devfreq = NULL;
+	}
 
 	ret = helio_dvfsrc_add_interface(&pdev->dev);
 	if (ret)
@@ -755,6 +767,9 @@ static __maybe_unused int helio_dvfsrc_suspend(struct device *dev)
 {
 	int ret = 0;
 
+	if (!dvfsrc->devfreq)
+		return 0;
+
 	ret = devfreq_suspend_device(dvfsrc->devfreq);
 	if (ret < 0) {
 		dev_err(dev, "failed to suspend the devfreq devices\n");
@@ -767,6 +782,9 @@ static __maybe_unused int helio_dvfsrc_suspend(struct device *dev)
 static __maybe_unused int helio_dvfsrc_resume(struct device *dev)
 {
 	int ret = 0;
+
+	if (!dvfsrc->devfreq)
+		return 0;
 
 	ret = devfreq_resume_device(dvfsrc->devfreq);
 	if (ret < 0) {
