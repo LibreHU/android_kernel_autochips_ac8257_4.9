@@ -466,6 +466,17 @@ struct ion_handle *__ion_alloc(struct ion_client *client, size_t len,
 	 * request of the caller allocate from it.  Repeat until allocate has
 	 * succeeded or all heaps have been tried
 	 */
+	/*
+	 * LibreHU: "any heap" (~0 with align 0, the default of Android 10's Codec2: C2AllocatorIon::mapUsage) took the
+	 * highest id first (plist priority -id). The secure heaps are not created on the AC8257 ("not support"), so that
+	 * was ion_mm_heap_for_pa2mva (id 15): a buffer of no memory, one sg entry at the physical address passed in align
+	 * (0 here). The first CPU access of a codec to it killed system_server and SystemUI at every boot of LineageOS
+	 * 17.1 (UI sounds, Vorbis). Such a request gets the multimedia heap, the one MediaTek's own userspace allocates
+	 * from. A request that names its heaps is unchanged.
+	 */
+	if (heap_id_mask == ~0U)
+		heap_id_mask = ION_HEAP_MULTIMEDIA_MASK;
+
 	if (heap_id_mask != ION_HEAP_MULTIMEDIA_MAP_MVA_MASK)
 	len = PAGE_ALIGN(len);
 
