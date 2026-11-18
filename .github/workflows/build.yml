@@ -32,7 +32,8 @@ env:
   DEFCONFIG: ac8257_ujc201_defconfig
   # Variables of the AutoChips build environment (kenv.mk) read by Kconfig as $(VAR), values of the stock kernel
   ATC_MAKE: ATC_DISABLE_BATTERY_CHARGER=yes ATC_FASTDISP_VERSION=2.0
-  # Toolchain: LLVM 14 (as the later android-4.19-stable kernels) with GNU binutils for the GNU assembler of 4.19
+  # Toolchain: LLVM 14, the clang of the ubuntu-22.04 runner (Google's last android-4.19-stable, Dec 2024, used AOSP
+  # clang-r416183b, i.e. clang 12.0.5), with GNU binutils for the GNU assembler of 4.19
   KMAKE: ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang-14 CLANG_TRIPLE=aarch64-linux-gnu- HOSTCC=gcc python=python
   KBUILD_BUILD_USER: dokt
   KBUILD_BUILD_HOST: librehu
