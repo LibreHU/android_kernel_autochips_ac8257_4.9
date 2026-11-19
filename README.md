@@ -184,15 +184,16 @@ autochips-gpl ──(git merge autochips-gpl)──▶ LibreHU-main ◀──(re
 ## Matrice de compatibilite : quel noyau pour quelle version d'Android
 
 Chaque release publie des noyaux pour une version d'Android precise. Les zips TWRP verifient la version d'Android de
-`/system` et refusent une mauvaise variante (rien n'est modifie).
+`/system` et refusent une mauvaise variante (rien n'est modifie). Depuis le 19/11/2026, Android 10 et plus : noyaux
+`-lto32` seulement (partition boot de 32 Mio, `librehu_boot32_twrp.zip`) : les noyaux 10 Mio `a10` / `a11` ne tenaient plus.
 
 | Release / fichiers | Noyau (`uname -r`) | Android 9 (ROM stock, LineageOS 16.0) | Android 10 (LineageOS 17.1) | Android 11 a 13 (LineageOS 18.1 a 20) | Partition boot |
 |---|---|---|---|---|---|
 | `latest-stable-4.9.337` (`boot_ac8257*.img`, zips de l'OTA) | 4.9.337 | **oui** (noyau de la ROM LineageOS 16.0) | non (17.1 = 4.19 `a10`) | non | 10 Mio |
 | `latest-experimental-4.19.325`, `*_a9` | 4.19.325-a9 | **oui** | non (zip refuse) | non (zip refuse) | 10 Mio |
-| `latest-experimental-4.19.325`, `*_a10` | 4.19.325-a10 | non (zip refuse) | **oui** (noyau de la ROM LineageOS 17.1) | non (zip refuse) | 10 Mio |
-| `latest-experimental-4.19.325`, `*_a11` | 4.19.325-a11 | **ne demarre pas** (binderfs) | **ne demarre pas** (binderfs) | **oui**, pas encore essaye sur l'unite | 10 Mio |
-| `latest-experimental-4.19.325`, `*_<v>-lto32` | 4.19.325-`<v>`-lto32 | comme `<v>` | comme `<v>` | comme `<v>` | 32 Mio (`librehu_boot32_twrp.zip`) |
+| `latest-experimental-4.19.325`, `*_a10-lto32` | 4.19.325-a10-lto32 | non (zip refuse) | **oui** | non (zip refuse) | 32 Mio |
+| `latest-experimental-4.19.325`, `*_a11-lto32` | 4.19.325-a11-lto32 | **ne demarre pas** (binderfs) | **ne demarre pas** (binderfs) | **oui**, pas encore essaye sur l'unite | 32 Mio |
+| `latest-experimental-4.19.325`, `*_a9-lto32` | 4.19.325-a9-lto32 | **oui** | non (zip refuse) | non (zip refuse) | 32 Mio |
 | `LibreHU-main` r105, `connectivity-builtin` r106 | 4.9.117 | oui (anciens builds de l'OTA) | non | non | 10 Mio |
 
 Ce qui separe les variantes 4.19 (`arch/arm64/configs/ac8257_<v>.config` sur `ac8257_ujc201_defconfig`) :

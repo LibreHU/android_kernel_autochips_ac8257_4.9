@@ -57,18 +57,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Android 10 and later: 32 MiB boot only (the 10 MiB a10 / a11 kernels no longer fit, 19/11/2026)
           - variant: a9
             android: a9
-          - variant: a10
-            android: a10
           - variant: a9-lto32
             android: a9
             lto32: true
           - variant: a10-lto32
             android: a10
             lto32: true
-          - variant: a11
-            android: a11
           - variant: a11-lto32
             android: a11
             lto32: true
@@ -251,18 +248,18 @@ jobs:
           ls -l dist
           TAG="latest-$BRANCH"
           NAME="r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
-          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a10 a11 a9-lto32 a10-lto32 a11-lto32\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
+          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a9-lto32 a10-lto32 a11-lto32\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
             "$GITHUB_RUN_NUMBER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.txt
           {
             echo "**EXPERIMENTAL** : noyau Linux 4.19.325 pour l'UJC201, branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9})."
             echo "Lire docs/K419.md avant tout essai."
             echo
-            echo "**Trois variantes, a prendre selon la version d'Android** (les modules ne marchent qu'avec le noyau de la meme variante ; matrice dans le README) :"
-            echo "- \`_a9\` : Android 9 (LineageOS 16.0, ROM stock) ; noyau 4.19.325-a9 (xt_qtaguid, sans lui Android 9 attend 30 s au demarrage)"
-            echo "- \`_a10\` : Android 10 (LineageOS 17.1) ; noyau 4.19.325-a10 (lmkd en PSI)"
-            echo "- \`_a11\` : Android 11 a 13 (LineageOS 18.1 a 20) ; noyau 4.19.325-a11 (binderfs, sans RT group scheduling : ne demarre pas Android 9 / 10)"
+            echo "**Variantes, a prendre selon la version d'Android** (matrice dans le README). Android 10 et plus : noyaux 32 Mio seulement (\`-lto32\`), il faut la partition boot de 32 Mio :"
+            echo "- \`_a9\` (10 Mio) et \`_a9-lto32\` : Android 9 (LineageOS 16.0, ROM stock) ; noyau 4.19.325-a9 (xt_qtaguid, sans lui Android 9 attend 30 s au demarrage)"
+            echo "- \`_a10-lto32\` : Android 10 (LineageOS 17.1) ; lmkd en PSI"
+            echo "- \`_a11-lto32\` : Android 11 a 13 (LineageOS 18.1 a 20) ; binderfs, sans RT group scheduling : ne demarre pas Android 9 / 10"
             echo
-            echo "Fichiers (remplacer \`<v>\` par a9, a10 ou a11) :"
+            echo "Fichiers 10 Mio (\`<v>\` = a9 seulement) :"
             echo "- \`recovery_test_ac8257_<v>.img\` : essai sans risque depuis la partition recovery (fastboot flash recovery, puis fastboot oem reboot-recovery)"
             echo "- \`boot_ac8257_<v>.img\` / \`boot_ac8257_bootmenu_<v>.img\` : partition boot (SELinux permissif, comme le stock)"
             echo "- \`librehu_kernel_twrp_<v>.zip\` : zip TWRP, ce noyau (menu de demarrage) dans boot + ses modules dans /vendor/lib/modules ; refuse si la version d'Android ne correspond pas (sauvegardes dans /sdcard/LibreHU/backup)"
