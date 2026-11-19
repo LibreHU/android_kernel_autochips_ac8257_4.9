@@ -181,6 +181,39 @@ autochips-gpl ──(git merge autochips-gpl)──▶ LibreHU-main ◀──(re
 - Modification de `reverse-engineering` : adaptee aux chemins Autochips (`ac8257` au lieu de `mt6765` / `mt6761`), un
   groupe par commit, CI verte, puis test sur l'unite. Suivi dans [docs/PORTING.md](docs/PORTING.md).
 
+## Matrice de compatibilite : quel noyau pour quelle version d'Android
+
+Chaque release publie des noyaux pour une version d'Android precise. Les zips TWRP verifient la version d'Android de
+`/system` et refusent une mauvaise variante (rien n'est modifie).
+
+| Release / fichiers | Noyau (`uname -r`) | Android 9 (ROM stock, LineageOS 16.0) | Android 10 (LineageOS 17.1) | Android 11 a 13 (LineageOS 18.1 a 20) | Partition boot |
+|---|---|---|---|---|---|
+| `latest-stable-4.9.337` (`boot_ac8257*.img`, zips de l'OTA) | 4.9.337 | **oui** (noyau de la ROM LineageOS 16.0) | non (17.1 = 4.19 `a10`) | non | 10 Mio |
+| `latest-experimental-4.19.325`, `*_a9` | 4.19.325-a9 | **oui** | non (zip refuse) | non (zip refuse) | 10 Mio |
+| `latest-experimental-4.19.325`, `*_a10` | 4.19.325-a10 | non (zip refuse) | **oui** (noyau de la ROM LineageOS 17.1) | non (zip refuse) | 10 Mio |
+| `latest-experimental-4.19.325`, `*_a11` | 4.19.325-a11 | **ne demarre pas** (binderfs) | **ne demarre pas** (binderfs) | **oui**, pas encore essaye sur l'unite | 10 Mio |
+| `latest-experimental-4.19.325`, `*_<v>-lto32` | 4.19.325-`<v>`-lto32 | comme `<v>` | comme `<v>` | comme `<v>` | 32 Mio (`librehu_boot32_twrp.zip`) |
+| `LibreHU-main` r105, `connectivity-builtin` r106 | 4.9.117 | oui (anciens builds de l'OTA) | non | non | 10 Mio |
+
+Ce qui separe les variantes 4.19 (`arch/arm64/configs/ac8257_<v>.config` sur `ac8257_ujc201_defconfig`) :
+
+| Reglage | `a9` | `a10` | `a11` | Pourquoi |
+|---|---|---|---|---|
+| `xt_qtaguid` | oui | non | non | Android 9 n'active le controle de bande passante qu'avec `/proc/net/xt_qtaguid/ctrl` |
+| PSI, lmkd sans low memory killer du noyau | non | oui | oui | le lmkd d'Android 9 n'a pas de mode PSI |
+| `RT_GROUP_SCHED` | oui | oui | **non** | exige par Android 9 / 10, refuse par les configs noyau d'Android 11+ |
+| binderfs | non | non | **oui** | l'init d'Android 9 / 10 ne monte pas binderfs : plus de `/dev/binder` |
+
+Noyau 4.9.337 : ACL POSIX ext4, CMAC / ChaCha20-Poly1305, namespaces, veth / dummy et kprobes comme en 4.19 ;
+fs-verity et incremental fs n'existent pas en 4.9, et le gel binder n'y est pas repris (inutile sous Android 9).
+
+Dans tous les noyaux 4.19 (code commun) : gel binder (`BINDER_FREEZE`, `BINDER_GET_FROZEN_INFO`, detection du spam
+oneway) pour le freezer des applis en cache d'Android 12+, fs-verity, incremental fs, ACL POSIX ext4, CMAC /
+ChaCha20-Poly1305, namespaces, veth / dummy, kprobes. Android 9 et 10 ne s'en servent pas.
+
+Android 14 et plus : impossible avec le vendor Android 9 d'origine (la matrice VINTF de niveau 3 et la compatibilite
+sepolicy 28.0 n'y existent plus).
+
 ## Ce que `LibreHU-main` ajoute au paquet Autochips
 
 ### Pour compiler et demarrer l'unite (detail : [docs/BUILD.md](docs/BUILD.md))
