@@ -16,7 +16,8 @@ new)
 		b32_fix_backup
 		rm -f $B32_DIR/vendor_new.img $B32_DIR/IN_PROGRESS
 		echo "migration $VERSION $(date) (resumed)" > $B32_DIR/MIGRATED
-		ui_print "Done. Reboot into TWRP, then flash librehu_kernel32_twrp_a9.zip or _a10.zip."
+		ui_print "Done. Reboot into TWRP, then flash librehu_kernel32_twrp_a9.zip, _a10.zip or _a11.zip,"
+		ui_print "or a LibreHU ROM zip for Android 10+ (it carries its 32 MiB kernel)."
 	else
 		ui_print "The boot partition is already 32 MiB: nothing to do."
 	fi
@@ -118,7 +119,8 @@ rm -rf $B32_TMP
 ui_print " "
 ui_print "Done: boot 32 MiB, dtbo 1 MiB, tee1 / tee2 moved, vendor 2033 MiB."
 ui_print "1. Reboot into TWRP (Reboot > Recovery): the TWRP kernel reads the new table."
-ui_print "2. Flash librehu_kernel32_twrp_a9.zip or _a10.zip (32 MiB ThinLTO kernel)."
+ui_print "2. Flash librehu_kernel32_twrp_a9.zip, _a10.zip or _a11.zip (32 MiB ThinLTO kernel),"
+ui_print "   or a LibreHU ROM zip for Android 10+ (it carries its 32 MiB kernel)."
 ui_print "The current kernel (10 MiB) stays in place and boots as before."
 ui_print "Backups: $B32_DIR (vendor_orig.img = 2 GB, can be deleted after a try)."
 ui_print "Back to 10 MiB: librehu_boot32_restore_twrp.zip."

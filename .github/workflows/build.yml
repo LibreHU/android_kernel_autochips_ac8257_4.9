@@ -290,3 +290,8 @@ jobs:
             gh release create "$TAG" --title "Noyau 4.19 EXPERIMENTAL $NAME" --notes-file notes.md --prerelease=true --verify-tag
           fi
           gh release upload "$TAG" dist/* --clobber
+          # Every asset this build did not produce (a variant dropped from the matrix, e.g. the 10 MiB a10 / a11 of
+          # 19/11/2026) is removed after the upload, so that nobody takes a stale kernel
+          for old in $(gh release view "$TAG" --json assets -q '.assets[].name'); do
+            [ -e "dist/$old" ] || { echo "stale asset removed: $old"; gh release delete-asset "$TAG" "$old" -y || true; }
+          done
