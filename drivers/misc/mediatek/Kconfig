@@ -558,6 +558,17 @@ source "drivers/misc/mediatek/mlog/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
 source "drivers/misc/mediatek/debug_latch/Kconfig"
 source "drivers/misc/mediatek/watchpoint/Kconfig"
+config LIBREHU_ANDROID_11_PLUS
+	bool "Kernel for Android 11 and later only (LibreHU a11 variant)"
+	default n
+	help
+	  Settings of Android 11 and later that would break Android 9 / 10,
+	  set by arch/arm64/configs/ac8257_a11.config: RT_GROUP_SCHED is no
+	  longer selected by ANDROID_DEFAULT_SETTING (Android 9 and 10 require
+	  it, Android 11+ kernel configs require it off), and binderfs replaces
+	  the binder misc devices (Android 9 / 10 init does not mount binderfs).
+	  Say N for the a9 / a10 kernels.
+
 source "drivers/misc/mediatek/Kconfig.default"
 source "drivers/misc/mediatek/tkcore/Kconfig"
 
