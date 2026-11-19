@@ -204,12 +204,13 @@ Ce qui separe les variantes 4.19 (`arch/arm64/configs/ac8257_<v>.config` sur `ac
 | `RT_GROUP_SCHED` | oui | oui | **non** | exige par Android 9 / 10, refuse par les configs noyau d'Android 11+ |
 | binderfs | non | non | **oui** | l'init d'Android 9 / 10 ne monte pas binderfs : plus de `/dev/binder` |
 
-Noyau 4.9.337 : ACL POSIX ext4, CMAC / ChaCha20-Poly1305, namespaces, veth / dummy et kprobes comme en 4.19 ;
+Noyau 4.9.337 : ACL POSIX ext4, CMAC / ChaCha20-Poly1305, namespaces et veth / dummy comme en 4.19 ;
 fs-verity et incremental fs n'existent pas en 4.9, et le gel binder n'y est pas repris (inutile sous Android 9).
 
 Dans tous les noyaux 4.19 (code commun) : gel binder (`BINDER_FREEZE`, `BINDER_GET_FROZEN_INFO`, detection du spam
 oneway) pour le freezer des applis en cache d'Android 12+, fs-verity, incremental fs, ACL POSIX ext4, CMAC /
-ChaCha20-Poly1305, namespaces, veth / dummy, kprobes. Android 9 et 10 ne s'en servent pas.
+ChaCha20-Poly1305, namespaces, veth / dummy. Android 9 et 10 ne s'en servent pas. Pas de kprobe events : ils
+activent BPF_EVENTS, incompatible avec deux tracepoints MediaTek de plus de 12 arguments.
 
 Android 14 et plus : impossible avec le vendor Android 9 d'origine (la matrice VINTF de niveau 3 et la compatibilite
 sepolicy 28.0 n'y existent plus).
