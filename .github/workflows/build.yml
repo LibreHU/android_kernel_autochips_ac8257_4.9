@@ -44,10 +44,12 @@ permissions:
 jobs:
   build:
     if: startsWith(github.ref_name, 'experimental-4.19')
-    # Two builds of the same tree (arch/arm64/configs/ac8257_<variant>.config over the defconfig):
+    # Builds of the same tree (arch/arm64/configs/ac8257_<variant>.config over the defconfig):
     #  - a9: Android 9 (LineageOS 16.0, stock ROM): xt_qtaguid (Android 9 enables bandwidth control only with
     #    /proc/net/xt_qtaguid/ctrl, else NetworkPolicy waits 30 s at boot), uname -r 4.19.325-a9
-    #  - a10: Android 10 and later (LineageOS 17.1...): no xt_qtaguid, as the Android common kernels, 4.19.325-a10
+    #  - a10: Android 10 (LineageOS 17.1): no xt_qtaguid, as the Android common kernels, lmkd on PSI, 4.19.325-a10
+    #  - a11: Android 11 to 13 (LineageOS 18.1 to 20): a10 + ac8257_a11.config (binderfs, no RT group scheduling,
+    #    both breaking Android 9 / 10), 4.19.325-a11
     # Each variant has its own images and modules (the modules match only the kernel of the same build).
     # a9-lto32 / a10-lto32: the same tree with ac8257_lto32.config on top (ThinLTO with ld.lld, everything built in),
     # images of 32 MiB for the boot partition of librehu_boot32_twrp.zip, uname -r 4.19.325-a9-lto32 / -a10-lto32
@@ -64,6 +66,11 @@ jobs:
             lto32: true
           - variant: a10-lto32
             android: a10
+            lto32: true
+          - variant: a11
+            android: a11
+          - variant: a11-lto32
+            android: a11
             lto32: true
     # ubuntu-22.04: clang-14 and a python2 package (the AutoChips DTS generator tools/dct/DrvGen.py is Python 2)
     runs-on: ubuntu-22.04
@@ -93,6 +100,8 @@ jobs:
       - name: Configure (${{ matrix.variant }})
         run: |
           make O=out $KMAKE $LTO_MAKE $ATC_MAKE "$DEFCONFIG"
+          # a11 = a10 + ac8257_a11.config (binderfs, no RT group scheduling: settings that break Android 9 / 10)
+          [ "$A" = a11 ] && make O=out $KMAKE $LTO_MAKE $ATC_MAKE ac8257_a10.config
           make O=out $KMAKE $LTO_MAKE $ATC_MAKE "ac8257_${A}.config"
           if [ -n "$LTO_MAKE" ]; then
             make O=out $KMAKE $LTO_MAKE $ATC_MAKE ac8257_lto32.config
@@ -102,7 +111,14 @@ jobs:
               || { echo "::error::ThinLTO or built-in connectivity missing from the lto32 configuration"; exit 1; }
             ! grep -q '=m$' out/.config || { echo "::error::modules left in the lto32 configuration"; grep '=m$' out/.config; exit 1; }
           fi
-          grep -E '^CONFIG_LOCALVERSION=|XT_MATCH_OWNER|XT_MATCH_QTAGUID|^CONFIG_LTO_CLANG|^CONFIG_MTK_COMBO_DRV_BUILD_IN' out/.config
+          if [ "$A" = a11 ]; then
+            grep -q '^CONFIG_ANDROID_BINDERFS=y' out/.config && ! grep -q '^CONFIG_RT_GROUP_SCHED=y' out/.config \
+              || { echo "::error::a11: binderfs off or RT_GROUP_SCHED still on"; exit 1; }
+          else
+            grep -q '^CONFIG_RT_GROUP_SCHED=y' out/.config && ! grep -q '^CONFIG_ANDROID_BINDERFS=y' out/.config \
+              || { echo "::error::${A}: Android 9 / 10 need RT_GROUP_SCHED and the binder misc devices"; exit 1; }
+          fi
+          grep -E '^CONFIG_LOCALVERSION=|XT_MATCH_OWNER|XT_MATCH_QTAGUID|^CONFIG_LTO_CLANG|^CONFIG_MTK_COMBO_DRV_BUILD_IN|RT_GROUP_SCHED|ANDROID_BINDERFS|ANDROID_LOW_MEMORY_KILLER' out/.config
 
       - name: Build Image.gz-dtb and modules
         run: |
@@ -235,24 +251,25 @@ jobs:
           ls -l dist
           TAG="latest-$BRANCH"
           NAME="r${GITHUB_RUN_NUMBER}-${GITHUB_SHA::9}"
-          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a10 a9-lto32 a10-lto32\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
+          printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a10 a11 a9-lto32 a10-lto32 a11-lto32\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
             "$GITHUB_RUN_NUMBER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.txt
           {
             echo "**EXPERIMENTAL** : noyau Linux 4.19.325 pour l'UJC201, branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9})."
             echo "Lire docs/K419.md avant tout essai."
             echo
-            echo "**Deux variantes, a prendre selon la version d'Android** (les modules ne marchent qu'avec le noyau de la meme variante) :"
+            echo "**Trois variantes, a prendre selon la version d'Android** (les modules ne marchent qu'avec le noyau de la meme variante ; matrice dans le README) :"
             echo "- \`_a9\` : Android 9 (LineageOS 16.0, ROM stock) ; noyau 4.19.325-a9 (xt_qtaguid, sans lui Android 9 attend 30 s au demarrage)"
-            echo "- \`_a10\` : Android 10 et plus (LineageOS 17.1...) ; noyau 4.19.325-a10"
+            echo "- \`_a10\` : Android 10 (LineageOS 17.1) ; noyau 4.19.325-a10 (lmkd en PSI)"
+            echo "- \`_a11\` : Android 11 a 13 (LineageOS 18.1 a 20) ; noyau 4.19.325-a11 (binderfs, sans RT group scheduling : ne demarre pas Android 9 / 10)"
             echo
-            echo "Fichiers (remplacer \`<v>\` par a9 ou a10) :"
+            echo "Fichiers (remplacer \`<v>\` par a9, a10 ou a11) :"
             echo "- \`recovery_test_ac8257_<v>.img\` : essai sans risque depuis la partition recovery (fastboot flash recovery, puis fastboot oem reboot-recovery)"
             echo "- \`boot_ac8257_<v>.img\` / \`boot_ac8257_bootmenu_<v>.img\` : partition boot (SELinux permissif, comme le stock)"
             echo "- \`librehu_kernel_twrp_<v>.zip\` : zip TWRP, ce noyau (menu de demarrage) dans boot + ses modules dans /vendor/lib/modules ; refuse si la version d'Android ne correspond pas (sauvegardes dans /sdcard/LibreHU/backup)"
             echo "- \`librehu_conn_modules_twrp_<v>.zip\` : zip TWRP, modules seuls, quand boot contient deja ce noyau"
             echo "- \`librehu_connectivity_ksu_<v>.zip\` : les memes modules en module KernelSU"
             echo
-            echo "**Noyau ThinLTO, tout integre (variantes \`a9-lto32\` / \`a10-lto32\`), pour une partition boot de 32 Mio** :"
+            echo "**Noyau ThinLTO, tout integre (variantes \`a9-lto32\` / \`a10-lto32\` / \`a11-lto32\`), pour une partition boot de 32 Mio** :"
             echo "- \`recovery_test_ac8257_<v>-lto32.img\` : essai sans risque depuis la partition recovery (32 Mio, aucune migration necessaire)"
             echo "- \`librehu_boot32_twrp.zip\` : agrandit boot de 10 a 32 Mio (dtbo 1 Mio, tee1 / tee2 deplaces, vendor 2033 Mio) ; exige vbmeta en VERIFICATION_DISABLED, 4,4 Go libres, une sauvegarde SP Flash Tool complete ; sauvegardes dans /sdcard/LibreHU/boot32"
             echo "- \`librehu_boot32_restore_twrp.zip\` : retour a la table d'origine (boot 10 Mio) ; flasher d'abord un noyau 10 Mio"

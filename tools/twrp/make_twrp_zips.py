@@ -3,15 +3,16 @@
 # SPDX-License-Identifier: GPL-2.0
 """Zips TWRP de la release d'un noyau LibreHU, a cote du module KernelSU de connectivite (CI du noyau).
 
-    tools/twrp/make_twrp_zips.py <dist> <branche> <version> <variante>       variante a9 / a10 / a9-lto32 / a10-lto32
+    tools/twrp/make_twrp_zips.py <dist> <branche> <version> <variante>       variante a9 / a10 / a11 / <v>-lto32
     tools/twrp/make_twrp_zips.py boot32 <dist> <version> <gpt32 arm64>
 
-a9 / a10 : lit dans <dist> boot_ac8257_<v>.img, boot_ac8257_bootmenu_<v>.img et librehu_connectivity_ksu_<v>.zip (les
+a9 / a10 / a11 : lit dans <dist> boot_ac8257_<v>.img, boot_ac8257_bootmenu_<v>.img et librehu_connectivity_ksu_<v>.zip (les
 memes six modules que le module KernelSU, et le /proc/version de leur noyau) et ecrit :
   - librehu_kernel_twrp_<v>.zip : noyau (boot_ac8257_bootmenu_<v>.img, menu de demarrage) + modules, pour la
     partition boot et /vendor/lib/modules ;
   - librehu_conn_modules_twrp_<v>.zip : modules seuls, quand la partition boot contient deja ce noyau.
-a9-lto32 / a10-lto32 (noyau ThinLTO, tout integre, image de 32 Mio) : librehu_kernel32_twrp_<a9|a10>.zip, noyau seul.
+a9-lto32 / a10-lto32 / a11-lto32 (noyau ThinLTO, tout integre, image de 32 Mio) : librehu_kernel32_twrp_<a9|a10|a11>.zip,
+noyau seul.
 boot32 : librehu_boot32_twrp.zip (partition boot 10 -> 32 Mio) et librehu_boot32_restore_twrp.zip (retour), avec
 l'outil gpt32 compile pour arm64 (tools/twrp/boot32).
 Meme contenu et memes verifications que les zips kernel-stable / conn-modules-stable de LibreHU-flashablesZips
@@ -46,8 +47,9 @@ android_check() {
 	_rel=$(grep -m1 '^ro.build.version.release=' "$_prop" | cut -d= -f2)
 	_maj=${_rel%%.*}
 	case "$_want" in
-	a9) [ "$_maj" = 9 ] || abort "Android 9 kernel (a9) but /system = Android $_rel: take the a10 variant";;
-	a10) [ -n "$_maj" ] && [ "$_maj" -ge 10 ] 2>/dev/null || abort "Android 10+ kernel (a10) but /system = Android $_rel: take the a9 variant";;
+	a9) [ "$_maj" = 9 ] || abort "Android 9 kernel (a9) but /system = Android $_rel: take the a10 (Android 10) or a11 (11+) variant";;
+	a10) [ "$_maj" = 10 ] || abort "Android 10 kernel (a10) but /system = Android $_rel: take the a9 (Android 9) or a11 (11+) variant";;
+	a11) [ -n "$_maj" ] && [ "$_maj" -ge 11 ] 2>/dev/null || abort "Android 11+ kernel (a11: binderfs, no RT group scheduling) but /system = Android $_rel: take the a9 or a10 variant";;
 	*) abort "unknown variant: $_want";;
 	esac
 	ui_print "Android $_rel: variant $_want, OK"
@@ -101,9 +103,9 @@ def kernel32(dist, branch, version, variant):
 def main():
     if len(sys.argv) == 5 and sys.argv[1] == "boot32":
         return boot32(*sys.argv[2:])
-    if len(sys.argv) == 5 and sys.argv[4] in ("a9-lto32", "a10-lto32"):
+    if len(sys.argv) == 5 and sys.argv[4] in ("a9-lto32", "a10-lto32", "a11-lto32"):
         return kernel32(*sys.argv[1:])
-    if len(sys.argv) != 5 or sys.argv[4] not in ("a9", "a10"):
+    if len(sys.argv) != 5 or sys.argv[4] not in ("a9", "a10", "a11"):
         sys.exit(__doc__)
     dist, branch, version, variant = sys.argv[1:]
     images = {n: open(os.path.join(dist, n), "rb").read()
