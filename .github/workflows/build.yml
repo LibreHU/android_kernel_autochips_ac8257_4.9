@@ -47,7 +47,7 @@ permissions:
 jobs:
   build:
     # Manual runs too: only stable-4.9.337 is built (a run started from another branch with this file is skipped)
-    if: github.ref_name == 'stable-4.9.337'
+    if: github.ref_name == 'stable-4.9.337' || github.ref_name == 'test-lcm-metazone'
     # ubuntu-22.04: last runner image with a python2 package (the AutoChips DTS generator needs it)
     runs-on: ubuntu-22.04
     timeout-minutes: 120
