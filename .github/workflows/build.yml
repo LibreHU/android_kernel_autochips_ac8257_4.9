@@ -12,7 +12,9 @@ name: Build AC8257 kernel
 
 on:
   push:
-    branches: [stable-4.9.337]
+    # test-lcm-metazone: test build of the MetaZone panel params, prerelease latest-test-lcm-metazone (no zip of
+    # LibreHU Apps reads it). Not to be merged into stable-4.9.337 with the lcm commit.
+    branches: [stable-4.9.337, test-lcm-metazone]
     paths-ignore:
       - '**.md'
       - 'docs/**'
