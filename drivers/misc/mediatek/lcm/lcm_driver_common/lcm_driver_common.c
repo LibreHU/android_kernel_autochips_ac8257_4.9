@@ -1218,17 +1218,31 @@ static void jac_lcm_analysis_mipi_params_form_MetaZone(void)
 }
 
 /*
- * Stock overwrites the DSI params with the MetaZone ones; here they only get
- * logged (and compared), the boot params from LK already drive this panel.
+ * DSI params of the panel from the Jancar MetaZone (lanes, PLL clock, porches and sync widths, size, bits per
+ * pixel), applied over the LK ones as the stock kernel does: its jac_lcm_get_mipi_params_form_MetaZone() reads
+ * each MetaZone DWORD straight into LCM_PARAMS (dsi.LANE_NUM, dsi.PLL_CLOCK, horizontal / vertical sync, back and
+ * front porches, width, height), then sets vertical_active_line / horizontal_active_pixel and virtual_width /
+ * virtual_height from the size, data_format.format and PS from the bits per pixel (RGB666 / packed 18 bit for 6,
+ * else RGB888 / packed 24 bit) (stock kernel 4.9.117 jac0416 of firmware 250718, disassembled locally, 20/11/2026;
+ * Jancar's LCM_PARAMS has 20 more bytes before dsi, the fields are the same).
+ *
+ * Until 20/11/2026 the MetaZone params were only logged and the LK ones kept. The LK ones (MRF panel info in the
+ * framebuffer memory) are generic: on the UJC201 of the author, LK PLL 156 / hbp 160 / hfp 160 / vsa 2 / vbp 23 /
+ * vfp 10 against MetaZone clk 175 / hbp 20 / hfp 80 / vpw 8 / vbp 8 / vfp 20 (same 720x1280, 4 lanes). That panel
+ * took both; another panel did not: an UJC201_64 (2 GB, panel MIPI_720x1280_HLT90WSB6-V6) showed the right half
+ * of the screen striped under the LibreHU kernel and a clean picture in TWRP (stock kernel).
+ *
+ * Values read once (MetaZone), applied at every call (lcm_get_params() rebuilds params from the LK info each
+ * time). Out of range values: LK params kept, logged.
  */
 static void jac_lcm_get_mipi_params_form_MetaZone(struct LCM_PARAMS *params)
 {
-	unsigned int enable = 0, lane = 0, clk = 0, width = 0, height = 0, bit = 0;
-	unsigned int hpw = 0, hbp = 0, hfp = 0, vpw = 0, vbp = 0, vfp = 0;
-	static unsigned int inited, config_found;
+	unsigned int enable = 0;
+	static unsigned int lane, clk, width, height, bit, hpw, hbp, hfp, vpw, vbp, vfp;
+	static unsigned int inited, config_found, mz_timing_ok;
 
 	if (inited) {
-		goto exit;
+		goto apply;
 	}
 	inited = 1;
 
@@ -1257,17 +1271,51 @@ static void jac_lcm_get_mipi_params_form_MetaZone(struct LCM_PARAMS *params)
 			lane, clk, hpw, hbp, hfp, vpw, vbp, vfp);
 	LCM_DRIVER_INFO("[LCM] %dx%d bit(%d) lcd_power_delay(%d) jac_lcm_tpye(%d)\n",
 			width, height, bit, jac_lcd_power_delay, jac_lcm_type);
-	if ((lane != params->dsi.LANE_NUM) || (clk != params->dsi.PLL_CLOCK) ||
-	    (width != params->width) || (height != params->height) ||
-	    (hpw != params->dsi.horizontal_sync_active) || (hbp != params->dsi.horizontal_backporch) ||
-	    (hfp != params->dsi.horizontal_frontporch) || (vpw != params->dsi.vertical_sync_active) ||
-	    (vbp != params->dsi.vertical_backporch) || (vfp != params->dsi.vertical_frontporch)) {
-		LCM_DRIVER_ERROR("MetaZone panel params differ from LK ones, LK ones kept!\n");
+	LCM_DRIVER_INFO("[LCM] LK: lane(%d) clk(%d) hpw(%d) hbp(%d) hfp(%d) vpw(%d) vbp(%d) vfp(%d) %dx%d\n",
+			params->dsi.LANE_NUM, params->dsi.PLL_CLOCK, params->dsi.horizontal_sync_active,
+			params->dsi.horizontal_backporch, params->dsi.horizontal_frontporch,
+			params->dsi.vertical_sync_active, params->dsi.vertical_backporch,
+			params->dsi.vertical_frontporch, params->width, params->height);
+
+	/* a blank or damaged MetaZone must not take the panel away from the LK params */
+	mz_timing_ok = (lane >= 1) && (lane <= 4) && (clk >= 50) && (clk <= 1500) &&
+		       (width >= 240) && (width <= 4096) && (height >= 240) && (height <= 4096) &&
+		       (hpw >= 1) && (hpw <= 1024) && (hbp <= 1024) && (hfp >= 1) && (hfp <= 1024) &&
+		       (vpw >= 1) && (vpw <= 256) && (vbp <= 256) && (vfp >= 1) && (vfp <= 256) &&
+		       ((bit == 6) || (bit == 8));
+	if (!mz_timing_ok) {
+		LCM_DRIVER_ERROR("MetaZone panel params out of range, LK ones kept!\n");
+	} else {
+		LCM_DRIVER_INFO("MetaZone panel params used, as the stock kernel\n");
 	}
 
 	jac_lcm_analysis_mipi_params_form_MetaZone();
 
-exit:
+apply:
+	if (config_found && mz_timing_ok) {
+		params->dsi.LANE_NUM = lane;
+		params->dsi.PLL_CLOCK = clk;
+		params->dsi.horizontal_sync_active = hpw;
+		params->dsi.horizontal_backporch = hbp;
+		params->dsi.horizontal_frontporch = hfp;
+		params->dsi.vertical_sync_active = vpw;
+		params->dsi.vertical_backporch = vbp;
+		params->dsi.vertical_frontporch = vfp;
+		params->width = width;
+		params->height = height;
+		params->dsi.vertical_active_line = height;
+		params->dsi.horizontal_active_pixel = width;
+		params->virtual_width = width;
+		params->virtual_height = height;
+		if (bit == 6) {
+			params->dsi.data_format.format = LCM_DSI_FORMAT_RGB666;
+			params->dsi.PS = LCM_PACKED_PS_18BIT_RGB666;
+		} else {
+			params->dsi.data_format.format = LCM_DSI_FORMAT_RGB888;
+			params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
+		}
+	}
+
 	/* the reset pin comes from lcm_get_gpio_info() */
 	jac_lcm_enabled = (config_found && jac_rst_output0 && jac_rst_output1) ? 1 : 0;
 	LCM_DRIVER_INFO("jac panel init on resume:%d\n", jac_lcm_enabled);
