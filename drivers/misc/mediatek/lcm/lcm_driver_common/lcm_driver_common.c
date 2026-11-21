@@ -1276,6 +1276,10 @@ static void jac_lcm_get_mipi_params_form_MetaZone(struct LCM_PARAMS *params)
 			params->dsi.horizontal_backporch, params->dsi.horizontal_frontporch,
 			params->dsi.vertical_sync_active, params->dsi.vertical_backporch,
 			params->dsi.vertical_frontporch, params->width, params->height);
+	LCM_DRIVER_INFO("[LCM] LK: primary %dx%d virtual %dx%d physical %dx%d format(%d) PS(%d)\n",
+			params->primary_width, params->primary_height, params->virtual_width,
+			params->virtual_height, params->physical_width, params->physical_height,
+			params->dsi.data_format.format, params->dsi.PS);
 
 	/* a blank or damaged MetaZone must not take the panel away from the LK params */
 	mz_timing_ok = (lane >= 1) && (lane <= 4) && (clk >= 50) && (clk <= 1500) &&
@@ -1305,8 +1309,19 @@ apply:
 		params->height = height;
 		params->dsi.vertical_active_line = height;
 		params->dsi.horizontal_active_pixel = width;
-		params->virtual_width = width;
-		params->virtual_height = height;
+		/*
+		 * As the stock kernel: the size goes to primary_width / primary_height (the framebuffer size,
+		 * MTK_FB_XRES / YRES, and the size given to the composer: pri_display_get_width() without
+		 * CONFIG_ATC_NATIVE_LCM_SUPPORT) and to physical_width / physical_height (pixels there, not mm);
+		 * virtual_width / virtual_height are left alone (0: the screen size). The first test (20/11)
+		 * wrote virtual_* and kept the LK primary_*: framebuffer and DSI could differ in size, worse
+		 * picture on the UJC201_64 (21/11). Offsets checked on the stock lcm_get_params(), sizeof
+		 * LCM_PARAMS 0x488 with CONFIG_ATC_AOSP_ENHANCEMENT as here.
+		 */
+		params->primary_width = width;
+		params->primary_height = height;
+		params->physical_width = width;
+		params->physical_height = height;
 		if (bit == 6) {
 			params->dsi.data_format.format = LCM_DSI_FORMAT_RGB666;
 			params->dsi.PS = LCM_PACKED_PS_18BIT_RGB666;
