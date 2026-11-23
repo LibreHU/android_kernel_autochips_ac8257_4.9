@@ -30,7 +30,9 @@ int ksu_handle_setresuid(uid_t old_uid, uid_t new_uid)
 {
     // we rely on the fact that zygote always call setresuid(3) with same uids
 
-    pr_info("handle_setresuid from %d to %d\n", old_uid, new_uid);
+    /* LibreHU: debug level, at info it filled the kernel log (one line per app process start), the boot lines
+     * were lost before anyone could read them */
+    pr_debug("handle_setresuid from %d to %d\n", old_uid, new_uid);
 
     if (unlikely(is_uid_manager(new_uid))) {
 
