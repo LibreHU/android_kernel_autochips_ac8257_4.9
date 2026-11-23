@@ -1221,10 +1221,13 @@ static void jac_lcm_analysis_mipi_params_form_MetaZone(void)
  * DSI params of the panel from the Jancar MetaZone (lanes, PLL clock, porches and sync widths, size, bits per
  * pixel), applied over the LK ones as the stock kernel does: its jac_lcm_get_mipi_params_form_MetaZone() reads
  * each MetaZone DWORD straight into LCM_PARAMS (dsi.LANE_NUM, dsi.PLL_CLOCK, horizontal / vertical sync, back and
- * front porches, width, height), then sets vertical_active_line / horizontal_active_pixel and virtual_width /
- * virtual_height from the size, data_format.format and PS from the bits per pixel (RGB666 / packed 18 bit for 6,
- * else RGB888 / packed 24 bit) (stock kernel 4.9.117 jac0416 of firmware 250718, disassembled locally, 20/11/2026;
- * Jancar's LCM_PARAMS has 20 more bytes before dsi, the fields are the same).
+ * front porches, width, height), then sets vertical_active_line / horizontal_active_pixel, primary_width /
+ * primary_height and physical_width / physical_height from the size, data_format.format and PS from the bits per
+ * pixel (RGB666 / packed 18 bit for 6, else RGB888 / packed 24 bit) (stock kernel 4.9.117 jac0416 of firmware 250718,
+ * disassembled locally, 20-22/11/2026, LCM_PARAMS laid out with CONFIG_ATC_AOSP_ENHANCEMENT as here). The stock kernel
+ * does it whatever the LK panel info: also when its CRC fails or it is missing.
+ * An UJC201_64 has a 1024x600 MRF header (logo partition, V2.2.4) on its 720x1280 panel: with the LK size the
+ * framebuffer, the DSI and the composer were 1024x600 (right part of the screen striped).
  *
  * Until 20/11/2026 the MetaZone params were only logged and the LK ones kept. The LK ones (MRF panel info in the
  * framebuffer memory) are generic: on the UJC201 of the author, LK PLL 156 / hbp 160 / hfp 160 / vsa 2 / vbp 23 /
@@ -1285,8 +1288,9 @@ static void jac_lcm_get_mipi_params_form_MetaZone(struct LCM_PARAMS *params)
 	mz_timing_ok = (lane >= 1) && (lane <= 4) && (clk >= 50) && (clk <= 1500) &&
 		       (width >= 240) && (width <= 4096) && (height >= 240) && (height <= 4096) &&
 		       (hpw >= 1) && (hpw <= 1024) && (hbp <= 1024) && (hfp >= 1) && (hfp <= 1024) &&
-		       (vpw >= 1) && (vpw <= 256) && (vbp <= 256) && (vfp >= 1) && (vfp <= 256) &&
-		       ((bit == 6) || (bit == 8));
+		       (vpw >= 1) && (vpw <= 256) && (vbp <= 256) && (vfp >= 1) && (vfp <= 256);
+	if ((bit != 6) && (bit != 8))
+		LCM_DRIVER_ERROR("MetaZone bit(%d) unexpected, RGB888 as the stock kernel\n", bit);
 	if (!mz_timing_ok) {
 		LCM_DRIVER_ERROR("MetaZone panel params out of range, LK ones kept!\n");
 	} else {
@@ -2822,9 +2826,9 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 		LCM_DRIVER_INFO("panel phy_width, panel phy_heigh: not set value, use default!\n");
 	}
 
-	jac_lcm_get_mipi_params_form_MetaZone(params);
-
 exit:
+	/* as the stock kernel: also without valid LK panel info (CRC failed, no MRF header, init tables failed) */
+	jac_lcm_get_mipi_params_form_MetaZone(params);
 
 	install_lcm_valid_data_start_early_func(lcm_valid_data_start_early);
 	install_lcm_valid_data_start_late_func(lcm_valid_data_start_late);
