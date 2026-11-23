@@ -71,9 +71,10 @@ Le coprocesseur ARM9 (« ARM2 ») de l'AC8257 affiche la camera de recul des la 
 Linux, qui reprend le TP9963 ou le TVD. Ses reglages (source CVBS / AHD / 360, mode, miroir, recadrage) sont dans la
 metazone (`docs/atc.md` de LibreHU-service).
 
-## Dalle depuis la MetaZone et identifiant de carte (branche de test `test-lcm-metazone`, 23/11/2026)
+## Dalle depuis la MetaZone et identifiant de carte (dans `stable-4.9.337` depuis le 23/11/2026)
 
-Pas encore fusionne dans `stable-4.9.337` (meme changement que `experimental-4.19.325-lcm-mz`, voir son `docs/K419.md`).
+Fusionne le 23/11/2026 depuis la branche de test `test-lcm-metazone` (sans ses deux commits de CI) ; meme changement
+dans `experimental-4.19.325` (voir son `docs/K419.md`).
 
 - **Bandes a l'ecran** avec le noyau LibreHU, image propre dans TWRP (noyau d'origine) : la partition `logo` d'une
   unite (dalle MIPI 720x1280) porte un en-tete MRF de dalle 1024x600. Le LK dessine avec la taille de la MetaZone
