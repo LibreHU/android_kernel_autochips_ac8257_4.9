@@ -1500,6 +1500,73 @@ static ssize_t store_AUXADC_channel(struct device *dev,
 static DEVICE_ATTR(AUXADC_read_channel, 0664, show_AUXADC_channel,
 		store_AUXADC_channel);
 
+/*
+ * LibreHU: board id of the Jancar UJC201 (Autochips AC8257) boards, read only, as Jancar's stock kernel 4.9.117 shows
+ * it in /sys/devices/virtual/mtk-adc-cali/mtk-adc-cali/jancar_board_id: Jancar's ivi-services and LibreHU-service read
+ * it to pick the audio chip (4th character: A = ROHM BD37534, B = ROHM BU32107, C = AKM AK7604), the tuner (5th: N
+ * none, T, W) and their settings. Two resistor dividers on AUXADC channels 2 and 3 code the board; their raw readings
+ * (12 bit) are matched to this table within +-0x88, "NULL" when no entry matches or a channel cannot be read, without
+ * a newline, all as the stock kernel does (show_jancar_board_id and its table of 24 boards, disassembled from the stock
+ * Image of firmware UJC201-V1.1.68R1-260729, 23/11/2026). jancar_board_adc gives the two raw readings, for a board
+ * missing from the table.
+ */
+static const struct {
+	char name[8];
+	int ch2;
+	int ch3;
+} jancar_boards[] = {
+	{ "A0_AN", 546, 546 },   { "A0_AT", 546, 2184 },  { "A0_BN", 546, 1092 },  { "A0_BT", 546, 1638 },
+	{ "A1_AN", 1092, 546 },  { "A1_AW", 1092, 2184 }, { "A1_CN", 1092, 1092 }, { "A1_CW", 1092, 1638 },
+	{ "B0_AN", 1638, 546 },  { "B0_AT", 1638, 1092 }, { "B0_BN", 1638, 1638 }, { "B0_BT", 1638, 2184 },
+	{ "C0_AN", 2184, 546 },  { "C0_AT", 2184, 1092 }, { "C0_BN", 2184, 1638 }, { "C0_BT", 2184, 2184 },
+	{ "C1_AN", 3276, 546 },  { "C1_AT", 3276, 1092 }, { "C1_BN", 3276, 1638 }, { "C1_BT", 3276, 2184 },
+	{ "D0_AN", 2730, 546 },  { "D0_AT", 2730, 1092 }, { "D0_BN", 2730, 1638 }, { "D0_BT", 2730, 2184 },
+};
+
+#define JANCAR_BOARD_ADC_TOL 0x88
+
+static int jancar_board_adc(int *ch2, int *ch3)
+{
+	int data[4] = { 0 };
+
+	*ch2 = 0;
+	*ch3 = 0;
+	if (IMM_GetOneChannelValue(2, data, ch2) < 0 || IMM_GetOneChannelValue(3, data, ch3) < 0) {
+		pr_info(TAG "jancar_board_id: get data error.\n");
+		return -1;
+	}
+	return 0;
+}
+
+static ssize_t show_jancar_board_id(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	const char *name = "NULL";
+	int ch2, ch3, i;
+
+	if (jancar_board_adc(&ch2, &ch3) == 0) {
+		for (i = 0; i < ARRAY_SIZE(jancar_boards); i++) {
+			if (abs(ch2 - jancar_boards[i].ch2) < JANCAR_BOARD_ADC_TOL &&
+			    abs(ch3 - jancar_boards[i].ch3) < JANCAR_BOARD_ADC_TOL) {
+				name = jancar_boards[i].name;
+				break;
+			}
+		}
+	}
+	return sprintf(buf, "%s", name);
+}
+
+static ssize_t show_jancar_board_adc(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int ch2, ch3;
+
+	if (jancar_board_adc(&ch2, &ch3) < 0)
+		return sprintf(buf, "error\n");
+	return sprintf(buf, "%d %d\n", ch2, ch3);
+}
+
+static DEVICE_ATTR(jancar_board_id, 0444, show_jancar_board_id, NULL);
+static DEVICE_ATTR(jancar_board_adc, 0444, show_jancar_board_adc, NULL);
+
 static int mt_auxadc_create_device_attr(struct device *dev)
 {
 	int ret = 0;
@@ -1508,6 +1575,12 @@ static int mt_auxadc_create_device_attr(struct device *dev)
 	if (ret != 0)
 		goto exit;
 	ret = device_create_file(dev, &dev_attr_AUXADC_read_channel);
+	if (ret != 0)
+		goto exit;
+	ret = device_create_file(dev, &dev_attr_jancar_board_id);
+	if (ret != 0)
+		goto exit;
+	ret = device_create_file(dev, &dev_attr_jancar_board_adc);
 	if (ret != 0)
 		goto exit;
 #if ADC_CHANNEL_MAX > 0
