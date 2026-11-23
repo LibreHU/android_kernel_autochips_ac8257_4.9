@@ -70,3 +70,19 @@ Le coprocesseur ARM9 (« ARM2 ») de l'AC8257 affiche la camera de recul des la 
 (AutoChips annonce 2 s en CVBS, 3 s en AHD), avec la memoire reservee `arm2-backcar-*`. Il rend ensuite la main a
 Linux, qui reprend le TP9963 ou le TVD. Ses reglages (source CVBS / AHD / 360, mode, miroir, recadrage) sont dans la
 metazone (`docs/atc.md` de LibreHU-service).
+
+## Dalle depuis la MetaZone et identifiant de carte (branche de test `test-lcm-metazone`, 23/11/2026)
+
+Pas encore fusionne dans `stable-4.9.337` (meme changement que `experimental-4.19.325-lcm-mz`, voir son `docs/K419.md`).
+
+- **Bandes a l'ecran** avec le noyau LibreHU, image propre dans TWRP (noyau d'origine) : la partition `logo` d'une
+  unite (dalle MIPI 720x1280) porte un en-tete MRF de dalle 1024x600. Le LK dessine avec la taille de la MetaZone
+  (`0x101DD` / `0x101DE`) ; le noyau prenait l'en-tete. `lcm_driver_common.c` fait maintenant comme le noyau
+  d'origine (`jac_lcm_get_mipi_params_form_MetaZone`, desassemble) : voies, horloge, timings, taille et format de la
+  MetaZone a chaque `lcm_get_params()`, meme sans info dalle valide du LK ; bit autre que 6 / 8 : RGB888 ; valeurs hors
+  plage : celles du LK gardees.
+- **Valide** sur l'unite de l'utilisateur en 4.19 (`fb0` 1024x600 → 720x1280 avec le logo de l'autre unite) ; en 4.9,
+  « ca fonctionne » rapporte par l'ami (dalle HLT90WSB6-V6).
+- **Identifiant de carte** : `/sys/devices/virtual/mtk-adc-cali/mtk-adc-cali/jancar_board_id` (comme le stock :
+  AUXADC 2 et 3, +-0x88, `A0_AN`… ou `NULL`) et `jancar_board_adc` (valeurs brutes), lus par LibreHU-service.
+- **KernelSU** : lignes `handle_setresuid` en `pr_debug`.
