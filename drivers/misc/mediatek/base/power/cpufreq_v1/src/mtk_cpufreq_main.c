@@ -1938,6 +1938,36 @@ static struct freq_attr *_mt_cpufreq_attr[] = {
 	NULL,
 };
 
+#ifdef CONFIG_MACH_AC8257
+/*
+ * LibreHU 4.19: the boot maximum (boot_khz, 2.3 GHz) as the user maximum. _mt_cpufreq_init() puts it in
+ * policy->max, as on 4.9, but from 4.15 the cpufreq core then calls cpufreq_table_validate_and_sort(),
+ * whose cpufreq_frequency_table_cpuinfo() sets policy->max back to the top of the table (the 2.6 GHz
+ * overclock OPP) before it becomes the user maximum: the CPU ran up to 2.6 GHz from boot, which 4.9
+ * never did. Put back once the policy is ready; scaling_max_freq can still be raised up to max_khz
+ * (Kernel Adiutor, SmartPack, LibreHU-service Tweaks).
+ */
+static void _mt_cpufreq_ready(struct cpufreq_policy *policy)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
+	unsigned int boot = ac8257_cpu_boot_khz ?
+		min(ac8257_cpu_boot_khz, ac8257_cpu_max_khz) : ac8257_cpu_max_khz;
+	unsigned int khz;
+
+	if (!p || !p->opp_tbl || p->nr_opp_tbl <= 0)
+		return;
+	khz = cpu_dvfs_get_freq_by_idx(p, ac8257_idx_not_above(p, boot));
+	if (!khz || khz >= policy->user_policy.max)
+		return;
+	down_write(&policy->rwsem);
+	policy->user_policy.max = khz;
+	up_write(&policy->rwsem);
+	cpufreq_update_policy(policy->cpu);
+	pr_info("mt-cpufreq: CPU%u maximum at boot %u kHz (scaling_max_freq up to %u kHz)\n",
+		policy->cpu, khz, ac8257_cpu_max_khz);
+}
+#endif
+
 static struct cpufreq_driver _mt_cpufreq_driver = {
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CONFIG_MACH_AC8257)
 	/*
@@ -1955,6 +1985,9 @@ static struct cpufreq_driver _mt_cpufreq_driver = {
 	.fast_switch = _mt_cpufreq_fast_switch,
 #endif
 	.init = _mt_cpufreq_init,
+#ifdef CONFIG_MACH_AC8257
+	.ready = _mt_cpufreq_ready,
+#endif
 	.exit = _mt_cpufreq_exit,
 	.get = _mt_cpufreq_get,
 	.name = "mt-cpufreq",
