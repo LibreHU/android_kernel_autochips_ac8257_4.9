@@ -1,6 +1,6 @@
-name: Build AC8257 kernel 4.19 (experimental)
+name: Build AC8257 kernel 4.19 (RC)
 
-# Experimental branch experimental-4.19.<N>: Linux 4.19.325 (ACK android-4.19-stable) with the AutoChips AC8257 vendor
+# Release candidate branch rc-4.19.<N> (experimental-4.19.<N> until 24/11/2026): Linux 4.19.325 (ACK android-4.19-stable) with the AutoChips AC8257 vendor
 # tree and the LibreHU changes (docs/K419.md). Builds Image.gz-dtb and the connectivity modules with Ubuntu clang 14
 # and binutils (the AOSP clang 6.0.2 of the 4.9 branches is too old for the 4.19 core), then packs them into the
 # stock UJC201 boot image layout as the 4.9 CI does:
@@ -12,12 +12,12 @@ name: Build AC8257 kernel 4.19 (experimental)
 # and a10-lto32 (arch/arm64/configs/ac8257_lto32.config): ThinLTO, everything built in (connectivity included, no
 # module), 32 MiB images for a boot partition grown by librehu_boot32_twrp.zip (job boot32: that zip, its return zip
 # librehu_boot32_restore_twrp.zip and their tests).
-# Published as a prerelease latest-<branch> marked experimental. LibreHU-flashablesZips only takes the branches it
+# Published as a prerelease latest-<branch> marked release candidate (RC). LibreHU-flashablesZips only takes the branches it
 # declares (stable-4.9.337): nothing from here reaches LibreHU Apps.
 
 on:
   push:
-    branches: ['experimental-4.19.*']
+    branches: ['rc-4.19.*', 'experimental-4.19.*']
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -43,7 +43,7 @@ permissions:
 
 jobs:
   build:
-    if: startsWith(github.ref_name, 'experimental-4.19')
+    if: startsWith(github.ref_name, 'rc-4.19') || startsWith(github.ref_name, 'experimental-4.19')
     # Builds of the same tree (arch/arm64/configs/ac8257_<variant>.config over the defconfig):
     #  - a9: Android 9 (LineageOS 16.0, stock ROM): xt_qtaguid (Android 9 enables bandwidth control only with
     #    /proc/net/xt_qtaguid/ctrl, else NetworkPolicy waits 30 s at boot), uname -r 4.19.325-a9
@@ -189,7 +189,7 @@ jobs:
     # TWRP zips librehu_boot32_twrp.zip (boot partition 10 -> 32 MiB) and librehu_boot32_restore_twrp.zip (return),
     # with tools/twrp/boot32/gpt32.c built for arm64 (static, no libc). Tests: gpt32 on a synthetic GPT, built for
     # the runner and for arm64 under qemu-user; the two zips on a synthetic eMMC image with power cuts.
-    if: startsWith(github.ref_name, 'experimental-4.19')
+    if: startsWith(github.ref_name, 'rc-4.19') || startsWith(github.ref_name, 'experimental-4.19')
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
@@ -240,7 +240,7 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Prerelease of the branch (latest-<branch>, experimental)
+      - name: Prerelease of the branch (latest-<branch>, release candidate)
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.ref_name }}
@@ -251,7 +251,7 @@ jobs:
           printf 'version=%s\nbranch=%s\ncommit=%s\nrun=%s\ndate=%s\nvariants=a9 a9-lto32 a10-lto32 a11-lto32\n' "$NAME" "$BRANCH" "$GITHUB_SHA" \
             "$GITHUB_RUN_NUMBER" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.txt
           {
-            echo "**EXPERIMENTAL** : noyau Linux 4.19.325 pour l'UJC201, branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9})."
+            echo "**RC (release candidate)** : noyau Linux 4.19.325 pour l'UJC201, branche \`$BRANCH\`, build $GITHUB_RUN_NUMBER (commit ${GITHUB_SHA::9})."
             echo "Lire docs/K419.md avant tout essai."
             echo
             echo "**Variantes, a prendre selon la version d'Android** (matrice dans le README). Android 10 et plus : noyaux 32 Mio seulement (\`-lto32\`), il faut la partition boot de 32 Mio :"
@@ -280,14 +280,14 @@ jobs:
           git tag -f "$TAG" "$GITHUB_SHA"
           git push -f origin "refs/tags/$TAG"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "Noyau 4.19 EXPERIMENTAL $NAME" --notes-file notes.md --prerelease=true
+            gh release edit "$TAG" --title "Noyau 4.19 RC $NAME" --notes-file notes.md --prerelease=true
             # Files of the single-variant builds (before a9 / a10): removed so that nobody takes a stale kernel
             for old in boot_ac8257.img boot_ac8257_bootmenu.img recovery_test_ac8257.img Image.gz-dtb config BUILD_INFO.txt \
                        librehu_connectivity_ksu.zip librehu_kernel_twrp.zip librehu_conn_modules_twrp.zip; do
               gh release delete-asset "$TAG" "$old" -y 2>/dev/null || true
             done
           else
-            gh release create "$TAG" --title "Noyau 4.19 EXPERIMENTAL $NAME" --notes-file notes.md --prerelease=true --verify-tag
+            gh release create "$TAG" --title "Noyau 4.19 RC $NAME" --notes-file notes.md --prerelease=true --verify-tag
           fi
           gh release upload "$TAG" dist/* --clobber
           # Every asset this build did not produce (a variant dropped from the matrix, e.g. the 10 MiB a10 / a11 of

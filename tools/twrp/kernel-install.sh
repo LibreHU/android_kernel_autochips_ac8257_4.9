@@ -1,7 +1,7 @@
 # UJC201 - noyau LibreHU + ses modules Wi-Fi / BT / GPS / FM (zip TWRP, sans KernelSU), d'apres le zip kernel-stable
 # de LibreHU-flashablesZips. Tout est verifie avant d'ecrire : empreintes, noyau de l'image = celui des modules,
 # dm-verity coupe sur /vendor, memoire interne montee (sauvegardes). Puis boot (sauvegarde boot-<date>.img), puis les
-# modules (conn-modules.sh). Pour la branche experimental-4.19.325 : seulement apres un essai recovery reussi.
+# modules (conn-modules.sh). Pour la branche rc-4.19.325 (ex-experimental-4.19.325) : seulement apres un essai recovery reussi.
 
 ui_print "UJC201 - LibreHU kernel + Wi-Fi / BT / GPS / FM modules"
 ui_print "version $VERSION"

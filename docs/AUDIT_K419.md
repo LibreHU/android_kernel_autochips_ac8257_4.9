@@ -3,7 +3,7 @@
 Document de passation pour une autre instance de Claude (ou un humain) chargée d'APPLIQUER les correctifs.
 L'audit lui-même n'a rien modifié dans le code.
 
-- Dépôt : `LibreHU/android_kernel_autochips_ac8257_4.9`, branche `experimental-4.19.325`
+- Dépôt : `LibreHU/android_kernel_autochips_ac8257_4.9`, branche `rc-4.19.325` (`experimental-4.19.325` jusqu'au 24/11/2026)
 - Base auditée : commit `634610b` (« ci: a9 (Android 9) and a10 (Android 10+) builds of the kernel »)
 - Matériel : Jancar UJC201, AutoChips AC8257 (≈ MediaTek MT6765), 4 × Cortex-A53, 6 Gio, PMIC MT6357, GPU PowerVR GE8320
 - Méthode : 8 agents en lecture seule (cœur, mémoire/IOMMU, affichage/ARM2, connectivité, configuration/perf,
@@ -16,7 +16,7 @@ L'audit lui-même n'a rien modifié dans le code.
 
 ## État d'application (16/11/2026, à la demande de l'utilisateur : « Applique tout les patchs »)
 
-Appliqué dans la branche `experimental-4.19.325`, un commit par point (messages en anglais). Vérifié par un build
+Appliqué dans la branche `experimental-4.19.325` (aujourd'hui `rc-4.19.325`), un commit par point (messages en anglais). Vérifié par un build
 complet local de la variante a9 (clang 14) : compilation sans erreur, `Image.gz-dtb` 9 643 864 octets (9 951 937
 avant : -308 Ko malgré le JIT et les jump labels), image boot de 10 Mio qui tient, plus aucun format `trace_printk`
 (`__start___trace_bprintk_fmt` = `__stop`), aucun `.ko` avec `__trace_printk_fmt`. La variante a10 est construite
@@ -55,7 +55,7 @@ par la CI. À tester sur l'unité (recovery_test d'abord). Ce qui n'est pas appl
 
 ## Règles pour l'instance qui applique
 
-1. Travailler sur `experimental-4.19.325` uniquement. Ne pas toucher `stable-4.9.337` ni les autres branches.
+1. Travailler sur `rc-4.19.325` (ex-`experimental-4.19.325`) uniquement. Ne pas toucher `stable-4.9.337` ni les autres branches.
 2. Un commit par correctif, message en anglais, sujet `sous-système: description`. Ne jamais réécrire l'historique publié.
 3. Ne pas recompiler tout le noyau en local pour de petites modifications : pousser, la CI construit les deux variantes
    (`a9` et `a10`). Compiler en local seulement pour vérifier un comportement (ex. une option Kconfig ou la taille).
