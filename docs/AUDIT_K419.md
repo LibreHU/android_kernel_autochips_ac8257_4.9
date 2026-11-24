@@ -191,6 +191,7 @@ spin_unlock_bh(&sock_tag_list_lock);
   avait corrigé justement une corruption « venant de la mémoire au-dessus de 4 Gio ».
 - Effet probable : un buffer caméra importé en adresse physique par le GPU ou l'affichage (masque 32 bits) est tronqué :
   écriture dans une autre page. Les pages ION en ZONE_MOVABLE gênent aussi la compaction.
+  (24/11/2026 : plus de ZONE_MOVABLE, la zone du LK est rendue comme RAM ordinaire, comme en 4.9 ; voir K419.md.)
 - Correctif proposé :
 
 ```diff

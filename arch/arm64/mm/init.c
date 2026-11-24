@@ -229,16 +229,6 @@ static phys_addr_t __init max_zone_dma_phys(void)
 	return min(offset + (1ULL << 32), memblock_end_of_DRAM());
 }
 
-/*
- * LibreHU (AC8257): base of the LK's "zone-movable-cma-memory" region, set by
- * drivers/misc/librehu/zmc_release.c when MediaTek's ZONE_MOVABLE_CMA is not built. As the 4.9
- * kernel's ZMC does, the memory from there to the end of DRAM becomes ZONE_MOVABLE (user and page
- * cache pages only) and ZONE_DMA32 / ZONE_NORMAL end below it: kernel allocations stay under that
- * base (0xc0000000 on the UJC201, under 4 GiB), as on 4.9, instead of landing above 4 GiB where
- * vendor drivers that hand physical addresses to 32-bit hardware would break. 0: no such region.
- */
-phys_addr_t librehu_zmc_movable_base __initdata;
-
 #ifdef CONFIG_NUMA
 
 static void __init zone_sizes_init(unsigned long min, unsigned long max)
@@ -260,21 +250,23 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 	struct memblock_region *reg;
 	unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
 	unsigned long max_dma = min;
-	unsigned long movable = max;
-
-	if (librehu_zmc_movable_base && PFN_DOWN(librehu_zmc_movable_base) > min &&
-	    PFN_DOWN(librehu_zmc_movable_base) < max)
-		movable = PFN_DOWN(librehu_zmc_movable_base);
 
 	memset(zone_size, 0, sizeof(zone_size));
 
-	/* 4GB maximum for 32-bit only capable devices */
+	/*
+	 * 4GB maximum for 32-bit only capable devices.
+	 * LibreHU (AC8257): no ZONE_MOVABLE. The LK's "zone-movable-cma-memory" region (0xc0000000, about 4 GiB on the
+	 * UJC201) is given back by drivers/misc/librehu/zmc_release.c and is ordinary RAM here, as on the 4.9 kernel:
+	 * there MediaTek's ZMC finds no secure memory to set up ("memory-ssmr: ... SSMR init: skipped, no requirement",
+	 * no CMA area) and puts the whole region back in memblock, so ZONE_DMA ends at 4 GiB and ZONE_NORMAL holds the
+	 * rest (stock and LibreHU 4.9 boot logs, 24/11/2026). ZONE_DMA32 under 4 GiB, ZONE_NORMAL above, all of it for
+	 * any allocation; ION keeps its pages under 4 GiB itself (ion_gfp_below_4g()), the M4U maps 34-bit addresses.
+	 */
 #ifdef CONFIG_ZONE_DMA32
-	max_dma = min_t(unsigned long, PFN_DOWN(arm64_dma_phys_limit), movable);
+	max_dma = PFN_DOWN(arm64_dma_phys_limit);
 	zone_size[ZONE_DMA32] = max_dma - min;
 #endif
-	zone_size[ZONE_NORMAL] = movable - max_dma;
-	zone_size[ZONE_MOVABLE] = max - movable;
+	zone_size[ZONE_NORMAL] = max - max_dma;
 
 	memcpy(zhole_size, zone_size, sizeof(zhole_size));
 
@@ -291,21 +283,13 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 			zhole_size[ZONE_DMA32] -= dma_end - start;
 		}
 #endif
-		if (end > max_dma && start < movable) {
-			unsigned long normal_end = min(end, movable);
+		if (end > max_dma) {
+			unsigned long normal_end = min(end, max);
 			unsigned long normal_start = max(start, max_dma);
 			zhole_size[ZONE_NORMAL] -= normal_end - normal_start;
 		}
-		if (end > movable) {
-			unsigned long movable_end = min(end, max);
-			unsigned long movable_start = max(start, movable);
-			zhole_size[ZONE_MOVABLE] -= movable_end - movable_start;
-		}
 	}
 
-	if (movable < max)
-		pr_info("ac8257: ZONE_MOVABLE from %pa (LK zone-movable-cma-memory), as the 4.9 ZMC\n",
-			&librehu_zmc_movable_base);
 	free_area_init_node(0, zone_size, min, zhole_size);
 }
 
