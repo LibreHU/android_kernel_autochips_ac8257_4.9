@@ -3343,6 +3343,13 @@
 
 		android {
 			compatible = "android,firmware";
+			/*
+			 * LibreHU Vulkan branch: Android init reads this file of /proc/device-tree/firmware/android as
+			 * ro.boot.librehu_gpu. It says that this kernel has the PowerVR DDK 1.11 driver, so that the vendor
+			 * init script of the Vulkan package (librehu_gpu_ddk111.rc) puts the DDK 1.11 user space in place
+			 * of the stock 1.10 one. Any other kernel has no such property and keeps the stock 1.10 driver.
+			 */
+			librehu_gpu = "1.11";
 
 			vbmeta {
 				compatible = "android,vbmeta";

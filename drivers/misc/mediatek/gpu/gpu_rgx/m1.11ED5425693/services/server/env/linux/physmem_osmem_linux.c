@@ -1244,6 +1244,15 @@ _GetGFPFlags(IMG_BOOL bZero,
 #if defined(PVR_LINUX_PHYSMEM_USE_HIGHMEM_ONLY)
 	/* Force use of HIGHMEM */
 	gfp_flags |= __GFP_HIGHMEM;
+#if defined(CONFIG_MACH_AC8257) && defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA32)
+	/*
+	 * LibreHU (AC8257, 6 GiB): the GPU is a 32-bit DMA master (rgx_mtk/sysconfig.c sets DMA_BIT_MASK(32)). DDK 1.11
+	 * has no zone guard left on this path (1.10 had __GFP_DMA under CONFIG_ZONE_DMA, dead on arm64 4.19), so the
+	 * pages came from ZONE_NORMAL, above 4 GiB on this unit, and the GPU used truncated addresses (the hang of the
+	 * 1.10 driver with kernel r237). ZONE_DMA32 is the memory under 4 GiB; __GFP_HIGHMEM cannot go with it.
+	 */
+	gfp_flags = (gfp_flags & ~__GFP_HIGHMEM) | __GFP_DMA32;
+#endif
 
 	PVR_UNREFERENCED_PARAMETER(psDev);
 #else

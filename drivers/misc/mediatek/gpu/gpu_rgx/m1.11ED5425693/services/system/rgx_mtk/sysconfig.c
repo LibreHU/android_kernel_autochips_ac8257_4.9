@@ -66,7 +66,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct platform_device *gpsPVRCfgDev;
 #endif
 
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 #include <linux/dma-mapping.h>
 #endif
 
@@ -159,7 +159,7 @@ struct devfreq_cooling_power g_mtk_power_model_ops = {
 
 #endif
 
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 #define SYSTEM_1G_ADDRESS_SHIFT 0x40000000ULL
 #endif
 
@@ -172,7 +172,7 @@ static void UMAPhysHeapCpuPAddrToDevPAddr(IMG_HANDLE hPrivData,
 	PVR_UNREFERENCED_PARAMETER(hPrivData);
 
 	/* Optimise common case */
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 	if (psCpuPAddr[0].uiAddr >= SYSTEM_1G_ADDRESS_SHIFT)
 	{
 		psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr - SYSTEM_1G_ADDRESS_SHIFT;
@@ -189,7 +189,7 @@ static void UMAPhysHeapCpuPAddrToDevPAddr(IMG_HANDLE hPrivData,
 		IMG_UINT32 ui32Idx;
 
 		for (ui32Idx = 1; ui32Idx < ui32NumOfAddr; ++ui32Idx)
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 			if (psCpuPAddr[ui32Idx].uiAddr >= SYSTEM_1G_ADDRESS_SHIFT)
 			    psDevPAddr[ui32Idx].uiAddr = psCpuPAddr[ui32Idx].uiAddr - SYSTEM_1G_ADDRESS_SHIFT;
 #else
@@ -197,12 +197,12 @@ static void UMAPhysHeapCpuPAddrToDevPAddr(IMG_HANDLE hPrivData,
 #endif
 	}
 }
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 #undef SYSTEM_1G_ADDRESS_SHIFT
 #endif
 
 /* Device to CPU physcial address translation */
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 #define SYSTEM_1G_ADDRESS_SHIFT 0x40000000ULL
 #endif
 static void UMAPhysHeapDevPAddrToCpuPAddr(IMG_HANDLE hPrivData,
@@ -213,7 +213,7 @@ static void UMAPhysHeapDevPAddrToCpuPAddr(IMG_HANDLE hPrivData,
 	PVR_UNREFERENCED_PARAMETER(hPrivData);
 
 	/* Optimise common case */
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 	psCpuPAddr[0].uiAddr = psDevPAddr[0].uiAddr + SYSTEM_1G_ADDRESS_SHIFT;
 #else
 	psCpuPAddr[0].uiAddr = psDevPAddr[0].uiAddr;
@@ -222,7 +222,7 @@ static void UMAPhysHeapDevPAddrToCpuPAddr(IMG_HANDLE hPrivData,
 		IMG_UINT32 ui32Idx;
 
 		for (ui32Idx = 1; ui32Idx < ui32NumOfAddr; ++ui32Idx)
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 			psCpuPAddr[ui32Idx].uiAddr = psDevPAddr[ui32Idx].uiAddr + SYSTEM_1G_ADDRESS_SHIFT;
 #else
 			psCpuPAddr[ui32Idx].uiAddr = psDevPAddr[ui32Idx].uiAddr;
@@ -230,7 +230,7 @@ static void UMAPhysHeapDevPAddrToCpuPAddr(IMG_HANDLE hPrivData,
 	}
 }
 
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 #undef SYSTEM_1G_ADDRESS_SHIFT
 #endif
 
@@ -298,7 +298,13 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 	gsRGXTimingInfo.bEnableRDPowIsland = false;
 #endif
 
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_AC8257)
+	/*
+	 * 32-bit GPU. LibreHU: the coherent mask too, written out: dma_alloc_coherent() of the large-page
+	 * allocations (_AllocOSPage_CMA) follows it, 4.19 dma_alloc_attrs() dropping the caller's zone flags.
+	 */
+	dma_set_mask_and_coherent(pvOSDevice, DMA_BIT_MASK(32));
+#elif defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_AC8257)
 	dma_set_mask(pvOSDevice, DMA_BIT_MASK(32));
 #endif
 

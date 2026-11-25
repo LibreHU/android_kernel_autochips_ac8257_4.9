@@ -217,6 +217,10 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 	}
 #else
 	PVR_UNREFERENCED_PARAMETER(psDev);
+#if defined(CONFIG_MACH_AC8257) && defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA32)
+	/* LibreHU: under 4 GiB for the 32-bit GPU of the 6 GiB AC8257; see _GetGFPFlags() */
+	gfp_flags |= __GFP_DMA32;
+#endif
 #endif
 
 	/*allocate the pages */

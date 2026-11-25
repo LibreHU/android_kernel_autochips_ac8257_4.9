@@ -2,8 +2,6 @@ OPTIM = -Os
 
 MTK_GPU_VERSION = $(subst ",,$(CONFIG_MTK_GPU_VERSION))
 
-MTK_PLATFORM = mt6779
-
 ccflags-$(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) += -DSSPM_DEBUG
 
 ifeq ($(word 2,$(MTK_GPU_VERSION)),marlowe)
@@ -14,9 +12,6 @@ else
 	ECO := ""
 endif
 
-ifeq ($(word 2,$(MTK_GPU_VERSION)),lorne)
-        ccflags-y += -DCONFIG_MACH_MT6779
-endif
 
 
 RGX_TOP := $(dir $(lastword $(MAKEFILE_LIST)))
@@ -160,7 +155,6 @@ pvrsrvkm-y += \
 	services/server/env/linux/pvr_debugfs.o \
 	services/server/env/linux/osconnection_server.o \
 	services/shared/devices/rgx/rgx_hwperf_table.o \
-	services/server/env/linux/pvr_dvfs_device.o \
 	services/shared/common/devicemem_utils.o \
 	services/shared/common/hash.o \
 	services/shared/common/ra.o \
@@ -188,6 +182,13 @@ endif
 pvrsrvkm-$(CONFIG_ARM) += services/server/env/linux/osfunc_arm.o
 pvrsrvkm-$(CONFIG_ARM64) += services/server/env/linux/osfunc_arm64.o
 pvrsrvkm-$(CONFIG_EVENT_TRACING) += services/server/env/linux/trace_events.o
+
+# Linux devfreq DVFS of the DDK (PVR_DVFS): only the MT6779 configuration defines it. The AC8257 / MT6761 one
+# keeps MediaTek's GED DVFS (ENABLE_COMMON_DVFS), as the 1.10 driver, which had no pvr_dvfs_device.c.
+ifeq ($(MTK_PLATFORM),mt6779)
+	pvrsrvkm-y += services/server/env/linux/pvr_dvfs_device.o
+	ccflags-y += -I$(srctree)/drivers/devfreq
+endif
 
 ifeq ($(MTK_PLATFORM),mt6799)
 	pvrsrvkm-y += \
@@ -244,12 +245,9 @@ ccflags-y += \
 ccflags-y += \
 	-I$(srctree)/drivers/staging/android/ion \
 	-I$(srctree)/drivers/staging/android/ion/mtk \
-	-I$(srctree)/drivers/gpu/mediatek/ged/include \
-	-I$(srctree)/drivers/gpu/mediatek \
-	-I$(srctree)/drivers/gpu/mediatek/gpufreq/include \
-	-I$(srctree)/drivers/gpu/mediatek/gpu_bm \
-	-I$(srctree)/drivers/devfreq \
-#	-I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+	-I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
+	-I$(srctree)/drivers/misc/mediatek/include/mt-plat \
+	-I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 
 
 
