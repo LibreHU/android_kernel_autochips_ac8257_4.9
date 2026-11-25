@@ -244,12 +244,34 @@ spin_unlock_bh(&sock_tag_list_lock);
 - Correctif : masque cohérent de 32 bits pour les 40 périphériques de `sound/soc/mediatek` (même valeur que le défaut
   des périphériques du device tree, `drivers/of/platform.c`) : `dma_alloc_coherent()` et `snd_dma_alloc_pages()`
   prennent alors ZONE_DMA32, sous 4 Gio, comme en 4.9 ; `dma_mask` pointe sur ce masque (mappages par swiotlb si besoin).
-- Recherche faite pour ne rien laisser (fichiers compilés du noyau r238 a10-lto32, journal du CI) : tous les
-  `dma_alloc_coherent` / `dma_zalloc_coherent` / `dma_alloc_attrs` / `dmam_alloc_coherent` / `dma_alloc_wc` avec
-  `GFP_DMA` : 4 fichiers. Trois de l'AFE (corrigés ici) et `drivers/misc/mediatek/btif/common/mtk_btif.c` (vFIFO du
-  BTIF) : aucun masque écrit, donc 32 bits par défaut, déjà sous 4 Gio. Masques de plus de 32 bits restants (DMA AC8x
-  33 bits, I2C 33 / 36, PWM, USB 2.0, CLDMA, MSDC 36, xHCI 64) : sans `GFP_DMA`, mêmes allocations qu'en 4.9, où la
-  mémoire au-dessus de 4 Gio existait déjà en ZONE_NORMAL.
+- Audit complet de cette classe (25/11/2026), parti des seules différences 4.9 → 4.19 qui peuvent donner de la
+  mémoire au-dessus de 4 Gio à un pilote qui marchait en 4.9 (ailleurs, la mémoire au-dessus de 4 Gio existait déjà en
+  ZONE_NORMAL sous 4.9) :
+  1. `dma_alloc_attrs()` retire `__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM` (`include/linux/dma-mapping.h`) et
+     `dma_direct_alloc()` ne regarde que le masque cohérent ; 4.9 gardait la zone de l'appelant
+     (`arch/arm64/mm/dma-mapping.c`, `__dma_alloc_coherent`).
+  2. `kmalloc(GFP_DMA)` (jusqu'à 8 Kio) : sans `CONFIG_ZONE_DMA`, plus de caches `dma-kmalloc`, drapeau ignoré
+     (`include/linux/slab.h`, `kmalloc_type`) ; 4.9 servait ZONE_DMA.
+  3. Gardes `CONFIG_ZONE_DMA` : toujours fausses (config publiée : `CONFIG_ZONE_DMA32` seul).
+  L'allocateur de pages reste sûr : `GFP_DMA` y donne ZONE_DMA32 (`include/linux/gfp.h`, `CONFIG_MEDIATEK_SOLUTION`),
+  idem pour les caches `SLAB_CACHE_DMA` ; swiotlb est sous 4 Gio (`arm64_dma_phys_limit = max_zone_dma_phys()`).
+- Fichiers balayés : les 3 411 `.c` compilés par le CI (r238 : a9, a9-lto32, a10-lto32, a11-lto32, modules compris ;
+  pilote GPU 1.11 de la branche Vulkan, r240) et les `.h` de leurs dossiers, 4 812 fichiers. Résultats :
+  - (1) `dma_alloc_*` avec `GFP_DMA` / `GFP_DMA32` : les 3 fichiers de l'AFE (corrigés ici) et `mtk_btif.c` (masque
+    32 bits par défaut, `drivers/of/platform.c` : sous 4 Gio).
+  - (2) `kmalloc` / `kzalloc` / `krealloc` / `kmemdup` avec `GFP_DMA` : 19 appels, aucun ne donne son adresse
+    physique au matériel sans l'API DMA. regmap, tactile ILITEK, contrôles ASoC : l'I2C MTK recopie dans son propre
+    tampon cohérent (masque cohérent 32 bits par défaut ; bits 32+ écrits dans `*_MEM_ADDR2` pour ses modes 33 / 36
+    bits). SPI (`spi.c`) : mappé par l'API DMA ; le SPI AC8257 (`dma8g_spi_ext`) écrit les bits hauts
+    (`SPI_*_REG_64`). Gadgets USB (MTP, RNDIS, audio source, u_ether) : la QMU MUSB écrit les bits hauts de chaque
+    tampon (`TGPD_SET_DATA_TXHI/RXHI`), anneaux alloués sous masque 32 bits. SCSI : `__GFP_DMA` seulement pour l'ISA.
+    nanohub : aucun nœud dans le device tree, jamais sondé. `lib/scatterlist.c` : retire `GFP_DMA`.
+  - (3) gardes `CONFIG_ZONE_DMA` : seulement les deux du GPU 1.10 (B4 bis, déjà doublées d'un `#elif ZONE_DMA32`).
+  - pools DMA (CLDMA / DPMAIF 36 bits, CMDQ, USB, xHCI 64 bits) : zone choisie par le masque, comme en 4.9.
+  - masques de plus de 32 bits (DMA AC8x 33, I2C 33 / 36, SPI 36, PWM / USB 2.0 / CLDMA / MSDC 36, xHCI 64) : leurs
+    pilotes écrivent les bits hauts (`VFF_4G_SUPPORT`, `*_ADDR2`, `*_REG_64`, `ptrh4` / `nexth4` du MSDC, QMU MUSB) et
+    ne passent pas de `GFP_DMA` : mêmes allocations qu'en 4.9.
+  Conclusion : l'AFE était le seul pilote compilé touché ; GPU (B4 bis) et ION (B4) déjà corrigés.
 
 ### B5 [HAUT] dualarm : spinlock pris sans couper les IRQ, aussi pris en IRQ dure
 
