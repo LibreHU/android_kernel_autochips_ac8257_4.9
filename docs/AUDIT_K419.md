@@ -208,6 +208,25 @@ spin_unlock_bh(&sock_tag_list_lock);
 - Test : caméra arrière et AVM, lecture vidéo ; `cat /proc/pagetypeinfo` avant/après (moins de pages non migrables en Movable).
 - Confiance : prouvé (code et config) ; impact réel selon l'usage du tas caméra.
 
+### B4 bis [CRITIQUE, 25/11/2026] GPU : la limite « < 4 Gio » de MediaTek est aussi du code mort en 4.19
+
+- Où : `drivers/misc/mediatek/gpu/gpu_rgx/m1.10ED5130912/services/server/env/linux/physmem_osmem_linux.c`
+  (`_GetGFPFlags()`, branche `PVR_LINUX_PHYSMEM_USE_HIGHMEM_ONLY`, définie pour l'AC8257) et `osfunc.c` (pages internes).
+- Problème : même garde que B4, `#if defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA)`, toujours fausse en arm64
+  4.19. En 4.9, `__GFP_HIGHMEM | __GFP_DMA` met toutes les pages du GPU en ZONE_DMA, sous 4 Gio ; le GPU est un maître
+  DMA 32 bits (`rgx_mtk/sysconfig.c` : `DMA_BIT_MASK(32)` sous `CONFIG_MACH_AC8257`). En 4.19 il ne restait que
+  `__GFP_HIGHMEM` (ZONE_NORMAL). Tant que la zone du LK était ZONE_MOVABLE, ZONE_NORMAL était vide et les pages
+  retombaient en DMA32 (sous 0xc0000000) : correct par hasard. Avec la zone rendue comme RAM ordinaire (r236-r237),
+  ZONE_NORMAL = 4 à 7 Gio : pages du GPU au-dessus de 4 Gio, adresses tronquées par le GPU ; l'unité restait sur le
+  menu de démarrage (17.1 du 24/11, noyau r237), puis redémarrait en TWRP.
+- Correctif : `__GFP_DMA32` (sans `__GFP_HIGHMEM`) sous `CONFIG_ZONE_DMA32` aux deux endroits, comme ION (B4) ;
+  masque cohérent du GPU écrit aussi (`dma_set_mask_and_coherent`) : `dma_alloc_attrs()` de 4.19 retire les
+  drapeaux de zone de l'appelant et suit ce masque (chemin `_AllocOSPage_CMA`).
+- Recherche faite pour ne rien laisser : tout l'arbre compilé, gardes `CONFIG_ZONE_DMA` (restent ION, déjà corrigé,
+  et des pilotes non compilés), `kmalloc(GFP_DMA)` (aucun dans le code compilé : les caches dma-kmalloc absents de
+  4.19 ne servent à personne), troncatures d'adresses physiques (aucune), `enable_4G()` (0 en 4.9 comme en 4.19),
+  masques DMA de plus de 32 bits (USB, PWM, CLDMA : identiques à 4.9), IOMMU (bits 32 / 33 des PTE v7s, comme 4.9).
+
 ### B5 [HAUT] dualarm : spinlock pris sans couper les IRQ, aussi pris en IRQ dure
 
 - Où : `drivers/misc/autochips/dualarm/dual_hal.c:109, 125, 139, 155, 169` (`spin_lock(&Dualarm_Lock)` dans

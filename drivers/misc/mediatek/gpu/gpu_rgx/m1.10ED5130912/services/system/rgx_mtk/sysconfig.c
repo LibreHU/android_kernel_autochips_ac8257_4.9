@@ -232,7 +232,11 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 #endif
 
 #if defined(CONFIG_MACH_AC8257)
-	dma_set_mask(pvOSDevice, DMA_BIT_MASK(32));
+	/*
+	 * 32-bit GPU. LibreHU 4.19: the coherent mask too, written out: dma_alloc_coherent() of the large-page
+	 * allocations (_AllocOSPage_CMA) follows it, 4.19 dma_alloc_attrs() dropping the caller's zone flags.
+	 */
+	dma_set_mask_and_coherent(pvOSDevice, DMA_BIT_MASK(32));
 #endif
 
 	/* Setup RGX specific data */

@@ -1243,6 +1243,15 @@ _GetGFPFlags(IMG_BOOL bZero,
 	gfp_flags |= __GFP_HIGHMEM;
 #if defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA)
 	gfp_flags |= __GFP_DMA;
+#elif defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA32)
+	/*
+	 * LibreHU 4.19 (AC8257, 6 GiB): the GPU is a 32-bit DMA master (rgx_mtk/sysconfig.c sets DMA_BIT_MASK(32)) and
+	 * MediaTek's 4.9 kernel keeps its pages in ZONE_DMA, under 4 GiB, through the __GFP_DMA above. arm64 4.19 has no
+	 * ZONE_DMA, only ZONE_DMA32 (the same memory, under 4 GiB): ask for it. __GFP_HIGHMEM cannot go with
+	 * __GFP_DMA32 (and arm64 has no highmem). Without it the pages came from ZONE_NORMAL, above 4 GiB once the LK's
+	 * ZMC region is ordinary memory, and the GPU used truncated addresses (r237: Android never started).
+	 */
+	gfp_flags = (gfp_flags & ~__GFP_HIGHMEM) | __GFP_DMA32;
 #endif
 	PVR_UNREFERENCED_PARAMETER(psDev);
 #else

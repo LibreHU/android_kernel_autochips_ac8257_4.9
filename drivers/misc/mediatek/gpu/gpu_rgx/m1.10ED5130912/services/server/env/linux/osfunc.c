@@ -205,6 +205,9 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 	gfp_flags = GFP_KERNEL;
 #if defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA)
 	gfp_flags |=  __GFP_DMA;
+#elif defined(CONFIG_64BIT) && defined(CONFIG_ZONE_DMA32)
+	/* LibreHU 4.19: under 4 GiB as on 4.9 (ZONE_DMA there), for the 32-bit GPU; see _GetGFPFlags() */
+	gfp_flags |= __GFP_DMA32;
 #endif
 
 #if !defined(PVR_LINUX_PHYSMEM_USE_HIGHMEM_ONLY)
