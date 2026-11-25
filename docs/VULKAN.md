@@ -131,5 +131,9 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
   5425693 (DDK 1.11), API 1.1.100, 53 extensions dont `VK_KHR_android_surface` / `VK_KHR_swapchain` ; ETC2 et ASTC LDR ;
   pas de `samplerAnisotropy`, `geometryShader`, `tessellationShader` (3DMark Wild Life Extreme exige l'anisotropie 16).
 - Android Auto (Open Headunit) : se lance sans problème avec le paquet 1.11.
+- **Veille : CASSÉE** — écran noir à la sortie de veille (25/11/2026). La RC `rc-4.19.325` (DDK 1.10) sort de veille
+  normalement : seul le pilote GPU diffère. Le code MediaTek de mise sous / hors tension (`rgx_mtk/ac8257/mtk_mfgsys.c`)
+  et les `dev_pm_ops` (`pvr_drm.c`) sont identiques entre 1.10 et 1.11 : la cause est dans le cœur du DDK 1.11 ou le
+  firmware ; diagnostic en attente des journaux (`dmesg` si adb répond, sinon `/sys/fs/pstore` après redémarrage).
 - Reste à faire (section 3) : rendu réel (3DMark Sling Shot Extreme Vulkan / Wild Life), YouTube, caméra de recul,
-  CarPlay, veille.
+  CarPlay.
