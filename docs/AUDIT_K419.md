@@ -244,6 +244,7 @@ spin_unlock_bh(&sock_tag_list_lock);
 - Correctif : masque cohérent de 32 bits pour les 40 périphériques de `sound/soc/mediatek` (même valeur que le défaut
   des périphériques du device tree, `drivers/of/platform.c`) : `dma_alloc_coherent()` et `snd_dma_alloc_pages()`
   prennent alors ZONE_DMA32, sous 4 Gio, comme en 4.9 ; `dma_mask` pointe sur ce masque (mappages par swiotlb si besoin).
+- Validé sur l'unité le 25/11/2026 : noyau r241-bf6573e0f (a10-lto32) sous LineageOS 17.1, le son est revenu.
 - Audit complet de cette classe (25/11/2026), parti des seules différences 4.9 → 4.19 qui peuvent donner de la
   mémoire au-dessus de 4 Gio à un pilote qui marchait en 4.9 (ailleurs, la mémoire au-dessus de 4 Gio existait déjà en
   ZONE_NORMAL sous 4.9) :
