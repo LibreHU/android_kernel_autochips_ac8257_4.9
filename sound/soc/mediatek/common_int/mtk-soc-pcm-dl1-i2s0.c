@@ -679,7 +679,8 @@ static int mtk_i2s0_probe(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
 
-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+	/* LibreHU: the AFE takes 32-bit buffer addresses (docs/AUDIT_K419.md B4 ter) */
+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
 	if (!pdev->dev.dma_mask)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
