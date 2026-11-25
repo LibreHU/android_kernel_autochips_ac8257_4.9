@@ -88,7 +88,8 @@ static int mtk_routing_dev_probe(struct platform_device *pdev)
 
 	pr_debug("mtk_routing_dev_probe  name %s\n", dev_name(&pdev->dev));
 
-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+	/* LibreHU: the AFE takes 32-bit buffer addresses (docs/AUDIT_K419.md B4 ter) */
+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
 	if (pdev->dev.dma_mask == NULL)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 

@@ -5813,7 +5813,8 @@ static const struct snd_soc_component_driver soc_mtk_codec = {
 };
 static int mtk_mt6357_codec_dev_probe(struct platform_device *pdev)
 {
-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+	/* LibreHU: the AFE takes 32-bit buffer addresses (docs/AUDIT_K419.md B4 ter) */
+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
 	if (pdev->dev.dma_mask == NULL)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 	if (pdev->dev.of_node) {

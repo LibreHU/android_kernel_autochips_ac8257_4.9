@@ -227,6 +227,30 @@ spin_unlock_bh(&sock_tag_list_lock);
   4.19 ne servent à personne), troncatures d'adresses physiques (aucune), `enable_4G()` (0 en 4.9 comme en 4.19),
   masques DMA de plus de 32 bits (USB, PWM, CLDMA : identiques à 4.9), IOMMU (bits 32 / 33 des PTE v7s, comme 4.9).
 
+### B4 ter [CRITIQUE, 25/11/2026] Audio : tampons de l'AFE au-dessus de 4 Gio, plus aucun son (17.1, noyau r238)
+
+- Constat sur l'unité : 17.1 du 25/11 (noyau r238, GPU corrigé) jusqu'au launcher, mais plus aucun son.
+- Où : `sound/soc/mediatek/common_int/*.c`. Chaque pilote PCM de l'AFE écrit `coherent_dma_mask = DMA_BIT_MASK(64)` à
+  la sonde et alloue ses tampons par `dma_alloc_coherent(..., GFP_KERNEL | GFP_DMA)` (`AudDrv_Allocate_mem_Buffer`,
+  `mtk-soc-pcm-dl2.c`, `mtk-soc-pcm-dl1-i2s0Dl1.c`, boucle de retour) ou `snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV)`.
+  L'adresse est ensuite écrite sur 32 bits : `Afe_Set_Reg(AFE_DL1_BASE, addr, 0xffffffff)` (`set_mem_blk_addr`) ; les
+  registres `AFE_*_BASE_MSB` ne sont jamais écrits (seulement lus pour le débogage), et les bits 28 / 29
+  d'`AFE_MEMIF_MSB` règlent le format CPU / la SRAM, pas l'adresse.
+- Problème : en 4.9, `dma_alloc_coherent()` garde le `GFP_DMA` de l'appelant : tampons en ZONE_DMA, sous 4 Gio. En
+  4.19, `dma_alloc_attrs()` retire les drapeaux de zone et suit le masque cohérent (64 bits) : tampons possibles en
+  ZONE_NORMAL, 4 à 7 Gio depuis que la zone du LK est de la RAM ordinaire, adresses tronquées par l'AFE, rien n'est joué.
+  Avant (zone du LK en ZONE_MOVABLE), ZONE_NORMAL vide : tampons sous 4 Gio par hasard, le son marchait. Même classe
+  que B4 bis ; la recherche de B4 bis avait vérifié les masques, pas les `GFP_DMA` passés à `dma_alloc_*`.
+- Correctif : masque cohérent de 32 bits pour les 40 périphériques de `sound/soc/mediatek` (même valeur que le défaut
+  des périphériques du device tree, `drivers/of/platform.c`) : `dma_alloc_coherent()` et `snd_dma_alloc_pages()`
+  prennent alors ZONE_DMA32, sous 4 Gio, comme en 4.9 ; `dma_mask` pointe sur ce masque (mappages par swiotlb si besoin).
+- Recherche faite pour ne rien laisser (fichiers compilés du noyau r238 a10-lto32, journal du CI) : tous les
+  `dma_alloc_coherent` / `dma_zalloc_coherent` / `dma_alloc_attrs` / `dmam_alloc_coherent` / `dma_alloc_wc` avec
+  `GFP_DMA` : 4 fichiers. Trois de l'AFE (corrigés ici) et `drivers/misc/mediatek/btif/common/mtk_btif.c` (vFIFO du
+  BTIF) : aucun masque écrit, donc 32 bits par défaut, déjà sous 4 Gio. Masques de plus de 32 bits restants (DMA AC8x
+  33 bits, I2C 33 / 36, PWM, USB 2.0, CLDMA, MSDC 36, xHCI 64) : sans `GFP_DMA`, mêmes allocations qu'en 4.9, où la
+  mémoire au-dessus de 4 Gio existait déjà en ZONE_NORMAL.
+
 ### B5 [HAUT] dualarm : spinlock pris sans couper les IRQ, aussi pris en IRQ dure
 
 - Où : `drivers/misc/autochips/dualarm/dual_hal.c:109, 125, 139, 155, 169` (`spin_lock(&Dualarm_Lock)` dans
