@@ -1,5 +1,9 @@
 # Noyau LibreHU pour l'UJC201 (Jancar, Autochips AC8257)
 
+> **Branche `rc-4.19.325-vulkan` (EXPERIMENTALE)** : noyau 4.19 avec le pilote GPU PowerVR **DDK 1.11** et paquet
+> Vulkan 1.1 pour le vendor stock (`tools/gpu`). Lire [docs/VULKAN.md](docs/VULKAN.md) avant tout essai : ordre
+> d'installation, retour arriere, risques connus.
+
 Noyau Linux 4.9.117 de l'autoradio Jancar UJC201 (SoC Autochips AC8257), construit sur les **sources GPL officielles
 d'Autochips** recues de SIXWIN / Jancar le 19/10/2026, auxquelles on ajoute les modifications LibreHU.
 
