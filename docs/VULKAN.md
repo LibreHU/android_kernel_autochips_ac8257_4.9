@@ -130,4 +130,6 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
   [vulkan.gpuinfo.org 53692](https://vulkan.gpuinfo.org/displayreport.php?id=53692) : PowerVR Rogue GE8300, pilote
   5425693 (DDK 1.11), API 1.1.100, 53 extensions dont `VK_KHR_android_surface` / `VK_KHR_swapchain` ; ETC2 et ASTC LDR ;
   pas de `samplerAnisotropy`, `geometryShader`, `tessellationShader` (3DMark Wild Life Extreme exige l'anisotropie 16).
-- Reste à faire (section 3) : rendu réel (3DMark Wild Life), YouTube, caméra de recul, Android Auto / CarPlay, veille.
+- Android Auto (Open Headunit) : se lance sans problème avec le paquet 1.11.
+- Reste à faire (section 3) : rendu réel (3DMark Sling Shot Extreme Vulkan / Wild Life), YouTube, caméra de recul,
+  CarPlay, veille.
