@@ -28,3 +28,17 @@ set_ctx() {
 
 # Fichiers d'un MANIFEST (lignes "<sha256>  /vendor/...") : chemin sur la partition vendor montee
 manifest_paths() { awk '{print $2}' "$1" | sed "s#^/vendor#$VENMNT#"; }
+
+# dm-verity de /vendor coupe : vbmeta avec HASHTREE_DISABLED (bit 0) ou VERIFICATION_DISABLED (bit 1, celui qu'exige
+# le zip de la ROM) : pour l'un comme l'autre, fs_mgr ne monte pas dm-verity (Android 10 : libfs_avb,
+# AvbHandle::SetUpAvbHashtree renvoie kDisabled). Sinon : require_no_verity (partition non verifiee, ou refus).
+require_vendor_unverified() {
+	if vbmeta_ok; then
+		_vf=$(vbmeta_byte 123)
+		if [ -n "$_vf" ] && [ $((_vf & 3)) != 0 ]; then
+			ui_print "vbmeta flags $_vf: dm-verity off on /vendor: OK"
+			return
+		fi
+	fi
+	require_no_verity vendor
+}

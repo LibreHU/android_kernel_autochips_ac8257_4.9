@@ -86,9 +86,9 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
 | 7 | Contrat gralloc 1.11 ↔ `libgralloc_extra` / hwcomposer Jancar | mêmes exports ; même borne des requêtes (`0x33`) ; la 1.11 ajoute 2 codes GE en fin de liste (`0x3e`, `0x3f`) que la lib stock refuserait : **à tester** (artefacts d'image, plantage SurfaceFlinger) |
 | 8 | Firmware 1.11 ↔ pilote 1.11 | même build 5425693 ; vérifié par le pilote à l'init (`dmesg` : compat check) : **à tester** |
 | 9 | DVFS / veille avec le cœur 1.11 et le code plateforme AutoChips 1.10 | compile, mêmes fonctions GED / gpufreq ; **à tester** (fréquence GPU, veille / réveil) |
-| 10 | SELinux | bind mounts faits par init ; les images de boot sont en `permissive` (comme le stock) ; en `enforcing` il faudrait une règle `mounton` |
+| 10 | SELinux | `mount` s'exécute dans init, `setprop` dans le sous-contexte `vendor_init` (Android 10, `builtins.cpp`) ; les images de boot sont en `permissive` (comme le stock, `BUILD_INFO`) ; en `enforcing` il faudrait une règle `mounton` et le droit de poser `ro.hardware.vulkan` |
 | 11 | Autre build de vendor Jancar | l'installeur compare les empreintes des libs MTK utilisées et du hwcomposer ; différent = refus sans écrire |
-| 12 | dm-verity actif sur vendor | refus sans écrire (comme les autres zips) |
+| 12 | dm-verity actif sur vendor | refus sans écrire ; accepté si vbmeta a HASHTREE_DISABLED **ou** VERIFICATION_DISABLED (celui qu'exige la ROM) : les deux coupent dm-verity (`libfs_avb`, `SetUpAvbHashtree` → `kDisabled`) |
 | 13 | `ro.hardware.vulkan` déjà posé / pilote Vulkan déjà présent | refus sans écrire (sinon fonctionnalité annoncée sans pilote) |
 | 14 | memtrack (statistiques mémoire GPU) | peut afficher 0 ; sans effet |
 | 15 | Interface Android (HWUI) | reste en OpenGL ES ; Vulkan seulement pour les applis qui le demandent |
@@ -104,5 +104,21 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
 - gralloc 1.11 et gralloc stock 1.10 : même module (`HMI` : `gralloc`, « IMG Rogue Graphics HAL », API 1.0 = gralloc1, celle
   qu'utilise le hwcomposer Jancar via `GrallocDevice`) ; mêmes imports de `libgralloc_extra` sauf `gralloc_extra_perform` et
   `gralloc_extra_sf_set_status2`, que la lib stock exporte.
-- Zips : 8 scénarios (`tools/gpu/test_twrp_zips.sh`) : installation, réinstallation, 4 refus sans écriture, retrait
+- Chaîne d'activation (sources LineageOS 17.1 / 16.0) : init lit `/firmware/android/*` en `ro.boot.*` dans
+  `property_init()` (`process_kernel_dt`), avant `LoadBootScripts` ; `on early-init && property:…` est accepté par
+  `action_parser.cpp` et la condition relue par `GetProperty` ; `mount … bind` (`MS_BIND`) ; `/` partagé avant la
+  séparation des espaces de noms ; libvulkan cherche `vulkan.<ro.hardware.vulkan>.so` puis `vulkan.<ro.board.platform>.so`
+  dans `sphal` (puis `hw_get_module`) : `vulkan.librehu.so` n'est trouvé que si `ro.hardware.vulkan=librehu` ;
+  `SystemConfig` lit `/odm/etc/permissions` avec les fonctionnalités autorisées (9 et 10) ; `/odm/etc` → `/vendor/odm/etc`.
+- Linker : chemins `sphal` = `/odm/${LIB}`, `/vendor/${LIB}`, `/vendor/${LIB}/hw` ; toutes les dépendances du paquet
+  passent par VNDK-SP, LLNDK, le paquet ou le vendor (aucune n'exige VNDK-core, invisible de `sphal`).
+- Pilote ↔ libs : `libsrv_um` 1.11 envoie options `0x80002010`, version `0x1000b` (1.11), build `0x52ca1d` (5425693) ;
+  le pilote attend `RGX_BUILD_OPTIONS_KM = 0x2010` (masque `0xFFFF`), 1.11, 5425693 : identiques. Mêmes nœuds
+  (`/dev/dri/card%d`, `renderD%d`, `/dev/pvr_sync`) qu'en 1.10.
+- Firmware : en-tête à `taille − 4096` (`0x1d000`) au format attendu (`FW_INFO_VERSION` 1, 32 octets, 6 entrées de 24),
+  BVNC 22.68.54.30 ; build vérifié par le pilote au démarrage (avertissement seulement sans `PVRSRV_STRICT_COMPAT_CHECK`).
+- Noyau publié (r239) : config identique à la RC r238 sauf `CONFIG_MTK_GPU_VERSION`, mêmes lignes de commande ; device
+  tree : `/firmware/android/librehu_gpu = "1.11"`, fstab et vbmeta intacts ; 132 objets du pilote 1.11 compilés, aucun
+  du 1.10 ; diff source avec `rc-4.19.325` limité au GPU, au device tree (1 propriété), au defconfig (1 ligne), aux outils.
+- Zips : 12 scénarios (`tools/gpu/test_twrp_zips.sh`) : installation, réinstallation, 5 refus sans écriture, vbmeta drapeaux 1 / 2 / 3 acceptés, retrait
   refusé sous noyau 1.11, retrait → vendor identique à l'original ; zip noyau : refus sans paquet, flash avec.

@@ -17,7 +17,7 @@ done < $F/MANIFEST
 cd /
 
 mount_rw
-require_no_verity vendor
+require_vendor_unverified
 
 # --- Le vendor est-il bien celui pour lequel ce paquet a ete verifie ?
 grep -q '^ro.board.platform=ac8257$' $VENMNT/build.prop || abort "vendor without ro.board.platform=ac8257: not the UJC201 stock vendor"

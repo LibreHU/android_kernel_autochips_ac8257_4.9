@@ -40,6 +40,7 @@ export PATH=$T/bin:$PATH UJC_TEST=1 UJC_VENMNT=$V UJC_SYSMNT=$T/system UJC_SDCAR
 	UJC_TMP=$T/tmp UJC_VBMETA=$T/none UJC_PART_boot=$T/boot_other.img
 INSTALL="sh $T/zip/META-INF/com/google/android/update-binary 3 1 $T/install.zip"
 REMOVE="sh $T/rm/META-INF/com/google/android/update-binary 3 1 $DIST/librehu_gpu_ddk111_remove_twrp.zip"
+REMOVE_EARLY=$REMOVE
 ok() { echo "OK   $1"; }
 ko() { echo "FAIL $1"; exit 1; }
 refused() {  # $1 = libelle, la commande ensuite : doit echouer et ne rien ecrire
@@ -53,6 +54,19 @@ refused "other reference library" sh -c "echo x >> $V/lib64/libged.so; $INSTALL;
 refused "ro.hardware.vulkan already set" sh -c "echo ro.hardware.vulkan=x >> $T/system/system/build.prop; $INSTALL; r=\$?; sed -i '/ro.hardware.vulkan/d' $T/system/system/build.prop; exit \$r"
 refused "Vulkan driver already there" sh -c "touch $V/lib64/hw/vulkan.ac8257.so; $INSTALL; r=\$?; rm $V/lib64/hw/vulkan.ac8257.so; exit \$r"
 refused "dm-verity active" sh -c "printf wait,avb > $T/dt/firmware/android/fstab/vendor/fsmgr_flags; $INSTALL; r=\$?; printf wait > $T/dt/firmware/android/fstab/vendor/fsmgr_flags; exit \$r"
+# vbmeta AVB0 avec le drapeau $1 (octet 123), vendor en avb
+vbmeta() { { printf AVB0; head -c 119 /dev/zero; printf "\\$(printf %o $1)"; head -c 132 /dev/zero; } > $T/vbmeta; }
+vbmeta 0
+refused "dm-verity active (vbmeta flags 0)" sh -c "printf wait,avb > $T/dt/firmware/android/fstab/vendor/fsmgr_flags; UJC_VBMETA=$T/vbmeta $INSTALL; r=\$?; printf wait > $T/dt/firmware/android/fstab/vendor/fsmgr_flags; exit \$r"
+for flag in 1 2 3; do
+	vbmeta $flag; printf wait,avb > $T/dt/firmware/android/fstab/vendor/fsmgr_flags
+	UJC_VBMETA=$T/vbmeta $INSTALL > $T/out 2>&1 || { cat $T/out; ko "vbmeta flags $flag (dm-verity off): refused"; }
+	grep -q "vbmeta flags $flag: dm-verity off" $T/out || ko "vbmeta flags $flag: message"
+	UJC_VBMETA=$T/vbmeta $REMOVE_EARLY > $T/out 2>&1 || { cat $T/out; ko "vbmeta flags $flag: remove"; }
+	printf wait > $T/dt/firmware/android/fstab/vendor/fsmgr_flags
+	(cd $V && find . | sort) | cmp -s - $T/vendor.before || ko "vbmeta flags $flag: vendor not back to the original"
+	ok "vbmeta flags $flag (hashtree / verification disabled): install and remove accepted"
+done
 
 $INSTALL > $T/out 2>&1 || { cat $T/out; ko "install"; }
 n=$(wc -l < $T/zip/files/MANIFEST)

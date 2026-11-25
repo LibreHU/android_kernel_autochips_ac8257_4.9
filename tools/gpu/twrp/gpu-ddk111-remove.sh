@@ -12,7 +12,7 @@ if boot_has_ddk111; then
 	abort "DDK 1.11 kernel in boot: nothing was changed"
 fi
 mount_rw
-require_no_verity vendor
+require_vendor_unverified
 [ -f $GPU_DIR/MANIFEST ] || abort "the package is not installed (no /vendor/librehu/ddk111/MANIFEST)"
 manifest_paths $GPU_DIR/MANIFEST | while read _f; do rm -f "$_f"; done
 if [ -f $GPU_DIR/created_odm_permissions ]; then
