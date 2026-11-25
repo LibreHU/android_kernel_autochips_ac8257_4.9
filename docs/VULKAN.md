@@ -95,6 +95,7 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
 | 16 | Conformité Vulkan | non vérifiée ici (pas de dEQP / CTS) ; c'est le pilote que MediaTek livrait sur MT6761 |
 | 17 | Noyau 4.9 (16.0) | pas porté ; une source 1.11 pour 4.9 existe (OpenWatchProject/android_kernel-4.9, config MT6761) |
 | 18 | Licence | blobs MediaTek / Imagination d'un autre appareil (TCL), récupérés au commit épinglé par le CI |
+| 19 | Tas mémoire Vulkan annoncé = toute la RAM (6 127 738 880 octets, rapport gpuinfo 53692) alors que les pages GPU sont limitées à ZONE_DMA32 (risque 1) | une appli qui alloue beaucoup peut échouer (`VK_ERROR_OUT_OF_DEVICE_MEMORY`) avant la taille annoncée ; à surveiller dans les essais lourds (3DMark), pas de correctif sans cas réel |
 
 ## 6. Vérifié hors ligne (avant tout essai)
 - Le pilote 1.11 compile pour cette config ; ses seuls symboles externes absents du 1.10 (`drm_dev_put`, `proc_create`,
@@ -122,3 +123,11 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
   du 1.10 ; diff source avec `rc-4.19.325` limité au GPU, au device tree (1 propriété), au defconfig (1 ligne), aux outils.
 - Zips : 12 scénarios (`tools/gpu/test_twrp_zips.sh`) : installation, réinstallation, 5 refus sans écriture, vbmeta drapeaux 1 / 2 / 3 acceptés, retrait
   refusé sous noyau 1.11, retrait → vendor identique à l'original ; zip noyau : refus sans paquet, flash avec.
+
+## 7. Résultat sur l'unité
+
+- 25/11/2026, noyau r242-521b2b32d + `librehu_gpu_ddk111_twrp.zip`, LineageOS 17.1 : Vulkan reconnu. Rapport public
+  [vulkan.gpuinfo.org 53692](https://vulkan.gpuinfo.org/displayreport.php?id=53692) : PowerVR Rogue GE8300, pilote
+  5425693 (DDK 1.11), API 1.1.100, 53 extensions dont `VK_KHR_android_surface` / `VK_KHR_swapchain` ; ETC2 et ASTC LDR ;
+  pas de `samplerAnisotropy`, `geometryShader`, `tessellationShader` (3DMark Wild Life Extreme exige l'anisotropie 16).
+- Reste à faire (section 3) : rendu réel (3DMark Wild Life), YouTube, caméra de recul, Android Auto / CarPlay, veille.
