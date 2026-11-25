@@ -101,5 +101,8 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
   `remove_proc_entry`, `seq_vprintf`, `single_open`, `single_release`) existent dans ce noyau.
 - Les 25 blobs ont l'empreinte de `tools/gpu/ddk111_blobs.sha256` ; tous les fichiers DDK portent `1.11@5425693`.
 - ABI du paquet : 0 erreur sur 26 libs (arm64 et arm).
+- gralloc 1.11 et gralloc stock 1.10 : même module (`HMI` : `gralloc`, « IMG Rogue Graphics HAL », API 1.0 = gralloc1, celle
+  qu'utilise le hwcomposer Jancar via `GrallocDevice`) ; mêmes imports de `libgralloc_extra` sauf `gralloc_extra_perform` et
+  `gralloc_extra_sf_set_status2`, que la lib stock exporte.
 - Zips : 8 scénarios (`tools/gpu/test_twrp_zips.sh`) : installation, réinstallation, 4 refus sans écriture, retrait
   refusé sous noyau 1.11, retrait → vendor identique à l'original ; zip noyau : refus sans paquet, flash avec.
