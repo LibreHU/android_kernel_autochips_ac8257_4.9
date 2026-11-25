@@ -28,6 +28,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MODULES = ["wmt_drv", "wmt_chrdev_wifi", "bt_drv", "gps_drv", "fmradio_drv", "wlan_drv_gen4m"]
 DEVICES = "ac8257_demo"
 DATE = (2020, 1, 1, 0, 0, 0)
+# Kernels of a -vulkan branch (PowerVR DDK 1.11 driver): their zips refuse to install without the Vulkan package
+# (tools/gpu/make_vulkan_package.py) on /vendor, which gives that driver its user space
+GPU_DDK111 = "PowerVR DDK 1.11 driver: needs /vendor/librehu/ddk111 (librehu_gpu_ddk111_twrp.zip)\n"
 
 
 def kernel_sum(data, name):
@@ -96,6 +99,8 @@ def kernel32(dist, branch, version, variant):
         sys.exit(f"boot_ac8257_bootmenu_{variant}.img: {len(boot)} bytes, 32 MiB expected")
     files = {"boot.img": boot, "boot.img.sha256": f"{hashlib.sha256(boot).hexdigest()}  boot.img\n",
              "branch": branch + "\n", "android": base + "\n"}
+    if branch.endswith("-vulkan"):
+        files["gpu_ddk111"] = GPU_DDK111
     write_zip(os.path.join(dist, f"librehu_kernel32_twrp_{base}.zip"), "librehu_kernel32", version, "kernel32-install.sh",
               files)
 
@@ -126,6 +131,8 @@ def main():
     files["kernels.sha256"] = "".join(f"{kernel_sum(d, n)}  {n}\n" for n, d in images.items())
     files["branch"] = branch + "\n"
     files["android"] = variant + "\n"
+    if branch.endswith("-vulkan"):
+        files["gpu_ddk111"] = GPU_DDK111
     write_zip(os.path.join(dist, f"librehu_conn_modules_twrp_{variant}.zip"), "librehu_conn_modules", version,
               "modules-install.sh", files)
     boot = images[f"boot_ac8257_bootmenu_{variant}.img"]

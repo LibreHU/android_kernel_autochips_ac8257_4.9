@@ -17,6 +17,17 @@ esac
 grep -q "^$(kernel_sum $F/boot.img) " $F/kernels.sha256 || abort "the kernel of the image is not the one of the modules"
 mount_rw
 android_check
+# Noyau avec le pilote PowerVR DDK 1.11 (branche -vulkan, fichier gpu_ddk111 du zip) : sans le paquet Vulkan sur
+# /vendor, son pilote n'aurait pas d'espace utilisateur (pas d'affichage)
+if [ -f $F/gpu_ddk111 ]; then
+	if [ ! -f $VENMNT/librehu/ddk111/MANIFEST ] || [ ! -f $VENMNT/etc/init/librehu_gpu_ddk111.rc ]; then
+		ui_print "This kernel has the PowerVR DDK 1.11 driver (Vulkan): it needs the Vulkan package"
+		ui_print "on /vendor first (librehu_gpu_ddk111_twrp.zip of the same release), else Android"
+		ui_print "has no display."
+		abort "Vulkan package missing: nothing was changed"
+	fi
+	ui_print "Vulkan package $(cat $VENMNT/librehu/ddk111/version 2>/dev/null): OK"
+fi
 require_no_verity vendor
 [ -d $SDCARD ] || abort "internal storage not mounted: no backup possible, nothing was changed"
 
