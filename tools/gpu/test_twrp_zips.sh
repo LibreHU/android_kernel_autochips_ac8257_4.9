@@ -5,9 +5,10 @@
 #   tools/gpu/test_twrp_zips.sh <dist>      (dist : librehu_gpu_ddk111_twrp.zip, librehu_gpu_ddk111_remove_twrp.zip)
 # Les fichiers de reference du vendor (libs MTK, hwcomposer) sont des temoins : une copie d'essai du zip
 # d'installation recoit leurs empreintes a la place de celles du vendor stock (files/unit_vendor.sha256), le reste du
-# zip est celui de la release. Scenarios : installation, reinstallation, refus sans rien ecrire (lib de reference
-# differente, ro.hardware.vulkan deja pose, pilote Vulkan deja la, dm-verity actif), retrait refuse sous un noyau
-# DDK 1.11, retrait sous un autre noyau (vendor rendu identique a l'original).
+# zip est celui de la release. Scenarios : installation, reinstallation, autre build du vendor (lib de reference
+# differente : avertissement, installation quand meme, retrait propre), refus sans rien ecrire (fichier de reference
+# absent, ro.hardware.vulkan deja pose, pilote Vulkan deja la, dm-verity actif), retrait refuse sous un noyau DDK 1.11,
+# retrait sous un autre noyau (vendor rendu identique a l'original).
 set -e
 DIST=$(realpath "$1")
 T=$(mktemp -d)
@@ -50,7 +51,17 @@ refused() {  # $1 = libelle, la commande ensuite : doit echouer et ne rien ecrir
 	ok "$_l: refused, nothing written ($(grep ERROR $T/out | head -1))"
 }
 
-refused "other reference library" sh -c "echo x >> $V/lib64/libged.so; $INSTALL; r=\$?; sed -i '\$d' $V/lib64/libged.so; exit \$r"
+# autre build du vendor : avertissement, installation, puis retrait qui rend le vendor d'origine
+echo x >> $V/lib64/libged.so
+(cd $V && find . | sort) > $T/vendor.other
+$INSTALL > $T/out 2>&1 || { cat $T/out; ko "other vendor build: refused"; }
+grep -q 'WARNING: other Jancar vendor build (1 file(s) differ)' $T/out || { cat $T/out; ko "other vendor build: no warning"; }
+grep -q 'lib64/libged.so differs' $T/out || ko "other vendor build: file not named"
+$REMOVE_EARLY > $T/out 2>&1 || { cat $T/out; ko "other vendor build: remove"; }
+(cd $V && find . | sort) | cmp -s - $T/vendor.other || ko "other vendor build: vendor not back to the original"
+sed -i '$d' $V/lib64/libged.so
+ok "other vendor build: warning, installed anyway, removed cleanly"
+refused "reference library missing" sh -c "mv $V/lib64/libged.so $T/libged.so; $INSTALL; r=\$?; mv $T/libged.so $V/lib64/libged.so; exit \$r"
 refused "ro.hardware.vulkan already set" sh -c "echo ro.hardware.vulkan=x >> $T/system/system/build.prop; $INSTALL; r=\$?; sed -i '/ro.hardware.vulkan/d' $T/system/system/build.prop; exit \$r"
 refused "Vulkan driver already there" sh -c "touch $V/lib64/hw/vulkan.ac8257.so; $INSTALL; r=\$?; rm $V/lib64/hw/vulkan.ac8257.so; exit \$r"
 refused "dm-verity active" sh -c "printf wait,avb > $T/dt/firmware/android/fstab/vendor/fsmgr_flags; $INSTALL; r=\$?; printf wait > $T/dt/firmware/android/fstab/vendor/fsmgr_flags; exit \$r"

@@ -20,16 +20,27 @@ mount_rw
 require_vendor_unverified
 
 # --- Le vendor est-il bien celui pour lequel ce paquet a ete verifie ?
+# Vendor de l'UJC201 et fichiers presents : obligatoires. Empreintes des libs MTK et du hwcomposer (celles dont la
+# compatibilite avec le DDK 1.11 a ete verifiee, tools/gpu/check_vendor_abi.py) : un autre build Jancar n'est pas
+# refuse, seulement signale. Le paquet ne remplace aucun fichier du vendor et n'agit que sous le noyau -vulkan : au pire
+# ecran noir sous ce noyau, et le zip de retrait ou un noyau standard remettent tout.
 grep -q '^ro.board.platform=ac8257$' $VENMNT/build.prop || abort "vendor without ro.board.platform=ac8257: not the UJC201 stock vendor"
+_other=0
 while read _sum _path; do
 	_f=$VENMNT${_path#/vendor}
 	[ -f "$_f" ] || abort "$_path missing from the vendor"
 	if [ "$(sha256sum "$_f" | cut -d' ' -f1)" != "$_sum" ]; then
-		ui_print "$_path differs from the stock UJC201 vendor this package was checked against."
-		abort "unknown vendor build: nothing was changed"
+		ui_print "Note: $_path differs from the stock vendor this package was tested with."
+		_other=$((_other + 1))
 	fi
 done < $F/unit_vendor.sha256
-ui_print "Stock libraries used by the package (libged, libgralloc_extra, libgpu_aux...): OK"
+if [ $_other = 0 ]; then
+	ui_print "Stock libraries used by the package (libged, libgralloc_extra, libgpu_aux...): same as tested"
+else
+	ui_print "WARNING: other Jancar vendor build ($_other file(s) differ): not tested, installing anyway."
+	ui_print "If the screen stays black with the -vulkan kernel: flash librehu_gpu_ddk111_remove_twrp.zip"
+	ui_print "(or a standard kernel) from TWRP; the stock vendor files are never changed."
+fi
 while read _src _dst; do
 	[ -f "$VENMNT${_dst#/vendor}" ] || abort "$_dst missing: the package mounts its DDK 1.11 copy over it"
 done < $F/bound

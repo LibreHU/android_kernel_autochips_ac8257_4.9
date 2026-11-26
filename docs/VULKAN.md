@@ -87,7 +87,7 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
 | 8 | Firmware 1.11 ↔ pilote 1.11 | même build 5425693 ; vérifié par le pilote à l'init (`dmesg` : compat check) : **à tester** |
 | 9 | DVFS / veille avec le cœur 1.11 et le code plateforme AutoChips 1.10 | compile, mêmes fonctions GED / gpufreq ; **à tester** (fréquence GPU, veille / réveil) |
 | 10 | SELinux | `mount` s'exécute dans init, `setprop` dans le sous-contexte `vendor_init` (Android 10, `builtins.cpp`) ; les images de boot sont en `permissive` (comme le stock, `BUILD_INFO`) ; en `enforcing` il faudrait une règle `mounton` et le droit de poser `ro.hardware.vulkan` |
-| 11 | Autre build de vendor Jancar | l'installeur compare les empreintes des libs MTK utilisées et du hwcomposer ; différent = refus sans écrire |
+| 11 | Autre build de vendor Jancar | l'installeur compare les empreintes des libs MTK utilisées et du hwcomposer (celles vérifiées par `check_vendor_abi.py`) ; différent = **avertissement seulement** (depuis le 26/11/2026, refus avant), installation quand même. Au pire écran noir sous le noyau -vulkan : zip de retrait ou noyau standard depuis TWRP, aucun fichier stock n'étant modifié |
 | 12 | dm-verity actif sur vendor | refus sans écrire ; accepté si vbmeta a HASHTREE_DISABLED **ou** VERIFICATION_DISABLED (celui qu'exige la ROM) : les deux coupent dm-verity (`libfs_avb`, `SetUpAvbHashtree` → `kDisabled`) |
 | 13 | `ro.hardware.vulkan` déjà posé / pilote Vulkan déjà présent | refus sans écrire (sinon fonctionnalité annoncée sans pilote) |
 | 14 | memtrack (statistiques mémoire GPU) | peut afficher 0 ; sans effet |
