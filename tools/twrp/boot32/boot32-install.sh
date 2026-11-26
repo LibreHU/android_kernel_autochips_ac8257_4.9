@@ -70,6 +70,7 @@ ui_print "  internal storage: $free KB free"
 
 ui_print "1/4 Backups in $B32_DIR"
 echo "migration $VERSION $(date)" > $B32_DIR/IN_PROGRESS
+b32_flush
 dd if=$B32_DISK of=$B32_DIR/pgpt_orig.bin bs=512 count=34 2>/dev/null || abort "GPT backup"
 dd if=$B32_DISK of=$B32_DIR/sgpt_orig.bin bs=512 skip=$B32_SGPT count=33 2>/dev/null || abort "backup GPT backup"
 dd if=$B32_DISK of=$B32_DIR/boot_orig.img bs=$MiB skip=$OLD_BOOT count=$BOOT_OLD_MIB 2>/dev/null || abort "boot backup"

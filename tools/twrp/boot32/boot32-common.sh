@@ -28,10 +28,24 @@ OLD_VEND_BYTES=$(b32_calc "$OLD_VEND_MIB * $MiB"); NEW_VEND_BYTES=$(b32_calc "$N
 b32_sha() { sha256sum "$1" | cut -d' ' -f1; }
 # Essais hors autoradio seulement (UJC_TEST) : arret net a une etape, comme une coupure de courant
 b32_cut() { [ -n "$UJC_TEST" ] && [ "$UJC_FAIL_AT" = "$1" ] && { echo "(test) simulated power cut: $1"; exit 3; }; return 0; }
+# Lectures du disque entier a jour. Linux garde un cache de pages par peripherique : le disque (mmcblk0) et chaque
+# partition (mmcblk0pN, by-name/vendor) ont le leur, et ce que TWRP, e2fsck ou un montage ecrivent par la partition (au
+# demontage de vendor : compteur de montages et dates du superbloc ext4) n'invalide pas une copie deja lue par le
+# disque entier, qu'une relecture peut rendre a nouveau. Essai de Reo Au In sur la 17.1 du 25/11/2026 : « vendor backup
+# different from the partition », 2 octets de difference. Avant chaque lecture : tout ecrire, vider les tampons des
+# deux peripheriques et le cache des pages (propres apres sync).
+b32_flush() {
+	sync
+	[ -n "$UJC_TEST" ] && return 0
+	blockdev --flushbufs $B32_DISK 2>/dev/null
+	[ -e "$B32_VEND" ] && blockdev --flushbufs $B32_VEND 2>/dev/null
+	echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
+	return 0
+}
 # zone du disque (debut en octets, longueur en octets) -> sortie standard
-b32_rd() { dd if=$B32_DISK bs=512 skip=$(( $1 / 512 )) count=$(( ($1 % 512 + $2 + 511) / 512 )) 2>/dev/null \
+b32_rd() { b32_flush; dd if=$B32_DISK bs=512 skip=$(( $1 / 512 )) count=$(( ($1 % 512 + $2 + 511) / 512 )) 2>/dev/null \
 	| tail -c +$(( $1 % 512 + 1 )) | head -c $2; }
-b32_regsha() { dd if=$B32_DISK bs=$MiB skip=$1 count=$(b32_calc "int(($2 + $MiB - 1) / $MiB)") 2>/dev/null | head -c $2 | sha256sum | cut -d' ' -f1; }
+b32_regsha() { b32_flush; dd if=$B32_DISK bs=$MiB skip=$1 count=$(b32_calc "int(($2 + $MiB - 1) / $MiB)") 2>/dev/null | head -c $2 | sha256sum | cut -d' ' -f1; }
 b32_hex() { od -A n -t x1 | tr -d ' \n'; }
 b32_be() { od -A n -t u1 | tr -s ' \n' '  ' | awk '{ v = 0; for (i = 1; i <= NF; i++) v = v * 256 + $i; printf "%.0f\n", v }'; }
 b32_fsval() { tune2fs -l "$1" 2>/dev/null | awk -F: -v k="$2" '$1==k{gsub(/ /,"",$2);print $2}'; }
@@ -62,6 +76,7 @@ b32_tools() {
 }
 # Etat de la table : B32_STATE = orig / new / other, B32_BACKUP = ok / bad, B32_SGPT = LBA de la GPT de secours
 b32_state() {
+	b32_flush
 	_s=$($GPT32 state $B32_DISK 2>$B32_TMP/gpt32.err)
 	_rc=$?
 	[ $_rc -le 1 ] || abort "unreadable GPT: $(cat $B32_TMP/gpt32.err)"
@@ -80,7 +95,7 @@ b32_write_gpt() {
 	dd if=$B32_TMP/pgpt.bin of=$B32_DISK bs=512 seek=0 conv=notrunc,fsync 2>/dev/null || abort "cannot write the primary GPT"
 	b32_cut between_gpt
 	dd if=$B32_TMP/sgpt.bin of=$B32_DISK bs=512 seek=$_lba conv=notrunc,fsync 2>/dev/null || abort "cannot write the backup GPT"
-	sync
+	b32_flush
 	[ "$(dd if=$B32_DISK bs=512 count=34 2>/dev/null | sha256sum | cut -d' ' -f1)" = "$(b32_sha $B32_TMP/pgpt.bin)" ] \
 		|| abort "primary GPT read back different"
 	b32_state
@@ -94,16 +109,29 @@ b32_fix_backup() {
 	$GPT32 make $B32_DISK same $B32_TMP/pgpt.bin $B32_TMP/sgpt.bin >$B32_TMP/gpt32.out 2>$B32_TMP/gpt32.err \
 		|| abort "cannot compute the backup GPT: $(cat $B32_TMP/gpt32.err)"
 	dd if=$B32_TMP/sgpt.bin of=$B32_DISK bs=512 seek=$B32_SGPT conv=notrunc,fsync 2>/dev/null || abort "cannot write the backup GPT"
-	sync
+	b32_flush
 	b32_state
 	[ "$B32_STATE" = $_want ] && [ "$B32_BACKUP" = ok ] || abort "backup GPT read back: state $B32_STATE, backup $B32_BACKUP"
 	ui_print "  backup GPT recomputed and read back"
 }
-# vendor et system demontes (TWRP les monte parfois)
+# points de montage de la partition vendor, quel que soit leur nom (/proc/mounts nomme le peripherique par
+# /dev/block/mmcblk0pN ou by-name/vendor)
+b32_vendor_mounts() {
+	_vd=$(readlink -f "$B32_VEND" 2>/dev/null)
+	[ -n "$_vd" ] || return 0
+	while read _d _m _r; do
+		{ [ "$_d" = "$B32_VEND" ] || [ "$(readlink -f "$_d" 2>/dev/null)" = "$_vd" ]; } && echo "$_m"
+	done < /proc/mounts
+	return 0
+}
+# vendor et system demontes (TWRP les monte parfois, pas toujours sous /vendor)
 b32_unmount() {
 	[ -n "$UJC_TEST" ] && return
-	for _m in $VENMNT /vendor $SYSMNT /system_root /system; do umount $_m 2>/dev/null; done
+	for _m in $VENMNT /vendor $SYSMNT /system_root /system $(b32_vendor_mounts); do umount $_m 2>/dev/null; done
 	grep -qE ' (/vendor|/system_root|/system) ' /proc/mounts && abort "vendor or system still mounted (TWRP > Mount: untick everything)"
+	_left=$(b32_vendor_mounts)
+	[ -n "$_left" ] && abort "vendor partition still mounted on $_left (TWRP > Mount: untick everything)"
+	b32_flush
 	ui_print "vendor and system unmounted"
 }
 # vbmeta en VERIFICATION_DISABLED (octet 123 = poids faible des flags, bit 1)

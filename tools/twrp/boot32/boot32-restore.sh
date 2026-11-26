@@ -30,6 +30,7 @@ if [ "$B32_STATE" = orig ]; then
 		( cd $B32_DIR && sha256sum -c SHA256SUMS >/dev/null 2>&1 ) || abort "damaged backups: restore with SP Flash Tool"
 		# en-tete + entrees seulement : l'octet 432 du MBR (code d'amorcage, inutilise par la GPT) change sur l'UJC201
 		# (0x40 dans une sauvegarde SP Flash Tool, 0x33 plus tard sur la meme unite)
+		b32_flush
 		[ "$(dd if=$B32_DISK bs=512 skip=1 count=33 2>/dev/null | sha256sum | cut -d' ' -f1)" = \
 			"$(tail -c +513 $B32_DIR/pgpt_orig.bin | sha256sum | cut -d' ' -f1)" ] \
 			|| abort "the GPT is not the one of the backup: nothing was changed"
@@ -83,6 +84,7 @@ else
 	for x in tee1:$NEW_TEE1 tee2:$NEW_TEE2; do
 		[ "$(b32_rd $(( ${x#*:} * MiB )) 4 | b32_hex)" = 88168858 ] || abort "${x%%:*}: MTK header missing"
 	done
+	b32_flush
 	{ dd if=$B32_DISK bs=$MiB skip=$NEW_DTBO count=1 2>/dev/null; dd if=/dev/zero bs=$MiB count=7 2>/dev/null; } > $R/dtbo.img
 	dd if=$B32_DISK of=$R/tee1.img bs=$MiB skip=$NEW_TEE1 count=5 2>/dev/null || abort "tee1 copy"
 	dd if=$B32_DISK of=$R/tee2.img bs=$MiB skip=$NEW_TEE2 count=7 2>/dev/null || abort "tee2 copy"
