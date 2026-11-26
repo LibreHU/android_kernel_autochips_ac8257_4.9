@@ -135,5 +135,17 @@ Pré-requis : ROM 17.1 à jour, partition boot de 32 Mio (`librehu_boot32_twrp.z
   normalement : seul le pilote GPU diffère. Le code MediaTek de mise sous / hors tension (`rgx_mtk/ac8257/mtk_mfgsys.c`)
   et les `dev_pm_ops` (`pvr_drm.c`) sont identiques entre 1.10 et 1.11 : la cause est dans le cœur du DDK 1.11 ou le
   firmware ; diagnostic en attente des journaux (`dmesg` si adb répond, sinon `/sys/fs/pstore` après redémarrage).
+- Revue du code (26/11/2026), sans journal du réveil raté : entre 1.10 et 1.11, les chemins de veille et de réveil
+  sont identiques : `dev_pm_ops` (`pvr_drm.c`), `PVRSRVCommonDeviceSuspend` / `Resume` (`module_common.c`),
+  `LinuxBridgeBlockClientsAccess`, `PVRSRVSetDeviceSystemPowerState` (à la refonte de la demande d'inactivité près),
+  `RGXPostPowerState`, callbacks AutoChips (`mtk_mfgsys.c`, `bForced` ignoré), prototypes, réglages APM et
+  d'alimentation. La gestion active (APM) coupe et rallume déjà le GPU (firmware redémarré, MTCMOS, BUCK) en usage
+  normal, sans problème : le cycle d'alimentation du GPU lui-même fonctionne. Restent : l'état perdu par la coupure
+  complète de la veille (que l'APM ne fait pas), le firmware 1.11, ou l'espace utilisateur 1.11 (gralloc, fences
+  avec le hwcomposer stock). La branche ne diffère de la RC que par le pilote GPU.
+- Journal : pstore n'est pas en cause. Après une coupure d'alimentation (le MCU coupe la carte), la RAM est perdue :
+  la console précoce trouve une zone invalide et repart de zéro (rapport du 26/11 : 244 lignes, 0,03 s). Après un
+  redémarrage à chaud, le journal précédent est bien gardé (autre rapport : 6131 lignes). Il faut donc le journal
+  pris pendant l'écran noir (`adb shell dmesg`, `adb logcat -b all -d`), avant toute coupure.
 - Reste à faire (section 3) : rendu réel (3DMark Sling Shot Extreme Vulkan / Wild Life), YouTube, caméra de recul,
   CarPlay.
